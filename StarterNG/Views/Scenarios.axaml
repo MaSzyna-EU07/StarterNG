@@ -1,0 +1,65 @@
+﻿<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:sukiUi="clr-namespace:SukiUI.Controls;assembly=SukiUI"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+             x:Class="StarterNG.Views.Scenarios">
+    <Grid Margin="16" ColumnSpacing="16" RowSpacing="16">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="200" />
+            <ColumnDefinition />
+        </Grid.ColumnDefinitions>
+        <Grid.RowDefinitions>
+            <RowDefinition />
+            <RowDefinition />
+            <RowDefinition Height="100" />
+            <RowDefinition Height="40" />
+        </Grid.RowDefinitions>
+        <sukiUi:GroupBox Grid.RowSpan="2" Header="Scenerie">
+            <TreeView>
+                <TreeViewItem Header="Bałtyk">
+                    <TreeViewItem Header="Bałtyk Euro 2012" />
+                    <TreeViewItem Header="Bałtyk SKM 1" />
+                    <TreeViewItem Header="Bałtyk SKM 2" />
+                </TreeViewItem>
+                <TreeViewItem Header="Linia 053">
+                    <TreeViewItem Header="Linia 053 - poranek" />
+                    <TreeViewItem Header="Linia 053 - południe" />
+                    <TreeViewItem Header="Linia 053 - wieczór" />
+                    <TreeViewItem Header="Linia 053 - noc" />
+                </TreeViewItem>
+            </TreeView>
+        </sukiUi:GroupBox>
+        <sukiUi:GroupBox Grid.Column="1" Header="Pojazdy">
+            <ListBox>
+                <ListBoxItem>EP07P-2003</ListBoxItem>
+                <ListBoxItem>EP07-1049</ListBoxItem>
+                <ListBoxItem>EN57AKM-1562</ListBoxItem>
+            </ListBox>
+        </sukiUi:GroupBox>
+        <sukiUi:GroupBox Grid.Column="1" Grid.Row="1" Header="Opis scenariusza">
+            <ScrollViewer VerticalScrollBarVisibility="Auto">
+                <TextBlock TextWrapping="Wrap">
+                    Prowadzimy RegioExpress RPE23119 z Dębicy do Sandomierza. Misję rozpoczynamy w lokomotywowni w Dębicy. Jedziemy zgodnie ze wskazaniami tarcz manewrowych na bocznicę z drugiej strony stacji, gdzie przypinamy wagony do naszego składu, po czym wciągamy je w peron. Następnie jedziemy do Sandomierza, zatrzymując się po drodze tylko w Turowie. Po przyjeździe do Sandomierza odczepiamy lokomotywę i zjeżdżamy na tor postojowy, gdzie kończymy służbę. Czas misji: ok. 80 minut.
+                </TextBlock>
+            </ScrollViewer>
+
+        </sukiUi:GroupBox>
+
+        <sukiUi:GroupBox Header="Zestawienie" Grid.Row="2" Grid.ColumnSpan="2">
+            <ScrollViewer VerticalAlignment="Bottom"
+                          HorizontalScrollBarVisibility="Auto"
+                          VerticalScrollBarVisibility="Disabled">
+                <StackPanel Orientation="Horizontal">
+                    <Image Source="avares://StarterNG/Assets/Test/ep07p.bmp" Height="50"></Image>
+                </StackPanel>
+            </ScrollViewer>
+        </sukiUi:GroupBox>
+
+        <Button Grid.Column="1" Height="36" Classes="Flat"
+                VerticalAlignment="Bottom" Grid.Row="3">
+            Start
+        </Button>
+    </Grid>
+</UserControl>
