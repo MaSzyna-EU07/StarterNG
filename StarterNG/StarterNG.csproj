@@ -1,0 +1,41 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+    <PropertyGroup>
+        <OutputType>WinExe</OutputType>
+        <TargetFramework>net9.0</TargetFramework>
+        <Nullable>enable</Nullable>
+        <BuiltInComInteropSupport>true</BuiltInComInteropSupport>
+        <ApplicationManifest>app.manifest</ApplicationManifest>
+        <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <PackageReference Include="Avalonia" Version="11.3.10" />
+        <PackageReference Include="Avalonia.Desktop" Version="11.3.10" />
+        <PackageReference Include="Avalonia.Svg" Version="11.3.0" />
+        <PackageReference Include="Avalonia.Themes.Fluent" Version="11.3.10" />
+        <PackageReference Include="Avalonia.Fonts.Inter" Version="11.3.10" />
+        <!--Condition below is needed to remove Avalonia.Diagnostics package from build output in Release configuration.-->
+        <PackageReference Include="Avalonia.Diagnostics" Version="11.3.10">
+            <IncludeAssets Condition="'$(Configuration)' != 'Debug'">None</IncludeAssets>
+            <PrivateAssets Condition="'$(Configuration)' != 'Debug'">All</PrivateAssets>
+        </PackageReference>
+        <PackageReference Include="HotAvalonia" Version="3.0.2" />
+        <PackageReference Include="Material.Icons.Avalonia" Version="2.4.1" />
+        <PackageReference Include="SukiUI" Version="6.0.3" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <Folder Include="Assets\Logo\" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <None Remove="Assets\Logo\maszyna_black.svg" />
+      <AvaloniaResource Include="Assets\Logo\maszyna_black.svg" />
+      <None Remove="Assets\Logo\maszyna_white.svg" />
+      <AvaloniaResource Include="Assets\Logo\maszyna_white.svg" />
+      <None Remove="Assets\Logo\Other\Discord.svg" />
+      <AvaloniaResource Include="Assets\Logo\Other\Discord.svg" />
+      <None Remove="Assets\Test\ep07p.bmp" />
+      <AvaloniaResource Include="Assets\Test\ep07p.bmp" />
+    </ItemGroup>
+</Project>
