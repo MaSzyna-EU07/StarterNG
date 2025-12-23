@@ -1,0 +1,371 @@
+﻿<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:suki="clr-namespace:SukiUI.Controls;assembly=SukiUI"
+             xmlns:objectModel="clr-namespace:System.Collections.ObjectModel;assembly=System.ObjectModel"
+             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+             x:Class="StarterNG.Views.Settings">
+    <suki:SettingsLayout>
+        <suki:SettingsLayout.Items>
+            <objectModel:ObservableCollection x:TypeArguments="suki:SettingsLayoutItem">
+                <suki:SettingsLayoutItem Header="Ogólne">
+                    <suki:SettingsLayoutItem.Content>
+                        <StackPanel Spacing="8" Orientation="Vertical">
+                            <CheckBox>Tryb pełnoekranowy</CheckBox>
+
+                            <CheckBox>Wstrzymaj symulację, gdy okno nie jest aktywne</CheckBox>
+
+                            <CheckBox>Pauza po uruchomieniu</CheckBox>
+
+                            <StackPanel Spacing="8" Orientation="Horizontal">
+                                <Label VerticalAlignment="Center" FontSize="14">Czułość kursora:</Label>
+                                <Slider Minimum="1" Maximum="5" TickFrequency="1" MinWidth="200" MaxWidth="200"
+                                        IsSnapToTickEnabled="True" Value="3">
+                                </Slider>
+                            </StackPanel>
+
+                            <CheckBox>Inwersja myszy w poziomie</CheckBox>
+                            <CheckBox>Inwersja myszy w pionie</CheckBox>
+                        </StackPanel>
+                    </suki:SettingsLayoutItem.Content>
+                </suki:SettingsLayoutItem>
+                <suki:SettingsLayoutItem Header="Komunikacja">
+                    <suki:SettingsLayoutItem.Content>
+                        <StackPanel Spacing="8" Orientation="Vertical">
+                            <CheckBox>Ignoruj sygnały z gamepada</CheckBox>
+
+                            <StackPanel Spacing="8" Orientation="Horizontal">
+                                <Label VerticalAlignment="Center" FontSize="14">Informacja zwrotna</Label>
+                                <ComboBox MinWidth="350" MaxWidth="350" SelectedIndex="0">
+                                    <ComboBoxItem Tag="0">Wyłączona</ComboBoxItem>
+                                    <ComboBoxItem Tag="1">Caps: CA/SHP; ScrollLock: opory rozr.</ComboBoxItem>
+                                    <ComboBoxItem Tag="2">Caps: CA; Scrollock: SHP</ComboBoxItem>
+                                    <ComboBoxItem Tag="3">LPT</ComboBoxItem>
+                                    <ComboBoxItem Tag="4">PoKeys55</ComboBoxItem>
+                                    <ComboBoxItem Tag="5">Serialport (COM)</ComboBoxItem>
+                                </ComboBox>
+                            </StackPanel>
+
+                        </StackPanel>
+                    </suki:SettingsLayoutItem.Content>
+                </suki:SettingsLayoutItem>
+
+                <suki:SettingsLayoutItem Header="Inne">
+                    <suki:SettingsLayoutItem.Content>
+                        <StackPanel Spacing="8" Orientation="Vertical">
+                            <StackPanel Spacing="8" Orientation="Horizontal">
+                                <Label VerticalAlignment="Center" FontSize="14">Wybór exe:</Label>
+                                <ComboBox MinWidth="350" MaxWidth="350" SelectedIndex="0">
+                                    <ComboBoxItem>Wybierz automatycznie</ComboBoxItem>
+                                    <ComboBoxItem>eu07.exe</ComboBoxItem>
+                                </ComboBox>
+                            </StackPanel>
+
+                            <CheckBox>Tryb testowy (debugmode)</CheckBox>
+
+                            <CheckBox>Wirtualny manewrowy</CheckBox>
+                        </StackPanel>
+                    </suki:SettingsLayoutItem.Content>
+                </suki:SettingsLayoutItem>
+
+                <suki:SettingsLayoutItem Header="Grafika">
+                    <suki:SettingsLayoutItem.Content>
+                        <StackPanel Spacing="8" Orientation="Vertical">
+                            <StackPanel Spacing="8" Orientation="Horizontal">
+                                <Label VerticalAlignment="Center" FontSize="14">Silnik renderowania</Label>
+                                <ComboBox MinWidth="150" MaxWidth="150" SelectedIndex="0">
+                                    <ComboBoxItem>Pełny</ComboBoxItem>
+                                    <ComboBoxItem>Stary</ComboBoxItem>
+                                    <ComboBoxItem>Uproszczony shaderowy</ComboBoxItem>
+                                    <ComboBoxItem>Uproszczony</ComboBoxItem>
+                                    <ComboBoxItem>Wyłącz warstwę wizualną</ComboBoxItem>
+                                    <ComboBoxItem>Eksperymentalny</ComboBoxItem>
+                                </ComboBox>
+                            </StackPanel>
+                            <StackPanel Spacing="8" Orientation="Horizontal">
+                                <Label VerticalAlignment="Center" FontSize="14">Rozdzielczość:</Label>
+                                <ComboBox MinWidth="150" MaxWidth="150" SelectedIndex="0">
+                                    <ComboBoxItem>2560x1440</ComboBoxItem>
+                                </ComboBox>
+                            </StackPanel>
+                            <StackPanel Spacing="8" Orientation="Horizontal">
+                                <TextBlock VerticalAlignment="Center" FontSize="14">Rozdzielczość bufora:</TextBlock>
+                                <Slider Name="bufferScale" Minimum="50" MaxWidth="400" HorizontalAlignment="Left"
+                                        MinWidth="250" Maximum="200" TickFrequency="1" IsSnapToTickEnabled="True"
+                                        Value="100" />
+                                <TextBlock VerticalAlignment="Center"
+                                           Text="{Binding #bufferScale.Value, StringFormat='{}{0}%'}" />
+                            </StackPanel>
+
+                            <StackPanel Spacing="8" Orientation="Horizontal">
+                                <TextBlock VerticalAlignment="Center" FontSize="14">Maksymalna rozdzielczość tekstur:</TextBlock>
+                                <Slider Name="textureResolutionSlider" Minimum="9" MaxWidth="400"
+                                        HorizontalAlignment="Left"
+                                        MinWidth="250" Maximum="14"
+                                        ValueChanged="TextureResolutionSlider_OnValueChanged" TickFrequency="1"
+                                        IsSnapToTickEnabled="True" Value="12" />
+                                <TextBlock Name="texResolution" VerticalAlignment="Center" Text="4096" />
+                            </StackPanel>
+
+                            <StackPanel Spacing="8" Orientation="Horizontal">
+                                <TextBlock VerticalAlignment="Center" FontSize="14">Maksymalna rozdzielczość tekstur kabiny:</TextBlock>
+                                <Slider Name="cabTextureResolutionSlider" Minimum="9" MaxWidth="400"
+                                        HorizontalAlignment="Left"
+                                        MinWidth="250" Maximum="14"
+                                        ValueChanged="CabTextureResolutionSlider_OnValueChanged" TickFrequency="1"
+                                        IsSnapToTickEnabled="True" Value="12" />
+                                <TextBlock Name="cabTexResolution" VerticalAlignment="Center" Text="4096" />
+                            </StackPanel>
+
+                            <StackPanel Spacing="8" Orientation="Horizontal">
+                                <TextBlock VerticalAlignment="Center" FontSize="14">Jakość filtrowania tekstur</TextBlock>
+                                <Slider Minimum="1" MaxWidth="400"
+                                        HorizontalAlignment="Left"
+                                        MinWidth="250" Maximum="5"
+                                        TickFrequency="1"
+                                        IsSnapToTickEnabled="True" Value="4" />
+                            </StackPanel>
+
+                            <StackPanel Spacing="8" Orientation="Horizontal">
+                                <TextBlock VerticalAlignment="Center" FontSize="14">Multisampling</TextBlock>
+                                <Slider Minimum="1" MaxWidth="400"
+                                        HorizontalAlignment="Left"
+                                        MinWidth="250" Maximum="4"
+                                        TickFrequency="1"
+                                        IsSnapToTickEnabled="True" Value="3" />
+                            </StackPanel>
+
+                            <StackPanel Spacing="8" Orientation="Horizontal">
+                                <TextBlock VerticalAlignment="Center" FontSize="14">Zasięg renderowania</TextBlock>
+                                <Slider Minimum="1" MaxWidth="400"
+                                        HorizontalAlignment="Left"
+                                        MinWidth="250" Maximum="3" Value="1" />
+                            </StackPanel>
+
+                            <CheckBox>VSync</CheckBox>
+
+                            <CheckBox>Wyświetlanie dymu</CheckBox>
+
+                            <StackPanel Spacing="8" Orientation="Horizontal">
+                                <TextBlock VerticalAlignment="Center" FontSize="14">Mnożnik ilości cząsteczek dymu</TextBlock>
+                                <Slider Minimum="1" MaxWidth="400"
+                                        HorizontalAlignment="Left"
+                                        MinWidth="250" Maximum="4"
+                                        TickFrequency="1"
+                                        IsSnapToTickEnabled="True" Value="2" />
+                            </StackPanel>
+
+                            <StackPanel Spacing="8" Orientation="Horizontal">
+                                <TextBlock VerticalAlignment="Center" FontSize="14">Postprocessing</TextBlock>
+                                <ComboBox MinWidth="150" MaxWidth="150" SelectedIndex="0">
+                                    <ComboBoxItem>Reinhard</ComboBoxItem>
+                                    <ComboBoxItem>ACES</ComboBoxItem>
+                                </ComboBox>
+                            </StackPanel>
+
+                            <CheckBox>Aberracja chromatyczna</CheckBox>
+
+                            <CheckBox>Rozmycie podczas ruchu</CheckBox>
+
+                            <CheckBox>Dodatkowe efekty shaderów</CheckBox>
+
+                            <CheckBox>Odbicia jako cubemapa</CheckBox>
+
+                            <CheckBox>Renderowanie VBO</CheckBox>
+
+                            <CheckBox>Renderowanie cieni</CheckBox>
+
+                            <StackPanel Spacing="8" Orientation="Horizontal">
+                                <TextBlock VerticalAlignment="Center" FontSize="14">Odświeżanie odbić</TextBlock>
+                                <Slider Name="reflectionsFramerate" Minimum="5" MaxWidth="400"
+                                        HorizontalAlignment="Left"
+                                        MinWidth="250" Maximum="120"
+                                        TickFrequency="5"
+                                        IsSnapToTickEnabled="True" Value="30" />
+                                <Label VerticalAlignment="Center" FontSize="14"
+                                       Content="{Binding #reflectionsFramerate.Value, StringFormat='{}{0} FPS'}" />
+                            </StackPanel>
+
+                            <StackPanel Spacing="8" Orientation="Horizontal">
+                                <TextBlock VerticalAlignment="Center" FontSize="14">Rozdzielczość cieni</TextBlock>
+                                <Slider Name="shaderResolutionSlider" Minimum="9" MaxWidth="400"
+                                        HorizontalAlignment="Left"
+                                        MinWidth="250" Maximum="14"
+                                        ValueChanged="shaderResolutionSlider_OnValueChanged" TickFrequency="1"
+                                        IsSnapToTickEnabled="True" Value="12" />
+                                <TextBlock Name="shaderResolution" VerticalAlignment="Center" Text="4096 px" />
+                            </StackPanel>
+
+                            <StackPanel Spacing="8" Orientation="Horizontal">
+                                <TextBlock VerticalAlignment="Center" FontSize="14">Odświeżanie odbić</TextBlock>
+                                <Slider Name="shaderRange" Minimum="25" MaxWidth="400"
+                                        HorizontalAlignment="Left"
+                                        MinWidth="250" Maximum="400"
+                                        TickFrequency="5"
+                                        IsSnapToTickEnabled="True" Value="150" />
+                                <Label VerticalAlignment="Center" FontSize="14"
+                                       Content="{Binding #shaderRange.Value, StringFormat='{}{0} m'}" />
+                            </StackPanel>
+
+                            <StackPanel Spacing="8" Orientation="Horizontal">
+                                <TextBlock VerticalAlignment="Center" FontSize="14">Zasięg źródeł cieni w kabinie</TextBlock>
+                                <Slider Name="cabShaderSourceRange" Minimum="0" MaxWidth="400"
+                                        HorizontalAlignment="Left"
+                                        MinWidth="250" Maximum="100"
+                                        TickFrequency="10"
+                                        IsSnapToTickEnabled="True" Value="30" />
+                                <Label VerticalAlignment="Center" FontSize="14"
+                                       Content="{Binding #cabShaderSourceRange.Value, StringFormat='{}{0} m'}" />
+                            </StackPanel>
+
+                            <StackPanel Spacing="8" Orientation="Horizontal">
+                                <TextBlock VerticalAlignment="Center" FontSize="14">Wyświetlanie cieni</TextBlock>
+                                <ComboBox MinWidth="150" MaxWidth="150" SelectedIndex="0">
+                                    <ComboBoxItem>Tylko ważne</ComboBoxItem>
+                                    <ComboBoxItem>Ograniczone</ComboBoxItem>
+                                    <ComboBoxItem>Wszystkie</ComboBoxItem>
+                                </ComboBox>
+                            </StackPanel>
+
+                            <StackPanel Spacing="8" Orientation="Horizontal">
+                                <TextBlock VerticalAlignment="Center" FontSize="14">Szczegółowość odbić</TextBlock>
+                                <ComboBox MinWidth="350" MaxWidth="350" SelectedIndex="0">
+                                    <ComboBoxItem>Tylko geometria terenu</ComboBoxItem>
+                                    <ComboBoxItem>Geometria terenu i modele statyczne</ComboBoxItem>
+                                    <ComboBoxItem>Geometria terenu, modele statyczne i pojazdy</ComboBoxItem>
+                                </ComboBox>
+                            </StackPanel>
+
+                            <StackPanel Spacing="8" Orientation="Horizontal">
+                                <TextBlock VerticalAlignment="Center" FontSize="14">Zasięg źródeł cieni w kabinie</TextBlock>
+                                <Slider Name="fovSlider" Minimum="5" MaxWidth="400"
+                                        HorizontalAlignment="Left"
+                                        MinWidth="250" Maximum="110"
+                                        TickFrequency="5"
+                                        IsSnapToTickEnabled="True" Value="30" />
+                                <Label VerticalAlignment="Center" FontSize="14"
+                                       Content="{Binding #fovSlider.Value, StringFormat='{}{0} stopni'}" />
+                            </StackPanel>
+
+                            <CheckBox>Renderowanie ekranów komputerów pokładowych</CheckBox>
+                            <CheckBox>Renderowanie ekranów w osobnym wątku</CheckBox>
+
+                            <StackPanel Spacing="8" Orientation="Horizontal">
+                                <TextBlock VerticalAlignment="Center" FontSize="14">Częstotliwość odświeżania ekranów komputerów pokładowych</TextBlock>
+                                <Slider Minimum="1" MaxWidth="400"
+                                        HorizontalAlignment="Left"
+                                        MinWidth="250" Maximum="5"
+                                        TickFrequency="1"
+                                        IsSnapToTickEnabled="True" Value="5" />
+                            </StackPanel>
+                        </StackPanel>
+                    </suki:SettingsLayoutItem.Content>
+                </suki:SettingsLayoutItem>
+
+                <suki:SettingsLayoutItem Header="Fizyka">
+                    <suki:SettingsLayoutItem.Content>
+                        <StackPanel Spacing="8" Orientation="Vertical">
+                            <StackPanel Spacing="8" Orientation="Horizontal">
+                                <TextBlock VerticalAlignment="Center" FontSize="14">Jakość łuków torów</TextBlock>
+                                <Slider Minimum="1" MaxWidth="400"
+                                        HorizontalAlignment="Left"
+                                        MinWidth="250" Maximum="4"
+                                        TickFrequency="1"
+                                        IsSnapToTickEnabled="True" Value="4" />
+                            </StackPanel>
+
+                            <CheckBox>Zwiększona dokładność fizyki</CheckBox>
+
+                            <CheckBox>Możliwość złamania pantografu</CheckBox>
+
+                            <CheckBox>Zasilanie tylko pod siecią trakcyjna</CheckBox>
+
+                            <CheckBox>Zapisuj taśmy z prędkościomierza</CheckBox>
+
+                            <CheckBox>Zapisuj log z symulacji</CheckBox>
+
+                            <CheckBox>Zachowuj poprzednie logi</CheckBox>
+
+                            <CheckBox>Wyświetlaj symulację</CheckBox>
+
+                            <CheckBox>Uszkodzenia przy zderzeniu</CheckBox>
+                        </StackPanel>
+                    </suki:SettingsLayoutItem.Content>
+                </suki:SettingsLayoutItem>
+
+                <suki:SettingsLayoutItem Header="Dżwięk">
+                    <suki:SettingsLayoutItem.Content>
+                        <StackPanel Spacing="8" Orientation="Vertical">
+                            <CheckBox>Włącz dźwięk</CheckBox>
+
+                            <StackPanel Spacing="8" Orientation="Horizontal">
+                                <TextBlock VerticalAlignment="Center" FontSize="14">Głośność</TextBlock>
+                                <Slider Minimum="1" MaxWidth="400"
+                                        HorizontalAlignment="Left"
+                                        MinWidth="250" Maximum="100"
+                                        TickFrequency="5"
+                                        IsSnapToTickEnabled="True" Value="100" />
+                            </StackPanel>
+
+                            <StackPanel Spacing="8" Orientation="Horizontal">
+                                <TextBlock VerticalAlignment="Center" FontSize="14">Głośność radiotelefonu</TextBlock>
+                                <Slider Minimum="1" MaxWidth="400"
+                                        HorizontalAlignment="Left"
+                                        MinWidth="250" Maximum="100"
+                                        TickFrequency="5"
+                                        IsSnapToTickEnabled="True" Value="100" />
+                            </StackPanel>
+
+                            <StackPanel Spacing="8" Orientation="Horizontal">
+                                <TextBlock VerticalAlignment="Center" FontSize="14">Głośność pojazdów</TextBlock>
+                                <Slider Minimum="1" MaxWidth="400"
+                                        HorizontalAlignment="Left"
+                                        MinWidth="250" Maximum="100"
+                                        TickFrequency="5"
+                                        IsSnapToTickEnabled="True" Value="100" />
+                            </StackPanel>
+
+                            <StackPanel Spacing="8" Orientation="Horizontal">
+                                <TextBlock VerticalAlignment="Center" FontSize="14">Głośność dżwięków pozycjonowanych</TextBlock>
+                                <Slider Minimum="1" MaxWidth="400"
+                                        HorizontalAlignment="Left"
+                                        MinWidth="250" Maximum="100"
+                                        TickFrequency="5"
+                                        IsSnapToTickEnabled="True" Value="100" />
+                            </StackPanel>
+
+                            <StackPanel Spacing="8" Orientation="Horizontal">
+                                <TextBlock VerticalAlignment="Center" FontSize="14">Głośność otoczenia</TextBlock>
+                                <Slider Minimum="1" MaxWidth="400"
+                                        HorizontalAlignment="Left"
+                                        MinWidth="250" Maximum="100"
+                                        TickFrequency="5"
+                                        IsSnapToTickEnabled="True" Value="100" />
+                            </StackPanel>
+
+                            <StackPanel Spacing="8" Orientation="Horizontal">
+                                <TextBlock VerticalAlignment="Center" FontSize="14">Głośność podczas pauzy</TextBlock>
+                                <Slider Minimum="1" MaxWidth="400"
+                                        HorizontalAlignment="Left"
+                                        MinWidth="250" Maximum="100"
+                                        TickFrequency="5"
+                                        IsSnapToTickEnabled="True" Value="100" />
+                            </StackPanel>
+                        </StackPanel>
+                    </suki:SettingsLayoutItem.Content>
+                </suki:SettingsLayoutItem>
+
+                <suki:SettingsLayoutItem Header="Starter">
+                    <suki:SettingsLayoutItem.Content>
+                        <StackPanel Spacing="8" Orientation="Vertical">
+                            <CheckBox>Zamknij starter automatycznie</CheckBox>
+                            <CheckBox>Duże miniaturki</CheckBox>
+                            <CheckBox>Automatycznie rozwijanie drzewka scenerii</CheckBox>
+                        </StackPanel>
+                    </suki:SettingsLayoutItem.Content>
+                </suki:SettingsLayoutItem>
+            </objectModel:ObservableCollection>
+        </suki:SettingsLayout.Items>
+    </suki:SettingsLayout>
+</UserControl>

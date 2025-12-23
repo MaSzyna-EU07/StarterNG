@@ -7,7 +7,7 @@
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:svg="clr-namespace:Avalonia.Svg;assembly=Avalonia.Svg"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    xmlns:views="clr-namespace:StarterNG.Views"
+    xmlns:views="clr-namespace:StarterNG.Views" BackgroundStyle="Bubble"
     Title="MaSzyna - Symulator pojazdów szynowych" Height="600" Width="800">
     <sukiUi:SukiSideMenu IsMenuExpanded="False">
         <sukiUi:SukiSideMenu.Items>
@@ -35,6 +35,16 @@
             <sukiUi:SukiSideMenuItem Header="Ustawienia" Classes="Compact">
                 <sukiUi:SukiSideMenuItem.Icon>
                     <materialIcons:MaterialIcon Kind="Settings" />
+                </sukiUi:SukiSideMenuItem.Icon>
+                <sukiUi:SukiSideMenuItem.PageContent>
+                    <views:Settings/>
+                </sukiUi:SukiSideMenuItem.PageContent>
+            </sukiUi:SukiSideMenuItem>
+            
+            <!-- Sterowanie -->
+            <sukiUi:SukiSideMenuItem Header="Sterowanie" Classes="Compact">
+                <sukiUi:SukiSideMenuItem.Icon>
+                    <materialIcons:MaterialIcon Kind="Controller" />
                 </sukiUi:SukiSideMenuItem.Icon>
                 <sukiUi:SukiSideMenuItem.PageContent>
                     <Label>MaSzyna</Label>
