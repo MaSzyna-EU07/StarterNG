@@ -1,0 +1,111 @@
+﻿<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <!-- Add Resources Here -->
+   <x:String x:Key="General">General</x:String>
+    
+    <x:String x:Key="Language">Language</x:String>
+    <x:String x:Key="Fullscreen">Fullscreen</x:String>
+    <x:String x:Key="PauseSimInactive">Pause simulation when window is inactive</x:String>
+    <x:String x:Key="PauseSimStart">Pause on start</x:String>
+    <x:String x:Key="CursorSensitivity">Cursor sensitivity:</x:String>
+    <x:String x:Key="MouseHorInvert">Invert mouse horizontally</x:String>
+    <x:String x:Key="MouseVertInvert">Invert mouse vertically</x:String>
+    
+    <x:String x:Key="Communication">Communication</x:String>
+    
+    
+    <x:String x:Key="GamepadSignalIgnore">Ignore gamepad input</x:String>
+    
+    <x:String x:Key="Feedback">Feedback</x:String>
+    <x:String x:Key="FeedbackOff">Off</x:String>
+    <x:String x:Key="FeedbackCASHP">Caps: CA/SHP; ScrollLock: starting resistances</x:String>
+    <x:String x:Key="FeedbackCA">Caps: CA; ScrollLock: SHP</x:String>
+    <x:String x:Key="FeedbackLPT">LPT</x:String>
+    <x:String x:Key="FeedbackPoKeys">PoKeys55</x:String>
+    <x:String x:Key="FeedbackSP">Serial port (COM)</x:String>
+    
+    
+    <x:String x:Key="Others">Other</x:String>
+    <x:String x:Key="SelectEXE">Select exe:</x:String>
+    <x:String x:Key="SelectEXEAuto">Select automatically</x:String>
+    <x:String x:Key="DebugMode">Debug mode (test mode)</x:String>
+    <x:String x:Key="VirtualShunting">Virtual shunting</x:String>
+    
+    
+    <x:String x:Key="Graphic">Graphics</x:String>
+    <x:String x:Key="RenderEngine">Render engine</x:String>
+    <x:String x:Key="REFull">Full</x:String>
+    <x:String x:Key="REOld">Old</x:String>
+    <x:String x:Key="RESimpShader">Simplified shader</x:String>
+    <x:String x:Key="RESimp">Simplified</x:String>
+    <x:String x:Key="REOff">Disable visual layer</x:String>
+    <x:String x:Key="REExperimental">Experimental</x:String>
+    
+    <x:String x:Key="Resolution">Resolution:</x:String>
+    <x:String x:Key="BufforResolution">Buffer resolution:</x:String>
+    <x:String x:Key="MaxTexResolution">Maximum texture resolution:</x:String>
+    <x:String x:Key="MaxTexCabResolution">Maximum cabin texture resolution:</x:String>
+    <x:String x:Key="TexFilteringQuality">Texture filtering quality:</x:String>
+    <x:String x:Key="Multisampling">Multisampling:</x:String>
+    <x:String x:Key="RenderRange">Rendering range:</x:String>
+    <x:String x:Key="VSync">VSync</x:String>
+    <x:String x:Key="SmokeDisplay">Smoke display</x:String>
+    <x:String x:Key="SmokeParticlesMultiplier">Smoke particles multiplier</x:String>
+    
+    <x:String x:Key="Postprocessing">Post-processing</x:String>
+    <x:String x:Key="PPReinhard">Reinhard</x:String>
+    <x:String x:Key="PPACES">ACES</x:String>
+    
+    <x:String x:Key="ChromaticAberration">Chromatic aberration</x:String>
+    <x:String x:Key="MotionBlur">Motion blur</x:String>
+    <x:String x:Key="AdditionalShadersEffects">Additional shader effects</x:String>
+    <x:String x:Key="ReflectionsCubeMap">Reflections as cubemap</x:String>
+    <x:String x:Key="RenderVBO">Render VBO</x:String>
+    <x:String x:Key="RenderShadows">Render shadows</x:String>
+    <x:String x:Key="ReflectionsFramerate">Reflections refresh rate</x:String>
+    <x:String x:Key="ShadowsResolution">Shadows resolution</x:String>
+    <x:String x:Key="ShaderRange">Reflections refresh rate</x:String>
+    <x:String x:Key="CabShadowsRange">Cabin shadow sources range</x:String>
+    
+    <x:String x:Key="ShadowDisplay">Display shadows</x:String>
+    <x:String x:Key="CSROnlyImportant">Only important</x:String>
+    <x:String x:Key="CSRLimited">Limited</x:String>
+    <x:String x:Key="CSRAll">All</x:String>
+    
+    <x:String x:Key="ReflectionsDetails">Reflections detail level</x:String>
+    <x:String x:Key="RDTerrain">Terrain geometry only</x:String>
+    <x:String x:Key="RDTerrainModels">Terrain geometry and static models</x:String>
+    <x:String x:Key="RDTerrainModelsVehicles">Terrain geometry, static models and vehicles</x:String>
+    
+    <x:String x:Key="ShadowsCabRange">Cabin shadow sources range</x:String>
+    <x:String x:Key="RenderScreens">Render onboard computer screens</x:String>
+    <x:String x:Key="RenderScreensThread">Render screens in a separate thread</x:String>
+    <x:String x:Key="RenderScreensFramerate">Onboard screens refresh rate</x:String>
+    
+    <x:String x:Key="Physics">Physics</x:String>
+    
+    <x:String x:Key="TrackCurvesQuality">Track curves quality</x:String>
+    <x:String x:Key="PhysicsAccuracyIncreased">Increased physics accuracy</x:String>
+    <x:String x:Key="BreakingPantographPossibility">Possibility of pantograph breaking</x:String>
+    <x:String x:Key="PowerOverheadLineOnly">Powered only under overhead line</x:String>
+    <x:String x:Key="SaveSpeedometerTapes">Save speedometer tapes</x:String>
+    <x:String x:Key="SaveSimLogs">Save simulation log</x:String>
+    <x:String x:Key="KeepPrevLogs">Keep previous logs</x:String>
+    <x:String x:Key="DisplaySimulation">Display simulation</x:String>
+    <x:String x:Key="CrashDamage">Collision damage</x:String>
+    
+    <x:String x:Key="Sounds">Sound</x:String>
+    <x:String x:Key="EnableSounds">Enable sound</x:String>
+    <x:String x:Key="Volume">Volume</x:String>
+    <x:String x:Key="RadiophoneVolume">Radio volume</x:String>
+    <x:String x:Key="VehiclesVolume">Vehicles volume</x:String>
+    <x:String x:Key="PositionedSoundsVolume">Positional sounds volume</x:String>
+    <x:String x:Key="AmbientVolume">Ambient volume</x:String>
+    <x:String x:Key="VolumeDuringPause">Volume during pause</x:String>
+    
+    <x:String x:Key="Starter">Starter</x:String>
+    <x:String x:Key="AutoCloseStarter">Automatically close starter</x:String>
+    <x:String x:Key="LargeThumbnails">Large thumbnails</x:String>
+    <x:String x:Key="AutoExpandSceneryTree">Automatically expand scenery tree</x:String>
+    
+</ResourceDictionary>

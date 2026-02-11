@@ -6,7 +6,6 @@
         <BuiltInComInteropSupport>true</BuiltInComInteropSupport>
         <ApplicationManifest>app.manifest</ApplicationManifest>
         <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
-        <Platforms>AnyCPU;x64</Platforms>
     </PropertyGroup>
     <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
       <PlatformTarget>x64</PlatformTarget>
@@ -29,6 +28,10 @@
         <PackageReference Include="HotAvalonia" Version="3.0.2" />
         <PackageReference Include="Material.Icons.Avalonia" Version="2.4.1" />
         <PackageReference Include="SukiUI" Version="6.0.3" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <Folder Include="Assets\Logo\" />
     </ItemGroup>
 
     <ItemGroup>

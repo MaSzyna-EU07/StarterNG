@@ -1,0 +1,114 @@
+﻿<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <!-- Add Resources Here -->
+    <x:String x:Key="General">Ogólne</x:String>
+    
+    <x:String x:Key="Language">Język</x:String>
+    <x:String x:Key="Fullscreen">Tryb pełnoekranowy</x:String>
+    <x:String x:Key="PauseSimInactive">Wstrzymaj symulację, gdy okno nie jest aktywne</x:String>
+    <x:String x:Key="PauseSimStart">Pauza po uruchomieniu</x:String>
+    <x:String x:Key="CursorSensitivity">Czułość kursora:</x:String>
+    <x:String x:Key="MouseHorInvert">Inwersja myszy w poziomie</x:String>
+    <x:String x:Key="MouseVertInvert">Inwersja myszy w pionie</x:String>
+    
+    <x:String x:Key="Communication">Komunikacja</x:String>
+    
+    
+    <x:String x:Key="GamepadSignalIgnore">Ignoruj sygnały z gamepada</x:String>
+    
+    <x:String x:Key="Feedback">Informacja zwrotna</x:String>
+    <x:String x:Key="FeedbackOff">Wyłączona</x:String>
+    <x:String x:Key="FeedbackCASHP">Caps: CA/SHP; ScrollLock: opory rozr.</x:String>
+    <x:String x:Key="FeedbackCA">Caps: CA; Scrollock: SHP</x:String>
+    <x:String x:Key="FeedbackLPT">LPT</x:String>
+    <x:String x:Key="FeedbackPoKeys">PoKeys55</x:String>
+    <x:String x:Key="FeedbackSP">Serialport (COM)</x:String>
+    
+    
+    <x:String x:Key="Others">Inne</x:String>
+    <x:String x:Key="SelectEXE">Wybór exe:</x:String>
+    <x:String x:Key="SelectEXEAuto">Wybierz automatycznie</x:String>
+    <x:String x:Key="DebugMode">Tryb testowy (debugmode)</x:String>
+    <x:String x:Key="VirtualShunting">Wirtualny manewrowy</x:String>
+    
+    
+    <x:String x:Key="Graphic">Grafika</x:String>
+    <x:String x:Key="RenderEngine">Silnik renderowania</x:String>
+    <x:String x:Key="REFull">Pełny</x:String>
+    <x:String x:Key="REOld">Stary</x:String>
+    <x:String x:Key="RESimpShader">Uproszczony shaderowy</x:String>
+    <x:String x:Key="RESimp">Uproszczony</x:String>
+    <x:String x:Key="REOff">Wyłącz warstwę wizualną</x:String>
+    <x:String x:Key="REExperimental">Eksperymentalny</x:String>
+    
+    <x:String x:Key="Resolution">Rozdzielczość:</x:String>
+    <x:String x:Key="BufforResolution">Rozdzielczość bufora:</x:String>
+    <x:String x:Key="MaxTexResolution">Maksymalna rozdzielczość tekstur:</x:String>
+    <x:String x:Key="MaxTexCabResolution">Maksymalna rozdzielczość tekstur kabiny:</x:String>
+    <x:String x:Key="TexFilteringQuality">Jakość filtrowania tekstur:</x:String>
+    <x:String x:Key="Multisampling">Multisampling:</x:String>
+    <x:String x:Key="RenderRange">Zasięg renderowania:</x:String>
+    <x:String x:Key="VSync">VSync</x:String>
+    <x:String x:Key="SmokeDisplay">Wyświetlanie dymu</x:String>
+    <x:String x:Key="SmokeParticlesMultiplier">Mnożnik ilości cząsteczek dymu</x:String>
+    
+    <x:String x:Key="Postprocessing">Postprocessing</x:String>
+    <x:String x:Key="PPReinhard">Reinhard</x:String>
+    <x:String x:Key="PPACES">ACES</x:String>
+    
+    <x:String x:Key="ChromaticAberration">Aberracja chromatyczna</x:String>
+    <x:String x:Key="MotionBlur">Rozmycie podczas ruchu</x:String>
+    <x:String x:Key="AdditionalShadersEffects">Dodatkowe efekty shaderów</x:String>
+    <x:String x:Key="ReflectionsCubeMap">Odbicia jako cubemapa</x:String>
+    <x:String x:Key="RenderVBO">Renderowanie VBO</x:String>
+    <x:String x:Key="RenderShadows">Renderowanie cieni</x:String>
+    <x:String x:Key="ReflectionsFramerate">Odświeżanie odbić</x:String>
+    <x:String x:Key="ShadowsResolution">Rozdzielczość cieni</x:String>
+    <x:String x:Key="ShaderRange">Odświeżanie odbić</x:String>
+    <x:String x:Key="CabShadowsRange">Zasięg źródeł cieni w kabinie</x:String>
+    
+    <x:String x:Key="ShadowDisplay">Wyświetlanie cieni</x:String>
+    <x:String x:Key="CSROnlyImportant">Tylko ważne</x:String>
+    <x:String x:Key="CSRLimited">Ograniczone</x:String>
+    <x:String x:Key="CSRAll">Wszystkie</x:String>
+    
+    <x:String x:Key="ReflectionsDetails">Szczegółowość odbić</x:String>
+    <x:String x:Key="RDTerrain">Tylko geometria terenu</x:String>
+    <x:String x:Key="RDTerrainModels">Geometria terenu i modele statyczne</x:String>
+    <x:String x:Key="RDTerrainModelsVehicles">Geometria terenu, modele statyczne i pojazdy</x:String>
+    
+    <x:String x:Key="ShadowsCabRange">Zasięg źródeł cieni w kabinie</x:String>
+    <x:String x:Key="RenderScreens">Renderowanie ekranów komputerów pokładowych</x:String>
+    <x:String x:Key="RenderScreensThread">Renderowanie ekranów w osobnym wątku</x:String>
+    <x:String x:Key="RenderScreensFramerate">Częstotliwość odświeżania ekranów komputerów pokładowych</x:String>
+    
+    <x:String x:Key="Physics">Fizyka</x:String>
+    
+    <x:String x:Key="TrackCurvesQuality">Jakość łuków torów</x:String>
+    <x:String x:Key="PhysicsAccuracyIncreased">Zwiększona dokładność fizyki</x:String>
+    <x:String x:Key="BreakingPantographPossibility">Możliwość złamania pantografu</x:String>
+    <x:String x:Key="PowerOverheadLineOnly">Zasilanie tylko pod siecią trakcyjna</x:String>
+    <x:String x:Key="SaveSpeedometerTapes">Zapisuj taśmy z prędkościomierza</x:String>
+    <x:String x:Key="SaveSimLogs">Zapisuj log z symulacji</x:String>
+    <x:String x:Key="KeepPrevLogs">Zachowuj poprzednie logi</x:String>
+    <x:String x:Key="DisplaySimulation">Wyświetlaj symulację</x:String>
+    <x:String x:Key="CrashDamage">Uszkodzenia przy zderzeniu</x:String>
+    
+    <x:String x:Key="Sounds">Dżwięk</x:String>
+    <x:String x:Key="EnableSounds">Włącz dźwięk</x:String>
+    <x:String x:Key="Volume">Głośność</x:String>
+    <x:String x:Key="RadiophoneVolume">Głośność radiotelefonu</x:String>
+    <x:String x:Key="VehiclesVolume">Głośność pojazdów</x:String>
+    <x:String x:Key="PositionedSoundsVolume">Głośność dżwięków pozycjonowanych</x:String>
+    <x:String x:Key="AmbientVolume">Głośność otoczenia</x:String>
+    <x:String x:Key="VolumeDuringPause">Głośność podczas pauzy</x:String>
+    
+    <x:String x:Key="Starter">Starter</x:String>
+    <x:String x:Key="AutoCloseStarter">Zamknij starter automatycznie</x:String>
+    <x:String x:Key="LargeThumbnails">Duże miniaturki</x:String>
+    <x:String x:Key="AutoExpandSceneryTree">Automatycznie rozwijanie drzewka scenerii</x:String>
+    
+    
+    
+    
+</ResourceDictionary>

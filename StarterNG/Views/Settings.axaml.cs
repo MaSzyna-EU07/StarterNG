@@ -1,8 +1,10 @@
 ﻿using System;
+using System.Linq;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
 using Avalonia.Markup.Xaml;
+using Avalonia.Markup.Xaml.Styling;
 
 namespace StarterNG.Views;
 
@@ -44,5 +46,29 @@ public partial class Settings : UserControl
 
         int resolution = 1 << (int)shaderResolutionSlider.Value;
         shaderResolution.Text = $"{resolution} px";
+    }
+
+    private void LanguageComboBox_OnSelectionChanged(object? sender, SelectionChangedEventArgs e)
+    {
+        if (sender is not ComboBox { SelectedItem: ComboBoxItem item }) return;
+        var lang = item.Content?.ToString();
+        if (string.IsNullOrEmpty(lang)) return;
+        
+        var langDict = new ResourceInclude(new Uri("avares://StarterNG/"))
+        {
+            Source = new Uri($"Assets/Langs/{lang}.axaml", UriKind.Relative)
+        };
+
+        var currentLangDict = App.Current.Resources.MergedDictionaries
+            .OfType<ResourceInclude>()
+            .FirstOrDefault(d => d.Source != null && d.Source.OriginalString.Contains("Langs/"));
+
+        if (currentLangDict != null)
+        {
+            App.Current.Resources.MergedDictionaries.Remove(currentLangDict);
+        }
+        App.Current.Resources.MergedDictionaries.Add(langDict);
+
+        App.Loc.SetLanguage(langDict);
     }
 }
