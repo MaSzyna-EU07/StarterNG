@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Text;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
 using SukiUI.Controls; 
@@ -8,6 +9,7 @@ public partial class MainWindow : SukiWindow
 {
     public MainWindow()
     {
+        Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
         InitializeComponent();
     }
     private void linkClick(object? sender, RoutedEventArgs e)

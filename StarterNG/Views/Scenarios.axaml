@@ -7,7 +7,7 @@
              x:Class="StarterNG.Views.Scenarios">
     <Grid Margin="16" ColumnSpacing="16" RowSpacing="16">
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="200" />
+            <ColumnDefinition Width="300" />
             <ColumnDefinition />
         </Grid.ColumnDefinitions>
         <Grid.RowDefinitions>
@@ -17,18 +17,8 @@
             <RowDefinition Height="40" />
         </Grid.RowDefinitions>
         <sukiUi:GroupBox Grid.RowSpan="2" Header="Scenerie">
-            <TreeView>
-                <TreeViewItem Header="Bałtyk">
-                    <TreeViewItem Header="Bałtyk Euro 2012" />
-                    <TreeViewItem Header="Bałtyk SKM 1" />
-                    <TreeViewItem Header="Bałtyk SKM 2" />
-                </TreeViewItem>
-                <TreeViewItem Header="Linia 053">
-                    <TreeViewItem Header="Linia 053 - poranek" />
-                    <TreeViewItem Header="Linia 053 - południe" />
-                    <TreeViewItem Header="Linia 053 - wieczór" />
-                    <TreeViewItem Header="Linia 053 - noc" />
-                </TreeViewItem>
+            <TreeView Name="sceneryList">
+                
             </TreeView>
         </sukiUi:GroupBox>
         <sukiUi:GroupBox Grid.Column="1" Header="Pojazdy">
