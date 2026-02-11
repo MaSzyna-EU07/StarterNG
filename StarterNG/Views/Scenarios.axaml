@@ -17,20 +17,17 @@
             <RowDefinition Height="40" />
         </Grid.RowDefinitions>
         <sukiUi:GroupBox Grid.RowSpan="2" Header="Scenerie">
-            <TreeView Name="sceneryList">
+            <TreeView Name="sceneryList" SelectionChanged="SceneryList_OnSelectionChanged">
                 
             </TreeView>
         </sukiUi:GroupBox>
         <sukiUi:GroupBox Grid.Column="1" Header="Pojazdy">
-            <ListBox>
-                <ListBoxItem>EP07P-2003</ListBoxItem>
-                <ListBoxItem>EP07-1049</ListBoxItem>
-                <ListBoxItem>EN57AKM-1562</ListBoxItem>
+            <ListBox Name="vehicleList" SelectionChanged="VehicleList_OnSelectionChanged">
             </ListBox>
         </sukiUi:GroupBox>
         <sukiUi:GroupBox Grid.Column="1" Grid.Row="1" Header="Opis scenariusza">
             <ScrollViewer VerticalScrollBarVisibility="Auto">
-                <TextBlock TextWrapping="Wrap">
+                <TextBlock TextWrapping="Wrap" Name="missionDescription">
                     Prowadzimy RegioExpress RPE23119 z Dębicy do Sandomierza. Misję rozpoczynamy w lokomotywowni w Dębicy. Jedziemy zgodnie ze wskazaniami tarcz manewrowych na bocznicę z drugiej strony stacji, gdzie przypinamy wagony do naszego składu, po czym wciągamy je w peron. Następnie jedziemy do Sandomierza, zatrzymując się po drodze tylko w Turowie. Po przyjeździe do Sandomierza odczepiamy lokomotywę i zjeżdżamy na tor postojowy, gdzie kończymy służbę. Czas misji: ok. 80 minut.
                 </TextBlock>
             </ScrollViewer>
@@ -41,8 +38,7 @@
             <ScrollViewer VerticalAlignment="Bottom"
                           HorizontalScrollBarVisibility="Auto"
                           VerticalScrollBarVisibility="Disabled">
-                <StackPanel Orientation="Horizontal">
-                    <Image Source="avares://StarterNG/Assets/Test/ep07p.bmp" Height="50"></Image>
+                <StackPanel Orientation="Horizontal" Name="consistStack">
                 </StackPanel>
             </ScrollViewer>
         </sukiUi:GroupBox>

@@ -9,8 +9,8 @@ namespace StarterNG.Classes;
 public enum eDriverType
 {
     Headdriver,
-    Reardriver,
-    Passanger,
+    Reardriver, 
+    Passenger,
     Nobody
 }
 
@@ -20,57 +20,69 @@ public class Trainset
     public string Track;
     public float Offset;
     public float Velocity;
+    public string Description;
     public List<Dynamic> Vehicles;
     public Trainset(string trainsetEntry)
     {
 
         Vehicles = new List<Dynamic>();
-        
+        Description = "";
         List<string> tokens = Regex
-            .Matches(trainsetEntry, @"\r\n|\n|[^\s]+")
+            .Matches(trainsetEntry, @"/\*[\s\S]*?\*/|//[^\r\n]*|[^\s\r\n]+")
             .Select(m => m.Value)
+            .Where(t => !t.StartsWith("//") && !t.StartsWith("/*"))
             .ToList();
 
+        // handle specific descriptions
+        // //$o
+        var match = Regex.Match(
+            trainsetEntry,
+            @"^\s*//\$o\s*(.*)$",
+            RegexOptions.Multiline
+        );
+        if (match.Success)
+            this.Description = match.Groups[1].Value.Trim();
+        
+        // parse trainset
+        
         for (int i = 0; i < tokens.Count; i++)
         {
-            // handle comments
-            if (tokens[i].StartsWith("//"))
-            {
-                while (tokens[i] != "\n" && tokens.Count < i) i++;
-            }
-
-
+            if (tokens[i] == "endtrainset")
+                break;
+            
             // trainset properties
             if (tokens[i] == "trainset")
             {
-                i++;
-                this.Name = tokens[i++];
-                this.Track = tokens[i++];
-                this.Offset = float.Parse(tokens[i++], CultureInfo.InvariantCulture);
-                this.Velocity = float.Parse(tokens[i++], CultureInfo.InvariantCulture);
+                this.Name = tokens[++i];
+                this.Track = tokens[++i];
+                this.Offset = float.Parse(tokens[++i], CultureInfo.InvariantCulture);
+                this.Velocity = float.Parse(tokens[++i], CultureInfo.InvariantCulture);
                 continue;
             }
-
+            
             // skip entire assignments block
             if (tokens[i] == "assignments")
             {
-                while (tokens[i] != "endassignment") i++;
+                while (i < tokens.Count && tokens[i] != "endassignment")
+                    i++;
+                i++; // jump over endassignment
+                continue;
             }
             
             // load vehicles
             if (tokens[i] == "node")
             {
-                i++; // node keyword
+                //i++; // node keyword
                 Dynamic nodeDynamic = new Dynamic();
-                nodeDynamic.RangeMax = float.Parse(tokens[i++], CultureInfo.InvariantCulture);
-                nodeDynamic.RangeMin = float.Parse(tokens[i++], CultureInfo.InvariantCulture);
-                nodeDynamic.Name = tokens[i++];
+                nodeDynamic.RangeMax = float.Parse(tokens[++i], CultureInfo.InvariantCulture);
+                nodeDynamic.RangeMin = float.Parse(tokens[++i], CultureInfo.InvariantCulture);
+                nodeDynamic.Name = tokens[++i];
                 i++; // dynamic keyword
-                nodeDynamic.DataFolder = tokens[i++];
-                nodeDynamic.SkinFile = tokens[i++];
-                nodeDynamic.MmdFile = tokens[i++];
-                i++; // skip offset
-                string driverType = tokens[i++];
+                nodeDynamic.DataFolder = tokens[++i];
+                nodeDynamic.SkinFile = tokens[++i];
+                nodeDynamic.MmdFile = tokens[++i];
+                nodeDynamic.Offset = float.Parse(tokens[++i], CultureInfo.InvariantCulture);
+                string driverType = tokens[++i];
                 switch (driverType)
                 {
                     case "headdriver":
@@ -79,22 +91,22 @@ public class Trainset
                     case "reardriver":
                         nodeDynamic.DriverType = eDriverType.Reardriver;
                         break;
-                    case "passanger":
-                        nodeDynamic.DriverType = eDriverType.Passanger;
+                    case "passenger":
+                        nodeDynamic.DriverType = eDriverType.Passenger;
                         break;
                     default:
                         nodeDynamic.DriverType = eDriverType.Nobody;
                         break;
                 }
 
-                nodeDynamic.couplingData = (byte)int.Parse(tokens[i++].Split('.')[0]);
+                nodeDynamic.couplingData = (byte)int.Parse(tokens[++i].Split('.')[0]);
 
                 nodeDynamic.Tail = "";
-                while (tokens[i] != "enddynamic")
+                while (i + 1 < tokens.Count && tokens[i + 1] != "enddynamic")
                 {
-                    nodeDynamic.Tail += " " + tokens[i];
-                    i++;
+                    nodeDynamic.Tail += " " + tokens[++i];
                 }
+                i++; // jump over enddynamic
 
                 Vehicles.Add(nodeDynamic);
             }
@@ -122,8 +134,8 @@ public class Trainset
                 case eDriverType.Reardriver:
                     driverType = "reardriver";
                     break;
-                case eDriverType.Passanger:
-                    driverType = "passanger";
+                case eDriverType.Passenger:
+                    driverType = "passenger";
                     break;
                 default:
                     driverType = "nobody";
@@ -131,7 +143,10 @@ public class Trainset
             }
 
             entry +=
-                $"node {vehicle.RangeMax} {vehicle.RangeMin} {vehicle.Name} dynamic {vehicle.DataFolder} {vehicle.SkinFile} {vehicle.MmdFile} {driverType} {vehicle.couplingData} {vehicle.Tail}\n";
+                $"node {vehicle.RangeMax} {vehicle.RangeMin} {vehicle.Name} dynamic " +
+                $"{vehicle.DataFolder} {vehicle.SkinFile} {vehicle.MmdFile} " +
+                $"{vehicle.Offset.ToString(CultureInfo.InvariantCulture)} " +
+                $"{driverType} {vehicle.couplingData}{vehicle.Tail} enddynamic\n";
         }
         
         
