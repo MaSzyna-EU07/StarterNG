@@ -3,6 +3,7 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:sukiUi="clr-namespace:SukiUI.Controls;assembly=SukiUI"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:starterNg="clr-namespace:StarterNG"
              mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
              x:Class="StarterNG.Views.Scenarios">
     <Grid Margin="16" ColumnSpacing="16" RowSpacing="16">
@@ -16,25 +17,24 @@
             <RowDefinition Height="100" />
             <RowDefinition Height="40" />
         </Grid.RowDefinitions>
-        <sukiUi:GroupBox Grid.RowSpan="2" Header="Scenerie">
+        <sukiUi:GroupBox Grid.RowSpan="2" Header="{Binding [Sceneries], Source={x:Static starterNg:App.Loc}}">
             <TreeView Name="sceneryList" SelectionChanged="SceneryList_OnSelectionChanged">
                 
             </TreeView>
         </sukiUi:GroupBox>
-        <sukiUi:GroupBox Grid.Column="1" Header="Pojazdy">
+        <sukiUi:GroupBox Grid.Column="1" Header="{Binding [Vehicles], Source={x:Static starterNg:App.Loc}}">
             <ListBox Name="vehicleList" SelectionChanged="VehicleList_OnSelectionChanged">
             </ListBox>
         </sukiUi:GroupBox>
-        <sukiUi:GroupBox Grid.Column="1" Grid.Row="1" Header="Opis scenariusza">
+        <sukiUi:GroupBox Grid.Column="1" Grid.Row="1" Header="{Binding [ScenarioDescription], Source={x:Static starterNg:App.Loc}}">
             <ScrollViewer VerticalScrollBarVisibility="Auto">
                 <TextBlock TextWrapping="Wrap" Name="missionDescription">
-                    Prowadzimy RegioExpress RPE23119 z Dębicy do Sandomierza. Misję rozpoczynamy w lokomotywowni w Dębicy. Jedziemy zgodnie ze wskazaniami tarcz manewrowych na bocznicę z drugiej strony stacji, gdzie przypinamy wagony do naszego składu, po czym wciągamy je w peron. Następnie jedziemy do Sandomierza, zatrzymując się po drodze tylko w Turowie. Po przyjeździe do Sandomierza odczepiamy lokomotywę i zjeżdżamy na tor postojowy, gdzie kończymy służbę. Czas misji: ok. 80 minut.
                 </TextBlock>
             </ScrollViewer>
 
         </sukiUi:GroupBox>
 
-        <sukiUi:GroupBox Header="Zestawienie" Grid.Row="2" Grid.ColumnSpan="2">
+        <sukiUi:GroupBox Header="{Binding [Consist], Source={x:Static starterNg:App.Loc}}" Grid.Row="2" Grid.ColumnSpan="2">
             <ScrollViewer VerticalAlignment="Bottom"
                           HorizontalScrollBarVisibility="Auto"
                           VerticalScrollBarVisibility="Disabled">
@@ -44,8 +44,9 @@
         </sukiUi:GroupBox>
 
         <Button Grid.Column="0" Height="36" Classes="Flat"
-                VerticalAlignment="Bottom" Grid.Row="3" Grid.ColumnSpan="2">
-            Start
+                VerticalAlignment="Bottom" Grid.Row="3" Grid.ColumnSpan="2"
+                Content="{Binding [Start], Source={x:Static starterNg:App.Loc}}">
+            
         </Button>
     </Grid>
 </UserControl>

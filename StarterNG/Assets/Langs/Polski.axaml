@@ -1,6 +1,13 @@
 ﻿<ResourceDictionary xmlns="https://github.com/avaloniaui"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
-    <!-- Add Resources Here -->
+    <!-- Widok ogolny -->
+    <x:String x:Key="Sceneries">Scenerie</x:String>
+    <x:String x:Key="Vehicles">Pojazdy</x:String>
+    <x:String x:Key="ScenarioDescription">Opis scenariusza</x:String>
+    <x:String x:Key="Consist">Zestawienie</x:String>
+    <x:String x:Key="Start">Uruchom</x:String>
+    
+    <!-- Ustawienia -->
     <x:String x:Key="General">Ogólne</x:String>
     
     <x:String x:Key="Language">Język</x:String>
