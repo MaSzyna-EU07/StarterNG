@@ -17,7 +17,7 @@
                         <StackPanel Spacing="8" Orientation="Vertical">
                             <StackPanel Spacing="8" Orientation="Horizontal">
                                 <Label Content="{Binding [Language], Source={x:Static starterNg:App.Loc}}"  VerticalAlignment="Center" FontSize="14"/>
-                                <ComboBox MinWidth="350" MaxWidth="350" SelectedIndex="1" SelectionChanged="LanguageComboBox_OnSelectionChanged">
+                                <ComboBox x:Name="ChangeLanguageCb" MinWidth="350" MaxWidth="350" SelectedIndex="1" SelectionChanged="LanguageComboBox_OnSelectionChanged">
                                     <ComboBoxItem>Polski</ComboBoxItem>
                                     <ComboBoxItem>English</ComboBoxItem>
                                 </ComboBox>

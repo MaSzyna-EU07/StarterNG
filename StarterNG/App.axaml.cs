@@ -1,7 +1,7 @@
 using System;
+using System.Globalization;
 using System.Linq;
 using Avalonia;
-using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
 using Avalonia.Markup.Xaml.Styling;
@@ -18,9 +18,17 @@ public partial class App : Application
     {
         AvaloniaXamlLoader.Load(this);
 
+        CultureInfo ci = CultureInfo.InstalledUICulture ;
+ 
+        var langName = ci.Name switch
+        {
+            "pl-PL" => "Polski",
+            _ => "English"
+        };
+ 
         var langDict = new ResourceInclude(new Uri("avares://StarterNG/"))
         {
-            Source = new Uri("Assets/Langs/English.axaml", UriKind.Relative)
+            Source = new Uri($"Assets/Langs/{langName}.axaml", UriKind.Relative)
         };
 
         var resources = Current!.Resources;
@@ -36,7 +44,10 @@ public partial class App : Application
         }
 
         resources.MergedDictionaries.Add(langDict);
-        Loc.SetLanguage(langDict);
+        
+         
+        
+        Loc.SetLanguage(langDict, langName);
     }
 
     public override void OnFrameworkInitializationCompleted()

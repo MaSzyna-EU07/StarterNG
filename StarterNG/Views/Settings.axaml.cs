@@ -1,9 +1,7 @@
 ﻿using System;
 using System.Linq;
-using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
-using Avalonia.Markup.Xaml;
 using Avalonia.Markup.Xaml.Styling;
 
 namespace StarterNG.Views;
@@ -18,6 +16,12 @@ public partial class Settings : UserControl
             TextureResolutionSlider_OnValueChanged(null, null);
             CabTextureResolutionSlider_OnValueChanged(null, null);
             shaderResolutionSlider_OnValueChanged(null, null);
+        };
+        
+        ChangeLanguageCb.SelectedIndex = App.Loc.CurrentLanguage switch
+        {
+            "Polski" => 0,
+            _ => 1
         };
     }
 
@@ -50,7 +54,9 @@ public partial class Settings : UserControl
 
     private void LanguageComboBox_OnSelectionChanged(object? sender, SelectionChangedEventArgs e)
     {
+        
         if (sender is not ComboBox { SelectedItem: ComboBoxItem item }) return;
+        if (!item.IsKeyboardFocusWithin) return;
         var lang = item.Content?.ToString();
         if (string.IsNullOrEmpty(lang)) return;
         
@@ -69,6 +75,6 @@ public partial class Settings : UserControl
         }
         App.Current.Resources.MergedDictionaries.Add(langDict);
 
-        App.Loc.SetLanguage(langDict);
+        App.Loc.SetLanguage(langDict, lang);
     }
 }

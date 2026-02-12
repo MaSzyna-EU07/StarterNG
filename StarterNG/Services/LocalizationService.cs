@@ -1,6 +1,5 @@
 ﻿using System.ComponentModel;
 using Avalonia.Controls;
-using Avalonia.Styling;
 
 namespace StarterNG.Services;
 
@@ -10,6 +9,8 @@ public class LocalizationService : INotifyPropertyChanged
 
     public event PropertyChangedEventHandler? PropertyChanged;
 
+
+    public string CurrentLanguage;
 
     public string this[string key]
     {
@@ -23,9 +24,10 @@ public class LocalizationService : INotifyPropertyChanged
         }
     }
 
-    public void SetLanguage(IResourceProvider provider)
+    public void SetLanguage(IResourceProvider provider, string langName)
     {
         _currentProvider = provider;
+        CurrentLanguage = langName;
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs("Item"));
     }
 
