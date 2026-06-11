@@ -6,7 +6,39 @@
     <x:String x:Key="ScenarioDescription">Opis scenariusza</x:String>
     <x:String x:Key="Consist">Zestawienie</x:String>
     <x:String x:Key="Start">Uruchom</x:String>
-    
+
+    <!-- Lokomotywownia / tworzenie składu -->
+    <x:String x:Key="VehicleDatabase">Baza pojazdów</x:String>
+    <x:String x:Key="Search">Szukaj...</x:String>
+    <x:String x:Key="LoadFromScenery">Wczytaj skład ze scenerii</x:String>
+    <x:String x:Key="NewConsist">Nowy skład</x:String>
+    <x:String x:Key="SelectedVehicle">Wybrany pojazd</x:String>
+    <x:String x:Key="Vehicle">Pojazd</x:String>
+    <x:String x:Key="Crew">z obsadą</x:String>
+    <x:String x:Key="Reversed">obrócony</x:String>
+    <x:String x:Key="NoVehicles">Nie znaleziono pojazdów w databases/vehicles/.</x:String>
+    <x:String x:Key="ConsistEmpty">Dodaj pojazdy z bazy po lewej stronie lub wczytaj istniejący skład z pliku scenerii.</x:String>
+    <x:String x:Key="TipMoveLeft">Przesuń w lewo</x:String>
+    <x:String x:Key="TipMoveRight">Przesuń w prawo</x:String>
+    <x:String x:Key="TipFlip">Obróć pojazd</x:String>
+    <x:String x:Key="TipRemove">Usuń ze składu</x:String>
+    <x:String x:Key="TipDriver">Zmień obsadę (kabina 1 / kabina 2 / pasażer / brak)</x:String>
+    <x:String x:Key="Scenery">Sceneria</x:String>
+    <x:String x:Key="Category">Kategoria</x:String>
+    <x:String x:Key="Class">Klasa</x:String>
+    <x:String x:Key="All">Wszystkie</x:String>
+    <x:String x:Key="CatDiesel">Spalinowe</x:String>
+    <x:String x:Key="CatElectric">Elektryczne</x:String>
+    <x:String x:Key="CatEMU">EZT</x:String>
+    <x:String x:Key="CatDMU">SZT</x:String>
+    <x:String x:Key="CatCarriagesA">Wagony A</x:String>
+    <x:String x:Key="CatCarriagesB">Wagony B</x:String>
+    <x:String x:Key="Brakes">Hamulce</x:String>
+    <x:String x:Key="Loads">Ładunki</x:String>
+    <x:String x:Key="Coupling">Sprzęg</x:String>
+    <x:String x:Key="SelectVehicleHint">Wybierz pojazd w składzie, aby go edytować.</x:String>
+    <x:String x:Key="ComingSoon">Opcje edycji wkrótce.</x:String>
+
     <!-- Ustawienia -->
     <x:String x:Key="General">Ogólne</x:String>
     

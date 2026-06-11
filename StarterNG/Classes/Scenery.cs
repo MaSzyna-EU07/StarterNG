@@ -44,7 +44,15 @@ public class Scenery
 
         foreach (string trainsetEntry in trainsetEntries)
         {
-            Trainsets.Add(new Trainset(trainsetEntry));
+            try
+            {
+                Trainsets.Add(new Trainset(trainsetEntry));
+            }
+            catch
+            {
+                // skip malformed trainset entries so one bad scenery
+                // doesn't break loading the rest
+            }
         }
     }
 }

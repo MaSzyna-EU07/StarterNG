@@ -1,0 +1,95 @@
+﻿<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:sukiUi="clr-namespace:SukiUI.Controls;assembly=SukiUI"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:starterNg="clr-namespace:StarterNG"
+             mc:Ignorable="d" d:DesignWidth="1000" d:DesignHeight="700"
+             x:Class="StarterNG.Views.Depot">
+    <Grid Margin="16" ColumnSpacing="16" RowSpacing="16">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="340" />
+            <ColumnDefinition />
+        </Grid.ColumnDefinitions>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition />
+            <RowDefinition Height="220" />
+        </Grid.RowDefinitions>
+
+        <!-- Vehicle database browser (left, rows 0-1) -->
+        <sukiUi:GroupBox Grid.RowSpan="2"
+                         Header="{Binding [VehicleDatabase], Source={x:Static starterNg:App.Loc}}">
+            <DockPanel LastChildFill="True">
+                <Grid DockPanel.Dock="Top" ColumnDefinitions="*,*" ColumnSpacing="6" Margin="0,0,0,6">
+                    <ComboBox Name="categoryCombo" Grid.Column="0" HorizontalAlignment="Stretch"
+                              SelectionChanged="CategoryCombo_OnSelectionChanged" />
+                    <ComboBox Name="classCombo" Grid.Column="1" HorizontalAlignment="Stretch"
+                              SelectionChanged="ClassCombo_OnSelectionChanged" />
+                </Grid>
+                <TextBox Name="searchBox" DockPanel.Dock="Top" Margin="0,0,0,8"
+                         Watermark="{Binding [Search], Source={x:Static starterNg:App.Loc}}"
+                         TextChanged="SearchBox_OnTextChanged" />
+                <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                    <StackPanel Name="browserStack" Spacing="2" />
+                </ScrollViewer>
+            </DockPanel>
+        </sukiUi:GroupBox>
+
+        <!-- Scenery + load consist (top-right) -->
+        <sukiUi:GroupBox Grid.Column="1" Grid.Row="0"
+                         Header="{Binding [LoadFromScenery], Source={x:Static starterNg:App.Loc}}">
+            <Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto" ColumnSpacing="8" RowSpacing="6">
+                <TextBlock Grid.Row="0" Grid.Column="0" VerticalAlignment="Center"
+                           Text="{Binding [Scenery], Source={x:Static starterNg:App.Loc}}" />
+                <ComboBox Name="sceneryCombo" Grid.Row="0" Grid.Column="1" HorizontalAlignment="Stretch"
+                          SelectionChanged="SceneryCombo_OnSelectionChanged" />
+                <ComboBox Name="sceneryConsistCombo" Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2"
+                          HorizontalAlignment="Stretch" MaxDropDownHeight="420"
+                          PlaceholderText="{Binding [LoadFromScenery], Source={x:Static starterNg:App.Loc}}"
+                          SelectionChanged="SceneryConsistCombo_OnSelectionChanged" />
+            </Grid>
+        </sukiUi:GroupBox>
+
+        <!-- Brakes / Loads editor (middle-right) -->
+        <sukiUi:GroupBox Grid.Column="1" Grid.Row="1"
+                         Header="{Binding [SelectedVehicle], Source={x:Static starterNg:App.Loc}}">
+            <DockPanel LastChildFill="True">
+                <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Spacing="8" Margin="0,0,0,8">
+                    <Button Name="newConsistButton" Classes="Flat" Cursor="Hand"
+                            Click="NewConsist_OnClick"
+                            Content="{Binding [NewConsist], Source={x:Static starterNg:App.Loc}}" />
+                    <TextBlock Name="summaryLabel" VerticalAlignment="Center" Opacity="0.8" FontSize="12" />
+                </StackPanel>
+                <TabControl>
+                    <TabItem Header="{Binding [Brakes], Source={x:Static starterNg:App.Loc}}">
+                        <ScrollViewer VerticalScrollBarVisibility="Auto">
+                            <TextBlock Name="brakesContent" TextWrapping="Wrap" FontSize="12"
+                                       LineHeight="18" Margin="4" />
+                        </ScrollViewer>
+                    </TabItem>
+                    <TabItem Header="{Binding [Loads], Source={x:Static starterNg:App.Loc}}">
+                        <ScrollViewer VerticalScrollBarVisibility="Auto">
+                            <TextBlock Name="loadsContent" TextWrapping="Wrap" FontSize="12"
+                                       LineHeight="18" Margin="4" />
+                        </ScrollViewer>
+                    </TabItem>
+                </TabControl>
+            </DockPanel>
+        </sukiUi:GroupBox>
+
+        <!-- Consist (full-width bottom, horizontally scrollable) -->
+        <sukiUi:GroupBox Grid.Row="2" Grid.ColumnSpan="2"
+                         Header="{Binding [Consist], Source={x:Static starterNg:App.Loc}}">
+            <Panel>
+                <TextBlock Name="emptyHint" VerticalAlignment="Center" HorizontalAlignment="Center"
+                           TextWrapping="Wrap" MaxWidth="520" Opacity="0.6" TextAlignment="Center"
+                           Text="{Binding [ConsistEmpty], Source={x:Static starterNg:App.Loc}}" />
+                <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
+                    <StackPanel Name="consistStack" Orientation="Horizontal"
+                                VerticalAlignment="Center" Spacing="0" />
+                </ScrollViewer>
+            </Panel>
+        </sukiUi:GroupBox>
+    </Grid>
+</UserControl>

@@ -27,7 +27,7 @@
                     <materialIcons:MaterialIcon Kind="Train" />
                 </sukiUi:SukiSideMenuItem.Icon>
                 <sukiUi:SukiSideMenuItem.PageContent>
-                    <Label>MaSzyna</Label>
+                    <views:Depot />
                 </sukiUi:SukiSideMenuItem.PageContent>
             </sukiUi:SukiSideMenuItem>
 

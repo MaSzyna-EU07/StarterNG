@@ -7,6 +7,38 @@
     <x:String x:Key="Consist">Consist</x:String>
     <x:String x:Key="Start">Start</x:String>
 
+    <!-- Depot / consist creation -->
+    <x:String x:Key="VehicleDatabase">Vehicle database</x:String>
+    <x:String x:Key="Search">Search...</x:String>
+    <x:String x:Key="LoadFromScenery">Load consist from scenery</x:String>
+    <x:String x:Key="NewConsist">New consist</x:String>
+    <x:String x:Key="SelectedVehicle">Selected vehicle</x:String>
+    <x:String x:Key="Vehicle">Vehicle</x:String>
+    <x:String x:Key="Crew">with crew</x:String>
+    <x:String x:Key="Reversed">reversed</x:String>
+    <x:String x:Key="NoVehicles">No vehicles found in databases/vehicles/.</x:String>
+    <x:String x:Key="ConsistEmpty">Add vehicles from the database on the left, or load an existing consist from a scenery file.</x:String>
+    <x:String x:Key="TipMoveLeft">Move left</x:String>
+    <x:String x:Key="TipMoveRight">Move right</x:String>
+    <x:String x:Key="TipFlip">Reverse vehicle</x:String>
+    <x:String x:Key="TipRemove">Remove from consist</x:String>
+    <x:String x:Key="TipDriver">Change crew (cab 1 / cab 2 / passenger / none)</x:String>
+    <x:String x:Key="Scenery">Scenery</x:String>
+    <x:String x:Key="Category">Category</x:String>
+    <x:String x:Key="Class">Class</x:String>
+    <x:String x:Key="All">All</x:String>
+    <x:String x:Key="CatDiesel">Diesel</x:String>
+    <x:String x:Key="CatElectric">Electric</x:String>
+    <x:String x:Key="CatEMU">EMU</x:String>
+    <x:String x:Key="CatDMU">DMU</x:String>
+    <x:String x:Key="CatCarriagesA">Carriages A</x:String>
+    <x:String x:Key="CatCarriagesB">Carriages B</x:String>
+    <x:String x:Key="Brakes">Brakes</x:String>
+    <x:String x:Key="Loads">Loads</x:String>
+    <x:String x:Key="Coupling">Coupling</x:String>
+    <x:String x:Key="SelectVehicleHint">Select a vehicle in the consist to edit it.</x:String>
+    <x:String x:Key="ComingSoon">Editing options coming soon.</x:String>
+
     <!-- Settings -->
    <x:String x:Key="General">General</x:String>
     

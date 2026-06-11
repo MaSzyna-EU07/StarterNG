@@ -167,4 +167,30 @@ public class Dynamic
     public eDriverType DriverType;
     public byte couplingData;
     public string Tail;
+
+    // --- depot / consist-builder extras (not part of the .scn syntax) ---
+
+    /// <summary>Explicit miniature name (from the vehicle database). Falls back to SkinFile.</summary>
+    public string? MiniName;
+
+    /// <summary>Whether the vehicle is visually reversed in the consist.</summary>
+    public bool Flipped;
+
+    /// <summary>Deep copy, used when importing a trainset into the editable consist.</summary>
+    public Dynamic Clone() => new Dynamic
+    {
+        RangeMax = RangeMax,
+        RangeMin = RangeMin,
+        Name = Name,
+        DataFolder = DataFolder,
+        SkinFile = SkinFile,
+        MmdFile = MmdFile,
+        PathName = PathName,
+        Offset = Offset,
+        DriverType = DriverType,
+        couplingData = couplingData,
+        Tail = Tail,
+        MiniName = MiniName,
+        Flipped = Flipped
+    };
 }
