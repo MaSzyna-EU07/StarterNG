@@ -45,8 +45,9 @@
 
         <Button Grid.Column="0" Height="36" Classes="Flat"
                 VerticalAlignment="Bottom" Grid.Row="3" Grid.ColumnSpan="2"
+                Click="StartButton_OnClick"
                 Content="{Binding [Start], Source={x:Static starterNg:App.Loc}}">
-            
+
         </Button>
     </Grid>
 </UserControl>

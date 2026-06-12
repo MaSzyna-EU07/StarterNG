@@ -1,8 +1,11 @@
 ﻿using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Text;
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Interactivity;
 using Avalonia.Markup.Xaml;
 using Avalonia.Media.Imaging;
 using StarterNG.Classes;
@@ -16,20 +19,10 @@ public partial class Scenarios : UserControl
     public Scenarios()
     {
         InitializeComponent();
-        sceneries = new List<Scenery>();
-        
-        // load sceneries
-        List<string> scnFiles = Directory.GetFiles("scenery/", "*.scn").ToList();
-        foreach (string scnFile in scnFiles)
-        {
-            // skip temp sceneries
-            if (Path.GetFileName(scnFile).StartsWith("$"))
-                continue;
-            
-            // Parse all files
-            sceneries.Add(new Scenery(scnFile));
-        }
-        
+
+        // Sceneries are parsed once at startup (behind the splash).
+        sceneries = GameData.Instance.Sceneries;
+
         var groupNodes = new Dictionary<string, TreeViewItem>();
 
         for (int i = 0; i < sceneries.Count; i++)
@@ -109,20 +102,23 @@ public partial class Scenarios : UserControl
         if (vItem?.Tag is not int vTag)
             return;
         Trainset selectedTrainset = selectedScn.Trainsets[vTag];
+
+        // share the selection so the depot edits this consist in place
+        AppState.Instance.CurrentScenery = selectedScn;
+        AppState.Instance.CurrentTrainset = selectedTrainset;
+
+        var db = GameData.Instance.Vehicles;
         foreach (var train in selectedTrainset.Vehicles)
         {
-            string path = Path.Combine(
-                "textures",
-                "mini",
-                train.SkinFile + ".bmp"
-            );
-
-            if (!File.Exists(path))
+            // thumbnail name comes from the matching texture's texture_mini
+            string miniName = db.MiniForSkin(train.SkinFile) ?? train.SkinFile;
+            string? path = VehicleDatabase.MiniPath(miniName);
+            if (path is null)
             {
                 // fallback
                 continue;
-            }            
-            
+            }
+
             var bitmap = new Bitmap(path);
             var image = new Image
             {
@@ -134,5 +130,47 @@ public partial class Scenarios : UserControl
             consistStack.Children.Add(image);
         }
         missionDescription.Text = selectedTrainset.Description;
+    }
+
+    // Exports the (possibly depot-modified) scenery to a $-prefixed copy and
+    // launches the game on it with the selected consist's driven vehicle.
+    private void StartButton_OnClick(object? sender, RoutedEventArgs e)
+    {
+        var scenery = AppState.Instance.CurrentScenery;
+        if (scenery is null)
+            return;
+        var trainset = AppState.Instance.CurrentTrainset;
+
+        // write scenery/$<name>.scn with the replaced trainsets
+        string dir = System.IO.Path.GetDirectoryName(scenery.Path) ?? "scenery";
+        string exportName = "$" + System.IO.Path.GetFileName(scenery.Path);
+        string exportPath = System.IO.Path.Combine(dir, exportName);
+        try
+        {
+            File.WriteAllText(exportPath, scenery.BuildExportContent(), Encoding.GetEncoding(1250));
+        }
+        catch
+        {
+            return; // couldn't write the scenery file
+        }
+
+        // the player's vehicle is the node name of the driven car in the consist
+        string? vehicle = trainset?.Vehicles
+            .FirstOrDefault(v => v.DriverType is eDriverType.Headdriver or eDriverType.Reardriver)?.Name
+            ?? trainset?.Vehicles.FirstOrDefault()?.Name;
+
+        // launch the game: -s $<name>.scn -v <vehicle>
+        try
+        {
+            Process.Start(new ProcessStartInfo(StarterNG.Classes.Settings.Instance.ExecutablePath)
+            {
+                Arguments = $"-s {exportName} -v {vehicle}",
+                UseShellExecute = true
+            });
+        }
+        catch
+        {
+            // executable not found / not configured yet
+        }
     }
 }

@@ -22,11 +22,31 @@ public class Trainset
     public float Velocity;
     public string Description;
     public List<Dynamic> Vehicles;
+
+    /// <summary>Original .scn text of this trainset block (incl. endtrainset).</summary>
+    public string RawEntry;
+
+    /// <summary>True if the block parsed cleanly; false blocks are exported verbatim.</summary>
+    public bool Parsed;
+
     public Trainset(string trainsetEntry)
     {
-
+        RawEntry = trainsetEntry;
         Vehicles = new List<Dynamic>();
         Description = "";
+        try
+        {
+            ParseEntry(trainsetEntry);
+            Parsed = true;
+        }
+        catch
+        {
+            Parsed = false;
+        }
+    }
+
+    private void ParseEntry(string trainsetEntry)
+    {
         List<string> tokens = Regex
             .Matches(trainsetEntry, @"/\*[\s\S]*?\*/|//[^\r\n]*|[^\s\r\n]+")
             .Select(m => m.Value)
@@ -113,6 +133,13 @@ public class Trainset
         }
     }
     
+    /// <summary>
+    /// The .scn text for this trainset for export. Unparsed blocks are written
+    /// back verbatim; parsed blocks are regenerated from the current vehicles.
+    /// </summary>
+    public string ToSceneryEntry() =>
+        Parsed ? GetTrainsetEntry() + "endtrainset\n" : RawEntry;
+
     public string GetTrainsetEntry()
     {
         string entry = "";
@@ -120,8 +147,8 @@ public class Trainset
         entry += "trainset ";
         entry += this.Name + " ";
         entry += this.Track + " ";
-        entry += this.Offset + " ";
-        entry += this.Velocity + " ";
+        entry += this.Offset.ToString(CultureInfo.InvariantCulture) + " ";
+        entry += this.Velocity.ToString(CultureInfo.InvariantCulture) + " ";
         entry += "\n";
         foreach (Dynamic vehicle in Vehicles)
         {

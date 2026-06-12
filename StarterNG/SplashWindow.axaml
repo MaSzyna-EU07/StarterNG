@@ -1,0 +1,25 @@
+﻿<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:starterNg="clr-namespace:StarterNG"
+        x:Class="StarterNG.SplashWindow"
+        SystemDecorations="None"
+        CanResize="False"
+        ShowInTaskbar="True"
+        WindowStartupLocation="CenterScreen"
+        Width="520" Height="300"
+        Background="#15171B">
+    <Grid>
+        <Image Source="/Assets/Logo/splash.png" Stretch="UniformToFill" />
+
+        <Border VerticalAlignment="Bottom" Background="#CC0E0F12" Padding="18,12">
+            <StackPanel Spacing="8">
+                <TextBlock x:Name="statusText"
+                           Foreground="#EEEEEE" FontSize="12"
+                           TextTrimming="CharacterEllipsis"
+                           Text="{Binding [LoadingVehicles], Source={x:Static starterNg:App.Loc}}" />
+                <ProgressBar x:Name="progressBar"
+                             Minimum="0" Maximum="1" Value="0" Height="6" />
+            </StackPanel>
+        </Border>
+    </Grid>
+</Window>

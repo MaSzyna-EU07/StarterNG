@@ -4,6 +4,7 @@
              xmlns:sukiUi="clr-namespace:SukiUI.Controls;assembly=SukiUI"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:starterNg="clr-namespace:StarterNG"
+             xmlns:views="clr-namespace:StarterNG.Views"
              mc:Ignorable="d" d:DesignWidth="1000" d:DesignHeight="700"
              x:Class="StarterNG.Views.Depot">
     <Grid Margin="16" ColumnSpacing="16" RowSpacing="16">
@@ -30,6 +31,8 @@
                 <TextBox Name="searchBox" DockPanel.Dock="Top" Margin="0,0,0,8"
                          Watermark="{Binding [Search], Source={x:Static starterNg:App.Loc}}"
                          TextChanged="SearchBox_OnTextChanged" />
+                <!-- Folded groups (built in code-behind); collapsed groups hold no
+                     controls, so the list stays light and scrolls smoothly. -->
                 <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
                     <StackPanel Name="browserStack" Spacing="2" />
                 </ScrollViewer>
@@ -47,6 +50,7 @@
                 <ComboBox Name="sceneryConsistCombo" Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2"
                           HorizontalAlignment="Stretch" MaxDropDownHeight="420"
                           PlaceholderText="{Binding [LoadFromScenery], Source={x:Static starterNg:App.Loc}}"
+                          DropDownOpened="SceneryConsistCombo_OnDropDownOpened"
                           SelectionChanged="SceneryConsistCombo_OnSelectionChanged" />
             </Grid>
         </sukiUi:GroupBox>

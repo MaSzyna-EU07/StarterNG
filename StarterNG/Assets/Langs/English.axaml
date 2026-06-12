@@ -33,11 +33,36 @@
     <x:String x:Key="CatDMU">DMU</x:String>
     <x:String x:Key="CatCarriagesA">Carriages A</x:String>
     <x:String x:Key="CatCarriagesB">Carriages B</x:String>
+    <x:String x:Key="CatElectricLoco">Electric locomotive</x:String>
+    <x:String x:Key="CatDieselLoco">Diesel locomotive</x:String>
+    <x:String x:Key="CatSteamLoco">Steam locomotive</x:String>
+    <x:String x:Key="CatRailbus">Railbus</x:String>
+    <x:String x:Key="CatDraisine">Draisine</x:String>
+    <x:String x:Key="CatWork">Work vehicles</x:String>
+    <x:String x:Key="CatPrototype">Prototype</x:String>
+    <x:String x:Key="CatTram">Tram</x:String>
+    <x:String x:Key="CatCar">Car</x:String>
+    <x:String x:Key="CatBus">Bus</x:String>
+    <x:String x:Key="CatTruck">Truck</x:String>
+    <x:String x:Key="CatPeople">People</x:String>
+    <x:String x:Key="CatAnimals">Animals</x:String>
+    <x:String x:Key="CatWagons">Wagons</x:String>
+    <x:String x:Key="CatOther">Other</x:String>
     <x:String x:Key="Brakes">Brakes</x:String>
     <x:String x:Key="Loads">Loads</x:String>
     <x:String x:Key="Coupling">Coupling</x:String>
     <x:String x:Key="SelectVehicleHint">Select a vehicle in the consist to edit it.</x:String>
     <x:String x:Key="ComingSoon">Editing options coming soon.</x:String>
+    <x:String x:Key="Split">Split</x:String>
+    <x:String x:Key="TipSplit">Split the unit into individual cars</x:String>
+    <x:String x:Key="AddVehicle">Add</x:String>
+    <x:String x:Key="TipAddVehicle">Add this vehicle to the consist</x:String>
+    <x:String x:Key="TipAddUnit">Add the whole unit to the consist</x:String>
+
+    <!-- Loading splash -->
+    <x:String x:Key="LoadingVehicles">Loading vehicle database</x:String>
+    <x:String x:Key="LoadingSceneries">Loading sceneries</x:String>
+    <x:String x:Key="LoadingDone">Starting…</x:String>
 
     <!-- Settings -->
    <x:String x:Key="General">General</x:String>

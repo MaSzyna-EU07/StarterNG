@@ -33,11 +33,36 @@
     <x:String x:Key="CatDMU">SZT</x:String>
     <x:String x:Key="CatCarriagesA">Wagony A</x:String>
     <x:String x:Key="CatCarriagesB">Wagony B</x:String>
+    <x:String x:Key="CatElectricLoco">Lokomotywa elektryczna</x:String>
+    <x:String x:Key="CatDieselLoco">Lokomotywa spalinowa</x:String>
+    <x:String x:Key="CatSteamLoco">Parowóz</x:String>
+    <x:String x:Key="CatRailbus">Szynobus</x:String>
+    <x:String x:Key="CatDraisine">Drezyna</x:String>
+    <x:String x:Key="CatWork">Pojazdy robocze</x:String>
+    <x:String x:Key="CatPrototype">Prototyp</x:String>
+    <x:String x:Key="CatTram">Tramwaj</x:String>
+    <x:String x:Key="CatCar">Samochód osobowy</x:String>
+    <x:String x:Key="CatBus">Autobus</x:String>
+    <x:String x:Key="CatTruck">Samochód ciężarowy</x:String>
+    <x:String x:Key="CatPeople">Ludzie</x:String>
+    <x:String x:Key="CatAnimals">Zwierzęta</x:String>
+    <x:String x:Key="CatWagons">Wagony</x:String>
+    <x:String x:Key="CatOther">Inne</x:String>
     <x:String x:Key="Brakes">Hamulce</x:String>
     <x:String x:Key="Loads">Ładunki</x:String>
     <x:String x:Key="Coupling">Sprzęg</x:String>
     <x:String x:Key="SelectVehicleHint">Wybierz pojazd w składzie, aby go edytować.</x:String>
     <x:String x:Key="ComingSoon">Opcje edycji wkrótce.</x:String>
+    <x:String x:Key="Split">Rozdziel</x:String>
+    <x:String x:Key="TipSplit">Rozdziel zespół na pojedyncze człony</x:String>
+    <x:String x:Key="AddVehicle">Dodaj</x:String>
+    <x:String x:Key="TipAddVehicle">Dodaj ten pojazd do składu</x:String>
+    <x:String x:Key="TipAddUnit">Dodaj cały zespół do składu</x:String>
+
+    <!-- Ekran ładowania -->
+    <x:String x:Key="LoadingVehicles">Wczytywanie bazy pojazdów</x:String>
+    <x:String x:Key="LoadingSceneries">Wczytywanie scenerii</x:String>
+    <x:String x:Key="LoadingDone">Uruchamianie…</x:String>
 
     <!-- Ustawienia -->
     <x:String x:Key="General">Ogólne</x:String>

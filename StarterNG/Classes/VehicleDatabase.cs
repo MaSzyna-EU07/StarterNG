@@ -94,6 +94,12 @@ public class VehicleDatabase
     /// <summary>Texture-uuid -> automatic-consist set that contains it.</summary>
     public Dictionary<string, VehicleSet> SetByTextureUuid { get; } = new();
 
+    /// <summary>Texture-uuid -> texture (includes wrecks, so set refs resolve).</summary>
+    public Dictionary<string, VehicleTexture> TextureByUuid { get; } = new();
+
+    /// <summary>skinfile (without extension, lower-case) -> texture.</summary>
+    public Dictionary<string, VehicleTexture> TextureBySkin { get; } = new();
+
     private static readonly JsonSerializerOptions JsonOpts = new()
     {
         PropertyNameCaseInsensitive = true,
@@ -102,32 +108,55 @@ public class VehicleDatabase
     };
 
     /// <summary>
-    /// Loads the database. When a merged vehicles.json is present it is used,
-    /// otherwise every per-vehicle *.json file in the directory is read.
+    /// Loads the database in one call. When a merged vehicles.json is present
+    /// it is used, otherwise every per-vehicle *.json file is read.
     /// Never throws: unreadable files are skipped.
     /// </summary>
     public void Load(string directory = "databases/vehicles/")
+    {
+        BeginLoad();
+        foreach (string file in EnumerateFiles(directory))
+            LoadFile(file);
+        EndLoad();
+    }
+
+    /// <summary>Resets the aggregate before an incremental load.</summary>
+    public void BeginLoad()
     {
         Textures.Clear();
         GroupsById.Clear();
         Sets.Clear();
         SetByTextureUuid.Clear();
+        TextureByUuid.Clear();
+        TextureBySkin.Clear();
+    }
 
+    /// <summary>Finalises an incremental load (builds lookup indexes).</summary>
+    public void EndLoad() => BuildSetIndex();
+
+    /// <summary>
+    /// Files that make up the database: the merged vehicles.json if present,
+    /// otherwise every per-vehicle *.json. Used to drive load progress.
+    /// </summary>
+    public static List<string> EnumerateFiles(string directory = "databases/vehicles/")
+    {
         if (!Directory.Exists(directory))
-            return;
+            return new List<string>();
 
         string merged = Path.Combine(directory, "vehicles.json");
         if (File.Exists(merged))
-        {
-            LoadMerged(merged);
-        }
-        else
-        {
-            foreach (string file in Directory.GetFiles(directory, "*.json"))
-                LoadEntryFile(file);
-        }
+            return new List<string> { merged };
 
-        BuildSetIndex();
+        return Directory.GetFiles(directory, "*.json").ToList();
+    }
+
+    /// <summary>Ingests a single database file (merged or per-vehicle).</summary>
+    public void LoadFile(string file)
+    {
+        if (string.Equals(Path.GetFileName(file), "vehicles.json", StringComparison.OrdinalIgnoreCase))
+            LoadMerged(file);
+        else
+            LoadEntryFile(file);
     }
 
     private void LoadMerged(string file)
@@ -171,12 +200,37 @@ public class VehicleDatabase
 
         foreach (var texture in entry.Textures)
         {
+            // index every texture (wrecks too) so set / skin references resolve
+            if (!string.IsNullOrEmpty(texture.Uuid))
+                TextureByUuid[texture.Uuid!] = texture;
+            if (!string.IsNullOrEmpty(texture.Skinfile))
+                TextureBySkin.TryAdd(Path.GetFileNameWithoutExtension(texture.Skinfile).ToLowerInvariant(), texture);
+
             // skip wrecks from the standard browser list
             if (texture.Wreck) continue;
             Textures.Add(texture);
         }
 
         Sets.AddRange(entry.Sets);
+    }
+
+    /// <summary>
+    /// If the texture belongs to an automatic-consist set, returns all of that
+    /// set's textures in their defined order; otherwise null.
+    /// </summary>
+    public List<VehicleTexture>? ResolveSet(VehicleTexture texture)
+    {
+        if (string.IsNullOrEmpty(texture.Uuid)) return null;
+        if (!SetByTextureUuid.TryGetValue(texture.Uuid!, out var set) || set.TextureRefs is null)
+            return null;
+
+        var cars = new List<VehicleTexture>();
+        foreach (string uuid in set.TextureRefs)
+        {
+            if (!string.IsNullOrEmpty(uuid) && TextureByUuid.TryGetValue(uuid, out var tex))
+                cars.Add(tex);
+        }
+        return cars.Count > 0 ? cars : null;
     }
 
     private void BuildSetIndex()
@@ -192,14 +246,36 @@ public class VehicleDatabase
         }
     }
 
-    /// <summary>Best miniature name for a texture (texture_mini -> mini_ref -> group mini).</summary>
+    /// <summary>
+    /// Miniature name for a texture: the texture_mini property, but if no .bmp
+    /// for it exists, falls back to the mini of the group it belongs to.
+    /// </summary>
     public string? ResolveMiniName(VehicleTexture texture)
     {
-        if (!string.IsNullOrEmpty(texture.TextureMini)) return texture.TextureMini;
-        if (!string.IsNullOrEmpty(texture.MiniRef)) return texture.MiniRef;
-        if (texture.Group is not null && GroupsById.TryGetValue(texture.Group, out var grp))
+        if (!string.IsNullOrEmpty(texture.TextureMini) && MiniPath(texture.TextureMini) != null)
+            return texture.TextureMini;
+
+        if (texture.Group != null && GroupsById.TryGetValue(texture.Group, out var grp)
+            && !string.IsNullOrEmpty(grp.Mini))
             return grp.Mini;
-        return null;
+
+        return texture.TextureMini;
+    }
+
+    /// <summary>Resolved mini for a skin file (matched case-insensitively), or null.</summary>
+    public string? MiniForSkin(string? skinFile)
+    {
+        if (string.IsNullOrEmpty(skinFile)) return null;
+        string key = Path.GetFileNameWithoutExtension(skinFile).ToLowerInvariant();
+        return TextureBySkin.TryGetValue(key, out var tex) ? ResolveMiniName(tex) : null;
+    }
+
+    /// <summary>The texture for a skin file (matched case-insensitively), or null.</summary>
+    public VehicleTexture? TextureForSkin(string? skinFile)
+    {
+        if (string.IsNullOrEmpty(skinFile)) return null;
+        string key = Path.GetFileNameWithoutExtension(skinFile).ToLowerInvariant();
+        return TextureBySkin.TryGetValue(key, out var tex) ? tex : null;
     }
 
     /// <summary>Header label for the group a texture belongs to.</summary>
@@ -213,12 +289,30 @@ public class VehicleDatabase
         return groupId ?? "";
     }
 
-    /// <summary>Resolves a miniature .bmp path under textures/mini/, or null if missing.</summary>
+    // Case-insensitive index of mini .bmp files (built once).
+    private static Dictionary<string, string>? _miniIndex;
+
+    /// <summary>
+    /// Resolves a miniature .bmp path under textures/mini/ case-insensitively,
+    /// or null if missing. The directory is indexed once and reused.
+    /// </summary>
     public static string? MiniPath(string? miniName, string miniDir = "textures/mini/")
     {
         if (string.IsNullOrEmpty(miniName)) return null;
-        string path = Path.Combine(miniDir, miniName + ".bmp");
-        return File.Exists(path) ? path : null;
+
+        var index = _miniIndex ??= BuildMiniIndex(miniDir);
+        return index.TryGetValue(miniName!.ToLowerInvariant(), out var path) ? path : null;
+    }
+
+    private static Dictionary<string, string> BuildMiniIndex(string miniDir)
+    {
+        var index = new Dictionary<string, string>();
+        if (!Directory.Exists(miniDir))
+            return index;
+
+        foreach (string file in Directory.GetFiles(miniDir, "*.bmp"))
+            index[Path.GetFileNameWithoutExtension(file).ToLowerInvariant()] = file;
+        return index;
     }
 }
 

@@ -11,6 +11,11 @@ public class Scenery
     public List<Trainset> Trainsets;
     public string Group;
     public string Path;
+
+    // The file content with each trainset block replaced by a {{i}} placeholder,
+    // used to rebuild the .scn on export.
+    private readonly string _template;
+
     public Scenery(string path)
     {
         this.Path = path;
@@ -19,7 +24,7 @@ public class Scenery
             throw new FileNotFoundException(path);
         var encoding = Encoding.GetEncoding(1250); // Windows-1250
         string content = File.ReadAllText(path, encoding);
-        
+
         // property scanning
         var match = Regex.Match(
             content,
@@ -27,9 +32,9 @@ public class Scenery
             RegexOptions.Multiline
         );
         this.Group = match.Success ? match.Groups[1].Value : null;
-        
-        
-        // parsing trainsets        
+
+
+        // parsing trainsets
         List<string> trainsetEntries = new  List<string>();
         Regex regex = new Regex(
             @"trainset\b[\s\S]*?\bendtrainset\b",
@@ -41,18 +46,23 @@ public class Scenery
             trainsetEntries.Add(match.Value);
             return $"{{{{{idx++}}}}}";
         });
+        _template = content;
 
+        // 1:1 with placeholders - the Trainset ctor never throws (unparsable
+        // blocks are kept verbatim), so indices stay aligned for export.
         foreach (string trainsetEntry in trainsetEntries)
-        {
-            try
-            {
-                Trainsets.Add(new Trainset(trainsetEntry));
-            }
-            catch
-            {
-                // skip malformed trainset entries so one bad scenery
-                // doesn't break loading the rest
-            }
-        }
+            Trainsets.Add(new Trainset(trainsetEntry));
+    }
+
+    /// <summary>
+    /// Rebuilds the full .scn content with the (possibly modified) trainsets
+    /// substituted back into their original positions.
+    /// </summary>
+    public string BuildExportContent()
+    {
+        string result = _template;
+        for (int i = 0; i < Trainsets.Count; i++)
+            result = result.Replace("{{" + i + "}}", Trainsets[i].ToSceneryEntry());
+        return result;
     }
 }

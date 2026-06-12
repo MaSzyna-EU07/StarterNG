@@ -41,6 +41,8 @@
       <AvaloniaResource Include="Assets\Logo\maszyna_white.svg" />
       <None Remove="Assets\Logo\Other\Discord.svg" />
       <AvaloniaResource Include="Assets\Logo\Other\Discord.svg" />
+      <None Remove="Assets\Logo\splash.png" />
+      <AvaloniaResource Include="Assets\Logo\splash.png" />
       <None Remove="Assets\Test\ep07p.bmp" />
       <AvaloniaResource Include="Assets\Test\ep07p.bmp" />
     </ItemGroup>
