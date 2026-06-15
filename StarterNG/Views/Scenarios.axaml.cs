@@ -60,6 +60,10 @@ public partial class Scenarios : UserControl
                 Tag = i
             });
         }
+
+        // refresh the consist preview when the view is shown again (e.g. after
+        // editing the consist in the depot)
+        AttachedToVisualTree += (_, _) => RefreshSelectedConsist();
     }
 
     private void SceneryList_OnSelectionChanged(object? sender, SelectionChangedEventArgs e)
@@ -89,16 +93,14 @@ public partial class Scenarios : UserControl
 
     private void VehicleList_OnSelectionChanged(object? sender, SelectionChangedEventArgs e)
     {
-        consistStack.Children.Clear();
-        
         // get selected scenery
         var tItem = sceneryList.SelectedItem as TreeViewItem;
         if (tItem?.Tag is not int tTag)
             return;
         Scenery selectedScn = sceneries[tTag];
-        
+
         // get selected trainset
-        ListBoxItem vItem = vehicleList.SelectedItem as ListBoxItem;
+        ListBoxItem? vItem = vehicleList.SelectedItem as ListBoxItem;
         if (vItem?.Tag is not int vTag)
             return;
         Trainset selectedTrainset = selectedScn.Trainsets[vTag];
@@ -107,29 +109,41 @@ public partial class Scenarios : UserControl
         AppState.Instance.CurrentScenery = selectedScn;
         AppState.Instance.CurrentTrainset = selectedTrainset;
 
+        ShowConsist(selectedTrainset);
+    }
+
+    // Renders the consist preview for a trainset (re-reads its current vehicles
+    // so depot edits are reflected).
+    private void ShowConsist(Trainset trainset)
+    {
+        consistStack.Children.Clear();
+
         var db = GameData.Instance.Vehicles;
-        foreach (var train in selectedTrainset.Vehicles)
+        foreach (var train in trainset.Vehicles)
         {
             // thumbnail name comes from the matching texture's texture_mini
             string miniName = db.MiniForSkin(train.SkinFile) ?? train.SkinFile;
             string? path = VehicleDatabase.MiniPath(miniName);
             if (path is null)
-            {
-                // fallback
-                continue;
-            }
+                continue; // fallback: no mini
 
-            var bitmap = new Bitmap(path);
-            var image = new Image
+            consistStack.Children.Add(new Image
             {
-                Source = bitmap,
+                Source = new Bitmap(path),
                 Height = 45,
                 Stretch = Avalonia.Media.Stretch.Uniform,
                 Margin = new Thickness(0)
-            };
-            consistStack.Children.Add(image);
+            });
         }
-        missionDescription.Text = selectedTrainset.Description;
+        missionDescription.Text = trainset.Description;
+    }
+
+    // When returning to this view, refresh the preview of the selected consist
+    // in case it was modified in the depot.
+    private void RefreshSelectedConsist()
+    {
+        if (AppState.Instance.CurrentTrainset is { } trainset)
+            ShowConsist(trainset);
     }
 
     // Exports the (possibly depot-modified) scenery to a $-prefixed copy and
@@ -158,6 +172,9 @@ public partial class Scenarios : UserControl
         string? vehicle = trainset?.Vehicles
             .FirstOrDefault(v => v.DriverType is eDriverType.Headdriver or eDriverType.Reardriver)?.Name
             ?? trainset?.Vehicles.FirstOrDefault()?.Name;
+
+        // make sure the latest settings are on disk before the sim reads them
+        StarterNG.Classes.Settings.Instance.CaptureAndSave();
 
         // launch the game: -s $<name>.scn -v <vehicle>
         try

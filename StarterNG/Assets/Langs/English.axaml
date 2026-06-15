@@ -171,5 +171,10 @@
     <x:String x:Key="AutoCloseStarter">Automatically close starter</x:String>
     <x:String x:Key="LargeThumbnails">Large thumbnails</x:String>
     <x:String x:Key="AutoExpandSceneryTree">Automatically expand scenery tree</x:String>
-    
+
+    <!-- Settings actions -->
+    <x:String x:Key="Save">Save</x:String>
+    <x:String x:Key="Reset">Reset</x:String>
+    <x:String x:Key="SettingsSaved">Settings saved</x:String>
+
 </ResourceDictionary>

@@ -22,13 +22,20 @@ public partial class App : Application
     {
         AvaloniaXamlLoader.Load(this);
 
+        // Load the persisted configuration up front so the saved language wins;
+        // fall back to the system culture only when the file has no lang entry.
+        Settings.Instance.Load();
+
         CultureInfo ci = CultureInfo.InstalledUICulture ;
- 
-        var langName = ci.Name switch
-        {
-            "pl-PL" => "Polski",
-            _ => "English"
-        };
+
+        var langName = Settings.Instance.LanguageWasSet
+            ? Settings.Instance.Language
+            : ci.Name switch
+            {
+                "pl-PL" => "Polski",
+                _ => "English"
+            };
+        Settings.Instance.Language = langName;
  
         var langDict = new ResourceInclude(new Uri("avares://StarterNG/"))
         {
@@ -60,6 +67,9 @@ public partial class App : Application
         {
             // Code page 1250 is needed to parse scenery files (done during load).
             Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
+
+            // Persist settings when the launcher is closing.
+            desktop.ShutdownRequested += (_, _) => Settings.Instance.CaptureAndSave();
 
             var splash = new SplashWindow();
             desktop.MainWindow = splash;

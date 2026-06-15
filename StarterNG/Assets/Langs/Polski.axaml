@@ -171,8 +171,10 @@
     <x:String x:Key="AutoCloseStarter">Zamknij starter automatycznie</x:String>
     <x:String x:Key="LargeThumbnails">Duże miniaturki</x:String>
     <x:String x:Key="AutoExpandSceneryTree">Automatycznie rozwijanie drzewka scenerii</x:String>
-    
-    
-    
-    
+
+    <!-- Settings actions -->
+    <x:String x:Key="Save">Zapisz</x:String>
+    <x:String x:Key="Reset">Przywróć</x:String>
+    <x:String x:Key="SettingsSaved">Zapisano ustawienia</x:String>
+
 </ResourceDictionary>
