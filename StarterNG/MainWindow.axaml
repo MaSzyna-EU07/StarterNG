@@ -7,12 +7,22 @@
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:svg="clr-namespace:Avalonia.Svg;assembly=Avalonia.Svg"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    xmlns:views="clr-namespace:StarterNG.Views" BackgroundStyle="Bubble"
+    xmlns:views="clr-namespace:StarterNG.Views"
+    xmlns:starterNg="clr-namespace:StarterNG"
+    BackgroundStyle="Flat"
     Title="MaSzyna - Symulator pojazdów szynowych" Height="800" Width="1000" WindowStartupLocation="CenterScreen">
+    <sukiUi:SukiWindow.RightWindowTitleBarControls>
+        <Button Classes="Basic" Click="openLastLogClick" 
+                ToolTip.Tip="{Binding [ShowLatestLogTooltip], Source={x:Static starterNg:App.Loc}}">
+            <materialIcons:MaterialIcon Kind="FileDocument"/>
+        </Button>
+    </sukiUi:SukiWindow.RightWindowTitleBarControls>
     <sukiUi:SukiSideMenu IsMenuExpanded="False">
         <sukiUi:SukiSideMenu.Items>
             <!-- SCENARIUSZE -->
-            <sukiUi:SukiSideMenuItem Header="Scenariusze" Classes="Compact">
+            <sukiUi:SukiSideMenuItem 
+                Header="{Binding [NavScenarios], Source={x:Static starterNg:App.Loc}}" 
+                Classes="Compact">
                 <sukiUi:SukiSideMenuItem.Icon>
                     <materialIcons:MaterialIcon Kind="ListBox" />
                 </sukiUi:SukiSideMenuItem.Icon>
@@ -22,7 +32,9 @@
             </sukiUi:SukiSideMenuItem>
 
             <!-- Lokomotywownia -->
-            <sukiUi:SukiSideMenuItem Header="Magazyn" Classes="Compact">
+            <sukiUi:SukiSideMenuItem 
+                Header="{Binding [NavDepot], Source={x:Static starterNg:App.Loc}}" 
+                Classes="Compact">
                 <sukiUi:SukiSideMenuItem.Icon>
                     <materialIcons:MaterialIcon Kind="Train" />
                 </sukiUi:SukiSideMenuItem.Icon>
@@ -32,7 +44,9 @@
             </sukiUi:SukiSideMenuItem>
 
             <!-- Ustawienia -->
-            <sukiUi:SukiSideMenuItem Header="Ustawienia" Classes="Compact">
+            <sukiUi:SukiSideMenuItem 
+                Header="{Binding [NavSettings], Source={x:Static starterNg:App.Loc}}" 
+                Classes="Compact">
                 <sukiUi:SukiSideMenuItem.Icon>
                     <materialIcons:MaterialIcon Kind="Settings" />
                 </sukiUi:SukiSideMenuItem.Icon>
@@ -42,7 +56,9 @@
             </sukiUi:SukiSideMenuItem>
             
             <!-- Sterowanie -->
-            <sukiUi:SukiSideMenuItem Header="Sterowanie" Classes="Compact">
+            <sukiUi:SukiSideMenuItem 
+                Header="{Binding [NavControls], Source={x:Static starterNg:App.Loc}}" 
+                Classes="Compact">
                 <sukiUi:SukiSideMenuItem.Icon>
                     <materialIcons:MaterialIcon Kind="Controller" />
                 </sukiUi:SukiSideMenuItem.Icon>
@@ -71,7 +87,7 @@
                     <materialIcons:MaterialIcon Kind="Web" />
                 </Button>
                 <!-- Discord -->
-                <Button Classes="Basic" Cursor="Hand" Tag="https://discord.gg/qAh9ctWPQv" Click="linkClick">
+                <Button Classes="Basic" Cursor="Hand" Tag="https://discord.gg/eu07" Click="linkClick">
                     <PathIcon Data="{StaticResource DiscordLogo}" Height="12" />
                 </Button>
                 <!-- Facebook -->

@@ -1,11 +1,19 @@
 ﻿<ResourceDictionary xmlns="https://github.com/avaloniaui"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    
+    <!-- Menu nawigacji -->
+    <x:String x:Key="NavScenarios">Scenariusze</x:String>
+    <x:String x:Key="NavDepot">Zajezdnia</x:String>
+    <x:String x:Key="NavSettings">Ustawienia</x:String>
+    <x:String x:Key="NavControls">Sterowanie</x:String>
+    
     <!-- Widok ogolny -->
     <x:String x:Key="Sceneries">Scenerie</x:String>
     <x:String x:Key="Vehicles">Pojazdy</x:String>
     <x:String x:Key="ScenarioDescription">Opis scenariusza</x:String>
     <x:String x:Key="Consist">Zestawienie</x:String>
     <x:String x:Key="Start">Uruchom</x:String>
+    <x:String x:Key="ShowLatestLogTooltip">Otwórz ostatni log symulatora</x:String>
 
     <!-- Lokomotywownia / tworzenie składu -->
     <x:String x:Key="VehicleDatabase">Baza pojazdów</x:String>

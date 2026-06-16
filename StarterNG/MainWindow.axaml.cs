@@ -1,4 +1,6 @@
+using System;
 using System.Diagnostics;
+using System.IO;
 using System.Text;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
@@ -24,5 +26,17 @@ public partial class MainWindow : SukiWindow
         {
             UseShellExecute = true
         });
+    }
+
+    private void openLastLogClick(object? sender, RoutedEventArgs e)
+    {
+        string logPath = "log.txt";
+        if (File.Exists(logPath))
+        {
+            Process.Start(new ProcessStartInfo(logPath)
+            {
+                UseShellExecute = true
+            });
+        }
     }
 }
