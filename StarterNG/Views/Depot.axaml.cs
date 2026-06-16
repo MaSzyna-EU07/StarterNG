@@ -238,16 +238,12 @@ public partial class Depot : UserControl
     private static bool IsUnitCar(Dynamic d) => UnitKey(d) != Base(d.SkinFile);
 
     // Vehicle class = the "mini" of the group the texture belongs to (e.g. EU07).
-    private string ClassOf(VehicleTexture t)
-    {
-        if (t.Group != null && _db.GroupsById.TryGetValue(t.Group, out var g) && !string.IsNullOrEmpty(g.Mini))
-            return g.Mini!;
-        return t.MiniRef ?? "";
-    }
+    // Resolved once at load (see VehicleDatabase.BuildTextureIndex); read the cache
+    // here so search/filter never repeats the group lookup per keystroke.
+    private static string ClassOf(VehicleTexture t) => t.ResolvedClass;
 
-    // Vehicle type = the group's "category" letter.
-    private string? CategoryOf(VehicleTexture t) =>
-        t.Group != null && _db.GroupsById.TryGetValue(t.Group, out var g) ? g.Category : null;
+    // Vehicle type = the group's "category" letter (also resolved once at load).
+    private static string? CategoryOf(VehicleTexture t) => t.ResolvedCategory;
 
     // ------------------------------------------------------------ category combo
 

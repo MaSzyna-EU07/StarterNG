@@ -55,6 +55,16 @@ public class VehicleTexture
 
     /// <summary>Full skin path = directory + skinfile.</summary>
     [JsonIgnore] public string FullPath => Directory + Skinfile;
+
+    // ── cached lookups, populated once after load (VehicleDatabase.BuildTextureIndex) ──
+    // These mirror the depot's ClassOf / CategoryOf so the search/filter hot path
+    // never recomputes them (no per-keystroke dictionary lookups over every texture).
+
+    /// <summary>Group's "mini" (or this texture's mini_ref) — the vehicle class. Never null.</summary>
+    [JsonIgnore] public string ResolvedClass { get; internal set; } = "";
+
+    /// <summary>Group's "category" letter, or null when the group is unknown.</summary>
+    [JsonIgnore] public string? ResolvedCategory { get; internal set; }
 }
 
 /// <summary>Alternate mapping from a malformed multi-= legacy line.</summary>
@@ -132,7 +142,11 @@ public class VehicleDatabase
     }
 
     /// <summary>Finalises an incremental load (builds lookup indexes).</summary>
-    public void EndLoad() => BuildSetIndex();
+    public void EndLoad()
+    {
+        BuildSetIndex();
+        BuildTextureIndex();
+    }
 
     /// <summary>
     /// Files that make up the database: the merged vehicles.json if present,
@@ -246,6 +260,24 @@ public class VehicleDatabase
         }
     }
 
+    // Resolves each texture's class (group mini / mini_ref) and category letter
+    // once, after all groups are loaded, so the depot reads cached fields instead
+    // of doing a GroupsById lookup per texture on every search keystroke.
+    private void BuildTextureIndex()
+    {
+        foreach (var t in Textures)
+        {
+            VehicleGroup? g = null;
+            if (t.Group != null)
+                GroupsById.TryGetValue(t.Group, out g);
+
+            t.ResolvedCategory = g?.Category;
+            t.ResolvedClass = g != null && !string.IsNullOrEmpty(g.Mini)
+                ? g.Mini!
+                : t.MiniRef ?? "";
+        }
+    }
+
     /// <summary>
     /// Miniature name for a texture: the texture_mini property, but if no .bmp
     /// for it exists, falls back to the mini of the group it belongs to.
@@ -291,6 +323,14 @@ public class VehicleDatabase
 
     // Case-insensitive index of mini .bmp files (built once).
     private static Dictionary<string, string>? _miniIndex;
+
+    /// <summary>
+    /// Builds the miniature .bmp index up front (called from the startup load,
+    /// behind the splash) so the first thumbnail render never stalls the UI
+    /// thread scanning textures/mini/. No-op if it was already built.
+    /// </summary>
+    public static void PreloadMiniIndex(string miniDir = "textures/mini/") =>
+        _miniIndex ??= BuildMiniIndex(miniDir);
 
     /// <summary>
     /// Resolves a miniature .bmp path under textures/mini/ case-insensitively,

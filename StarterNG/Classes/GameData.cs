@@ -35,7 +35,8 @@ public sealed class GameData
     /// </summary>
     public void Load(IProgress<LoadStatus>? progress = null,
                      string vehiclesDir = "databases/vehicles/",
-                     string sceneryDir = "scenery/")
+                     string sceneryDir = "scenery/",
+                     string miniDir = "textures/mini/")
     {
         if (Loaded)
             return;
@@ -56,6 +57,10 @@ public sealed class GameData
             done++;
         }
         Vehicles.EndLoad();
+
+        // Preload the miniature .bmp index now (behind the splash) so the depot's
+        // first thumbnail render doesn't scan textures/mini/ on the UI thread.
+        VehicleDatabase.PreloadMiniIndex(miniDir);
 
         // Phase 2 - sceneries
         foreach (string file in scnFiles)
