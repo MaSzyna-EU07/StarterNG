@@ -64,7 +64,7 @@
                     <materialIcons:MaterialIcon Kind="Controller" />
                 </sukiUi:SukiSideMenuItem.Icon>
                 <sukiUi:SukiSideMenuItem.PageContent>
-                    <Label>MaSzyna</Label>
+                    <Label>Work in progress</Label>
                 </sukiUi:SukiSideMenuItem.PageContent>
             </sukiUi:SukiSideMenuItem>
 
