@@ -27,6 +27,7 @@
         </PackageReference>
         <PackageReference Include="HotAvalonia" Version="3.0.2" />
         <PackageReference Include="Material.Icons.Avalonia" Version="2.4.1" />
+        <PackageReference Include="Newtonsoft.Json" Version="13.0.5-beta1" />
         <PackageReference Include="SukiUI" Version="6.0.3" />
     </ItemGroup>
 

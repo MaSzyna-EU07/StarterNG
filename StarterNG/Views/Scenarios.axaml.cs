@@ -14,20 +14,20 @@ namespace StarterNG.Views;
 
 public partial class Scenarios : UserControl
 {
-    public List<Scenery> sceneries;
+    public List<Scenery> Sceneries;
 
     public Scenarios()
     {
         InitializeComponent();
 
         // Sceneries are parsed once at startup (behind the splash).
-        sceneries = GameData.Instance.Sceneries;
+        Sceneries = GameData.Instance.Sceneries;
 
         var groupNodes = new Dictionary<string, TreeViewItem>();
 
-        for (int i = 0; i < sceneries.Count; i++)
+        for (int i = 0; i < Sceneries.Count; i++)
         {
-            var scenery = sceneries[i];
+            var scenery = Sceneries[i];
 
             // case 1: no group - put without parent
             if (string.IsNullOrEmpty(scenery.Group))
@@ -47,7 +47,7 @@ public partial class Scenarios : UserControl
                 groupNode = new TreeViewItem
                 {
                     Header = scenery.Group,
-                    IsExpanded = true
+                    IsExpanded = false
                 };
 
                 groupNodes[scenery.Group] = groupNode;
@@ -71,7 +71,7 @@ public partial class Scenarios : UserControl
         var item = sceneryList.SelectedItem as TreeViewItem;
         if (item?.Tag is not int tag)
             return;
-        Scenery selectedScn = sceneries[tag];
+        Scenery selectedScn = Sceneries[tag];
         vehicleList.Items.Clear();
 
         // add all trainsets to list
@@ -97,7 +97,7 @@ public partial class Scenarios : UserControl
         var tItem = sceneryList.SelectedItem as TreeViewItem;
         if (tItem?.Tag is not int tTag)
             return;
-        Scenery selectedScn = sceneries[tTag];
+        Scenery selectedScn = Sceneries[tTag];
 
         // get selected trainset
         ListBoxItem? vItem = vehicleList.SelectedItem as ListBoxItem;

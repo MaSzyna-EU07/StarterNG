@@ -91,9 +91,11 @@ public partial class Depot : UserControl
     // Car-type suffixes (longest first) used only for the consist unit label.
     private static readonly string[] CarSuffixes = { "sa", "sb", "ra", "rb", "s" };
 
-    // Placeholder coupling-bit labels (couplingData byte). Finished later.
+    // Coupling-bit labels in mask-bit order (bit i = value 1<<i), per the wiki:
+    // https://wiki.eu07.pl/index.php?title=Wpisy_hamulca_dla_pojazdow
     private static readonly string[] CouplingBits =
-        { "Coupler", "Brake pipe", "Brake tank", "Control", "Gangway", "High voltage", "Heating", "Aux" };
+        { "Mechanical", "Brake pipe", "Control (MU)", "High voltage",
+          "Gangway", "Aux pneumatic", "Heating", "Workshop lock" };
 
     public Depot()
     {
@@ -663,15 +665,15 @@ public partial class Depot : UserControl
         return new Dynamic
         {
             RangeMax = -1,
-            RangeMin = -1,
+            RangeMin = 0,
             Name = MakeUniqueName(skin),
             DataFolder = StripDynamicPrefix(texture.Directory),
             SkinFile = skin,
             MmdFile = string.IsNullOrEmpty(texture.Model) ? skin : texture.Model!,
             Offset = 0f,
             DriverType = eDriverType.Nobody,
-            couplingData = 3,
-            Tail = "",
+            Coupling = new Coupling { Flags = Coupling.Mechanical | Coupling.BrakePipe }, // 3
+            HasVelocity = true, // emit a canonical "0" velocity in the trainset entry
             MiniName = _db.ResolveMiniName(texture)
         };
     }
@@ -950,13 +952,51 @@ public partial class Depot : UserControl
 
         for (int i = 0; i < CouplingBits.Length; i++)
         {
-            panel.Children.Add(new CheckBox
+            int bit = 1 << i;
+            var check = new CheckBox
             {
                 Content = CouplingBits[i],
-                IsChecked = (d.couplingData & (1 << i)) != 0,
+                IsChecked = d.Coupling.Has(bit),
                 FontSize = 11
-            });
+            };
+            // edits the shared Dynamic, so the change is written back on export
+            check.IsCheckedChanged += (_, _) => d.Coupling.Set(bit, check.IsChecked == true);
+            panel.Children.Add(check);
         }
+
+        // Brake-rack setting (the "B" parameter of the coupling field).
+        panel.Children.Add(new TextBlock
+        {
+            Text = "Brake mode",
+            FontWeight = FontWeight.Bold,
+            FontSize = 11,
+            Margin = new Thickness(0, 6, 0, 2)
+        });
+
+        var brakeCombo = new ComboBox { FontSize = 11, MinWidth = 90 };
+        brakeCombo.Items.Add(new ComboBoxItem { Content = "(none)", Tag = null });
+        foreach (string mode in BrakeSetting.Modes)
+            brakeCombo.Items.Add(new ComboBoxItem { Content = mode, Tag = mode });
+
+        string? current = d.Coupling.GetBrake()?.Mode;
+        brakeCombo.SelectedIndex = current is null
+            ? 0
+            : Array.IndexOf(BrakeSetting.Modes, current) + 1;
+
+        brakeCombo.SelectionChanged += (_, _) =>
+        {
+            if ((brakeCombo.SelectedItem as ComboBoxItem)?.Tag is not string mode)
+            {
+                d.Coupling.SetBrake(null);
+            }
+            else
+            {
+                var brake = d.Coupling.GetBrake() ?? new BrakeSetting();
+                brake.Mode = mode;
+                d.Coupling.SetBrake(brake);
+            }
+        };
+        panel.Children.Add(brakeCombo);
 
         return new Border { Padding = new Thickness(8), Child = panel };
     }
