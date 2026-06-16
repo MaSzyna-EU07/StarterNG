@@ -14,6 +14,9 @@ public partial class MainWindow : SukiWindow
         Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
         InitializeComponent();
     }
+    
+    
+    
     private void linkClick(object? sender, RoutedEventArgs e)
     {
         if (sender is not Button btn) 

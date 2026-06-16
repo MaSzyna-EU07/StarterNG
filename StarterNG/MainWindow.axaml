@@ -16,6 +16,7 @@
                 ToolTip.Tip="{Binding [ShowLatestLogTooltip], Source={x:Static starterNg:App.Loc}}">
             <materialIcons:MaterialIcon Kind="FileDocument"/>
         </Button>
+        <Label VerticalAlignment="Center" Content="{x:Static starterNg:AppInfo.Version}"/>
     </sukiUi:SukiWindow.RightWindowTitleBarControls>
     <sukiUi:SukiSideMenu IsMenuExpanded="False">
         <sukiUi:SukiSideMenu.Items>
