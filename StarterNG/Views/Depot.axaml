@@ -5,6 +5,7 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:starterNg="clr-namespace:StarterNG"
              xmlns:views="clr-namespace:StarterNG.Views"
+             x:CompileBindings="True"
              mc:Ignorable="d" d:DesignWidth="1000" d:DesignHeight="700"
              x:Class="StarterNG.Views.Depot">
     <Grid Margin="16" ColumnSpacing="16" RowSpacing="16">

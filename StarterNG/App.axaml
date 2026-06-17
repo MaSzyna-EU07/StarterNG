@@ -3,11 +3,12 @@
              xmlns:sukiUi="clr-namespace:SukiUI;assembly=SukiUI"
              xmlns:materialIcons="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
              x:Class="StarterNG.App"
+             x:CompileBindings="True"
              RequestedThemeVariant="Default">
              <!-- "Default" ThemeVariant follows system theme variant. "Dark" or "Light" are other available options. -->
 
              <Application.Styles>
-                 <sukiUi:SukiTheme ThemeColor="Green"  /> 
+                 <sukiUi:SukiTheme ThemeColor="Green"  />
                  <materialIcons:MaterialIconStyles />
              </Application.Styles>
              <Application.Resources>

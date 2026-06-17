@@ -1,0 +1,187 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- StarterNG language file. Loaded at runtime from the lang/ folder next to the executable. -->
+<!-- Add a new language by copying this file and changing the code/name attributes below. -->
+<Language code="en" name="English">
+
+    <!-- Nav menu -->
+    <String key="NavScenarios">Scenarios</String>
+    <String key="NavDepot">Depot</String>
+    <String key="NavSettings">Settings</String>
+    <String key="NavControls">Controls</String>
+
+    <!-- General view -->
+    <String key="Sceneries">Sceneries</String>
+    <String key="Vehicles">Vehicles</String>
+    <String key="ScenarioDescription">Scenario description</String>
+    <String key="SceneryDescription">Scenery description</String>
+    <String key="Consist">Consist</String>
+    <String key="Start">Start</String>
+    <String key="ShowLatestLogTooltip">Open latest simulation log</String>
+
+    <!-- Depot / consist creation -->
+    <String key="VehicleDatabase">Vehicle database</String>
+    <String key="Search">Search...</String>
+    <String key="LoadFromScenery">Load consist from scenery</String>
+    <String key="NewConsist">New consist</String>
+    <String key="SelectedVehicle">Selected vehicle</String>
+    <String key="Vehicle">Vehicle</String>
+    <String key="Crew">with crew</String>
+    <String key="Reversed">reversed</String>
+    <String key="NoVehicles">No vehicles found in databases/vehicles/.</String>
+    <String key="ConsistEmpty">Add vehicles from the database on the left, or load an existing consist from a scenery file.</String>
+    <String key="TipMoveLeft">Move left</String>
+    <String key="TipMoveRight">Move right</String>
+    <String key="TipFlip">Reverse vehicle</String>
+    <String key="TipRemove">Remove from consist</String>
+    <String key="TipDriver">Change crew (cab 1 / cab 2 / passenger / none)</String>
+    <String key="Scenery">Scenery</String>
+    <String key="Category">Category</String>
+    <String key="Class">Class</String>
+    <String key="All">All</String>
+    <String key="CatDiesel">Diesel</String>
+    <String key="CatElectric">Electric</String>
+    <String key="CatEMU">EMU</String>
+    <String key="CatDMU">DMU</String>
+    <String key="CatCarriagesA">Carriages A</String>
+    <String key="CatCarriagesB">Carriages B</String>
+    <String key="CatElectricLoco">Electric locomotive</String>
+    <String key="CatDieselLoco">Diesel locomotive</String>
+    <String key="CatSteamLoco">Steam locomotive</String>
+    <String key="CatRailbus">Railbus</String>
+    <String key="CatDraisine">Draisine</String>
+    <String key="CatWork">Work vehicles</String>
+    <String key="CatPrototype">Prototype</String>
+    <String key="CatTram">Tram</String>
+    <String key="CatCar">Car</String>
+    <String key="CatBus">Bus</String>
+    <String key="CatTruck">Truck</String>
+    <String key="CatPeople">People</String>
+    <String key="CatAnimals">Animals</String>
+    <String key="CatWagons">Wagons</String>
+    <String key="CatOther">Other</String>
+    <String key="Brakes">Brakes</String>
+    <String key="Loads">Loads</String>
+    <String key="Coupling">Coupling</String>
+    <String key="SelectVehicleHint">Select a vehicle in the consist to edit it.</String>
+    <String key="ComingSoon">Editing options coming soon.</String>
+    <String key="Split">Split</String>
+    <String key="TipSplit">Split the unit into individual cars</String>
+    <String key="AddVehicle">Add</String>
+    <String key="TipAddVehicle">Add this vehicle to the consist</String>
+    <String key="TipAddUnit">Add the whole unit to the consist</String>
+
+    <!-- Loading splash -->
+    <String key="LoadingVehicles">Loading vehicle database</String>
+    <String key="LoadingSceneries">Loading sceneries</String>
+    <String key="LoadingDone">Starting…</String>
+
+    <!-- Settings -->
+    <String key="General">General</String>
+
+    <String key="Language">Language</String>
+    <String key="Fullscreen">Fullscreen</String>
+    <String key="PauseSimInactive">Pause simulation when window is inactive</String>
+    <String key="PauseSimStart">Pause on start</String>
+    <String key="CursorSensitivity">Cursor sensitivity:</String>
+    <String key="MouseHorInvert">Invert mouse horizontally</String>
+    <String key="MouseVertInvert">Invert mouse vertically</String>
+
+    <String key="Communication">Communication</String>
+
+    <String key="GamepadSignalIgnore">Ignore gamepad input</String>
+
+    <String key="Feedback">Feedback</String>
+    <String key="FeedbackOff">Off</String>
+    <String key="FeedbackCASHP">Caps: CA/SHP; ScrollLock: starting resistances</String>
+    <String key="FeedbackCA">Caps: CA; ScrollLock: SHP</String>
+    <String key="FeedbackLPT">LPT</String>
+    <String key="FeedbackPoKeys">PoKeys55</String>
+    <String key="FeedbackSP">Serial port (COM)</String>
+
+    <String key="Others">Other</String>
+    <String key="SelectEXE">Select exe:</String>
+    <String key="SelectEXEAuto">Select automatically</String>
+    <String key="DebugMode">Debug mode (test mode)</String>
+    <String key="VirtualShunting">Virtual shunting</String>
+
+    <String key="Graphic">Graphics</String>
+    <String key="RenderEngine">Render engine</String>
+    <String key="REFull">Full</String>
+    <String key="REOld">Old</String>
+    <String key="RESimpShader">Simplified shader</String>
+    <String key="RESimp">Simplified</String>
+    <String key="REOff">Disable visual layer</String>
+    <String key="REExperimental">Experimental</String>
+
+    <String key="Resolution">Resolution:</String>
+    <String key="BufforResolution">Buffer resolution:</String>
+    <String key="MaxTexResolution">Maximum texture resolution:</String>
+    <String key="MaxTexCabResolution">Maximum cabin texture resolution:</String>
+    <String key="TexFilteringQuality">Texture filtering quality:</String>
+    <String key="Multisampling">Multisampling:</String>
+    <String key="RenderRange">Rendering range:</String>
+    <String key="VSync">VSync</String>
+    <String key="SmokeDisplay">Smoke display</String>
+    <String key="SmokeParticlesMultiplier">Smoke particles multiplier</String>
+
+    <String key="Postprocessing">Post-processing</String>
+    <String key="PPReinhard">Reinhard</String>
+    <String key="PPACES">ACES</String>
+
+    <String key="ChromaticAberration">Chromatic aberration</String>
+    <String key="MotionBlur">Motion blur</String>
+    <String key="AdditionalShadersEffects">Additional shader effects</String>
+    <String key="ReflectionsCubeMap">Reflections as cubemap</String>
+    <String key="RenderVBO">Render VBO</String>
+    <String key="RenderShadows">Render shadows</String>
+    <String key="ReflectionsFramerate">Reflections refresh rate</String>
+    <String key="ShadowsResolution">Shadows resolution</String>
+    <String key="ShaderRange">Reflections refresh rate</String>
+    <String key="CabShadowsRange">Cabin shadow sources range</String>
+
+    <String key="ShadowDisplay">Display shadows</String>
+    <String key="CSROnlyImportant">Only important</String>
+    <String key="CSRLimited">Limited</String>
+    <String key="CSRAll">All</String>
+
+    <String key="ReflectionsDetails">Reflections detail level</String>
+    <String key="RDTerrain">Terrain geometry only</String>
+    <String key="RDTerrainModels">Terrain geometry and static models</String>
+    <String key="RDTerrainModelsVehicles">Terrain geometry, static models and vehicles</String>
+
+    <String key="ShadowsCabRange">Cabin shadow sources range</String>
+    <String key="RenderScreens">Render onboard computer screens</String>
+    <String key="RenderScreensThread">Render screens in a separate thread</String>
+    <String key="RenderScreensFramerate">Onboard screens refresh rate</String>
+
+    <String key="Physics">Physics</String>
+
+    <String key="TrackCurvesQuality">Track curves quality</String>
+    <String key="PhysicsAccuracyIncreased">Increased physics accuracy</String>
+    <String key="BreakingPantographPossibility">Possibility of pantograph breaking</String>
+    <String key="PowerOverheadLineOnly">Powered only under overhead line</String>
+    <String key="SaveSpeedometerTapes">Save speedometer tapes</String>
+    <String key="SaveSimLogs">Save simulation log</String>
+    <String key="KeepPrevLogs">Keep previous logs</String>
+    <String key="DisplaySimulation">Display simulation</String>
+    <String key="CrashDamage">Collision damage</String>
+
+    <String key="Sounds">Sound</String>
+    <String key="EnableSounds">Enable sound</String>
+    <String key="Volume">Volume</String>
+    <String key="RadiophoneVolume">Radio volume</String>
+    <String key="VehiclesVolume">Vehicles volume</String>
+    <String key="PositionedSoundsVolume">Positional sounds volume</String>
+    <String key="AmbientVolume">Ambient volume</String>
+    <String key="VolumeDuringPause">Volume during pause</String>
+
+    <String key="Starter">Starter</String>
+    <String key="AutoCloseStarter">Automatically close starter</String>
+    <String key="LargeThumbnails">Large thumbnails</String>
+    <String key="AutoExpandSceneryTree">Automatically expand scenery tree</String>
+
+    <!-- Settings actions -->
+    <String key="Save">Save</String>
+    <String key="Reset">Reset</String>
+    <String key="SettingsSaved">Settings saved</String>
+</Language>

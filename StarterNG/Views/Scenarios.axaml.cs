@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -74,6 +74,9 @@ public partial class Scenarios : UserControl
         Scenery selectedScn = Sceneries[tag];
         vehicleList.Items.Clear();
 
+        // scenery-level info (distinct from the per-consist scenario description)
+        ShowSceneryInfo(selectedScn);
+
         // add all trainsets to list
         for (int i = 0; i < selectedScn.Trainsets.Count; i++)
         {
@@ -89,6 +92,29 @@ public partial class Scenarios : UserControl
             });
         }
 
+    }
+
+    // Shows the selected scenery's description (//$d) and 1:1 image (//$i).
+    private void ShowSceneryInfo(Scenery scenery)
+    {
+        sceneryDescription.Text = scenery.Description;
+
+        string? imagePath = scenery.ImagePath;
+        if (imagePath is not null)
+        {
+            try
+            {
+                sceneryImage.Source = new Bitmap(imagePath);
+            }
+            catch
+            {
+                sceneryImage.Source = null; // unreadable / unsupported image
+            }
+        }
+        else
+        {
+            sceneryImage.Source = null;
+        }
     }
 
     private void VehicleList_OnSelectionChanged(object? sender, SelectionChangedEventArgs e)

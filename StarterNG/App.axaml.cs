@@ -4,9 +4,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Avalonia;
+using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
-using Avalonia.Markup.Xaml.Styling;
 using Avalonia.Threading;
 using StarterNG.Classes;
 using StarterNG.Services;
@@ -36,29 +36,23 @@ public partial class App : Application
                 _ => "English"
             };
         Settings.Instance.Language = langName;
- 
-        var langDict = new ResourceInclude(new Uri("avares://StarterNG/"))
-        {
-            Source = new Uri($"Assets/Langs/{langName}.axaml", UriKind.Relative)
-        };
 
-        var resources = Current!.Resources;
+        ApplyLanguage(langName);
+    }
 
-        var languageDictionaries = resources.MergedDictionaries
-            .OfType<ResourceInclude>()
-            .Where(d => d.Source != null && d.Source.OriginalString.Contains("Langs/"))
-            .ToList();
-
-        foreach (var dict in languageDictionaries)
-        {
-            resources.MergedDictionaries.Remove(dict);
-        }
-
-        resources.MergedDictionaries.Add(langDict);
-        
-         
-        
-        Loc.SetLanguage(langDict, langName);
+    /// <summary>
+    /// Swaps the active language by loading the matching XML file from the
+    /// <c>lang/</c> folder next to the executable (see <see cref="LocalizationService"/>).
+    /// The translations are no longer compiled into the assembly, so they can be
+    /// edited or added without rebuilding the launcher. Accepts either a display
+    /// name ("English", "Polski") or a short code ("en", "pl").
+    /// </summary>
+    public static void ApplyLanguage(string langNameOrCode)
+    {
+        // Loc.Load resolves the file and returns the canonical display name,
+        // which we mirror back into the settings so the stored value stays valid.
+        var resolvedName = Loc.Load(langNameOrCode);
+        Settings.Instance.Language = resolvedName;
     }
 
     public override void OnFrameworkInitializationCompleted()

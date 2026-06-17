@@ -288,22 +288,7 @@ public partial class Settings : UserControl
         var lang = item.Content?.ToString();
         if (string.IsNullOrEmpty(lang)) return;
 
-        var langDict = new ResourceInclude(new Uri("avares://StarterNG/"))
-        {
-            Source = new Uri($"Assets/Langs/{lang}.axaml", UriKind.Relative)
-        };
-
-        var currentLangDict = App.Current.Resources.MergedDictionaries
-            .OfType<ResourceInclude>()
-            .FirstOrDefault(d => d.Source != null && d.Source.OriginalString.Contains("Langs/"));
-
-        if (currentLangDict != null)
-        {
-            App.Current.Resources.MergedDictionaries.Remove(currentLangDict);
-        }
-        App.Current.Resources.MergedDictionaries.Add(langDict);
-
-        App.Loc.SetLanguage(langDict, lang);
+        App.ApplyLanguage(lang);
     }
 
     // ── tiny helpers ──────────────────────────────────────────────────────

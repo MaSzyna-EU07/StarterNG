@@ -6,7 +6,8 @@
              xmlns:objectModel="clr-namespace:System.Collections.ObjectModel;assembly=System.ObjectModel"
              xmlns:starterNg="clr-namespace:StarterNG"
              mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
-             x:Class="StarterNG.Views.Settings">
+             x:Class="StarterNG.Views.Settings"
+             x:CompileBindings="True">
     <DockPanel>
         <!-- Save / reset bar -->
         <Border DockPanel.Dock="Bottom" Padding="16,10" Background="#11000000">

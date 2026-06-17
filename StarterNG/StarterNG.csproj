@@ -1,6 +1,8 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
     <PropertyGroup>
         <OutputType>WinExe</OutputType>
+        <PublishAot>true</PublishAot>
+        <IsAotCompatible>true</IsAotCompatible>
         <TargetFramework>net9.0</TargetFramework>
         <Nullable>enable</Nullable>
         <BuiltInComInteropSupport>true</BuiltInComInteropSupport>
@@ -8,6 +10,8 @@
         <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
         <AssemblyVersion>1.0.0.0</AssemblyVersion>
         <FileVersion>1.0.0.0</FileVersion>
+        <AssemblyName>Starter</AssemblyName>
+        <Company>eu07.pl</Company>
     </PropertyGroup>
     <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
       <PlatformTarget>x64</PlatformTarget>
@@ -17,20 +21,18 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="Avalonia" Version="11.3.10" />
-        <PackageReference Include="Avalonia.Desktop" Version="11.3.10" />
-        <PackageReference Include="Avalonia.Svg" Version="11.3.0" />
-        <PackageReference Include="Avalonia.Themes.Fluent" Version="11.3.10" />
-        <PackageReference Include="Avalonia.Fonts.Inter" Version="11.3.10" />
+        <PackageReference Include="Avalonia" Version="12.0.4" />
+        <PackageReference Include="Avalonia.Desktop" Version="12.0.4" />
+        <PackageReference Include="Avalonia.Themes.Fluent" Version="12.0.4" />
+        <PackageReference Include="Avalonia.Fonts.Inter" Version="12.0.4" />
         <!--Condition below is needed to remove Avalonia.Diagnostics package from build output in Release configuration.-->
-        <PackageReference Include="Avalonia.Diagnostics" Version="11.3.10">
-            <IncludeAssets Condition="'$(Configuration)' != 'Debug'">None</IncludeAssets>
-            <PrivateAssets Condition="'$(Configuration)' != 'Debug'">All</PrivateAssets>
+        <PackageReference Include="Avalonia.Diagnostics" Version="11.3.17">
+            <IncludeAssets Condition="'$(Configuration)' != 'Debug'">none</IncludeAssets>
+            <PrivateAssets Condition="'$(Configuration)' != 'Debug'">all</PrivateAssets>
         </PackageReference>
         <PackageReference Include="HotAvalonia" Version="3.0.2" />
-        <PackageReference Include="Material.Icons.Avalonia" Version="2.4.1" />
-        <PackageReference Include="Newtonsoft.Json" Version="13.0.5-beta1" />
-        <PackageReference Include="SukiUI" Version="6.0.3" />
+        <PackageReference Include="Material.Icons.Avalonia" Version="3.0.2" />
+        <PackageReference Include="SukiUI" Version="7.0.1" />
     </ItemGroup>
 
     <ItemGroup>
@@ -38,15 +40,24 @@
     </ItemGroup>
 
     <ItemGroup>
-      <None Remove="Assets\Logo\maszyna_black.svg" />
-      <AvaloniaResource Include="Assets\Logo\maszyna_black.svg" />
-      <None Remove="Assets\Logo\maszyna_white.svg" />
-      <AvaloniaResource Include="Assets\Logo\maszyna_white.svg" />
       <None Remove="Assets\Logo\Other\Discord.svg" />
       <AvaloniaResource Include="Assets\Logo\Other\Discord.svg" />
-      <None Remove="Assets\Logo\splash.png" />
-      <AvaloniaResource Include="Assets\Logo\splash.png" />
+      <!-- Logo bitmaps (splash.png + maszyna_black/white.png). Globbed so newly
+           added PNGs are embedded automatically without editing this file. -->
+      <None Remove="Assets\Logo\*.png" />
+      <AvaloniaResource Include="Assets\Logo\*.png" />
       <None Remove="Assets\Test\ep07p.bmp" />
       <AvaloniaResource Include="Assets\Test\ep07p.bmp" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <!-- Translations are plain XML loaded at runtime (LocalizationService), not
+           compiled into the assembly. They are copied verbatim into a starter/lang/
+           folder next to the executable so they can be edited or extended without a
+           rebuild. XmlReader parsing is AOT-safe, unlike the Avalonia XAML loader. -->
+      <Content Include="starter\lang\*.xml">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        <Link>starter\lang\%(Filename)%(Extension)</Link>
+      </Content>
     </ItemGroup>
 </Project>

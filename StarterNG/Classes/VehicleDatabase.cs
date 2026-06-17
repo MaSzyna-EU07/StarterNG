@@ -2,7 +2,9 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using Newtonsoft.Json;
+using System.Text.Json;
+using System.Text.Json.Serialization;
+using System.Text.Json.Serialization.Metadata;
 
 namespace StarterNG.Classes;
 
@@ -14,43 +16,43 @@ namespace StarterNG.Classes;
 /// <summary>Root object of a single vehicle JSON file.</summary>
 public class VehicleEntry
 {
-    [JsonProperty("uuid")] public string? Uuid { get; set; }
-    [JsonProperty("schema_version")] public int SchemaVersion { get; set; }
-    [JsonProperty("groups")] public List<VehicleGroup> Groups { get; set; } = new();
-    [JsonProperty("textures")] public List<VehicleTexture> Textures { get; set; } = new();
-    [JsonProperty("sets")] public List<VehicleSet> Sets { get; set; } = new();
-    [JsonProperty("unknown")] public List<string> Unknown { get; set; } = new();
+    [JsonPropertyName("uuid")] public string? Uuid { get; set; }
+    [JsonPropertyName("schema_version")] public int SchemaVersion { get; set; }
+    [JsonPropertyName("groups")] public List<VehicleGroup> Groups { get; set; } = new();
+    [JsonPropertyName("textures")] public List<VehicleTexture> Textures { get; set; } = new();
+    [JsonPropertyName("sets")] public List<VehicleSet> Sets { get; set; } = new();
+    [JsonPropertyName("unknown")] public List<string> Unknown { get; set; } = new();
 }
 
 /// <summary>Merged database root (databases/vehicles/vehicles.json).</summary>
 public class VehicleEntryCollection
 {
-    [JsonProperty("vehicles")] public List<VehicleEntry> Vehicles { get; set; } = new();
+    [JsonPropertyName("vehicles")] public List<VehicleEntry> Vehicles { get; set; } = new();
 }
 
 /// <summary>Legacy header / vehicle category group.</summary>
 public class VehicleGroup
 {
-    [JsonProperty("id")] public string Id { get; set; } = "";
-    [JsonProperty("category")] public string? Category { get; set; }
-    [JsonProperty("mini")] public string? Mini { get; set; }
-    [JsonProperty("archived")] public bool Archived { get; set; }
-    [JsonProperty("implicit")] public bool Implicit { get; set; }
+    [JsonPropertyName("id")] public string Id { get; set; } = "";
+    [JsonPropertyName("category")] public string? Category { get; set; }
+    [JsonPropertyName("mini")] public string? Mini { get; set; }
+    [JsonPropertyName("archived")] public bool Archived { get; set; }
+    [JsonPropertyName("implicit")] public bool Implicit { get; set; }
 }
 
 /// <summary>A single .mat skin entry.</summary>
 public class VehicleTexture
 {
-    [JsonProperty("uuid")] public string? Uuid { get; set; }
-    [JsonProperty("directory")] public string Directory { get; set; } = "";
-    [JsonProperty("skinfile")] public string Skinfile { get; set; } = "";
-    [JsonProperty("model")] public string? Model { get; set; }
-    [JsonProperty("group")] public string? Group { get; set; }
-    [JsonProperty("mini_ref")] public string? MiniRef { get; set; }
-    [JsonProperty("texture_mini")] public string? TextureMini { get; set; }
-    [JsonProperty("wreck")] public bool Wreck { get; set; }
-    [JsonProperty("aliases")] public List<VehicleAlias> Aliases { get; set; } = new();
-    [JsonProperty("meta")] public VehicleMeta? Meta { get; set; }
+    [JsonPropertyName("uuid")] public string? Uuid { get; set; }
+    [JsonPropertyName("directory")] public string Directory { get; set; } = "";
+    [JsonPropertyName("skinfile")] public string Skinfile { get; set; } = "";
+    [JsonPropertyName("model")] public string? Model { get; set; }
+    [JsonPropertyName("group")] public string? Group { get; set; }
+    [JsonPropertyName("mini_ref")] public string? MiniRef { get; set; }
+    [JsonPropertyName("texture_mini")] public string? TextureMini { get; set; }
+    [JsonPropertyName("wreck")] public bool Wreck { get; set; }
+    [JsonPropertyName("aliases")] public List<VehicleAlias> Aliases { get; set; } = new();
+    [JsonPropertyName("meta")] public VehicleMeta? Meta { get; set; }
 
     /// <summary>Full skin path = directory + skinfile.</summary>
     [JsonIgnore] public string FullPath => Directory + Skinfile;
@@ -69,25 +71,25 @@ public class VehicleTexture
 /// <summary>Alternate mapping from a malformed multi-= legacy line.</summary>
 public class VehicleAlias
 {
-    [JsonProperty("model")] public string? Model { get; set; }
-    [JsonProperty("group")] public string? Group { get; set; }
-    [JsonProperty("mini_ref")] public string? MiniRef { get; set; }
-    [JsonProperty("texture_mini")] public string? TextureMini { get; set; }
+    [JsonPropertyName("model")] public string? Model { get; set; }
+    [JsonPropertyName("group")] public string? Group { get; set; }
+    [JsonPropertyName("mini_ref")] public string? MiniRef { get; set; }
+    [JsonPropertyName("texture_mini")] public string? TextureMini { get; set; }
 }
 
 /// <summary>Parsed metadata from the legacy // comment section.</summary>
 public class VehicleMeta
 {
-    [JsonProperty("raw")] public string? Raw { get; set; }
-    [JsonProperty("version")] public string? Version { get; set; }
-    [JsonProperty("vehicle")] public string? Vehicle { get; set; }
-    [JsonProperty("operator")] public string? Operator { get; set; }
-    [JsonProperty("depot")] public string? Depot { get; set; }
-    [JsonProperty("revision_date")] public string? RevisionDate { get; set; }
-    [JsonProperty("revision_place")] public string? RevisionPlace { get; set; }
-    [JsonProperty("texture_author")] public string? TextureAuthor { get; set; }
-    [JsonProperty("photo_author")] public string? PhotoAuthor { get; set; }
-    [JsonProperty("extra")] public List<string> Extra { get; set; } = new();
+    [JsonPropertyName("raw")] public string? Raw { get; set; }
+    [JsonPropertyName("version")] public string? Version { get; set; }
+    [JsonPropertyName("vehicle")] public string? Vehicle { get; set; }
+    [JsonPropertyName("operator")] public string? Operator { get; set; }
+    [JsonPropertyName("depot")] public string? Depot { get; set; }
+    [JsonPropertyName("revision_date")] public string? RevisionDate { get; set; }
+    [JsonPropertyName("revision_place")] public string? RevisionPlace { get; set; }
+    [JsonPropertyName("texture_author")] public string? TextureAuthor { get; set; }
+    [JsonPropertyName("photo_author")] public string? PhotoAuthor { get; set; }
+    [JsonPropertyName("extra")] public List<string> Extra { get; set; } = new();
 }
 
 /// <summary>
@@ -109,12 +111,16 @@ public class VehicleDatabase
     /// <summary>skinfile (without extension, lower-case) -> texture.</summary>
     public Dictionary<string, VehicleTexture> TextureBySkin { get; } = new();
 
-    // Newtonsoft.Json matches property names case-insensitively, allows trailing
-    // commas, and skips // and /* */ comments by default — the same leniency the
-    // previous System.Text.Json options provided. Unknown members are ignored.
-    private static readonly JsonSerializerSettings JsonOpts = new()
+    // System.Text.Json options matching the previous Newtonsoft leniency: property
+    // names matched case-insensitively, // and /* */ comments skipped, and trailing
+    // commas allowed. Unknown members are ignored by default. The source-generated
+    // VehicleJsonContext resolver keeps deserialization AOT/trim-safe (no reflection).
+    private static readonly JsonSerializerOptions JsonOpts = new()
     {
-        MissingMemberHandling = MissingMemberHandling.Ignore
+        PropertyNameCaseInsensitive = true,
+        ReadCommentHandling = JsonCommentHandling.Skip,
+        AllowTrailingCommas = true,
+        TypeInfoResolver = VehicleJsonContext.Default,
     };
 
     /// <summary>
@@ -177,8 +183,9 @@ public class VehicleDatabase
     {
         try
         {
-            var collection = JsonConvert.DeserializeObject<VehicleEntryCollection>(
-                File.ReadAllText(file), JsonOpts);
+            var collection = JsonSerializer.Deserialize(
+                File.ReadAllText(file),
+                (JsonTypeInfo<VehicleEntryCollection>)JsonOpts.GetTypeInfo(typeof(VehicleEntryCollection)));
             if (collection?.Vehicles is null) return;
             foreach (var entry in collection.Vehicles)
                 Ingest(entry);
@@ -193,8 +200,9 @@ public class VehicleDatabase
     {
         try
         {
-            var entry = JsonConvert.DeserializeObject<VehicleEntry>(
-                File.ReadAllText(file), JsonOpts);
+            var entry = JsonSerializer.Deserialize(
+                File.ReadAllText(file),
+                (JsonTypeInfo<VehicleEntry>)JsonOpts.GetTypeInfo(typeof(VehicleEntry)));
             if (entry is not null)
                 Ingest(entry);
         }
@@ -359,8 +367,17 @@ public class VehicleDatabase
 /// <summary>Automatic consist definition (legacy ^x grouping).</summary>
 public class VehicleSet
 {
-    [JsonProperty("uuid")] public string? Uuid { get; set; }
-    [JsonProperty("mode")] public string? Mode { get; set; }
-    [JsonProperty("count")] public int Count { get; set; }
-    [JsonProperty("texture_refs")] public List<string> TextureRefs { get; set; } = new();
+    [JsonPropertyName("uuid")] public string? Uuid { get; set; }
+    [JsonPropertyName("mode")] public string? Mode { get; set; }
+    [JsonPropertyName("count")] public int Count { get; set; }
+    [JsonPropertyName("texture_refs")] public List<string> TextureRefs { get; set; } = new();
+}
+
+// Source-generated JSON metadata — makes deserialization AOT/trim-safe by avoiding
+// runtime reflection over the model types. Nested types (VehicleGroup, VehicleTexture,
+// VehicleSet, VehicleAlias, VehicleMeta) are pulled in automatically by the generator.
+[JsonSerializable(typeof(VehicleEntry))]
+[JsonSerializable(typeof(VehicleEntryCollection))]
+internal partial class VehicleJsonContext : JsonSerializerContext
+{
 }

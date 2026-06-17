@@ -1,15 +1,17 @@
-﻿<UserControl xmlns="https://github.com/avaloniaui"
+<UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:sukiUi="clr-namespace:SukiUI.Controls;assembly=SukiUI"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:starterNg="clr-namespace:StarterNG"
              mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
-             x:Class="StarterNG.Views.Scenarios">
+             x:Class="StarterNG.Views.Scenarios"
+             x:CompileBindings="True">
     <Grid Margin="16" ColumnSpacing="16" RowSpacing="16">
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="300" />
             <ColumnDefinition />
+            <ColumnDefinition Width="280" />
         </Grid.ColumnDefinitions>
         <Grid.RowDefinitions>
             <RowDefinition />
@@ -19,7 +21,7 @@
         </Grid.RowDefinitions>
         <sukiUi:GroupBox Grid.RowSpan="2" Header="{Binding [Sceneries], Source={x:Static starterNg:App.Loc}}">
             <TreeView Name="sceneryList" SelectionChanged="SceneryList_OnSelectionChanged">
-                
+
             </TreeView>
         </sukiUi:GroupBox>
         <sukiUi:GroupBox Grid.Column="1" Header="{Binding [Vehicles], Source={x:Static starterNg:App.Loc}}">
@@ -34,7 +36,20 @@
 
         </sukiUi:GroupBox>
 
-        <sukiUi:GroupBox Header="{Binding [Consist], Source={x:Static starterNg:App.Loc}}" Grid.Row="2" Grid.ColumnSpan="2">
+        <!-- Scenery image (//$i) shown as a 1:1 square thumbnail -->
+        <Border Grid.Column="2" Grid.Row="0" ClipToBounds="True" VerticalAlignment="Top"
+                 Height="{Binding $self.Bounds.Width}">
+            <Image Name="sceneryImage" Stretch="Uniform" />
+        </Border>
+        <!-- Scenery description (//$d), distinct from the scenario/consist description -->
+        <sukiUi:GroupBox Grid.Column="2" Grid.Row="1" Header="{Binding [SceneryDescription], Source={x:Static starterNg:App.Loc}}">
+            <ScrollViewer VerticalScrollBarVisibility="Auto">
+                <TextBlock TextWrapping="Wrap" Name="sceneryDescription">
+                </TextBlock>
+            </ScrollViewer>
+        </sukiUi:GroupBox>
+
+        <sukiUi:GroupBox Header="{Binding [Consist], Source={x:Static starterNg:App.Loc}}" Grid.Row="2" Grid.ColumnSpan="3">
             <ScrollViewer VerticalAlignment="Bottom"
                           HorizontalScrollBarVisibility="Auto"
                           VerticalScrollBarVisibility="Disabled">
@@ -44,7 +59,7 @@
         </sukiUi:GroupBox>
 
         <Button Grid.Column="0" Height="36" Classes="Flat"
-                VerticalAlignment="Bottom" Grid.Row="3" Grid.ColumnSpan="2"
+                VerticalAlignment="Bottom" Grid.Row="3" Grid.ColumnSpan="3"
                 Click="StartButton_OnClick"
                 Content="{Binding [Start], Source={x:Static starterNg:App.Loc}}">
 
