@@ -76,7 +76,32 @@ public partial class Depot : UserControl
         ("CatTruck",        c => c == "c"),
         ("CatPeople",       c => c == "h"),
         ("CatAnimals",      c => c == "f"),
-        ("CatWagons",       IsWagonCat),
+        ("CatWagonsA",       c => c == "A"),
+        ("CatWagonsB",       c => c == "B"),
+        ("CatWagonsC",       c => c == "C"),
+        ("CatWagonsD",       c => c == "D"),
+        ("CatWagonsE",       c => c == "E"),
+        ("CatWagonsF",       c => c == "F"),
+        ("CatWagonsG",       c => c == "G"),
+        ("CatWagonsH",       c => c == "H"),
+        ("CatWagonsI",       c => c == "I"),
+        ("CatWagonsJ",       c => c == "J"),
+        ("CatWagonsK",       c => c == "K"),
+        ("CatWagonsL",       c => c == "L"),
+        ("CatWagonsM",       c => c == "M"),
+        ("CatWagonsN",       c => c == "N"),
+        ("CatWagonsO",       c => c == "O"),
+        ("CatWagonsP",       c => c == "P"),
+        ("CatWagonsR",       c => c == "R"),
+        ("CatWagonsS",       c => c == "S"),
+        ("CatWagonsT",       c => c == "T"),
+        ("CatWagonsU",       c => c == "U"),
+        ("CatWagonsV",       c => c == "V"),
+        ("CatWagonsW",       c => c == "W"),
+        ("CatWagonsX",       c => c == "X"),
+        ("CatWagonsY",       c => c == "Y"),
+        ("CatWagonsZ",       c => c == "Z"),
+        
         ("CatOther",        IsOtherCat),
     };
 
@@ -84,7 +109,6 @@ public partial class Depot : UserControl
     private static readonly HashSet<string> NamedLowerCats =
         new(StringComparer.Ordinal) { "a", "b", "c", "d", "e", "f", "h", "n", "o", "p", "r", "s", "t", "x", "z" };
 
-    private static bool IsWagonCat(string? c) => c is { Length: 1 } && c[0] >= 'A' && c[0] <= 'Z';
     private static bool IsOtherCat(string? c) =>
         c is { Length: 1 } && char.IsLower(c[0]) && !NamedLowerCats.Contains(c);
 
