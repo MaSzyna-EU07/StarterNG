@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
@@ -40,8 +41,8 @@ public partial class Depot : UserControl
     // debounces search input so we don't rebuild on every keystroke
     private DispatcherTimer? _searchTimer;
 
-    // scenery-consist previews are built lazily on first dropdown open
-    private bool _consistPreviewsBuilt;
+    // the scenery whose consists are listed on the right (from the Scenarios tab)
+    private Scenery? _listScenery;
 
     // active database filters
     private Func<string?, bool>? _categoryFilter;  // matches a category letter, null = none chosen
@@ -141,16 +142,26 @@ public partial class Depot : UserControl
         Dispatcher.UIThread.Post(() =>
         {
             PopulateCategoryCombo();   // -> populates class combo -> builds browser
-            PopulateSceneryCombo();    // -> populates consist combo for the first scenery
+            PopulateSceneryConsists(); // -> lists the current scenery's consists
             RebuildConsist();
         }, DispatcherPriority.Background);
 
-        // When the tab is shown, pick up the consist selected in the scenery view.
+        // Switching tabs only toggles IsVisible (the view stays in the visual
+        // tree), so refresh whenever the depot becomes visible - this picks up a
+        // scenery changed in the Scenarios tab in the meantime.
         AttachedToVisualTree += (_, _) => SyncFromSelection();
+        PropertyChanged += (_, e) =>
+        {
+            if (e.Property == IsVisibleProperty && IsVisible)
+                SyncFromSelection();
+        };
     }
 
     private void SyncFromSelection()
     {
+        // refresh the on-map consists list to the scenery picked in the Scenarios tab
+        PopulateSceneryConsists();
+
         var trainset = AppState.Instance.CurrentTrainset;
         if (trainset != null && !ReferenceEquals(trainset, _editingTrainset))
             LoadTrainset(trainset);
@@ -497,114 +508,60 @@ public partial class Depot : UserControl
 
     // ------------------------------------------------------------- scenery combos
 
-    private void PopulateSceneryCombo()
+    // Lists the consists of the scenery currently selected in the Scenarios tab,
+    // so they can be picked and edited here.
+    private void PopulateSceneryConsists()
     {
         _suppress = true;
-        sceneryCombo.Items.Clear();
-        foreach (var scenery in _sceneries)
+        sceneryConsistList.Items.Clear();
+
+        _listScenery = AppState.Instance.CurrentScenery ?? _sceneries.FirstOrDefault();
+        mapSceneryLabel.Text = _listScenery != null
+            ? Path.GetFileNameWithoutExtension(_listScenery.Path)
+            : App.Loc["NoSceneryConsists"];
+
+        if (_listScenery != null)
         {
-            sceneryCombo.Items.Add(new ComboBoxItem
-            {
-                Content = Path.GetFileNameWithoutExtension(scenery.Path),
-                Tag = scenery
-            });
-        }
-        if (sceneryCombo.Items.Count > 0)
-            sceneryCombo.SelectedIndex = 0;
-        _suppress = false;
-
-        PopulateConsistCombo(_sceneries.FirstOrDefault());
-    }
-
-    private void PopulateConsistCombo(Scenery? scenery)
-    {
-        _suppress = true;
-        sceneryConsistCombo.Items.Clear();
-
-        if (scenery != null)
-        {
-            foreach (var trainset in scenery.Trainsets)
+            foreach (var trainset in _listScenery.Trainsets)
             {
                 if (trainset.Vehicles.Count == 0)
                     continue;
                 if (trainset.Vehicles.All(v => string.IsNullOrWhiteSpace(v.Name)))
                     continue;
 
-                // lightweight text content now; the rich mini-preview is built
-                // lazily the first time the dropdown is opened
-                sceneryConsistCombo.Items.Add(new ComboBoxItem
+                var entry = new ListBoxItem
                 {
-                    Content = ConsistSummary(trainset),
+                    Content = ConsistText(trainset),
                     Tag = trainset
-                });
+                };
+                sceneryConsistList.Items.Add(entry);
+
+                if (ReferenceEquals(trainset, AppState.Instance.CurrentTrainset))
+                    sceneryConsistList.SelectedItem = entry;
             }
         }
-
-        _consistPreviewsBuilt = false;
-        sceneryConsistCombo.SelectedItem = null;
         _suppress = false;
     }
 
-    private static string ConsistSummary(Trainset trainset)
-    {
-        string text = string.Join(" + ", trainset.Vehicles.Select(v => v.SkinFile));
-        return text.Length > 70 ? text[..67] + "..." : text;
-    }
-
-    // Builds the mini-thumbnail previews only once, on first dropdown open.
-    private void SceneryConsistCombo_OnDropDownOpened(object? sender, EventArgs e)
-    {
-        if (_consistPreviewsBuilt) return;
-        _consistPreviewsBuilt = true;
-
-        foreach (var obj in sceneryConsistCombo.Items)
-            if (obj is ComboBoxItem { Tag: Trainset trainset } item)
-                item.Content = BuildConsistPreview(trainset);
-    }
-
-    // Combo item: row of mini thumbnails on top, skin names underneath.
-    private Control BuildConsistPreview(Trainset trainset)
-    {
-        var minis = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 2 };
-        var names = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 6 };
-
-        foreach (var v in trainset.Vehicles)
-        {
-            var bmp = GetMiniBitmap(_db.MiniForSkin(v.SkinFile) ?? v.MiniName, 20);
-            if (bmp != null)
-                minis.Children.Add(new Image { Source = bmp, Height = 20, Stretch = Stretch.Uniform });
-            else
-                minis.Children.Add(new Border
-                {
-                    Height = 20, Width = 32, Background = Placeholder, CornerRadius = new CornerRadius(3)
-                });
-
-            names.Children.Add(new TextBlock { Text = v.SkinFile, FontSize = 10, Opacity = 0.8 });
-        }
-
-        var panel = new StackPanel { Spacing = 3 };
-        panel.Children.Add(minis);
-        panel.Children.Add(names);
-        return panel;
-    }
-
-    private void SceneryCombo_OnSelectionChanged(object? sender, SelectionChangedEventArgs e)
+    // Selecting a consist on the map loads it into the editor below.
+    private void SceneryConsistList_OnSelectionChanged(object? sender, SelectionChangedEventArgs e)
     {
         if (_suppress) return;
-        var scenery = (sceneryCombo.SelectedItem as ComboBoxItem)?.Tag as Scenery;
-        PopulateConsistCombo(scenery);
-    }
-
-    // Selecting a scenery consist binds the editor to that trainset.
-    private void SceneryConsistCombo_OnSelectionChanged(object? sender, SelectionChangedEventArgs e)
-    {
-        if (_suppress) return;
-        if (sceneryConsistCombo.SelectedItem is not ComboBoxItem { Tag: Trainset trainset })
+        if (sceneryConsistList.SelectedItem is not ListBoxItem { Tag: Trainset trainset })
             return;
 
-        AppState.Instance.CurrentScenery = (sceneryCombo.SelectedItem as ComboBoxItem)?.Tag as Scenery;
+        AppState.Instance.CurrentScenery = _listScenery;
         AppState.Instance.CurrentTrainset = trainset;
         LoadTrainset(trainset);
+    }
+
+    // Plain-text label for a scenery consist (no thumbnails).
+    private static string ConsistText(Trainset trainset)
+    {
+        string text = string.Join(" + ", trainset.Vehicles.Select(v => v.SkinFile));
+        if (string.IsNullOrWhiteSpace(text))
+            text = string.Join(" + ", trainset.Vehicles.Select(v => v.Name));
+        return text.Length > 80 ? text[..77] + "…" : text;
     }
 
     // ------------------------------------------------------------ consist edits
@@ -728,7 +685,6 @@ public partial class Depot : UserControl
         }
 
         emptyHint.IsVisible = _consist.Count == 0;
-        UpdateSummary();
         UpdateDetails();
         WriteBackToScenery();
     }
@@ -849,12 +805,112 @@ public partial class Depot : UserControl
             Cursor = _hand,
             Child = inner
         };
-        card.PointerPressed += (_, _) =>
+        card.PointerPressed += (_, e) =>
         {
+            // left button only - right-click is reserved for the context popup,
+            // and rebuilding here would detach the card it anchors to
+            if (!e.GetCurrentPoint(card).Properties.IsLeftButtonPressed)
+                return;
+
             _selected = item;
             RebuildConsist();
+            // mirror the click into the database browser: pick the category and
+            // highlight this vehicle's entry there
+            SelectInBrowser(item.Cars[0]);
+        };
+        // right-click a vehicle to set its wagon number (node "#<n>" suffix)
+        card.ContextRequested += (_, args) =>
+        {
+            ShowWagonNumberFlyout(card, item.Cars[0]);
+            args.Handled = true;
         };
         return card;
+    }
+
+    // Selects, in the left database browser, the category and the list entry of the
+    // given vehicle - so clicking a consist car reveals it in the database.
+    private void SelectInBrowser(Dynamic car)
+    {
+        var texture = _db.TextureForSkin(car.SkinFile);
+        if (texture is null)
+            return;
+
+        string? category = CategoryOf(texture);
+        var catItem = categoryCombo.Items.OfType<ComboBoxItem>()
+            .FirstOrDefault(it => it.Tag is Func<string?, bool> f && f(category));
+
+        if (catItem != null && !ReferenceEquals(categoryCombo.SelectedItem, catItem))
+        {
+            categoryCombo.SelectedItem = catItem; // -> rebuilds class combo (class=all) + list
+        }
+        else
+        {
+            // same category already chosen: drop any class filter so the entry shows
+            _suppress = true;
+            classCombo.SelectedIndex = -1;
+            _suppress = false;
+            _classFilter = null;
+            BuildList();
+        }
+
+        // highlight the matching entry (selection drives the mini + Add button)
+        foreach (var obj in vehicleListBox.Items)
+            if (obj is ListBoxItem { Tag: VehicleTexture t } entry &&
+                string.Equals(t.Skinfile, texture.Skinfile, StringComparison.OrdinalIgnoreCase) &&
+                string.Equals(t.Directory, texture.Directory, StringComparison.OrdinalIgnoreCase))
+            {
+                vehicleListBox.SelectedItem = entry;
+                entry.BringIntoView();
+                break;
+            }
+    }
+
+    // The "#<n>" number written into the node name (e.g. EU07-005#11). 0 = none.
+    private static int GetWagonNumber(Dynamic car)
+    {
+        string name = car.Name ?? "";
+        int hash = name.LastIndexOf('#');
+        if (hash >= 0 && hash + 1 < name.Length && name[(hash + 1)..].All(char.IsDigit)
+            && int.TryParse(name[(hash + 1)..], out int n))
+            return n;
+        return 0;
+    }
+
+    private void SetWagonNumber(Dynamic car, int number)
+    {
+        string name = car.Name ?? "";
+        int hash = name.LastIndexOf('#');
+        string baseName = (hash >= 0 && hash + 1 < name.Length && name[(hash + 1)..].All(char.IsDigit))
+            ? name[..hash]
+            : name;
+        car.Name = number > 0 ? $"{baseName}#{number}" : baseName;
+        RebuildConsist();
+    }
+
+    // Small right-click popup to type a wagon number for the vehicle.
+    private void ShowWagonNumberFlyout(Control anchor, Dynamic car)
+    {
+        var num = new NumericUpDown
+        {
+            Minimum = 0, Maximum = 99999, Increment = 1, FormatString = "0",
+            Value = GetWagonNumber(car), MinWidth = 120
+        };
+        var apply = new Button { Content = App.Loc["Set"], HorizontalAlignment = HorizontalAlignment.Right };
+        apply.Classes.Add("Flat");
+        apply.Classes.Add("Accent");
+
+        var panel = new StackPanel { Spacing = 6, Margin = new Thickness(8), MinWidth = 160 };
+        panel.Children.Add(new TextBlock { Text = App.Loc["WagonNumber"], FontWeight = FontWeight.Bold, FontSize = 12 });
+        panel.Children.Add(num);
+        panel.Children.Add(apply);
+
+        var flyout = new Flyout { Content = panel, Placement = PlacementMode.Top };
+        apply.Click += (_, _) =>
+        {
+            SetWagonNumber(car, (int)(num.Value ?? 0));
+            flyout.Hide();
+        };
+        flyout.ShowAt(anchor);
     }
 
     private static string UnitLabel(ConsistItem item)
@@ -863,8 +919,9 @@ public partial class Depot : UserControl
         return item.Cars.Count > 1 ? $"{key}  [{item.Cars.Count}]" : key;
     }
 
-    // Coupling indicator between two units. Hovering shows the 8-bit coupling
-    // editor for the left unit's last car (placeholder; full editing comes later).
+    // Coupling indicator between two units. Click it to open a (clickable) flyout
+    // with the 8-bit coupling editor for the left unit's last car - a flyout, not a
+    // tooltip, so it stays open while you toggle the options.
     private Control BuildCoupler(ConsistItem item)
     {
         var glyph = new TextBlock
@@ -875,17 +932,21 @@ public partial class Depot : UserControl
             VerticalAlignment = VerticalAlignment.Center,
             HorizontalAlignment = HorizontalAlignment.Center
         };
-        var coupler = new Border
+        var coupler = new Button
         {
-            Width = 18,
             Padding = new Thickness(2),
+            MinWidth = 0,
             Cursor = _hand,
-            Background = Brushes.Transparent,
             VerticalAlignment = VerticalAlignment.Center,
-            Child = glyph
+            Content = glyph,
+            Flyout = new Flyout
+            {
+                Content = BuildCouplingBox(item.Cars[^1]),
+                Placement = PlacementMode.Top
+            }
         };
-        ToolTip.SetTip(coupler, BuildCouplingBox(item.Cars[^1]));
-        ToolTip.SetShowDelay(coupler, 150);
+        coupler.Classes.Add("Basic");
+        ToolTip.SetTip(coupler, App.Loc["Coupling"]);
         return coupler;
     }
 
@@ -914,40 +975,7 @@ public partial class Depot : UserControl
             panel.Children.Add(check);
         }
 
-        // Brake-rack setting (the "B" parameter of the coupling field).
-        panel.Children.Add(new TextBlock
-        {
-            Text = "Brake mode",
-            FontWeight = FontWeight.Bold,
-            FontSize = 11,
-            Margin = new Thickness(0, 6, 0, 2)
-        });
-
-        var brakeCombo = new ComboBox { FontSize = 11, MinWidth = 90 };
-        brakeCombo.Items.Add(new ComboBoxItem { Content = "(none)", Tag = null });
-        foreach (string mode in BrakeSetting.Modes)
-            brakeCombo.Items.Add(new ComboBoxItem { Content = mode, Tag = mode });
-
-        string? current = d.Coupling.GetBrake()?.Mode;
-        brakeCombo.SelectedIndex = current is null
-            ? 0
-            : Array.IndexOf(BrakeSetting.Modes, current) + 1;
-
-        brakeCombo.SelectionChanged += (_, _) =>
-        {
-            if ((brakeCombo.SelectedItem as ComboBoxItem)?.Tag is not string mode)
-            {
-                d.Coupling.SetBrake(null);
-            }
-            else
-            {
-                var brake = d.Coupling.GetBrake() ?? new BrakeSetting();
-                brake.Mode = mode;
-                d.Coupling.SetBrake(brake);
-            }
-        };
-        panel.Children.Add(brakeCombo);
-
+        // The brake setting lives in the Brakes tab now, not here.
         return new Border { Padding = new Thickness(8), Child = panel };
     }
 
@@ -983,32 +1011,177 @@ public partial class Depot : UserControl
         return btn;
     }
 
-    private void UpdateSummary()
-    {
-        int cars = _consist.Sum(i => i.Cars.Count);
-        int crewed = _consist.Count(i => i.Driver is eDriverType.Headdriver or eDriverType.Reardriver);
-        summaryLabel.Text = $"{cars} {App.Loc["Vehicles"]}  ·  {crewed} {App.Loc["Crew"]}";
-    }
-
-    // Brakes / Loads tabs are placeholders bound to the selected unit.
+    // Brakes / Loads editors for the selected unit (applied to all of its cars).
     private void UpdateDetails()
     {
+        brakesPanel.Children.Clear();
+        loadsPanel.Children.Clear();
+
         if (_selected is null)
         {
-            brakesContent.Text = App.Loc["SelectVehicleHint"];
-            loadsContent.Text = App.Loc["SelectVehicleHint"];
+            brakesPanel.Children.Add(DetailHint(App.Loc["SelectVehicleHint"]));
+            loadsPanel.Children.Add(DetailHint(App.Loc["SelectVehicleHint"]));
             return;
         }
 
-        var lead = _selected.Cars[0];
-        string title = _selected.Grouped ? UnitLabel(_selected) : lead.Name;
-        brakesContent.Text =
-            $"{App.Loc["Vehicle"]}: {title}\n" +
-            $"cars: {string.Join(", ", _selected.Cars.Select(c => c.SkinFile))}\n\n" +
-            $"{App.Loc["ComingSoon"]}";
-        loadsContent.Text =
-            $"{App.Loc["Vehicle"]}: {title}\n\n" +
-            $"{App.Loc["ComingSoon"]}";
+        BuildBrakesEditor(_selected);
+        BuildLoadsEditor(_selected);
+    }
+
+    private static TextBlock DetailHint(string text) => new()
+    {
+        Text = text, Opacity = 0.6, FontSize = 12, TextWrapping = TextWrapping.Wrap
+    };
+
+    private static TextBlock UnitTitle(ConsistItem item) => new()
+    {
+        Text = item.Grouped ? UnitLabel(item) : item.Cars[0].Name,
+        FontWeight = FontWeight.Bold, FontSize = 12
+    };
+
+    // Row of "<label> <control>".
+    private static Control LabeledRow(string label, Control control)
+    {
+        var sp = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8 };
+        sp.Children.Add(new TextBlock
+        {
+            Text = label, VerticalAlignment = VerticalAlignment.Center,
+            FontSize = 12, MinWidth = 120
+        });
+        sp.Children.Add(control);
+        return sp;
+    }
+
+    private static void AddOption(ComboBox combo, string content, string? tag)
+        => combo.Items.Add(new ComboBoxItem { Content = content, Tag = tag });
+
+    // Brake mode / load adaptation / switch, written into each car's coupling "B" param.
+    private void BuildBrakesEditor(ConsistItem item)
+    {
+        var brake = item.Cars[0].Coupling.GetBrake();
+
+        var modeCombo = new ComboBox { FontSize = 12, MinWidth = 150 };
+        AddOption(modeCombo, App.Loc["None"], null);
+        foreach (var m in BrakeSetting.Modes) AddOption(modeCombo, m, m);
+        modeCombo.SelectedIndex = brake?.Mode is { } mode
+            ? Array.IndexOf(BrakeSetting.Modes, mode) + 1 : 0;
+
+        string?[] loads = { null, "T", "H", "F", "A" };
+        var loadCombo = new ComboBox { FontSize = 12, MinWidth = 150 };
+        foreach (var l in loads) AddOption(loadCombo, l ?? App.Loc["None"], l);
+        loadCombo.SelectedIndex = Math.Max(0, Array.IndexOf(loads, brake?.Load));
+
+        string?[] switches = { null, "0", "1", "A" };
+        var switchCombo = new ComboBox { FontSize = 12, MinWidth = 150 };
+        foreach (var s in switches) AddOption(switchCombo, s ?? App.Loc["None"], s);
+        switchCombo.SelectedIndex = Math.Max(0, Array.IndexOf(switches, brake?.Switch));
+
+        void Apply()
+        {
+            string? selMode = (modeCombo.SelectedItem as ComboBoxItem)?.Tag as string;
+            if (selMode is null)
+            {
+                foreach (var c in item.Cars) c.Coupling.SetBrake(null);
+                return;
+            }
+            var b = new BrakeSetting
+            {
+                Mode = selMode,
+                Load = (loadCombo.SelectedItem as ComboBoxItem)?.Tag as string,
+                Switch = (switchCombo.SelectedItem as ComboBoxItem)?.Tag as string
+            };
+            foreach (var c in item.Cars) c.Coupling.SetBrake(b);
+        }
+
+        modeCombo.SelectionChanged += (_, _) => Apply();
+        loadCombo.SelectionChanged += (_, _) => Apply();
+        switchCombo.SelectionChanged += (_, _) => Apply();
+
+        brakesPanel.Children.Add(UnitTitle(item));
+        brakesPanel.Children.Add(LabeledRow(App.Loc["BrakeMode"], modeCombo));
+        brakesPanel.Children.Add(LabeledRow(App.Loc["BrakeLoad"], loadCombo));
+        brakesPanel.Children.Add(LabeledRow(App.Loc["BrakeSwitch"], switchCombo));
+    }
+
+    // Cargo type + amount, written into each car's node::dynamic trailing params.
+    private void BuildLoadsEditor(ConsistItem item)
+    {
+        var lead = item.Cars[0];
+
+        // Suggest cargo names from data/load_weights.txt (same source the original
+        // Starter uses), while still allowing a free-typed value.
+        var typeBox = new AutoCompleteBox
+        {
+            FontSize = 12,
+            MinWidth = 200,
+            Text = lead.LoadType ?? "",
+            ItemsSource = LoadTypes(),
+            FilterMode = AutoCompleteFilterMode.ContainsOrdinal
+        };
+        var countBox = new NumericUpDown
+        {
+            FontSize = 12, Minimum = 0, Maximum = 1000, Increment = 1,
+            Value = lead.LoadCount, MinWidth = 120, FormatString = "0"
+        };
+
+        void Apply()
+        {
+            string type = typeBox.Text?.Trim() ?? "";
+            int count = (int)(countBox.Value ?? 0);
+            foreach (var c in item.Cars)
+            {
+                c.LoadCount = count;
+                c.LoadType = count > 0 && !string.IsNullOrEmpty(type) ? type : c.LoadType;
+                if (count > 0)
+                    c.HasVelocity = true; // velocity token must precede loadcount
+            }
+        }
+
+        typeBox.LostFocus += (_, _) => Apply();
+        countBox.ValueChanged += (_, _) => Apply();
+
+        loadsPanel.Children.Add(UnitTitle(item));
+        loadsPanel.Children.Add(LabeledRow(App.Loc["LoadType"], typeBox));
+        loadsPanel.Children.Add(LabeledRow(App.Loc["LoadCount"], countBox));
+        loadsPanel.Children.Add(new TextBlock
+        {
+            Text = App.Loc["LoadHint"], Opacity = 0.6, FontSize = 11, TextWrapping = TextWrapping.Wrap
+        });
+    }
+
+    // Cargo names parsed once from data/load_weights.txt (the file the simulator
+    // and the original Starter use), for the load-type suggestions. Each line is
+    // "<name>: <weight>"; only the name (before the colon) is used here.
+    private static List<string>? _loadTypes;
+    private static IReadOnlyList<string> LoadTypes()
+    {
+        if (_loadTypes != null)
+            return _loadTypes;
+
+        var list = new List<string>();
+        try
+        {
+            string path = Path.Combine("data", "load_weights.txt");
+            if (File.Exists(path))
+            {
+                foreach (var raw in File.ReadAllLines(path, Encoding.GetEncoding(1250)))
+                {
+                    string line = raw.Trim();
+                    if (line.Length == 0 || line.StartsWith("#") || line.StartsWith("//"))
+                        continue;
+                    int colon = line.IndexOf(':');
+                    string name = (colon >= 0 ? line[..colon] : line).Trim();
+                    if (name.Length > 0)
+                        list.Add(name);
+                }
+            }
+        }
+        catch { /* missing / unreadable - just no suggestions */ }
+
+        _loadTypes = list.Distinct(StringComparer.OrdinalIgnoreCase)
+                         .OrderBy(s => s, StringComparer.OrdinalIgnoreCase)
+                         .ToList();
+        return _loadTypes;
     }
 
     // ------------------------------------------------------------------- minis
@@ -1049,18 +1222,6 @@ public partial class Depot : UserControl
         _searchTimer.Start();
     }
 
-    private void NewConsist_OnClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
-    {
-        // detach from any scenery trainset - this consist is now standalone
-        _editingTrainset = null;
-        AppState.Instance.CurrentTrainset = null;
-        _consist.Clear();
-        _selected = null;
-        _suppress = true;
-        sceneryConsistCombo.SelectedItem = null;
-        _suppress = false;
-        RebuildConsist();
-    }
 }
 
 // One entry in the consist: a single vehicle or a locked multi-car unit.

@@ -279,10 +279,24 @@ public class VehicleDatabase
             if (t.Group != null)
                 GroupsById.TryGetValue(t.Group, out g);
 
-            t.ResolvedCategory = g?.Category;
-            t.ResolvedClass = g != null && !string.IsNullOrEmpty(g.Mini)
+            string mini = g != null && !string.IsNullOrEmpty(g.Mini)
                 ? g.Mini!
                 : t.MiniRef ?? "";
+
+            string? category = g?.Category;
+
+            // A "*" category is a wildcard: the actual category is the first letter
+            // of the mini (upper-cased, like the original Starter's UpCase(mini[1])
+            // wagon-typing), e.g. a "Bdhpumn" mini -> category "B".
+            if (category == "*")
+            {
+                string source = !string.IsNullOrEmpty(mini) ? mini : (t.TextureMini ?? "");
+                if (source.Length > 0)
+                    category = char.ToUpperInvariant(source[0]).ToString();
+            }
+
+            t.ResolvedCategory = category;
+            t.ResolvedClass = mini;
         }
     }
 

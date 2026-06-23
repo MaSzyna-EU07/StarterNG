@@ -27,10 +27,15 @@
                 BorderThickness="0,0,0,1">
             <Grid RowDefinitions="32,48">
 
-                <!-- Row 0: title / caption strip (draggable; OS buttons top-right) -->
-                <TextBlock Grid.Row="0" Text="Starter MaSzyna" VerticalAlignment="Center"
-                           Margin="14,0,0,0" FontSize="11"
-                           Foreground="{StaticResource CarbonFgDim}" />
+                <!-- Row 0: title / caption strip. Transparent background makes the
+                     whole strip a drag handle (PointerPressed -> BeginMoveDrag),
+                     and the OS buttons render at its top-right. -->
+                <Border Grid.Row="0" Background="Transparent"
+                        PointerPressed="TitleBar_OnPointerPressed">
+                    <TextBlock Text="Starter MaSzyna" VerticalAlignment="Center"
+                               Margin="14,0,0,0" FontSize="11"
+                               Foreground="{StaticResource CarbonFgDim}" />
+                </Border>
 
                 <!-- Row 1: logo + navigation (left) and the right cluster (right) -->
                 <Grid Grid.Row="1" ColumnDefinitions="Auto,Auto,*,Auto">

@@ -68,8 +68,14 @@ public partial class Scenarios : UserControl
         }
 
         // refresh the consist preview when the view is shown again (e.g. after
-        // editing the consist in the depot)
+        // editing the consist in the depot). Switching tabs only toggles IsVisible
+        // (the view stays in the tree), so listen for that too.
         AttachedToVisualTree += (_, _) => RefreshSelectedConsist();
+        PropertyChanged += (_, e) =>
+        {
+            if (e.Property == IsVisibleProperty && IsVisible)
+                RefreshSelectedConsist();
+        };
     }
 
     private void SceneryList_OnSelectionChanged(object? sender, SelectionChangedEventArgs e)

@@ -5,6 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using Avalonia.Controls;
+using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Threading;
 using StarterNG.Classes;
@@ -30,6 +31,13 @@ public partial class MainWindow : Window
 
         // Mirror the active language into the top-bar selector.
         LangCombo.SelectedIndex = App.Loc.CurrentLanguage == "Polski" ? 0 : 1;
+    }
+
+    // Lets the user drag the window by the top caption strip.
+    private void TitleBar_OnPointerPressed(object? sender, PointerPressedEventArgs e)
+    {
+        if (e.GetCurrentPoint(this).Properties.IsLeftButtonPressed)
+            BeginMoveDrag(e);
     }
 
     // ── Navigation: show the page whose RadioButton was just checked ──────────

@@ -21,7 +21,8 @@
         <HeaderedContentControl Grid.Column="0" Grid.Row="0" Theme="{StaticResource GroupBox}"
                                 Classes="Compact"
                                 Header="{Binding [Sceneries], Source={x:Static starterNg:App.Loc}}">
-            <TreeView Name="sceneryList" SelectionChanged="SceneryList_OnSelectionChanged" />
+            <TreeView Name="sceneryList" Classes="Compact"
+                      SelectionChanged="SceneryList_OnSelectionChanged" />
         </HeaderedContentControl>
 
         <!-- Centre: trainsets list (compact, fills) + description/weather/timetable tabs -->

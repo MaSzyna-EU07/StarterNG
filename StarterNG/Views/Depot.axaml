@@ -13,9 +13,11 @@
             <ColumnDefinition />
         </Grid.ColumnDefinitions>
         <Grid.RowDefinitions>
-            <RowDefinition Height="Auto" />
-            <RowDefinition />
-            <RowDefinition Height="220" />
+            <!-- Consists list and the brakes/loads editor share the upper area
+                 evenly, so the editor has room for all its controls. -->
+            <RowDefinition Height="*" />
+            <RowDefinition Height="*" MinHeight="210" />
+            <RowDefinition Height="190" />
         </Grid.RowDefinitions>
 
         <!-- Vehicle database browser (left, rows 0-1) -->
@@ -57,43 +59,31 @@
             </DockPanel>
         </HeaderedContentControl>
 
-        <!-- Scenery + load consist (top-right) -->
+        <!-- Consists present on the scenery selected in the Scenarios tab.
+             Selecting one loads it into the editor below. -->
         <HeaderedContentControl Grid.Column="1" Grid.Row="0" Theme="{StaticResource GroupBox}"
-                                Header="{Binding [LoadFromScenery], Source={x:Static starterNg:App.Loc}}">
-            <Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto" ColumnSpacing="8" RowSpacing="6">
-                <TextBlock Grid.Row="0" Grid.Column="0" VerticalAlignment="Center"
-                           Text="{Binding [Scenery], Source={x:Static starterNg:App.Loc}}" />
-                <ComboBox Name="sceneryCombo" Grid.Row="0" Grid.Column="1" HorizontalAlignment="Stretch"
-                          SelectionChanged="SceneryCombo_OnSelectionChanged" />
-                <ComboBox Name="sceneryConsistCombo" Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2"
-                          HorizontalAlignment="Stretch" MaxDropDownHeight="420"
-                          PlaceholderText="{Binding [LoadFromScenery], Source={x:Static starterNg:App.Loc}}"
-                          DropDownOpened="SceneryConsistCombo_OnDropDownOpened"
-                          SelectionChanged="SceneryConsistCombo_OnSelectionChanged" />
-            </Grid>
+                                Header="{Binding [MapConsists], Source={x:Static starterNg:App.Loc}}">
+            <DockPanel LastChildFill="True">
+                <TextBlock Name="mapSceneryLabel" DockPanel.Dock="Top" FontSize="12"
+                           Opacity="0.8" Margin="0,0,0,6" TextTrimming="CharacterEllipsis" />
+                <ListBox Name="sceneryConsistList" Classes="Compact"
+                         SelectionChanged="SceneryConsistList_OnSelectionChanged" />
+            </DockPanel>
         </HeaderedContentControl>
 
         <!-- Brakes / Loads editor (middle-right) -->
         <HeaderedContentControl Grid.Column="1" Grid.Row="1" Theme="{StaticResource GroupBox}"
                                 Header="{Binding [SelectedVehicle], Source={x:Static starterNg:App.Loc}}">
             <DockPanel LastChildFill="True">
-                <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Spacing="8" Margin="0,0,0,8">
-                    <Button Name="newConsistButton" Classes="Flat" Cursor="Hand"
-                            Click="NewConsist_OnClick"
-                            Content="{Binding [NewConsist], Source={x:Static starterNg:App.Loc}}" />
-                    <TextBlock Name="summaryLabel" VerticalAlignment="Center" Opacity="0.8" FontSize="12" />
-                </StackPanel>
                 <TabControl>
                     <TabItem Header="{Binding [Brakes], Source={x:Static starterNg:App.Loc}}">
                         <ScrollViewer VerticalScrollBarVisibility="Auto">
-                            <TextBlock Name="brakesContent" TextWrapping="Wrap" FontSize="12"
-                                       LineHeight="18" Margin="4" />
+                            <StackPanel Name="brakesPanel" Margin="4" Spacing="8" />
                         </ScrollViewer>
                     </TabItem>
                     <TabItem Header="{Binding [Loads], Source={x:Static starterNg:App.Loc}}">
                         <ScrollViewer VerticalScrollBarVisibility="Auto">
-                            <TextBlock Name="loadsContent" TextWrapping="Wrap" FontSize="12"
-                                       LineHeight="18" Margin="4" />
+                            <StackPanel Name="loadsPanel" Margin="4" Spacing="8" />
                         </ScrollViewer>
                     </TabItem>
                 </TabControl>
