@@ -153,6 +153,53 @@ public sealed class Settings
     private static string DefaultConfigPath() =>
         Path.Combine(Directory.GetCurrentDirectory(), "eu07.ini");
 
+    /// <summary>
+    /// The simulator executable to launch. With auto-selection on, the working
+    /// directory is scanned for an <c>eu07*</c> binary - <c>eu07</c> on Linux/macOS,
+    /// <c>eu07.exe</c> on Windows - so the same procedure works on every OS. With it
+    /// off, the explicitly chosen path is used.
+    /// </summary>
+    public string ResolveExecutable()
+    {
+        if (!SelectExeAutomatically && !string.IsNullOrWhiteSpace(ExecutablePath))
+            return ExecutablePath;
+
+        string canonical = OperatingSystem.IsWindows() ? "eu07.exe" : "eu07";
+        try
+        {
+            string? best = null;
+            foreach (string path in Directory.GetFiles(Directory.GetCurrentDirectory(), "eu07*"))
+            {
+                if (!IsExecutableCandidate(path))
+                    continue;
+                string file = Path.GetFileName(path);
+                if (string.Equals(file, canonical, StringComparison.OrdinalIgnoreCase))
+                    return path; // exact canonical name wins
+                if (best == null || file.Length < Path.GetFileName(best).Length)
+                    best = path; // otherwise prefer the shortest eu07* name
+            }
+            if (best != null)
+                return best;
+        }
+        catch { /* fall through to the canonical name */ }
+
+        return canonical;
+    }
+
+    // Filters the eu07* matches down to plausible launcher binaries, skipping data
+    // and config files (eu07.ini, eu07.log, libraries, …).
+    private static bool IsExecutableCandidate(string path)
+    {
+        string ext = Path.GetExtension(path).ToLowerInvariant();
+        if (ext is ".ini" or ".log" or ".txt" or ".cfg" or ".config" or ".json"
+                or ".dll" or ".so" or ".dat" or ".bak" or ".csv" or ".xml")
+            return false;
+        if (OperatingSystem.IsWindows())
+            return ext == ".exe";
+        // Linux / macOS: no extension (eu07) or a known binary suffix
+        return ext.Length == 0 || ext is ".x86_64" or ".run" or ".appimage";
+    }
+
     private static readonly Encoding FileEncoding = ResolveEncoding();
 
     private static Encoding ResolveEncoding()

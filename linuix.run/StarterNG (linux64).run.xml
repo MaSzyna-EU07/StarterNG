@@ -1,0 +1,10 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="StarterNG (linux64)" type="DotNetFolderPublish" factoryName="Publish to folder">
+    <riderPublish configuration="Release" delete_existing_files="true" platform="x64" produce_single_file="true" ready_to_run="true" self_contained="true" target_folder="$PROJECT_DIR$/StarterNG/bin/Release/net9.0/linux-x64/publish" target_framework="net9.0" trim_unused_assemblies="true" uuid_high="-3321224803864985254" uuid_low="-7733288644066679555">
+      <runtimes>
+        <item value="linux-x64" />
+      </runtimes>
+    </riderPublish>
+    <method v="2" />
+  </configuration>
+</component>

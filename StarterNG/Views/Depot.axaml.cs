@@ -118,11 +118,11 @@ public partial class Depot : UserControl
     // Car-type suffixes (longest first) used only for the consist unit label.
     private static readonly string[] CarSuffixes = { "sa", "sb", "ra", "rb", "s" };
 
-    // Coupling-bit labels in mask-bit order (bit i = value 1<<i), per the wiki:
-    // https://wiki.eu07.pl/index.php?title=Wpisy_hamulca_dla_pojazdow
-    private static readonly string[] CouplingBits =
-        { "Mechanical", "Brake pipe", "Control (MU)", "High voltage",
-          "Gangway", "Aux pneumatic", "Heating", "Workshop lock" };
+    // Coupling-bit localisation keys in mask-bit order (bit i = value 1<<i), per
+    // the wiki: https://wiki.eu07.pl/index.php?title=Wpisy_hamulca_dla_pojazdow
+    private static readonly string[] CouplingBitKeys =
+        { "CplMechanical", "CplBrake", "CplControl", "CplHighVoltage",
+          "CplGangway", "CplAuxPneumatic", "CplHeating", "CplWorkshop" };
 
     public Depot()
     {
@@ -463,6 +463,7 @@ public partial class Depot : UserControl
         };
         _consist[i] = item;
         _selected = item;
+        AutoConnectAll();
         RebuildConsist();
     }
 
@@ -503,6 +504,7 @@ public partial class Depot : UserControl
         }
         _consist.Insert(at, item);
         _selected = item;
+        AutoConnectAll();
         RebuildConsist();
     }
 
@@ -686,6 +688,7 @@ public partial class Depot : UserControl
 
         emptyHint.IsVisible = _consist.Count == 0;
         UpdateDetails();
+        UpdateTrainStats();
         WriteBackToScenery();
     }
 
@@ -708,6 +711,89 @@ public partial class Depot : UserControl
             }
         }
         _editingTrainset.Vehicles = flat;
+    }
+
+    // Resolves the .fiz physics for a consist car: the .fiz is named after the
+    // model, so try the database model first, then the scenery mmd token, then the
+    // skin file name.
+    private Physics? PhysicsFor(Dynamic car)
+    {
+        string? dbModel = _db.TextureForSkin(car.SkinFile)?.Model;
+        return Physics.For(car.DataFolder, dbModel)
+            ?? Physics.For(car.DataFolder, car.MmdFile)
+            ?? Physics.For(car.DataFolder, car.SkinFile);
+    }
+
+    // Recomputes every coupling from the vehicles' .fiz AllowedFlag, like the
+    // original Starter's AutoCoupler: the coupling is the bits common to the
+    // facing ends, minus the multiple-unit (control) bit when the control types
+    // differ. Called when a vehicle is added or replaced.
+    private void AutoConnectAll()
+    {
+        var flat = new List<(Dynamic car, bool flipped)>();
+        foreach (var item in _consist)
+        {
+            var cars = item.Flipped ? item.Cars.AsEnumerable().Reverse() : item.Cars;
+            foreach (var c in cars)
+                flat.Add((c, item.Flipped));
+        }
+
+        for (int i = 0; i < flat.Count - 1; i++)
+        {
+            var (left, lf) = flat[i];
+            var (right, rf) = flat[i + 1];
+
+            var lp = PhysicsFor(left);
+            var rp = PhysicsFor(right);
+
+            // GetMaxCoupler: the end facing the neighbour (swapped when flipped)
+            int leftMax = lp == null ? 3 : (lf ? lp.AllowedFlagA : lp.AllowedFlagB);
+            int rightMax = rp == null ? 3 : (rf ? rp.AllowedFlagB : rp.AllowedFlagA);
+            int common = leftMax & rightMax; // CommonCoupler = shared flag bits
+
+            string lct = lp == null ? "" : (lf ? lp.ControlTypeA : lp.ControlTypeB);
+            string rct = rp == null ? "" : (rf ? rp.ControlTypeB : rp.ControlTypeA);
+            if ((common & Coupling.ControlMU) != 0 &&
+                !string.Equals(lct, rct, StringComparison.OrdinalIgnoreCase))
+                common &= ~Coupling.ControlMU;
+
+            left.Coupling.Flags = left.Coupling.Locked ? -common : common;
+        }
+    }
+
+    // Train totals (length / mass / Vmax / load) read from the .fiz files.
+    private void UpdateTrainStats()
+    {
+        if (_consist.Count == 0)
+        {
+            trainStats.Text = "";
+            return;
+        }
+
+        double lengthM = 0, massKg = 0, loadKg = 0;
+        double vmax = double.PositiveInfinity;
+
+        foreach (var item in _consist)
+            foreach (var c in item.Cars)
+            {
+                var p = PhysicsFor(c);
+                if (p != null)
+                {
+                    lengthM += p.Length;
+                    massKg += p.Mass;
+                    if (p.VMax > 0) vmax = Math.Min(vmax, p.VMax);
+                }
+                if (c.LoadCount > 0 && !string.IsNullOrEmpty(c.LoadType))
+                    loadKg += (double)c.LoadCount * LoadWeight(c.LoadType);
+            }
+
+        var inv = System.Globalization.CultureInfo.InvariantCulture;
+        string v = double.IsInfinity(vmax) ? "—" : $"{vmax.ToString("0", inv)} km/h";
+        trainStats.Text =
+            $"{App.Loc["Length"]}: {lengthM.ToString("0.#", inv)} m    ·    " +
+            $"{App.Loc["Mass"]}: {(massKg / 1000.0).ToString("0.#", inv)} t    ·    " +
+            $"Vmax: {v}    ·    " +
+            $"{App.Loc["Load"]}: {(loadKg / 1000.0).ToString("0.#", inv)} t";
     }
 
     private Control BuildCard(ConsistItem item)
@@ -961,12 +1047,12 @@ public partial class Depot : UserControl
             Margin = new Thickness(0, 0, 0, 2)
         });
 
-        for (int i = 0; i < CouplingBits.Length; i++)
+        for (int i = 0; i < CouplingBitKeys.Length; i++)
         {
             int bit = 1 << i;
             var check = new CheckBox
             {
-                Content = CouplingBits[i],
+                Content = App.Loc[CouplingBitKeys[i]],
                 IsChecked = d.Coupling.Has(bit),
                 FontSize = 11
             };
@@ -1016,16 +1102,19 @@ public partial class Depot : UserControl
     {
         brakesPanel.Children.Clear();
         loadsPanel.Children.Clear();
+        damagePanel.Children.Clear();
 
         if (_selected is null)
         {
             brakesPanel.Children.Add(DetailHint(App.Loc["SelectVehicleHint"]));
             loadsPanel.Children.Add(DetailHint(App.Loc["SelectVehicleHint"]));
+            damagePanel.Children.Add(DetailHint(App.Loc["SelectVehicleHint"]));
             return;
         }
 
         BuildBrakesEditor(_selected);
         BuildLoadsEditor(_selected);
+        BuildDamageEditor(_selected);
     }
 
     private static TextBlock DetailHint(string text) => new()
@@ -1060,20 +1149,20 @@ public partial class Depot : UserControl
     {
         var brake = item.Cars[0].Coupling.GetBrake();
 
-        var modeCombo = new ComboBox { FontSize = 12, MinWidth = 150 };
+        var modeCombo = new ComboBox { FontSize = 12, MinWidth = 280 };
         AddOption(modeCombo, App.Loc["None"], null);
-        foreach (var m in BrakeSetting.Modes) AddOption(modeCombo, m, m);
+        foreach (var m in BrakeSetting.Modes) AddOption(modeCombo, BrakeModeLabel(m), m);
         modeCombo.SelectedIndex = brake?.Mode is { } mode
             ? Array.IndexOf(BrakeSetting.Modes, mode) + 1 : 0;
 
         string?[] loads = { null, "T", "H", "F", "A" };
-        var loadCombo = new ComboBox { FontSize = 12, MinWidth = 150 };
-        foreach (var l in loads) AddOption(loadCombo, l ?? App.Loc["None"], l);
+        var loadCombo = new ComboBox { FontSize = 12, MinWidth = 280 };
+        foreach (var l in loads) AddOption(loadCombo, LoadLabel(l), l);
         loadCombo.SelectedIndex = Math.Max(0, Array.IndexOf(loads, brake?.Load));
 
         string?[] switches = { null, "0", "1", "A" };
-        var switchCombo = new ComboBox { FontSize = 12, MinWidth = 150 };
-        foreach (var s in switches) AddOption(switchCombo, s ?? App.Loc["None"], s);
+        var switchCombo = new ComboBox { FontSize = 12, MinWidth = 280 };
+        foreach (var s in switches) AddOption(switchCombo, SwitchLabel(s), s);
         switchCombo.SelectedIndex = Math.Max(0, Array.IndexOf(switches, brake?.Switch));
 
         void Apply()
@@ -1103,25 +1192,105 @@ public partial class Depot : UserControl
         brakesPanel.Children.Add(LabeledRow(App.Loc["BrakeSwitch"], switchCombo));
     }
 
+    // Descriptive labels (what the option does), per the wiki - not the raw code.
+    private static string BrakeModeLabel(string code) => code switch
+    {
+        "G" => App.Loc["BrakeFreight"],
+        "P" => App.Loc["BrakePassenger"],
+        "R" => App.Loc["BrakeExpress"],
+        "R+Mg" => App.Loc["BrakeExpressMg"],
+        "Q" => App.Loc["BrakeNoAir"],
+        "O" => App.Loc["BrakeOff"],
+        "A" => App.Loc["BrakeAuto"],
+        _ => code
+    };
+
+    private static string LoadLabel(string? code) => code switch
+    {
+        "T" => App.Loc["LoadEmpty"],
+        "H" => App.Loc["LoadMedium"],
+        "F" => App.Loc["LoadFull"],
+        "A" => App.Loc["LoadAuto"],
+        _ => App.Loc["None"]
+    };
+
+    private static string SwitchLabel(string? code) => code switch
+    {
+        "0" => App.Loc["SwitchOff"],
+        "1" => App.Loc["SwitchOff10"],
+        "A" => App.Loc["SwitchOn"],
+        _ => App.Loc["None"]
+    };
+
+    // Wheel-damage editor: sway / flat-spot parameters (the "W" coupling prefix).
+    private void BuildDamageEditor(ConsistItem item)
+    {
+        var w = item.Cars[0].Coupling.GetWheels() ?? new WheelSettings();
+
+        NumericUpDown Spin(int value, int max) => new()
+        {
+            FontSize = 12, Minimum = 0, Maximum = max, Increment = 1,
+            Value = value, MinWidth = 120, FormatString = "0"
+        };
+
+        var sway = Spin(w.Sway, 100);
+        var flat = Spin(w.Flatness, 100);
+        var flatRand = Spin(w.FlatnessRand, 100);
+        var flatProb = Spin(w.FlatnessProb, 100);
+
+        void Apply()
+        {
+            var ws = new WheelSettings
+            {
+                Sway = (int)(sway.Value ?? 0),
+                Flatness = (int)(flat.Value ?? 0),
+                FlatnessRand = (int)(flatRand.Value ?? 0),
+                FlatnessProb = (int)(flatProb.Value ?? 0)
+            };
+            foreach (var c in item.Cars)
+                c.Coupling.SetWheels(ws);
+        }
+
+        sway.ValueChanged += (_, _) => Apply();
+        flat.ValueChanged += (_, _) => Apply();
+        flatRand.ValueChanged += (_, _) => Apply();
+        flatProb.ValueChanged += (_, _) => Apply();
+
+        damagePanel.Children.Add(UnitTitle(item));
+        damagePanel.Children.Add(LabeledRow(App.Loc["DamageSway"], sway));
+        damagePanel.Children.Add(LabeledRow(App.Loc["DamageFlatness"], flat));
+        damagePanel.Children.Add(LabeledRow(App.Loc["DamageFlatnessRand"], flatRand));
+        damagePanel.Children.Add(LabeledRow(App.Loc["DamageFlatnessProb"], flatProb));
+    }
+
     // Cargo type + amount, written into each car's node::dynamic trailing params.
     private void BuildLoadsEditor(ConsistItem item)
     {
         var lead = item.Cars[0];
+        var phys = PhysicsFor(lead);
 
-        // Suggest cargo names from data/load_weights.txt (same source the original
-        // Starter uses), while still allowing a free-typed value.
+        // Prefer the cargo this vehicle actually accepts (.fiz LoadAccepted);
+        // otherwise suggest everything from data/load_weights.txt. Free text is
+        // still allowed.
+        var accepted = phys != null && !string.IsNullOrWhiteSpace(phys.LoadAccepted)
+            ? phys.LoadAccepted.Split(',', ';').Select(s => s.Trim()).Where(s => s.Length > 0).ToList()
+            : null;
+
         var typeBox = new AutoCompleteBox
         {
             FontSize = 12,
             MinWidth = 200,
             Text = lead.LoadType ?? "",
-            ItemsSource = LoadTypes(),
+            ItemsSource = accepted ?? (IEnumerable<string>)LoadTypes(),
             FilterMode = AutoCompleteFilterMode.ContainsOrdinal
         };
+
+        // Cap the amount at the .fiz MaxLoad when it is defined.
+        int maxLoad = phys != null && phys.MaxLoad > 0 ? phys.MaxLoad : 1000;
         var countBox = new NumericUpDown
         {
-            FontSize = 12, Minimum = 0, Maximum = 1000, Increment = 1,
-            Value = lead.LoadCount, MinWidth = 120, FormatString = "0"
+            FontSize = 12, Minimum = 0, Maximum = maxLoad, Increment = 1,
+            Value = Math.Min(lead.LoadCount, maxLoad), MinWidth = 120, FormatString = "0"
         };
 
         void Apply()
@@ -1149,16 +1318,19 @@ public partial class Depot : UserControl
         });
     }
 
-    // Cargo names parsed once from data/load_weights.txt (the file the simulator
-    // and the original Starter use), for the load-type suggestions. Each line is
-    // "<name>: <weight>"; only the name (before the colon) is used here.
+    // Cargo names + per-unit weights parsed once from data/load_weights.txt (the
+    // file the simulator and the original Starter use). Each line is
+    // "<name>: <weight>".
     private static List<string>? _loadTypes;
-    private static IReadOnlyList<string> LoadTypes()
+    private static Dictionary<string, int>? _loadWeights;
+
+    private static void EnsureLoads()
     {
         if (_loadTypes != null)
-            return _loadTypes;
+            return;
 
-        var list = new List<string>();
+        var names = new List<string>();
+        var weights = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
         try
         {
             string path = Path.Combine("data", "load_weights.txt");
@@ -1171,17 +1343,32 @@ public partial class Depot : UserControl
                         continue;
                     int colon = line.IndexOf(':');
                     string name = (colon >= 0 ? line[..colon] : line).Trim();
-                    if (name.Length > 0)
-                        list.Add(name);
+                    if (name.Length == 0) continue;
+                    names.Add(name);
+                    if (colon >= 0 && int.TryParse(line[(colon + 1)..].Trim(), out int w))
+                        weights[name] = w;
                 }
             }
         }
         catch { /* missing / unreadable - just no suggestions */ }
 
-        _loadTypes = list.Distinct(StringComparer.OrdinalIgnoreCase)
-                         .OrderBy(s => s, StringComparer.OrdinalIgnoreCase)
-                         .ToList();
-        return _loadTypes;
+        _loadTypes = names.Distinct(StringComparer.OrdinalIgnoreCase)
+                          .OrderBy(s => s, StringComparer.OrdinalIgnoreCase)
+                          .ToList();
+        _loadWeights = weights;
+    }
+
+    private static IReadOnlyList<string> LoadTypes()
+    {
+        EnsureLoads();
+        return _loadTypes!;
+    }
+
+    // Per-unit weight (kg) of a cargo, defaulting to 1000 like the original Starter.
+    private static int LoadWeight(string? name)
+    {
+        EnsureLoads();
+        return !string.IsNullOrEmpty(name) && _loadWeights!.TryGetValue(name!, out int w) ? w : 1000;
     }
 
     // ------------------------------------------------------------------- minis

@@ -121,11 +121,51 @@
     <String key="BrakeLoad">Nastawa ładunkowa</String>
     <String key="BrakeSwitch">Włącznik hamulca</String>
     <String key="None">—</String>
+
+    <!-- Bity maski sprzęgu -->
+    <String key="CplMechanical">Mechaniczny</String>
+    <String key="CplBrake">Pneumatyczny 5 atm (hamulce)</String>
+    <String key="CplControl">Ukrotnienie (sterowanie wielokrotne)</String>
+    <String key="CplHighVoltage">Wysokie napięcie</String>
+    <String key="CplGangway">Przejście między pojazdami</String>
+    <String key="CplAuxPneumatic">Pneumatyczny pomocniczy 8 atm</String>
+    <String key="CplHeating">Ogrzewanie</String>
+    <String key="CplWorkshop">Sprzęg warsztatowy (blokada rozłączania)</String>
+
+    <!-- Tryby nastawy hamulca -->
+    <String key="BrakeFreight">Towarowa (G)</String>
+    <String key="BrakePassenger">Osobowa (P)</String>
+    <String key="BrakeExpress">Pospieszna (R)</String>
+    <String key="BrakeExpressMg">Pospieszna + szynowy magnetyczny (R+Mg)</String>
+    <String key="BrakeNoAir">Start bez powietrza (Q)</String>
+    <String key="BrakeOff">Odłączone hamulce (O)</String>
+    <String key="BrakeAuto">Wybór automatyczny (A)</String>
+
+    <!-- Nastawa ładunkowa -->
+    <String key="LoadEmpty">Próżny (T)</String>
+    <String key="LoadMedium">Ładowny I — średni (H)</String>
+    <String key="LoadFull">Ładowny II (F)</String>
+    <String key="LoadAuto">Wybór automatyczny (A)</String>
+
+    <!-- Włącznik hamulca -->
+    <String key="SwitchOff">Wyłączony (0)</String>
+    <String key="SwitchOff10">Wyłączony z prawd. 10% (1)</String>
+    <String key="SwitchOn">Włączony (A)</String>
+
+    <!-- Uszkodzenia (parametry kół) -->
+    <String key="Damage">Uszkodzenia</String>
+    <String key="DamageSway">Wężykowanie — prawdop. (%)</String>
+    <String key="DamageFlatness">Podkucie (mm)</String>
+    <String key="DamageFlatnessRand">Podkucie losowe (0–x mm)</String>
+    <String key="DamageFlatnessProb">Prawdop. podkucia (%)</String>
     <String key="LoadType">Rodzaj ładunku</String>
     <String key="LoadCount">Ilość</String>
     <String key="LoadHint">Ustaw ilość większą od 0, aby załadować pojazd.</String>
     <String key="WagonNumber">Numer wagonu</String>
     <String key="Set">Ustaw</String>
+    <String key="Length">Długość</String>
+    <String key="Mass">Masa</String>
+    <String key="Load">Ładunek</String>
     <String key="SelectVehicleHint">Wybierz pojazd w składzie, aby go edytować.</String>
     <String key="ComingSoon">Opcje edycji wkrótce.</String>
     <String key="Split">Rozdziel</String>

@@ -23,7 +23,7 @@ public class LocalizationService : INotifyPropertyChanged
 {
     /// <summary>Folder holding the language files, resolved as starter/lang next to the executable.</summary>
     public static string LangDirectory =>
-        Path.Combine(AppContext.BaseDirectory, "starter", "lang");
+        Path.Combine(AppContext.BaseDirectory, "startercfg", "lang");
 
     private Dictionary<string, string> _strings = new();
 

@@ -121,11 +121,51 @@
     <String key="BrakeLoad">Load setting</String>
     <String key="BrakeSwitch">Brake switch</String>
     <String key="None">—</String>
+
+    <!-- Coupling mask bits -->
+    <String key="CplMechanical">Mechanical</String>
+    <String key="CplBrake">Pneumatic 5 atm (brakes)</String>
+    <String key="CplControl">Multiple-unit control</String>
+    <String key="CplHighVoltage">High voltage</String>
+    <String key="CplGangway">Gangway between vehicles</String>
+    <String key="CplAuxPneumatic">Auxiliary pneumatic 8 atm</String>
+    <String key="CplHeating">Heating</String>
+    <String key="CplWorkshop">Workshop coupling (uncouple lock)</String>
+
+    <!-- Brake modes -->
+    <String key="BrakeFreight">Freight (G)</String>
+    <String key="BrakePassenger">Passenger (P)</String>
+    <String key="BrakeExpress">Express (R)</String>
+    <String key="BrakeExpressMg">Express + magnetic rail (R+Mg)</String>
+    <String key="BrakeNoAir">Start without air (Q)</String>
+    <String key="BrakeOff">Brakes disconnected (O)</String>
+    <String key="BrakeAuto">Automatic (A)</String>
+
+    <!-- Load adaptation -->
+    <String key="LoadEmpty">Empty (T)</String>
+    <String key="LoadMedium">Loaded I — medium (H)</String>
+    <String key="LoadFull">Loaded II (F)</String>
+    <String key="LoadAuto">Automatic (A)</String>
+
+    <!-- Brake switch -->
+    <String key="SwitchOff">Off (0)</String>
+    <String key="SwitchOff10">Off with 10% chance (1)</String>
+    <String key="SwitchOn">On (A)</String>
+
+    <!-- Damage (wheel parameters) -->
+    <String key="Damage">Damage</String>
+    <String key="DamageSway">Sway — probability (%)</String>
+    <String key="DamageFlatness">Flat spot (mm)</String>
+    <String key="DamageFlatnessRand">Random flat spot (0–x mm)</String>
+    <String key="DamageFlatnessProb">Flat-spot probability (%)</String>
     <String key="LoadType">Load type</String>
     <String key="LoadCount">Amount</String>
     <String key="LoadHint">Set an amount above 0 to load the vehicle.</String>
     <String key="WagonNumber">Wagon number</String>
     <String key="Set">Set</String>
+    <String key="Length">Length</String>
+    <String key="Mass">Mass</String>
+    <String key="Load">Load</String>
     <String key="SelectVehicleHint">Select a vehicle in the consist to edit it.</String>
     <String key="ComingSoon">Editing options coming soon.</String>
     <String key="Split">Split</String>

@@ -395,6 +395,19 @@ public sealed class Coupling
             Parameters.Insert(0, brake.ToParameter());
     }
 
+    /// <summary>The wheel/damage setting carried in the "W" parameter, or null.</summary>
+    public WheelSettings? GetWheels() =>
+        WheelSettings.FromParameter(
+            Parameters.FirstOrDefault(p => p.StartsWith("W", StringComparison.Ordinal)));
+
+    /// <summary>Replaces (or clears, when empty/null) the "W" wheel parameter.</summary>
+    public void SetWheels(WheelSettings? wheels)
+    {
+        Parameters.RemoveAll(p => p.StartsWith("W", StringComparison.Ordinal));
+        if (wheels != null && !wheels.IsEmpty)
+            Parameters.Add(wheels.ToParameter());
+    }
+
     public Coupling Clone() => new()
     {
         Flags = Flags,
@@ -451,4 +464,61 @@ public sealed class BrakeSetting
     }
 
     public string ToParameter() => "B" + Mode + (Load ?? "") + (Switch ?? "");
+}
+
+/// <summary>
+/// Wheel-damage settings carried in the "W" parameter of a vehicle's coupling
+/// field: <c>W[H&lt;sway%&gt;][F&lt;flat mm&gt;][R&lt;random flat mm&gt;][P&lt;flat prob%&gt;]</c>
+/// (e.g. "WH25F5R10P8"). See https://wiki.eu07.pl/index.php?title=Wpisy_hamulca_dla_pojazdow
+/// </summary>
+public sealed class WheelSettings
+{
+    /// <summary>H — sway ("wężykowanie") probability, %.</summary>
+    public int Sway;
+
+    /// <summary>F — flat spot ("podkucie") of this size, mm.</summary>
+    public int Flatness;
+
+    /// <summary>R — additional random flat spot, 0..x mm.</summary>
+    public int FlatnessRand;
+
+    /// <summary>P — flat-spot probability, % (guaranteed when omitted).</summary>
+    public int FlatnessProb;
+
+    public bool IsEmpty => Sway <= 0 && Flatness <= 0 && FlatnessRand <= 0 && FlatnessProb <= 0;
+
+    public static WheelSettings? FromParameter(string? param)
+    {
+        if (string.IsNullOrEmpty(param) || param![0] != 'W')
+            return null;
+
+        var w = new WheelSettings();
+        string body = param.Substring(1);
+        int i = 0;
+        while (i < body.Length)
+        {
+            char code = body[i++];
+            int start = i;
+            while (i < body.Length && char.IsDigit(body[i])) i++;
+            if (!int.TryParse(body[start..i], out int val)) continue;
+            switch (char.ToUpperInvariant(code))
+            {
+                case 'H': w.Sway = val; break;
+                case 'F': w.Flatness = val; break;
+                case 'R': w.FlatnessRand = val; break;
+                case 'P': w.FlatnessProb = val; break;
+            }
+        }
+        return w;
+    }
+
+    public string ToParameter()
+    {
+        var sb = new StringBuilder("W");
+        if (Sway > 0) sb.Append('H').Append(Sway);
+        if (Flatness > 0) sb.Append('F').Append(Flatness);
+        if (FlatnessRand > 0) sb.Append('R').Append(FlatnessRand);
+        if (FlatnessProb > 0) sb.Append('P').Append(FlatnessProb);
+        return sb.ToString();
+    }
 }

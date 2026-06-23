@@ -86,6 +86,11 @@
                             <StackPanel Name="loadsPanel" Margin="4" Spacing="8" />
                         </ScrollViewer>
                     </TabItem>
+                    <TabItem Header="{Binding [Damage], Source={x:Static starterNg:App.Loc}}">
+                        <ScrollViewer VerticalScrollBarVisibility="Auto">
+                            <StackPanel Name="damagePanel" Margin="4" Spacing="8" />
+                        </ScrollViewer>
+                    </TabItem>
                 </TabControl>
             </DockPanel>
         </HeaderedContentControl>
@@ -93,15 +98,20 @@
         <!-- Consist (full-width bottom, horizontally scrollable) -->
         <HeaderedContentControl Grid.Row="2" Grid.ColumnSpan="2" Theme="{StaticResource GroupBox}"
                                 Header="{Binding [Consist], Source={x:Static starterNg:App.Loc}}">
-            <Panel>
-                <TextBlock Name="emptyHint" VerticalAlignment="Center" HorizontalAlignment="Center"
-                           TextWrapping="Wrap" MaxWidth="520" Opacity="0.6" TextAlignment="Center"
-                           Text="{Binding [ConsistEmpty], Source={x:Static starterNg:App.Loc}}" />
-                <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
-                    <StackPanel Name="consistStack" Orientation="Horizontal"
-                                VerticalAlignment="Center" Spacing="0" />
-                </ScrollViewer>
-            </Panel>
+            <DockPanel LastChildFill="True">
+                <!-- Train totals computed from the .fiz files -->
+                <TextBlock Name="trainStats" DockPanel.Dock="Top" FontSize="12"
+                           Opacity="0.85" Margin="0,0,0,6" />
+                <Panel>
+                    <TextBlock Name="emptyHint" VerticalAlignment="Center" HorizontalAlignment="Center"
+                               TextWrapping="Wrap" MaxWidth="520" Opacity="0.6" TextAlignment="Center"
+                               Text="{Binding [ConsistEmpty], Source={x:Static starterNg:App.Loc}}" />
+                    <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
+                        <StackPanel Name="consistStack" Orientation="Horizontal"
+                                    VerticalAlignment="Center" Spacing="0" />
+                    </ScrollViewer>
+                </Panel>
+            </DockPanel>
         </HeaderedContentControl>
     </Grid>
 </UserControl>

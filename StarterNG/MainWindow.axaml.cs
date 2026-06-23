@@ -122,14 +122,19 @@ public partial class MainWindow : Window
         Settings.Instance.CaptureAndSave();
 
         // launch the game: -s $<name>.scn -v <vehicle>. Keep the handle so we can
-        // watch for the simulator exiting.
+        // watch for the simulator exiting. UseShellExecute = false runs the binary
+        // directly with its arguments, which works the same on Windows and Linux
+        // (the executable is resolved to eu07.exe / eu07 via ResolveExecutable).
         Process? sim;
         try
         {
-            sim = Process.Start(new ProcessStartInfo(Settings.Instance.ExecutablePath)
+            string exe = Path.GetFullPath(Settings.Instance.ResolveExecutable());
+            sim = Process.Start(new ProcessStartInfo
             {
+                FileName = exe,
                 Arguments = $"-s {exportName} -v {vehicle}",
-                UseShellExecute = true
+                WorkingDirectory = Path.GetDirectoryName(exe) ?? Directory.GetCurrentDirectory(),
+                UseShellExecute = false
             });
         }
         catch
@@ -162,7 +167,7 @@ public partial class MainWindow : Window
     {
         if (sim is null)
         {
-            string name = Path.GetFileNameWithoutExtension(Settings.Instance.ExecutablePath);
+            string name = Path.GetFileNameWithoutExtension(Settings.Instance.ResolveExecutable());
             sim = Process.GetProcessesByName(name).FirstOrDefault();
         }
 

@@ -2,14 +2,15 @@
     <PropertyGroup>
         <OutputType>WinExe</OutputType>
         <PublishAot>true</PublishAot>
+        <PublishTrimmed>true</PublishTrimmed>
         <IsAotCompatible>true</IsAotCompatible>
         <TargetFramework>net9.0</TargetFramework>
         <Nullable>enable</Nullable>
         <BuiltInComInteropSupport>true</BuiltInComInteropSupport>
         <ApplicationManifest>app.manifest</ApplicationManifest>
         <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
-        <AssemblyVersion>1.0.0.1</AssemblyVersion>
-        <FileVersion>1.0.0.1</FileVersion>
+        <AssemblyVersion>1.1.0.3</AssemblyVersion>
+        <FileVersion>1.1.0.3</FileVersion>
         <AssemblyName>Starter</AssemblyName>
         <Company>eu07.pl</Company>
     </PropertyGroup>
@@ -54,9 +55,9 @@
            compiled into the assembly. They are copied verbatim into a starter/lang/
            folder next to the executable so they can be edited or extended without a
            rebuild. XmlReader parsing is AOT-safe, unlike the Avalonia XAML loader. -->
-      <Content Include="starter\lang\*.xml">
+      <Content Include="startercfg\lang\*.xml">
         <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-        <Link>starter\lang\%(Filename)%(Extension)</Link>
+        <Link>startercfg\lang\%(Filename)%(Extension)</Link>
       </Content>
     </ItemGroup>
 </Project>

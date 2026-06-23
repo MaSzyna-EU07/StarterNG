@@ -62,6 +62,10 @@ public sealed class GameData
         // first thumbnail render doesn't scan textures/mini/ on the UI thread.
         VehicleDatabase.PreloadMiniIndex(miniDir);
 
+        // Likewise index every .fiz under dynamic/ once, so the consist's physics
+        // (length / mass / couplings) resolve without a UI-thread directory scan.
+        Physics.PreloadIndex();
+
         // Phase 2 - sceneries
         foreach (string file in scnFiles)
         {

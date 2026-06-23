@@ -25,4 +25,8 @@ Global
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
 	EndGlobalSection
+	GlobalSection(RiderSharedRunConfigurations) = postSolution
+		File = linuix.run\StarterNG (linux64).run.xml
+		File = windows.run\StarterNG (win64).run.xml
+	EndGlobalSection
 EndGlobal
