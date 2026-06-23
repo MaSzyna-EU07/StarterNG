@@ -3,8 +3,10 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
+using Avalonia.Threading;
 using StarterNG.Classes;
 
 namespace StarterNG;
@@ -111,10 +113,12 @@ public partial class MainWindow : Window
         // make sure the latest settings are on disk before the sim reads them
         Settings.Instance.CaptureAndSave();
 
-        // launch the game: -s $<name>.scn -v <vehicle>
+        // launch the game: -s $<name>.scn -v <vehicle>. Keep the handle so we can
+        // watch for the simulator exiting.
+        Process? sim;
         try
         {
-            Process.Start(new ProcessStartInfo(Settings.Instance.ExecutablePath)
+            sim = Process.Start(new ProcessStartInfo(Settings.Instance.ExecutablePath)
             {
                 Arguments = $"-s {exportName} -v {vehicle}",
                 UseShellExecute = true
@@ -127,6 +131,58 @@ public partial class MainWindow : Window
 
         // honour the "close starter automatically" preference
         if (Settings.Instance.AutoCloseStarter)
+        {
             Close();
+            return;
+        }
+
+        // Otherwise keep the starter running but hidden while the sim is in the
+        // foreground, and bring it back once the simulator process exits.
+        Hide();
+
+        // reduce ram usage while the sim runs
+        GC.Collect();
+        GC.WaitForPendingFinalizers();
+
+        WatchSimulator(sim);
+    }
+
+    // Waits (off the UI thread) for the simulator to exit, then restores the
+    // starter window. Uses the launch handle when available, otherwise locates the
+    // process by name, and never leaves the UI hidden if it cannot be tracked.
+    private void WatchSimulator(Process? sim)
+    {
+        if (sim is null)
+        {
+            string name = Path.GetFileNameWithoutExtension(Settings.Instance.ExecutablePath);
+            sim = Process.GetProcessesByName(name).FirstOrDefault();
+        }
+
+        if (sim is null)
+        {
+            // no handle to wait on - restore immediately rather than hide forever
+            Dispatcher.UIThread.Post(RestoreFromSimulator);
+            return;
+        }
+
+        var watcher = new Thread(() =>
+        {
+            try { sim.WaitForExit(); }
+            catch { /* already exited / access denied */ }
+            Dispatcher.UIThread.Post(RestoreFromSimulator);
+        })
+        {
+            IsBackground = true,
+            Name = "SimulatorWatcher"
+        };
+        watcher.Start();
+    }
+
+    // Brings the starter back to the foreground after the simulator closes.
+    private void RestoreFromSimulator()
+    {
+        Show();
+        WindowState = WindowState.Normal;
+        Activate();
     }
 }
