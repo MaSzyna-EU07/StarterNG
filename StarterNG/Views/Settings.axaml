@@ -2,15 +2,14 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-             xmlns:suki="clr-namespace:SukiUI.Controls;assembly=SukiUI"
-             xmlns:objectModel="clr-namespace:System.Collections.ObjectModel;assembly=System.ObjectModel"
              xmlns:starterNg="clr-namespace:StarterNG"
              mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
              x:Class="StarterNG.Views.Settings"
              x:CompileBindings="True">
     <DockPanel>
         <!-- Save / reset bar -->
-        <Border DockPanel.Dock="Bottom" Padding="16,10" Background="#11000000">
+        <Border DockPanel.Dock="Bottom" Padding="16,10" Background="{StaticResource CarbonPanelBg}"
+                BorderBrush="{StaticResource CarbonBorderLight}" BorderThickness="0,1,0,0">
             <StackPanel Orientation="Horizontal" Spacing="12" HorizontalAlignment="Right">
                 <TextBlock x:Name="SaveStatus" VerticalAlignment="Center" Opacity="0.8" Text="" />
                 <Button x:Name="ResetButton" Classes="Flat" Click="ResetButton_OnClick"
@@ -20,380 +19,281 @@
             </StackPanel>
         </Border>
 
-        <suki:SettingsLayout>
-            <suki:SettingsLayout.Items>
-                <objectModel:ObservableCollection x:TypeArguments="suki:SettingsLayoutItem">
-                    <suki:SettingsLayoutItem Header="{Binding [General], Source={x:Static starterNg:App.Loc}}">
-                        <suki:SettingsLayoutItem.Content>
-                            <StackPanel Spacing="8" Orientation="Vertical">
-                                <StackPanel Spacing="8" Orientation="Horizontal">
-                                    <Label Content="{Binding [Language], Source={x:Static starterNg:App.Loc}}"  VerticalAlignment="Center" FontSize="14"/>
-                                    <ComboBox x:Name="ChangeLanguageCb" MinWidth="350" MaxWidth="350" SelectedIndex="1" SelectionChanged="LanguageComboBox_OnSelectionChanged">
-                                        <ComboBoxItem>Polski</ComboBoxItem>
-                                        <ComboBoxItem>English</ComboBoxItem>
-                                    </ComboBox>
-                                </StackPanel>
+        <TabControl TabStripPlacement="Left">
+            <!-- General -->
+            <TabItem Header="{Binding [General], Source={x:Static starterNg:App.Loc}}">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel Spacing="8" Orientation="Vertical" Margin="12">
+                        <StackPanel Spacing="8" Orientation="Horizontal">
+                            <Label Content="{Binding [Language], Source={x:Static starterNg:App.Loc}}" VerticalAlignment="Center" FontSize="14" />
+                            <ComboBox x:Name="ChangeLanguageCb" MinWidth="350" MaxWidth="350" SelectedIndex="1" SelectionChanged="LanguageComboBox_OnSelectionChanged">
+                                <ComboBoxItem>Polski</ComboBoxItem>
+                                <ComboBoxItem>English</ComboBoxItem>
+                            </ComboBox>
+                        </StackPanel>
 
-                                <CheckBox x:Name="FullscreenCb" Content="{Binding [Fullscreen], Source={x:Static starterNg:App.Loc}}"/>
+                        <CheckBox x:Name="FullscreenCb" Content="{Binding [Fullscreen], Source={x:Static starterNg:App.Loc}}" />
+                        <CheckBox x:Name="PauseInactiveCb" Content="{Binding [PauseSimInactive], Source={x:Static starterNg:App.Loc}}" />
+                        <CheckBox x:Name="PauseStartCb" Content="{Binding [PauseSimStart], Source={x:Static starterNg:App.Loc}}" />
 
-                                <CheckBox x:Name="PauseInactiveCb" Content="{Binding [PauseSimInactive], Source={x:Static starterNg:App.Loc}}" />
+                        <StackPanel Spacing="8" Orientation="Horizontal">
+                            <Label VerticalAlignment="Center" FontSize="14" Content="{Binding [CursorSensitivity], Source={x:Static starterNg:App.Loc}}" />
+                            <Slider x:Name="CursorSensitivitySlider" Minimum="1" Maximum="5" TickFrequency="1" MinWidth="200" MaxWidth="200"
+                                    IsSnapToTickEnabled="True" Value="3" />
+                        </StackPanel>
 
-                                <CheckBox x:Name="PauseStartCb" Content="{Binding [PauseSimStart], Source={x:Static starterNg:App.Loc}}" />
+                        <CheckBox x:Name="MouseHorInvertCb" Content="{Binding [MouseHorInvert], Source={x:Static starterNg:App.Loc}}" />
+                        <CheckBox x:Name="MouseVertInvertCb" Content="{Binding [MouseVertInvert], Source={x:Static starterNg:App.Loc}}" />
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
 
-                                <StackPanel Spacing="8" Orientation="Horizontal">
-                                    <Label VerticalAlignment="Center" FontSize="14"  Content="{Binding [CursorSensitivity], Source={x:Static starterNg:App.Loc}}"/>
-                                    <Slider x:Name="CursorSensitivitySlider" Minimum="1" Maximum="5" TickFrequency="1" MinWidth="200" MaxWidth="200"
-                                            IsSnapToTickEnabled="True" Value="3">
-                                    </Slider>
-                                </StackPanel>
+            <!-- Communication -->
+            <TabItem Header="{Binding [Communication], Source={x:Static starterNg:App.Loc}}">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel Spacing="8" Orientation="Vertical" Margin="12">
+                        <CheckBox x:Name="GamepadIgnoreCb" Content="{Binding [GamepadSignalIgnore], Source={x:Static starterNg:App.Loc}}" />
+                        <StackPanel Spacing="8" Orientation="Horizontal">
+                            <Label VerticalAlignment="Center" FontSize="14" Content="{Binding [Feedback], Source={x:Static starterNg:App.Loc}}" />
+                            <ComboBox x:Name="FeedbackCb" MinWidth="350" MaxWidth="350" SelectedIndex="0">
+                                <ComboBoxItem Tag="0" Content="{Binding [FeedbackOff], Source={x:Static starterNg:App.Loc}}" />
+                                <ComboBoxItem Tag="1" Content="{Binding [FeedbackCASHP], Source={x:Static starterNg:App.Loc}}" />
+                                <ComboBoxItem Tag="2" Content="{Binding [FeedbackCA], Source={x:Static starterNg:App.Loc}}" />
+                                <ComboBoxItem Tag="3" Content="{Binding [FeedbackLPT], Source={x:Static starterNg:App.Loc}}" />
+                                <ComboBoxItem Tag="4" Content="{Binding [FeedbackPoKeys], Source={x:Static starterNg:App.Loc}}" />
+                                <ComboBoxItem Tag="5" Content="{Binding [FeedbackSP], Source={x:Static starterNg:App.Loc}}" />
+                            </ComboBox>
+                        </StackPanel>
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
 
-                                <CheckBox x:Name="MouseHorInvertCb" Content="{Binding [MouseHorInvert], Source={x:Static starterNg:App.Loc}}"/>
-                                <CheckBox x:Name="MouseVertInvertCb" Content="{Binding [MouseVertInvert], Source={x:Static starterNg:App.Loc}}" />
-                            </StackPanel>
-                        </suki:SettingsLayoutItem.Content>
-                    </suki:SettingsLayoutItem>
-                    <suki:SettingsLayoutItem Header="{Binding [Communication], Source={x:Static starterNg:App.Loc}}">
-                        <suki:SettingsLayoutItem.Content>
-                            <StackPanel Spacing="8" Orientation="Vertical">
-                                <CheckBox x:Name="GamepadIgnoreCb" Content="{Binding [GamepadSignalIgnore], Source={x:Static starterNg:App.Loc}}"/>
+            <!-- Others -->
+            <TabItem Header="{Binding [Others], Source={x:Static starterNg:App.Loc}}">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel Spacing="8" Orientation="Vertical" Margin="12">
+                        <StackPanel Spacing="8" Orientation="Horizontal">
+                            <Label VerticalAlignment="Center" FontSize="14" Content="{Binding [SelectEXE], Source={x:Static starterNg:App.Loc}}" />
+                            <ComboBox x:Name="SelectExeCb" MinWidth="350" MaxWidth="350" SelectedIndex="0">
+                                <ComboBoxItem Content="{Binding [SelectEXEAuto], Source={x:Static starterNg:App.Loc}}" />
+                                <ComboBoxItem>eu07.exe</ComboBoxItem>
+                            </ComboBox>
+                        </StackPanel>
+                        <CheckBox x:Name="DebugModeCb" Content="{Binding [DebugMode], Source={x:Static starterNg:App.Loc}}" />
+                        <CheckBox x:Name="VirtualShuntingCb" Content="{Binding [VirtualShunting], Source={x:Static starterNg:App.Loc}}" />
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
 
-                                <StackPanel Spacing="8" Orientation="Horizontal">
-                                    <Label VerticalAlignment="Center" FontSize="14" Content="{Binding [Feedback], Source={x:Static starterNg:App.Loc}}"/>
-                                    <ComboBox x:Name="FeedbackCb" MinWidth="350" MaxWidth="350" SelectedIndex="0">
-                                        <ComboBoxItem Tag="0" Content="{Binding [FeedbackOff], Source={x:Static starterNg:App.Loc}}"/>
-                                        <ComboBoxItem Tag="1" Content="{Binding [FeedbackCASHP], Source={x:Static starterNg:App.Loc}}"/>
-                                        <ComboBoxItem Tag="2" Content="{Binding [FeedbackCA], Source={x:Static starterNg:App.Loc}}"/>
-                                        <ComboBoxItem Tag="3" Content="{Binding [FeedbackLPT], Source={x:Static starterNg:App.Loc}}"/>
-                                        <ComboBoxItem Tag="4" Content="{Binding [FeedbackPoKeys], Source={x:Static starterNg:App.Loc}}"/>
-                                        <ComboBoxItem Tag="5" Content="{Binding [FeedbackSP], Source={x:Static starterNg:App.Loc}}"/>
-                                    </ComboBox>
-                                </StackPanel>
+            <!-- Graphic -->
+            <TabItem Header="{Binding [Graphic], Source={x:Static starterNg:App.Loc}}">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel Spacing="8" Orientation="Vertical" Margin="12">
+                        <StackPanel Spacing="8" Orientation="Horizontal">
+                            <Label VerticalAlignment="Center" FontSize="14" Content="{Binding [RenderEngine], Source={x:Static starterNg:App.Loc}}" />
+                            <ComboBox x:Name="RenderEngineCb" MinWidth="150" MaxWidth="150" SelectedIndex="0">
+                                <ComboBoxItem Content="{Binding [REFull], Source={x:Static starterNg:App.Loc}}" />
+                                <ComboBoxItem Content="{Binding [REOld], Source={x:Static starterNg:App.Loc}}" />
+                                <ComboBoxItem Content="{Binding [RESimpShader], Source={x:Static starterNg:App.Loc}}" />
+                                <ComboBoxItem Content="{Binding [RESimp], Source={x:Static starterNg:App.Loc}}" />
+                                <ComboBoxItem Content="{Binding [REOff], Source={x:Static starterNg:App.Loc}}" />
+                                <ComboBoxItem Content="{Binding [REExperimental], Source={x:Static starterNg:App.Loc}}" />
+                            </ComboBox>
+                        </StackPanel>
+                        <StackPanel Spacing="8" Orientation="Horizontal">
+                            <Label VerticalAlignment="Center" FontSize="14" Content="{Binding [Resolution], Source={x:Static starterNg:App.Loc}}" />
+                            <ComboBox x:Name="ResolutionCb" MinWidth="150" MaxWidth="150" SelectedIndex="0">
+                                <ComboBoxItem>3840x2160</ComboBoxItem>
+                                <ComboBoxItem>2560x1440</ComboBoxItem>
+                                <ComboBoxItem>1920x1080</ComboBoxItem>
+                                <ComboBoxItem>1600x900</ComboBoxItem>
+                                <ComboBoxItem>1366x768</ComboBoxItem>
+                                <ComboBoxItem>1280x720</ComboBoxItem>
+                            </ComboBox>
+                        </StackPanel>
+                        <StackPanel Spacing="8" Orientation="Horizontal">
+                            <TextBlock VerticalAlignment="Center" FontSize="14" Text="{Binding [BufforResolution], Source={x:Static starterNg:App.Loc}}" />
+                            <Slider Name="bufferScale" Minimum="50" MaxWidth="400" HorizontalAlignment="Left"
+                                    MinWidth="250" Maximum="200" TickFrequency="1" IsSnapToTickEnabled="True" Value="100" />
+                            <TextBlock VerticalAlignment="Center" Text="{Binding #bufferScale.Value, StringFormat='{}{0}%'}" />
+                        </StackPanel>
+                        <StackPanel Spacing="8" Orientation="Horizontal">
+                            <TextBlock VerticalAlignment="Center" FontSize="14" Text="{Binding [MaxTexResolution], Source={x:Static starterNg:App.Loc}}" />
+                            <Slider Name="textureResolutionSlider" Minimum="9" MaxWidth="400" HorizontalAlignment="Left"
+                                    MinWidth="250" Maximum="14" ValueChanged="TextureResolutionSlider_OnValueChanged"
+                                    TickFrequency="1" IsSnapToTickEnabled="True" Value="12" />
+                            <TextBlock Name="texResolution" VerticalAlignment="Center" Text="4096" />
+                        </StackPanel>
+                        <StackPanel Spacing="8" Orientation="Horizontal">
+                            <TextBlock VerticalAlignment="Center" FontSize="14" Text="{Binding [MaxTexCabResolution], Source={x:Static starterNg:App.Loc}}" />
+                            <Slider Name="cabTextureResolutionSlider" Minimum="9" MaxWidth="400" HorizontalAlignment="Left"
+                                    MinWidth="250" Maximum="14" ValueChanged="CabTextureResolutionSlider_OnValueChanged"
+                                    TickFrequency="1" IsSnapToTickEnabled="True" Value="12" />
+                            <TextBlock Name="cabTexResolution" VerticalAlignment="Center" Text="4096" />
+                        </StackPanel>
+                        <StackPanel Spacing="8" Orientation="Horizontal">
+                            <TextBlock VerticalAlignment="Center" FontSize="14" Text="{Binding [TexFilteringQuality], Source={x:Static starterNg:App.Loc}}" />
+                            <Slider x:Name="TexFilteringSlider" Minimum="1" MaxWidth="400" HorizontalAlignment="Left"
+                                    MinWidth="250" Maximum="5" TickFrequency="1" IsSnapToTickEnabled="True" Value="4" />
+                        </StackPanel>
+                        <StackPanel Spacing="8" Orientation="Horizontal">
+                            <TextBlock VerticalAlignment="Center" FontSize="14" Text="{Binding [Multisampling], Source={x:Static starterNg:App.Loc}}" />
+                            <Slider x:Name="MultisamplingSlider" Minimum="1" MaxWidth="400" HorizontalAlignment="Left"
+                                    MinWidth="250" Maximum="4" TickFrequency="1" IsSnapToTickEnabled="True" Value="3" />
+                        </StackPanel>
+                        <StackPanel Spacing="8" Orientation="Horizontal">
+                            <TextBlock VerticalAlignment="Center" FontSize="14" Text="{Binding [RenderRange], Source={x:Static starterNg:App.Loc}}" />
+                            <Slider x:Name="RenderRangeSlider" Minimum="1" MaxWidth="400" HorizontalAlignment="Left"
+                                    MinWidth="250" Maximum="3" Value="1" />
+                        </StackPanel>
+                        <CheckBox x:Name="VSyncCb" Content="{Binding [VSync], Source={x:Static starterNg:App.Loc}}" />
+                        <CheckBox x:Name="SmokeDisplayCb" Content="{Binding [SmokeDisplay], Source={x:Static starterNg:App.Loc}}" />
+                        <StackPanel Spacing="8" Orientation="Horizontal">
+                            <TextBlock VerticalAlignment="Center" FontSize="14" Text="{Binding [SmokeParticlesMultiplier], Source={x:Static starterNg:App.Loc}}" />
+                            <Slider x:Name="SmokeParticlesSlider" Minimum="1" MaxWidth="400" HorizontalAlignment="Left"
+                                    MinWidth="250" Maximum="4" TickFrequency="1" IsSnapToTickEnabled="True" Value="2" />
+                        </StackPanel>
+                        <StackPanel Spacing="8" Orientation="Horizontal">
+                            <TextBlock VerticalAlignment="Center" FontSize="14" Text="{Binding [Postprocessing], Source={x:Static starterNg:App.Loc}}" />
+                            <ComboBox x:Name="PostprocessingCb" MinWidth="150" MaxWidth="150" SelectedIndex="0">
+                                <ComboBoxItem Content="{Binding [PPReinhard], Source={x:Static starterNg:App.Loc}}" />
+                                <ComboBoxItem Content="{Binding [PPACES], Source={x:Static starterNg:App.Loc}}" />
+                            </ComboBox>
+                        </StackPanel>
+                        <CheckBox x:Name="ChromaticAberrationCb" Content="{Binding [ChromaticAberration], Source={x:Static starterNg:App.Loc}}" />
+                        <CheckBox x:Name="MotionBlurCb" Content="{Binding [MotionBlur], Source={x:Static starterNg:App.Loc}}" />
+                        <CheckBox x:Name="AdditionalShadersCb" Content="{Binding [AdditionalShadersEffects], Source={x:Static starterNg:App.Loc}}" />
+                        <CheckBox x:Name="ReflectionsCubeMapCb" Content="{Binding [ReflectionsCubeMap], Source={x:Static starterNg:App.Loc}}" />
+                        <CheckBox x:Name="RenderVBOCb" Content="{Binding [RenderVBO], Source={x:Static starterNg:App.Loc}}" />
+                        <CheckBox x:Name="RenderShadowsCb" Content="{Binding [RenderShadows], Source={x:Static starterNg:App.Loc}}" />
+                        <StackPanel Spacing="8" Orientation="Horizontal">
+                            <TextBlock VerticalAlignment="Center" FontSize="14" Text="{Binding [ReflectionsFramerate], Source={x:Static starterNg:App.Loc}}" />
+                            <Slider Name="reflectionsFramerate" Minimum="5" MaxWidth="400" HorizontalAlignment="Left"
+                                    MinWidth="250" Maximum="120" TickFrequency="5" IsSnapToTickEnabled="True" Value="30" />
+                            <Label VerticalAlignment="Center" FontSize="14" Content="{Binding #reflectionsFramerate.Value, StringFormat='{}{0} FPS'}" />
+                        </StackPanel>
+                        <StackPanel Spacing="8" Orientation="Horizontal">
+                            <TextBlock VerticalAlignment="Center" FontSize="14" Text="{Binding [ShadowsResolution], Source={x:Static starterNg:App.Loc}}" />
+                            <Slider Name="shaderResolutionSlider" Minimum="9" MaxWidth="400" HorizontalAlignment="Left"
+                                    MinWidth="250" Maximum="14" ValueChanged="shaderResolutionSlider_OnValueChanged"
+                                    TickFrequency="1" IsSnapToTickEnabled="True" Value="12" />
+                            <TextBlock Name="shaderResolution" VerticalAlignment="Center" Text="4096 px" />
+                        </StackPanel>
+                        <StackPanel Spacing="8" Orientation="Horizontal">
+                            <TextBlock VerticalAlignment="Center" FontSize="14" Text="{Binding [ShaderRange], Source={x:Static starterNg:App.Loc}}" />
+                            <Slider Name="shaderRange" Minimum="25" MaxWidth="400" HorizontalAlignment="Left"
+                                    MinWidth="250" Maximum="400" TickFrequency="5" IsSnapToTickEnabled="True" Value="150" />
+                            <Label VerticalAlignment="Center" FontSize="14" Content="{Binding #shaderRange.Value, StringFormat='{}{0} m'}" />
+                        </StackPanel>
+                        <StackPanel Spacing="8" Orientation="Horizontal">
+                            <TextBlock VerticalAlignment="Center" FontSize="14" Text="{Binding [CabShadowsRange], Source={x:Static starterNg:App.Loc}}" />
+                            <Slider Name="cabShaderSourceRange" Minimum="0" MaxWidth="400" HorizontalAlignment="Left"
+                                    MinWidth="250" Maximum="100" TickFrequency="10" IsSnapToTickEnabled="True" Value="30" />
+                            <Label VerticalAlignment="Center" FontSize="14" Content="{Binding #cabShaderSourceRange.Value, StringFormat='{}{0} m'}" />
+                        </StackPanel>
+                        <StackPanel Spacing="8" Orientation="Horizontal">
+                            <TextBlock VerticalAlignment="Center" FontSize="14" Text="{Binding [ShadowDisplay], Source={x:Static starterNg:App.Loc}}" />
+                            <ComboBox x:Name="ShadowDisplayCb" MinWidth="150" MaxWidth="150" SelectedIndex="0">
+                                <ComboBoxItem Content="{Binding [CSROnlyImportant], Source={x:Static starterNg:App.Loc}}" />
+                                <ComboBoxItem Content="{Binding [CSRLimited], Source={x:Static starterNg:App.Loc}}" />
+                                <ComboBoxItem Content="{Binding [CSRAll], Source={x:Static starterNg:App.Loc}}" />
+                            </ComboBox>
+                        </StackPanel>
+                        <StackPanel Spacing="8" Orientation="Horizontal">
+                            <TextBlock VerticalAlignment="Center" FontSize="14" Text="{Binding [ReflectionsDetails], Source={x:Static starterNg:App.Loc}}" />
+                            <ComboBox x:Name="ReflectionsDetailsCb" MinWidth="350" MaxWidth="350" SelectedIndex="0">
+                                <ComboBoxItem Content="{Binding [RDTerrain], Source={x:Static starterNg:App.Loc}}" />
+                                <ComboBoxItem Content="{Binding [RDTerrainModels], Source={x:Static starterNg:App.Loc}}" />
+                                <ComboBoxItem Content="{Binding [RDTerrainModelsVehicles], Source={x:Static starterNg:App.Loc}}" />
+                            </ComboBox>
+                        </StackPanel>
+                        <StackPanel Spacing="8" Orientation="Horizontal">
+                            <TextBlock VerticalAlignment="Center" FontSize="14" Text="{Binding [ShadowsCabRange], Source={x:Static starterNg:App.Loc}}" />
+                            <Slider Name="fovSlider" Minimum="5" MaxWidth="400" HorizontalAlignment="Left"
+                                    MinWidth="250" Maximum="110" TickFrequency="5" IsSnapToTickEnabled="True" Value="30" />
+                            <Label VerticalAlignment="Center" FontSize="14" Content="{Binding #fovSlider.Value, StringFormat='{}{0} stopni'}" />
+                        </StackPanel>
+                        <CheckBox x:Name="RenderScreensCb" Content="{Binding [RenderScreens], Source={x:Static starterNg:App.Loc}}" />
+                        <CheckBox x:Name="RenderScreensThreadCb" Content="{Binding [RenderScreensThread], Source={x:Static starterNg:App.Loc}}" />
+                        <StackPanel Spacing="8" Orientation="Horizontal">
+                            <TextBlock VerticalAlignment="Center" FontSize="14" Text="{Binding [RenderScreensFramerate], Source={x:Static starterNg:App.Loc}}" />
+                            <Slider x:Name="RenderScreensFramerateSlider" Minimum="1" MaxWidth="400" HorizontalAlignment="Left"
+                                    MinWidth="250" Maximum="5" TickFrequency="1" IsSnapToTickEnabled="True" Value="5" />
+                        </StackPanel>
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
 
-                            </StackPanel>
-                        </suki:SettingsLayoutItem.Content>
-                    </suki:SettingsLayoutItem>
+            <!-- Physics -->
+            <TabItem Header="{Binding [Physics], Source={x:Static starterNg:App.Loc}}">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel Spacing="8" Orientation="Vertical" Margin="12">
+                        <StackPanel Spacing="8" Orientation="Horizontal">
+                            <TextBlock VerticalAlignment="Center" FontSize="14" Text="{Binding [TrackCurvesQuality], Source={x:Static starterNg:App.Loc}}" />
+                            <Slider x:Name="TrackCurvesSlider" Minimum="1" MaxWidth="400" HorizontalAlignment="Left"
+                                    MinWidth="250" Maximum="4" TickFrequency="1" IsSnapToTickEnabled="True" Value="4" />
+                        </StackPanel>
+                        <CheckBox x:Name="PhysicsAccuracyCb" Content="{Binding [PhysicsAccuracyIncreased], Source={x:Static starterNg:App.Loc}}" />
+                        <CheckBox x:Name="PantographBreakCb" Content="{Binding [BreakingPantographPossibility], Source={x:Static starterNg:App.Loc}}" />
+                        <CheckBox x:Name="OverheadOnlyCb" Content="{Binding [PowerOverheadLineOnly], Source={x:Static starterNg:App.Loc}}" />
+                        <CheckBox x:Name="SpeedometerTapesCb" Content="{Binding [SaveSpeedometerTapes], Source={x:Static starterNg:App.Loc}}" />
+                        <CheckBox x:Name="SimLogsCb" Content="{Binding [SaveSimLogs], Source={x:Static starterNg:App.Loc}}" />
+                        <CheckBox x:Name="KeepLogsCb" Content="{Binding [KeepPrevLogs], Source={x:Static starterNg:App.Loc}}" />
+                        <CheckBox x:Name="DisplaySimulationCb" Content="{Binding [DisplaySimulation], Source={x:Static starterNg:App.Loc}}" />
+                        <CheckBox x:Name="CrashDamageCb" Content="{Binding [CrashDamage], Source={x:Static starterNg:App.Loc}}" />
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
 
-                    <suki:SettingsLayoutItem Header="{Binding [Others], Source={x:Static starterNg:App.Loc}}">
-                        <suki:SettingsLayoutItem.Content>
-                            <StackPanel Spacing="8" Orientation="Vertical">
-                                <StackPanel Spacing="8" Orientation="Horizontal">
-                                    <Label VerticalAlignment="Center" FontSize="14" Content="{Binding [SelectEXE], Source={x:Static starterNg:App.Loc}}"/>
-                                    <ComboBox x:Name="SelectExeCb" MinWidth="350" MaxWidth="350" SelectedIndex="0">
-                                        <ComboBoxItem Content="{Binding [SelectEXEAuto], Source={x:Static starterNg:App.Loc}}"/>
-                                        <ComboBoxItem>eu07.exe</ComboBoxItem>
-                                    </ComboBox>
-                                </StackPanel>
+            <!-- Sounds -->
+            <TabItem Header="{Binding [Sounds], Source={x:Static starterNg:App.Loc}}">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel Spacing="8" Orientation="Vertical" Margin="12">
+                        <CheckBox x:Name="EnableSoundsCb" Content="{Binding [EnableSounds], Source={x:Static starterNg:App.Loc}}" />
+                        <StackPanel Spacing="8" Orientation="Horizontal">
+                            <TextBlock VerticalAlignment="Center" FontSize="14" Text="{Binding [Volume], Source={x:Static starterNg:App.Loc}}" />
+                            <Slider x:Name="VolumeSlider" Minimum="1" MaxWidth="400" HorizontalAlignment="Left"
+                                    MinWidth="250" Maximum="100" TickFrequency="5" IsSnapToTickEnabled="True" Value="100" />
+                        </StackPanel>
+                        <StackPanel Spacing="8" Orientation="Horizontal">
+                            <TextBlock VerticalAlignment="Center" FontSize="14" Text="{Binding [RadiophoneVolume], Source={x:Static starterNg:App.Loc}}" />
+                            <Slider x:Name="RadioVolumeSlider" Minimum="1" MaxWidth="400" HorizontalAlignment="Left"
+                                    MinWidth="250" Maximum="100" TickFrequency="5" IsSnapToTickEnabled="True" Value="100" />
+                        </StackPanel>
+                        <StackPanel Spacing="8" Orientation="Horizontal">
+                            <TextBlock VerticalAlignment="Center" FontSize="14" Text="{Binding [VehiclesVolume], Source={x:Static starterNg:App.Loc}}" />
+                            <Slider x:Name="VehiclesVolumeSlider" Minimum="1" MaxWidth="400" HorizontalAlignment="Left"
+                                    MinWidth="250" Maximum="100" TickFrequency="5" IsSnapToTickEnabled="True" Value="100" />
+                        </StackPanel>
+                        <StackPanel Spacing="8" Orientation="Horizontal">
+                            <TextBlock VerticalAlignment="Center" FontSize="14" Text="{Binding [PositionedSoundsVolume], Source={x:Static starterNg:App.Loc}}" />
+                            <Slider x:Name="PositionalVolumeSlider" Minimum="1" MaxWidth="400" HorizontalAlignment="Left"
+                                    MinWidth="250" Maximum="100" TickFrequency="5" IsSnapToTickEnabled="True" Value="100" />
+                        </StackPanel>
+                        <StackPanel Spacing="8" Orientation="Horizontal">
+                            <TextBlock VerticalAlignment="Center" FontSize="14" Text="{Binding [AmbientVolume], Source={x:Static starterNg:App.Loc}}" />
+                            <Slider x:Name="AmbientVolumeSlider" Minimum="1" MaxWidth="400" HorizontalAlignment="Left"
+                                    MinWidth="250" Maximum="100" TickFrequency="5" IsSnapToTickEnabled="True" Value="100" />
+                        </StackPanel>
+                        <StackPanel Spacing="8" Orientation="Horizontal">
+                            <TextBlock VerticalAlignment="Center" FontSize="14" Text="{Binding [VolumeDuringPause], Source={x:Static starterNg:App.Loc}}" />
+                            <Slider x:Name="PauseVolumeSlider" Minimum="0" MaxWidth="400" HorizontalAlignment="Left"
+                                    MinWidth="250" Maximum="100" TickFrequency="5" IsSnapToTickEnabled="True" Value="0" />
+                        </StackPanel>
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
 
-                                <CheckBox x:Name="DebugModeCb" Content="{Binding [DebugMode], Source={x:Static starterNg:App.Loc}}"/>
-
-                                <CheckBox x:Name="VirtualShuntingCb" Content="{Binding [VirtualShunting], Source={x:Static starterNg:App.Loc}}"/>
-                            </StackPanel>
-                        </suki:SettingsLayoutItem.Content>
-                    </suki:SettingsLayoutItem>
-
-                    <suki:SettingsLayoutItem Header="{Binding [Graphic], Source={x:Static starterNg:App.Loc}}">
-                        <suki:SettingsLayoutItem.Content>
-                            <StackPanel Spacing="8" Orientation="Vertical">
-                                <StackPanel Spacing="8" Orientation="Horizontal">
-                                    <Label VerticalAlignment="Center" FontSize="14" Content="{Binding [RenderEngine], Source={x:Static starterNg:App.Loc}}"/>
-                                    <ComboBox x:Name="RenderEngineCb" MinWidth="150" MaxWidth="150" SelectedIndex="0">
-                                        <ComboBoxItem Content="{Binding [REFull], Source={x:Static starterNg:App.Loc}}"/>
-                                        <ComboBoxItem Content="{Binding [REOld], Source={x:Static starterNg:App.Loc}}"/>
-                                        <ComboBoxItem Content="{Binding [RESimpShader], Source={x:Static starterNg:App.Loc}}"/>
-                                        <ComboBoxItem Content="{Binding [RESimp], Source={x:Static starterNg:App.Loc}}"/>
-                                        <ComboBoxItem Content="{Binding [REOff], Source={x:Static starterNg:App.Loc}}"/>
-                                        <ComboBoxItem Content="{Binding [REExperimental], Source={x:Static starterNg:App.Loc}}"/>
-                                    </ComboBox>
-                                </StackPanel>
-                                <StackPanel Spacing="8" Orientation="Horizontal">
-                                    <Label VerticalAlignment="Center" FontSize="14" Content="{Binding [Resolution], Source={x:Static starterNg:App.Loc}}"/>
-                                    <ComboBox x:Name="ResolutionCb" MinWidth="150" MaxWidth="150" SelectedIndex="0">
-                                        <ComboBoxItem>3840x2160</ComboBoxItem>
-                                        <ComboBoxItem>2560x1440</ComboBoxItem>
-                                        <ComboBoxItem>1920x1080</ComboBoxItem>
-                                        <ComboBoxItem>1600x900</ComboBoxItem>
-                                        <ComboBoxItem>1366x768</ComboBoxItem>
-                                        <ComboBoxItem>1280x720</ComboBoxItem>
-                                    </ComboBox>
-                                </StackPanel>
-                                <StackPanel Spacing="8" Orientation="Horizontal">
-                                    <TextBlock VerticalAlignment="Center" FontSize="14" Text="{Binding [BufforResolution], Source={x:Static starterNg:App.Loc}}"/>
-                                    <Slider Name="bufferScale" Minimum="50" MaxWidth="400" HorizontalAlignment="Left"
-                                            MinWidth="250" Maximum="200" TickFrequency="1" IsSnapToTickEnabled="True"
-                                            Value="100" />
-                                    <TextBlock VerticalAlignment="Center"
-                                               Text="{Binding #bufferScale.Value, StringFormat='{}{0}%'}" />
-                                </StackPanel>
-
-                                <StackPanel Spacing="8" Orientation="Horizontal">
-                                    <TextBlock VerticalAlignment="Center" FontSize="14" Text="{Binding [MaxTexResolution], Source={x:Static starterNg:App.Loc}}"/>
-                                    <Slider Name="textureResolutionSlider" Minimum="9" MaxWidth="400"
-                                            HorizontalAlignment="Left"
-                                            MinWidth="250" Maximum="14"
-                                            ValueChanged="TextureResolutionSlider_OnValueChanged" TickFrequency="1"
-                                            IsSnapToTickEnabled="True" Value="12" />
-                                    <TextBlock Name="texResolution" VerticalAlignment="Center" Text="4096" />
-                                </StackPanel>
-
-                                <StackPanel Spacing="8" Orientation="Horizontal">
-                                    <TextBlock VerticalAlignment="Center" FontSize="14" Text="{Binding [MaxTexCabResolution], Source={x:Static starterNg:App.Loc}}"/>
-                                    <Slider Name="cabTextureResolutionSlider" Minimum="9" MaxWidth="400"
-                                            HorizontalAlignment="Left"
-                                            MinWidth="250" Maximum="14"
-                                            ValueChanged="CabTextureResolutionSlider_OnValueChanged" TickFrequency="1"
-                                            IsSnapToTickEnabled="True" Value="12" />
-                                    <TextBlock Name="cabTexResolution" VerticalAlignment="Center" Text="4096" />
-                                </StackPanel>
-
-                                <StackPanel Spacing="8" Orientation="Horizontal">
-                                    <TextBlock VerticalAlignment="Center" FontSize="14" Text="{Binding [TexFilteringQuality], Source={x:Static starterNg:App.Loc}}"/>
-                                    <Slider x:Name="TexFilteringSlider" Minimum="1" MaxWidth="400"
-                                            HorizontalAlignment="Left"
-                                            MinWidth="250" Maximum="5"
-                                            TickFrequency="1"
-                                            IsSnapToTickEnabled="True" Value="4" />
-                                </StackPanel>
-
-                                <StackPanel Spacing="8" Orientation="Horizontal">
-                                    <TextBlock VerticalAlignment="Center" FontSize="14" Text="{Binding [Multisampling], Source={x:Static starterNg:App.Loc}}"/>
-                                    <Slider x:Name="MultisamplingSlider" Minimum="1" MaxWidth="400"
-                                            HorizontalAlignment="Left"
-                                            MinWidth="250" Maximum="4"
-                                            TickFrequency="1"
-                                            IsSnapToTickEnabled="True" Value="3" />
-                                </StackPanel>
-
-                                <StackPanel Spacing="8" Orientation="Horizontal">
-                                    <TextBlock VerticalAlignment="Center" FontSize="14" Text="{Binding [RenderRange], Source={x:Static starterNg:App.Loc}}"/>
-                                    <Slider x:Name="RenderRangeSlider" Minimum="1" MaxWidth="400"
-                                            HorizontalAlignment="Left"
-                                            MinWidth="250" Maximum="3" Value="1" />
-                                </StackPanel>
-
-                                <CheckBox x:Name="VSyncCb" Content="{Binding [VSync], Source={x:Static starterNg:App.Loc}}"/>
-
-                                <CheckBox x:Name="SmokeDisplayCb" Content="{Binding [SmokeDisplay], Source={x:Static starterNg:App.Loc}}"/>
-
-                                <StackPanel Spacing="8" Orientation="Horizontal">
-                                    <TextBlock VerticalAlignment="Center" FontSize="14" Text="{Binding [SmokeParticlesMultiplier], Source={x:Static starterNg:App.Loc}}"/>
-                                    <Slider x:Name="SmokeParticlesSlider" Minimum="1" MaxWidth="400"
-                                            HorizontalAlignment="Left"
-                                            MinWidth="250" Maximum="4"
-                                            TickFrequency="1"
-                                            IsSnapToTickEnabled="True" Value="2" />
-                                </StackPanel>
-
-                                <StackPanel Spacing="8" Orientation="Horizontal">
-                                    <TextBlock VerticalAlignment="Center" FontSize="14" Text="{Binding [Postprocessing], Source={x:Static starterNg:App.Loc}}"/>
-                                    <ComboBox x:Name="PostprocessingCb" MinWidth="150" MaxWidth="150" SelectedIndex="0">
-                                        <ComboBoxItem Content="{Binding [PPReinhard], Source={x:Static starterNg:App.Loc}}"/>
-                                        <ComboBoxItem Content="{Binding [PPACES], Source={x:Static starterNg:App.Loc}}"/>
-                                    </ComboBox>
-                                </StackPanel>
-
-                                <CheckBox x:Name="ChromaticAberrationCb" Content="{Binding [ChromaticAberration], Source={x:Static starterNg:App.Loc}}"/>
-
-                                <CheckBox x:Name="MotionBlurCb" Content="{Binding [MotionBlur], Source={x:Static starterNg:App.Loc}}"/>
-
-                                <CheckBox x:Name="AdditionalShadersCb" Content="{Binding [AdditionalShadersEffects], Source={x:Static starterNg:App.Loc}}"/>
-
-                                <CheckBox x:Name="ReflectionsCubeMapCb" Content="{Binding [ReflectionsCubeMap], Source={x:Static starterNg:App.Loc}}"/>
-
-                                <CheckBox x:Name="RenderVBOCb" Content="{Binding [RenderVBO], Source={x:Static starterNg:App.Loc}}"/>
-
-                                <CheckBox x:Name="RenderShadowsCb"  Content="{Binding [RenderShadows], Source={x:Static starterNg:App.Loc}}"/>
-
-                                <StackPanel Spacing="8" Orientation="Horizontal">
-                                    <TextBlock VerticalAlignment="Center" FontSize="14" Text="{Binding [ReflectionsFramerate], Source={x:Static starterNg:App.Loc}}"/>
-                                    <Slider Name="reflectionsFramerate" Minimum="5" MaxWidth="400"
-                                            HorizontalAlignment="Left"
-                                            MinWidth="250" Maximum="120"
-                                            TickFrequency="5"
-                                            IsSnapToTickEnabled="True" Value="30" />
-                                    <Label VerticalAlignment="Center" FontSize="14"
-                                           Content="{Binding #reflectionsFramerate.Value, StringFormat='{}{0} FPS'}" />
-                                </StackPanel>
-
-                                <StackPanel Spacing="8" Orientation="Horizontal">
-                                    <TextBlock VerticalAlignment="Center" FontSize="14" Text="{Binding [ShadowsResolution], Source={x:Static starterNg:App.Loc}}"/>
-                                    <Slider Name="shaderResolutionSlider" Minimum="9" MaxWidth="400"
-                                            HorizontalAlignment="Left"
-                                            MinWidth="250" Maximum="14"
-                                            ValueChanged="shaderResolutionSlider_OnValueChanged" TickFrequency="1"
-                                            IsSnapToTickEnabled="True" Value="12" />
-                                    <TextBlock Name="shaderResolution" VerticalAlignment="Center" Text="4096 px" />
-                                </StackPanel>
-
-                                <StackPanel Spacing="8" Orientation="Horizontal">
-                                    <TextBlock VerticalAlignment="Center" FontSize="14" Text="{Binding [ShaderRange], Source={x:Static starterNg:App.Loc}}"/>
-                                    <Slider Name="shaderRange" Minimum="25" MaxWidth="400"
-                                            HorizontalAlignment="Left"
-                                            MinWidth="250" Maximum="400"
-                                            TickFrequency="5"
-                                            IsSnapToTickEnabled="True" Value="150" />
-                                    <Label VerticalAlignment="Center" FontSize="14"
-                                           Content="{Binding #shaderRange.Value, StringFormat='{}{0} m'}" />
-                                </StackPanel>
-
-                                <StackPanel Spacing="8" Orientation="Horizontal">
-                                    <TextBlock VerticalAlignment="Center" FontSize="14" Text="{Binding [CabShadowsRange], Source={x:Static starterNg:App.Loc}}"/>
-                                    <Slider Name="cabShaderSourceRange" Minimum="0" MaxWidth="400"
-                                            HorizontalAlignment="Left"
-                                            MinWidth="250" Maximum="100"
-                                            TickFrequency="10"
-                                            IsSnapToTickEnabled="True" Value="30" />
-                                    <Label VerticalAlignment="Center" FontSize="14"
-                                           Content="{Binding #cabShaderSourceRange.Value, StringFormat='{}{0} m'}" />
-                                </StackPanel>
-
-                                <StackPanel Spacing="8" Orientation="Horizontal">
-                                    <TextBlock VerticalAlignment="Center" FontSize="14" Text="{Binding [ShadowDisplay], Source={x:Static starterNg:App.Loc}}"/>
-                                    <ComboBox x:Name="ShadowDisplayCb" MinWidth="150" MaxWidth="150" SelectedIndex="0">
-                                        <ComboBoxItem Content="{Binding [CSROnlyImportant], Source={x:Static starterNg:App.Loc}}"/>
-                                        <ComboBoxItem Content="{Binding [CSRLimited], Source={x:Static starterNg:App.Loc}}"/>
-                                        <ComboBoxItem Content="{Binding [CSRAll], Source={x:Static starterNg:App.Loc}}"/>
-                                    </ComboBox>
-                                </StackPanel>
-
-                                <StackPanel Spacing="8" Orientation="Horizontal">
-                                    <TextBlock VerticalAlignment="Center" FontSize="14" Text="{Binding [ReflectionsDetails], Source={x:Static starterNg:App.Loc}}"/>
-                                    <ComboBox x:Name="ReflectionsDetailsCb" MinWidth="350" MaxWidth="350" SelectedIndex="0">
-                                        <ComboBoxItem Content="{Binding [RDTerrain], Source={x:Static starterNg:App.Loc}}"/>
-                                        <ComboBoxItem Content="{Binding [RDTerrainModels], Source={x:Static starterNg:App.Loc}}"/>
-                                        <ComboBoxItem Content="{Binding [RDTerrainModelsVehicles], Source={x:Static starterNg:App.Loc}}"/>
-                                    </ComboBox>
-                                </StackPanel>
-
-                                <StackPanel Spacing="8" Orientation="Horizontal">
-                                    <TextBlock VerticalAlignment="Center" FontSize="14" Text="{Binding [ShadowsCabRange], Source={x:Static starterNg:App.Loc}}"/>
-                                    <Slider Name="fovSlider" Minimum="5" MaxWidth="400"
-                                            HorizontalAlignment="Left"
-                                            MinWidth="250" Maximum="110"
-                                            TickFrequency="5"
-                                            IsSnapToTickEnabled="True" Value="30" />
-                                    <Label VerticalAlignment="Center" FontSize="14"
-                                           Content="{Binding #fovSlider.Value, StringFormat='{}{0} stopni'}" />
-                                </StackPanel>
-
-                                <CheckBox x:Name="RenderScreensCb" Content="{Binding [RenderScreens], Source={x:Static starterNg:App.Loc}}"/>
-                                <CheckBox x:Name="RenderScreensThreadCb" Content="{Binding [RenderScreensThread], Source={x:Static starterNg:App.Loc}}"/>
-
-                                <StackPanel Spacing="8" Orientation="Horizontal">
-                                    <TextBlock VerticalAlignment="Center" FontSize="14" Text="{Binding [RenderScreensFramerate], Source={x:Static starterNg:App.Loc}}"/>
-                                    <Slider x:Name="RenderScreensFramerateSlider" Minimum="1" MaxWidth="400"
-                                            HorizontalAlignment="Left"
-                                            MinWidth="250" Maximum="5"
-                                            TickFrequency="1"
-                                            IsSnapToTickEnabled="True" Value="5" />
-                                </StackPanel>
-                            </StackPanel>
-                        </suki:SettingsLayoutItem.Content>
-                    </suki:SettingsLayoutItem>
-
-                    <suki:SettingsLayoutItem Header="{Binding [Physics], Source={x:Static starterNg:App.Loc}}">
-                        <suki:SettingsLayoutItem.Content>
-                            <StackPanel Spacing="8" Orientation="Vertical">
-                                <StackPanel Spacing="8" Orientation="Horizontal">
-                                    <TextBlock VerticalAlignment="Center" FontSize="14" Text="{Binding [TrackCurvesQuality], Source={x:Static starterNg:App.Loc}}"/>
-                                    <Slider x:Name="TrackCurvesSlider" Minimum="1" MaxWidth="400"
-                                            HorizontalAlignment="Left"
-                                            MinWidth="250" Maximum="4"
-                                            TickFrequency="1"
-                                            IsSnapToTickEnabled="True" Value="4" />
-                                </StackPanel>
-
-                                <CheckBox x:Name="PhysicsAccuracyCb" Content="{Binding [PhysicsAccuracyIncreased], Source={x:Static starterNg:App.Loc}}"/>
-
-                                <CheckBox x:Name="PantographBreakCb" Content="{Binding [BreakingPantographPossibility], Source={x:Static starterNg:App.Loc}}"/>
-
-                                <CheckBox x:Name="OverheadOnlyCb" Content="{Binding [PowerOverheadLineOnly], Source={x:Static starterNg:App.Loc}}"/>
-
-                                <CheckBox x:Name="SpeedometerTapesCb" Content="{Binding [SaveSpeedometerTapes], Source={x:Static starterNg:App.Loc}}"/>
-
-                                <CheckBox x:Name="SimLogsCb" Content="{Binding [SaveSimLogs], Source={x:Static starterNg:App.Loc}}"/>
-
-                                <CheckBox x:Name="KeepLogsCb" Content="{Binding [KeepPrevLogs], Source={x:Static starterNg:App.Loc}}"/>
-
-                                <CheckBox x:Name="DisplaySimulationCb" Content="{Binding [DisplaySimulation], Source={x:Static starterNg:App.Loc}}"/>
-
-                                <CheckBox x:Name="CrashDamageCb" Content="{Binding [CrashDamage], Source={x:Static starterNg:App.Loc}}"/>
-                            </StackPanel>
-                        </suki:SettingsLayoutItem.Content>
-                    </suki:SettingsLayoutItem>
-
-                    <suki:SettingsLayoutItem Header="{Binding [Sounds], Source={x:Static starterNg:App.Loc}}">
-                        <suki:SettingsLayoutItem.Content>
-                            <StackPanel Spacing="8" Orientation="Vertical">
-                                <CheckBox x:Name="EnableSoundsCb" Content="{Binding [EnableSounds], Source={x:Static starterNg:App.Loc}}"/>
-
-                                <StackPanel Spacing="8" Orientation="Horizontal">
-                                    <TextBlock VerticalAlignment="Center" FontSize="14" Text="{Binding [Volume], Source={x:Static starterNg:App.Loc}}"/>
-                                    <Slider x:Name="VolumeSlider" Minimum="1" MaxWidth="400"
-                                            HorizontalAlignment="Left"
-                                            MinWidth="250" Maximum="100"
-                                            TickFrequency="5"
-                                            IsSnapToTickEnabled="True" Value="100" />
-                                </StackPanel>
-
-                                <StackPanel Spacing="8" Orientation="Horizontal">
-                                    <TextBlock VerticalAlignment="Center" FontSize="14" Text="{Binding [RadiophoneVolume], Source={x:Static starterNg:App.Loc}}"/>
-                                    <Slider x:Name="RadioVolumeSlider" Minimum="1" MaxWidth="400"
-                                            HorizontalAlignment="Left"
-                                            MinWidth="250" Maximum="100"
-                                            TickFrequency="5"
-                                            IsSnapToTickEnabled="True" Value="100" />
-                                </StackPanel>
-
-                                <StackPanel Spacing="8" Orientation="Horizontal">
-                                    <TextBlock VerticalAlignment="Center" FontSize="14" Text="{Binding [VehiclesVolume], Source={x:Static starterNg:App.Loc}}"/>
-                                    <Slider x:Name="VehiclesVolumeSlider" Minimum="1" MaxWidth="400"
-                                            HorizontalAlignment="Left"
-                                            MinWidth="250" Maximum="100"
-                                            TickFrequency="5"
-                                            IsSnapToTickEnabled="True" Value="100" />
-                                </StackPanel>
-
-                                <StackPanel Spacing="8" Orientation="Horizontal">
-                                    <TextBlock VerticalAlignment="Center" FontSize="14" Text="{Binding [PositionedSoundsVolume], Source={x:Static starterNg:App.Loc}}"/>
-                                    <Slider x:Name="PositionalVolumeSlider" Minimum="1" MaxWidth="400"
-                                            HorizontalAlignment="Left"
-                                            MinWidth="250" Maximum="100"
-                                            TickFrequency="5"
-                                            IsSnapToTickEnabled="True" Value="100" />
-                                </StackPanel>
-
-                                <StackPanel Spacing="8" Orientation="Horizontal">
-                                    <TextBlock VerticalAlignment="Center" FontSize="14" Text="{Binding [AmbientVolume], Source={x:Static starterNg:App.Loc}}"/>
-                                    <Slider x:Name="AmbientVolumeSlider" Minimum="1" MaxWidth="400"
-                                            HorizontalAlignment="Left"
-                                            MinWidth="250" Maximum="100"
-                                            TickFrequency="5"
-                                            IsSnapToTickEnabled="True" Value="100" />
-                                </StackPanel>
-
-                                <StackPanel Spacing="8" Orientation="Horizontal">
-                                    <TextBlock VerticalAlignment="Center" FontSize="14" Text="{Binding [VolumeDuringPause], Source={x:Static starterNg:App.Loc}}"/>
-                                    <Slider x:Name="PauseVolumeSlider" Minimum="0" MaxWidth="400"
-                                            HorizontalAlignment="Left"
-                                            MinWidth="250" Maximum="100"
-                                            TickFrequency="5"
-                                            IsSnapToTickEnabled="True" Value="0" />
-                                </StackPanel>
-                            </StackPanel>
-                        </suki:SettingsLayoutItem.Content>
-                    </suki:SettingsLayoutItem>
-
-                    <suki:SettingsLayoutItem  Header="{Binding [Starter], Source={x:Static starterNg:App.Loc}}">
-                        <suki:SettingsLayoutItem.Content>
-                            <StackPanel Spacing="8" Orientation="Vertical">
-                                <CheckBox x:Name="AutoCloseStarterCb" Content="{Binding [AutoCloseStarter], Source={x:Static starterNg:App.Loc}}"/>
-                                <CheckBox x:Name="LargeThumbnailsCb" Content="{Binding [LargeThumbnails], Source={x:Static starterNg:App.Loc}}"/>
-                                <CheckBox x:Name="AutoExpandTreeCb" Content="{Binding [AutoExpandSceneryTree], Source={x:Static starterNg:App.Loc}}"/>
-                            </StackPanel>
-                        </suki:SettingsLayoutItem.Content>
-                    </suki:SettingsLayoutItem>
-                </objectModel:ObservableCollection>
-            </suki:SettingsLayout.Items>
-        </suki:SettingsLayout>
+            <!-- Starter -->
+            <TabItem Header="{Binding [Starter], Source={x:Static starterNg:App.Loc}}">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel Spacing="8" Orientation="Vertical" Margin="12">
+                        <CheckBox x:Name="AutoCloseStarterCb" Content="{Binding [AutoCloseStarter], Source={x:Static starterNg:App.Loc}}" />
+                        <CheckBox x:Name="LargeThumbnailsCb" Content="{Binding [LargeThumbnails], Source={x:Static starterNg:App.Loc}}" />
+                        <CheckBox x:Name="AutoExpandTreeCb" Content="{Binding [AutoExpandSceneryTree], Source={x:Static starterNg:App.Loc}}" />
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+        </TabControl>
     </DockPanel>
 </UserControl>

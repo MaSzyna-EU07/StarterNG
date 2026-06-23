@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -15,6 +16,11 @@ namespace StarterNG.Views;
 public partial class Scenarios : UserControl
 {
     public List<Scenery> Sceneries;
+
+    // scenery whose weather the form is currently editing
+    private Scenery? _currentScenery;
+    // suppresses weather change handlers while the form is being populated
+    private bool _loadingWeather;
 
     public Scenarios()
     {
@@ -76,6 +82,11 @@ public partial class Scenarios : UserControl
 
         // scenery-level info (distinct from the per-consist scenario description)
         ShowSceneryInfo(selectedScn);
+        ShowWeather(selectedScn);
+
+        // no consist chosen yet for this scenery
+        missionDescription.Text = "";
+        timetableContent.Text = App.Loc["NoTimetable"];
 
         // add all trainsets to list
         for (int i = 0; i < selectedScn.Trainsets.Count; i++)
@@ -136,6 +147,135 @@ public partial class Scenarios : UserControl
         AppState.Instance.CurrentTrainset = selectedTrainset;
 
         ShowConsist(selectedTrainset);
+        ShowTimetable(selectedScn, selectedTrainset);
+    }
+
+    // Loads the scenery's weather into the editable form (Weather tab). Editing a
+    // control writes the value back onto the scenery and marks it dirty, so the
+    // change is injected into the exported .scn's config block on launch.
+    private void ShowWeather(Scenery scenery)
+    {
+        _currentScenery = scenery;
+        _loadingWeather = true;
+        try
+        {
+            weatherForm.IsEnabled = true;
+            weatherTime.Text = scenery.WeatherTime;
+            weatherDay.Value = scenery.Day;
+            weatherTemp.Value = scenery.Temperature;
+            weatherFog.Value = System.Math.Clamp(scenery.FogEnd, 50, 2500);
+            SelectByTag(weatherSeason, scenery.Day.ToString());
+            SelectByTag(weatherOvercast, scenery.Overcast.ToString(CultureInfo.InvariantCulture));
+            UpdateWeatherLabels();
+        }
+        finally
+        {
+            _loadingWeather = false;
+        }
+    }
+
+    // Reads the form back into the current scenery and flags it for export rewrite.
+    private void CaptureWeather()
+    {
+        if (_loadingWeather || _currentScenery is null)
+            return;
+
+        var scn = _currentScenery;
+        if (!string.IsNullOrWhiteSpace(weatherTime.Text))
+            scn.WeatherTime = weatherTime.Text!.Trim();
+        scn.Day = (int)(weatherDay.Value ?? 0);
+        scn.Temperature = weatherTemp.Value;
+        scn.FogEnd = (int)weatherFog.Value;
+        if ((weatherOvercast.SelectedItem as ComboBoxItem)?.Tag is string ov &&
+            double.TryParse(ov, System.Globalization.NumberStyles.Float, CultureInfo.InvariantCulture, out double oc))
+            scn.Overcast = oc;
+
+        scn.WeatherDirty = true;
+        UpdateWeatherLabels();
+    }
+
+    private void UpdateWeatherLabels()
+    {
+        weatherTempLabel.Text = $"{(int)weatherTemp.Value} °C";
+        weatherFogLabel.Text = $"{(int)weatherFog.Value} m";
+    }
+
+    private static void SelectByTag(ComboBox combo, string tag)
+    {
+        foreach (var obj in combo.Items)
+            if (obj is ComboBoxItem item && (item.Tag as string) == tag)
+            {
+                combo.SelectedItem = item;
+                return;
+            }
+        combo.SelectedItem = null;
+    }
+
+    // --- weather form event handlers ---
+    private void Weather_OnChanged(object? sender, RoutedEventArgs e) => CaptureWeather();
+
+    private void Weather_OnSelectionChanged(object? sender, SelectionChangedEventArgs e) => CaptureWeather();
+
+    private void Weather_OnSliderChanged(object? sender, Avalonia.Controls.Primitives.RangeBaseValueChangedEventArgs e) => CaptureWeather();
+
+    private void WeatherDay_OnChanged(object? sender, NumericUpDownValueChangedEventArgs e) => CaptureWeather();
+
+    // Picking a season presets the day-of-year, then captures the form.
+    private void WeatherSeason_OnChanged(object? sender, SelectionChangedEventArgs e)
+    {
+        if (_loadingWeather)
+            return;
+        if ((weatherSeason.SelectedItem as ComboBoxItem)?.Tag is string tag &&
+            int.TryParse(tag, out int day))
+        {
+            _loadingWeather = true;
+            weatherDay.Value = day;
+            _loadingWeather = false;
+        }
+        CaptureWeather();
+    }
+
+    // Reads and shows the timetable file referenced by the trainset (its first
+    // "trainset" token is the timetable name). Shows a note when none is set or
+    // the file cannot be found.
+    private void ShowTimetable(Scenery scenery, Trainset trainset)
+    {
+        string? path = ResolveTimetablePath(scenery, trainset.Name);
+        if (path is null)
+        {
+            timetableContent.Text = App.Loc["NoTimetable"];
+            return;
+        }
+
+        try
+        {
+            timetableContent.Text = File.ReadAllText(path, Encoding.GetEncoding(1250));
+        }
+        catch
+        {
+            timetableContent.Text = App.Loc["NoTimetable"];
+        }
+    }
+
+    // Probes the usual locations for a timetable file named after the trainset.
+    private static string? ResolveTimetablePath(Scenery scenery, string? name)
+    {
+        if (string.IsNullOrWhiteSpace(name) ||
+            name.Equals("none", System.StringComparison.OrdinalIgnoreCase))
+            return null;
+
+        string scnDir = Path.GetDirectoryName(scenery.Path) ?? ".";   // scenery/
+        string root = Path.GetDirectoryName(scnDir) ?? ".";           // MaSzyna root
+
+        var candidates = new[]
+        {
+            Path.Combine(root, "timetables", name + ".txt"),
+            Path.Combine(scnDir, name + ".txt"),
+            Path.Combine(root, "scenario", name + ".txt"),
+            Path.Combine(root, "timetables", name),
+            Path.Combine(scnDir, name),
+        };
+        return candidates.FirstOrDefault(File.Exists);
     }
 
     // Renders the consist preview for a trainset (re-reads its current vehicles
@@ -156,7 +296,7 @@ public partial class Scenarios : UserControl
             consistStack.Children.Add(new Image
             {
                 Source = new Bitmap(path),
-                Height = 45,
+                Height = 32,
                 Stretch = Avalonia.Media.Stretch.Uniform,
                 Margin = new Thickness(0)
             });
@@ -170,50 +310,5 @@ public partial class Scenarios : UserControl
     {
         if (AppState.Instance.CurrentTrainset is { } trainset)
             ShowConsist(trainset);
-    }
-
-    // Exports the (possibly depot-modified) scenery to a $-prefixed copy and
-    // launches the game on it with the selected consist's driven vehicle.
-    private void StartButton_OnClick(object? sender, RoutedEventArgs e)
-    {
-        var scenery = AppState.Instance.CurrentScenery;
-        if (scenery is null)
-            return;
-        var trainset = AppState.Instance.CurrentTrainset;
-
-        // write scenery/$<name>.scn with the replaced trainsets
-        string dir = System.IO.Path.GetDirectoryName(scenery.Path) ?? "scenery";
-        string exportName = "$" + System.IO.Path.GetFileName(scenery.Path);
-        string exportPath = System.IO.Path.Combine(dir, exportName);
-        try
-        {
-            File.WriteAllText(exportPath, scenery.BuildExportContent(), Encoding.GetEncoding(1250));
-        }
-        catch
-        {
-            return; // couldn't write the scenery file
-        }
-
-        // the player's vehicle is the node name of the driven car in the consist
-        string? vehicle = trainset?.Vehicles
-            .FirstOrDefault(v => v.DriverType is eDriverType.Headdriver or eDriverType.Reardriver)?.Name
-            ?? trainset?.Vehicles.FirstOrDefault()?.Name;
-
-        // make sure the latest settings are on disk before the sim reads them
-        StarterNG.Classes.Settings.Instance.CaptureAndSave();
-
-        // launch the game: -s $<name>.scn -v <vehicle>
-        try
-        {
-            Process.Start(new ProcessStartInfo(StarterNG.Classes.Settings.Instance.ExecutablePath)
-            {
-                Arguments = $"-s {exportName} -v {vehicle}",
-                UseShellExecute = true
-            });
-        }
-        catch
-        {
-            // executable not found / not configured yet
-        }
     }
 }

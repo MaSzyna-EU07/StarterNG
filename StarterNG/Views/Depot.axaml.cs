@@ -29,8 +29,7 @@ public partial class Depot : UserControl
 
     // Shared, size-limited thumbnail cache (decoded down to display height).
     private readonly Dictionary<string, Bitmap?> _miniCache = new();
-    private const int BrowserThumbHeight = 38;
-    private const int ConsistThumbHeight = 50;
+    private const int ConsistThumbHeight = 34;
 
     private readonly Cursor _hand = new(StandardCursorType.Hand);
     private int _nameCounter;
@@ -44,18 +43,21 @@ public partial class Depot : UserControl
     // scenery-consist previews are built lazily on first dropdown open
     private bool _consistPreviewsBuilt;
 
-    // auto-expand search results only when there are few of them
-    private const int AutoExpandLimit = 40;
-    private const int MaxRowsPerGroup = 250;
-
     // active database filters
-    private Func<string?, bool>? _categoryFilter;  // matches a category letter, null = all
-    private string? _classFilter;                  // group mini (e.g. EU07), null = all
+    private Func<string?, bool>? _categoryFilter;  // matches a category letter, null = none chosen
+    private string? _classFilter;                  // group mini (e.g. EU07), null = all in category
+
+    // the vehicle currently highlighted in the flat list (drives the mini preview
+    // and the single Add button)
+    private VehicleTexture? _browserSelected;
+
+    // hard cap on how many entries the flat list shows at once
+    private const int MaxListRows = 2000;
 
     // card highlight brushes (theme-neutral overlays)
     private static readonly IBrush CardBorder = new SolidColorBrush(Color.Parse("#33888888"));
-    private static readonly IBrush CardBorderSel = new SolidColorBrush(Color.Parse("#AA4D8BFF"));
-    private static readonly IBrush CardBgSel = new SolidColorBrush(Color.Parse("#224D8BFF"));
+    private static readonly IBrush CardBorderSel = new SolidColorBrush(Color.Parse("#AA41C400"));
+    private static readonly IBrush CardBgSel = new SolidColorBrush(Color.Parse("#2241C400"));
     private static readonly IBrush Placeholder = new SolidColorBrush(Color.Parse("#22808080"));
 
     // Vehicle types, keyed by the JSON "category" letter. Powered/technical
@@ -132,7 +134,7 @@ public partial class Depot : UserControl
         _searchTimer.Tick += (_, _) =>
         {
             _searchTimer!.Stop();
-            BuildBrowser();
+            BuildList();
         };
 
         // Defer population so the tab renders immediately, then fills in.
@@ -275,12 +277,13 @@ public partial class Depot : UserControl
 
     private void PopulateCategoryCombo()
     {
+        // No "All" entry: nothing is selected by default, so the list starts empty
+        // (matching the original Starter's depot).
         _suppress = true;
         categoryCombo.Items.Clear();
-        categoryCombo.Items.Add(new ComboBoxItem { Content = App.Loc["All"], Tag = null });
         foreach (var (locKey, match) in CategoryDefs)
             categoryCombo.Items.Add(new ComboBoxItem { Content = App.Loc[locKey], Tag = match });
-        categoryCombo.SelectedIndex = 0;
+        categoryCombo.SelectedIndex = -1;
         _suppress = false;
 
         _categoryFilter = null;
@@ -289,18 +292,16 @@ public partial class Depot : UserControl
 
     private void RebuildClassCombo()
     {
+        // No "All" entry: an unselected class means "every class in the category".
         _suppress = true;
         classCombo.Items.Clear();
-        classCombo.Items.Add(new ComboBoxItem { Content = App.Loc["All"], Tag = null });
-
         foreach (string cls in ClassesForCategory(_categoryFilter))
             classCombo.Items.Add(new ComboBoxItem { Content = cls, Tag = cls });
-
-        classCombo.SelectedIndex = 0;
+        classCombo.SelectedIndex = -1;
         _suppress = false;
 
         _classFilter = null;
-        BuildBrowser();
+        BuildList();
     }
 
     private IEnumerable<string> ClassesForCategory(Func<string?, bool>? category) =>
@@ -322,87 +323,83 @@ public partial class Depot : UserControl
     {
         if (_suppress) return;
         _classFilter = (classCombo.SelectedItem as ComboBoxItem)?.Tag as string;
-        BuildBrowser();
+        BuildList();
     }
 
     // ----------------------------------------------------------- vehicle browser
 
-    // Browser groups by the JSON "group" field, rendered as collapsed expanders.
-    // Collapsed groups hold no controls, so the list stays light and smooth.
-    private void BuildBrowser()
+    // Flat list of plain-text vehicle entries (no expanders, like the original
+    // Starter). Empty by default: an entry only appears once a category is chosen
+    // or a search is typed. Picking one drives the mini preview and Add button.
+    private void BuildList()
     {
-        browserStack.Children.Clear();
+        // reset selection-dependent UI
+        _browserSelected = null;
+        miniPreview.Source = null;
+        addVehicleButton.IsEnabled = false;
+
+        vehicleListBox.Items.Clear();
 
         string search = searchBox.Text?.Trim() ?? "";
         bool hasSearch = search.Length > 0;
 
-        var matched = _db.Textures.Where(t => PassesFilters(t, search, hasSearch)).ToList();
+        // nothing selected and nothing searched -> keep the list empty
+        if (_categoryFilter == null && !hasSearch)
+            return;
 
-        // Only auto-open groups when the search is specific. A broad search keeps
-        // groups folded (just headers + counts) so we never realize thousands of
-        // rows / decode thousands of bitmaps at once.
-        bool autoExpand = hasSearch && matched.Count <= AutoExpandLimit;
+        var matched = _db.Textures
+            .Where(t => PassesFilters(t, search, hasSearch))
+            .OrderBy(t => t.TextureMini ?? t.Skinfile, StringComparer.OrdinalIgnoreCase)
+            .Take(MaxListRows)
+            .ToList();
 
-        // fold by class (the group's mini)
-        var grouped = matched
-            .GroupBy(ClassOf)
-            .OrderBy(g => g.Key, StringComparer.OrdinalIgnoreCase);
-
-        foreach (var group in grouped)
+        foreach (var texture in matched)
         {
-            var list = group
-                .OrderBy(t => t.TextureMini ?? t.Skinfile, StringComparer.OrdinalIgnoreCase)
-                .ToList();
-
-            string header = string.IsNullOrEmpty(group.Key)
-                ? App.Loc["Others"]
-                : group.Key;
-
-            var content = new StackPanel { Spacing = 2 };
-            var expander = new Expander
+            vehicleListBox.Items.Add(new ListBoxItem
             {
-                Header = $"{header}  ({list.Count})",
-                IsExpanded = autoExpand,   // folded by default
-                HorizontalAlignment = HorizontalAlignment.Stretch
-            };
-            expander.Content = content;
-
-            bool populated = false;
-            void Populate()
-            {
-                if (populated) return;
-                populated = true;
-
-                int shown = Math.Min(list.Count, MaxRowsPerGroup);
-                for (int i = 0; i < shown; i++)
-                    content.Children.Add(BuildBrowserItem(list[i]));
-
-                if (list.Count > shown)
-                    content.Children.Add(new TextBlock
-                    {
-                        Text = $"… +{list.Count - shown}",
-                        Opacity = 0.6,
-                        Margin = new Thickness(6, 2)
-                    });
-            }
-
-            if (expander.IsExpanded)
-                Populate();
-            expander.Expanded += (_, _) => Populate();
-
-            browserStack.Children.Add(expander);
-        }
-
-        if (browserStack.Children.Count == 0)
-        {
-            browserStack.Children.Add(new TextBlock
-            {
-                Text = App.Loc["NoVehicles"],
-                Opacity = 0.6,
-                TextWrapping = TextWrapping.Wrap,
-                Margin = new Thickness(4)
+                Content = BrowserLabel(texture, _db.ResolveSet(texture)),
+                Tag = texture
             });
         }
+
+        if (vehicleListBox.Items.Count == 0)
+            vehicleListBox.Items.Add(new ListBoxItem
+            {
+                Content = App.Loc["NoVehicles"],
+                IsEnabled = false
+            });
+    }
+
+    // Selecting an entry shows its mini preview and enables the Add button.
+    private void VehicleListBox_OnSelectionChanged(object? sender, SelectionChangedEventArgs e)
+    {
+        if (vehicleListBox.SelectedItem is ListBoxItem { Tag: VehicleTexture texture })
+        {
+            _browserSelected = texture;
+            miniPreview.Source = GetMiniBitmap(_db.ResolveMiniName(texture), 54);
+            addVehicleButton.IsEnabled = true;
+        }
+        else
+        {
+            _browserSelected = null;
+            miniPreview.Source = null;
+            addVehicleButton.IsEnabled = false;
+        }
+    }
+
+    // Double-click an entry to replace the selected consist vehicle.
+    private void VehicleListBox_OnDoubleTapped(object? sender, Avalonia.Input.TappedEventArgs e)
+    {
+        if (_browserSelected != null)
+            ReplaceSelected(_browserSelected);
+    }
+
+    // The single Add button inserts the highlighted vehicle after the selected
+    // consist vehicle (or at the end when nothing is selected).
+    private void AddVehicleButton_OnClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    {
+        if (_browserSelected != null)
+            AddTexture(_browserSelected);
     }
 
     private bool PassesFilters(VehicleTexture t, string search, bool hasSearch)
@@ -426,54 +423,6 @@ public partial class Depot : UserControl
                              s.Contains(f, StringComparison.OrdinalIgnoreCase);
         return C(t.Skinfile) || C(t.Model) || C(t.TextureMini) || C(t.MiniRef)
                || C(t.Meta?.Vehicle) || C(t.Meta?.Operator) || C(ClassOf(t));
-    }
-
-    private Control BuildBrowserItem(VehicleTexture texture)
-    {
-        // Grid with a star label column keeps the label width constrained so it
-        // wraps instead of overlapping the Add button.
-        var grid = new Grid
-        {
-            Margin = new Thickness(2, 1),
-            ColumnDefinitions = new ColumnDefinitions("Auto,*,Auto")
-        };
-        ToolTip.SetTip(grid, texture.FullPath);
-
-        var thumb = CreateLazyMini(_db.ResolveMiniName(texture), BrowserThumbHeight, 64);
-        thumb.VerticalAlignment = VerticalAlignment.Center;
-        Grid.SetColumn(thumb, 0);
-
-        var set = _db.ResolveSet(texture);
-        var label = new TextBlock
-        {
-            Text = BrowserLabel(texture, set),
-            VerticalAlignment = VerticalAlignment.Center,
-            FontSize = 12,
-            TextWrapping = TextWrapping.Wrap,
-            Margin = new Thickness(8, 0, 8, 0)
-        };
-        Grid.SetColumn(label, 1);
-
-        var add = new Button
-        {
-            Content = App.Loc["AddVehicle"],
-            FontSize = 11,
-            Padding = new Thickness(10, 3),
-            VerticalAlignment = VerticalAlignment.Center,
-            Cursor = _hand
-        };
-        add.Classes.Add("Flat");
-        ToolTip.SetTip(add, set != null ? App.Loc["TipAddUnit"] : App.Loc["TipAddVehicle"]);
-        add.Click += (_, _) => AddTexture(texture);
-        Grid.SetColumn(add, 2);
-
-        grid.Children.Add(thumb);
-        grid.Children.Add(label);
-        grid.Children.Add(add);
-
-        // double-click the row to replace the selected consist vehicle
-        grid.DoubleTapped += (_, _) => ReplaceSelected(texture);
-        return grid;
     }
 
     // Replaces the selected consist unit with this vehicle/unit (keeping its
@@ -504,29 +453,6 @@ public partial class Depot : UserControl
         _consist[i] = item;
         _selected = item;
         RebuildConsist();
-    }
-
-    // An image that decodes its mini only while it is on screen, and releases it
-    // when scrolled out of view, so an open group never holds every bitmap at once.
-    private Image CreateLazyMini(string? miniName, int height, double width)
-    {
-        var img = new Image { Height = height, Width = width, Stretch = Stretch.Uniform };
-        bool loaded = false;
-        img.EffectiveViewportChanged += (_, e) =>
-        {
-            bool visible = e.EffectiveViewport.Width > 0 && e.EffectiveViewport.Height > 0;
-            if (visible && !loaded)
-            {
-                img.Source = GetMiniBitmap(miniName, height);
-                loaded = true;
-            }
-            else if (!visible && loaded)
-            {
-                img.Source = null;
-                loaded = false;
-            }
-        };
-        return img;
     }
 
     private string BrowserLabel(VehicleTexture texture, IReadOnlyList<VehicleTexture>? set)
@@ -644,13 +570,13 @@ public partial class Depot : UserControl
 
         foreach (var v in trainset.Vehicles)
         {
-            var bmp = GetMiniBitmap(_db.MiniForSkin(v.SkinFile) ?? v.MiniName, 28);
+            var bmp = GetMiniBitmap(_db.MiniForSkin(v.SkinFile) ?? v.MiniName, 20);
             if (bmp != null)
-                minis.Children.Add(new Image { Source = bmp, Height = 28, Stretch = Stretch.Uniform });
+                minis.Children.Add(new Image { Source = bmp, Height = 20, Stretch = Stretch.Uniform });
             else
                 minis.Children.Add(new Border
                 {
-                    Height = 28, Width = 46, Background = Placeholder, CornerRadius = new CornerRadius(3)
+                    Height = 20, Width = 32, Background = Placeholder, CornerRadius = new CornerRadius(3)
                 });
 
             names.Children.Add(new TextBlock { Text = v.SkinFile, FontSize = 10, Opacity = 0.8 });

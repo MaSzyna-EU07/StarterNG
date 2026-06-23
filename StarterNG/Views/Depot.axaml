@@ -1,14 +1,13 @@
-﻿<UserControl xmlns="https://github.com/avaloniaui"
+<UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-             xmlns:sukiUi="clr-namespace:SukiUI.Controls;assembly=SukiUI"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:starterNg="clr-namespace:StarterNG"
              xmlns:views="clr-namespace:StarterNG.Views"
              x:CompileBindings="True"
              mc:Ignorable="d" d:DesignWidth="1000" d:DesignHeight="700"
              x:Class="StarterNG.Views.Depot">
-    <Grid Margin="16" ColumnSpacing="16" RowSpacing="16">
+    <Grid Margin="0" ColumnSpacing="8" RowSpacing="8">
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="340" />
             <ColumnDefinition />
@@ -20,29 +19,47 @@
         </Grid.RowDefinitions>
 
         <!-- Vehicle database browser (left, rows 0-1) -->
-        <sukiUi:GroupBox Grid.RowSpan="2"
-                         Header="{Binding [VehicleDatabase], Source={x:Static starterNg:App.Loc}}">
+        <HeaderedContentControl Grid.RowSpan="2" Theme="{StaticResource GroupBox}"
+                                Header="{Binding [VehicleDatabase], Source={x:Static starterNg:App.Loc}}">
             <DockPanel LastChildFill="True">
                 <Grid DockPanel.Dock="Top" ColumnDefinitions="*,*" ColumnSpacing="6" Margin="0,0,0,6">
                     <ComboBox Name="categoryCombo" Grid.Column="0" HorizontalAlignment="Stretch"
+                              PlaceholderText="{Binding [Category], Source={x:Static starterNg:App.Loc}}"
                               SelectionChanged="CategoryCombo_OnSelectionChanged" />
                     <ComboBox Name="classCombo" Grid.Column="1" HorizontalAlignment="Stretch"
+                              PlaceholderText="{Binding [Class], Source={x:Static starterNg:App.Loc}}"
                               SelectionChanged="ClassCombo_OnSelectionChanged" />
                 </Grid>
                 <TextBox Name="searchBox" DockPanel.Dock="Top" Margin="0,0,0,8"
                          Watermark="{Binding [Search], Source={x:Static starterNg:App.Loc}}"
                          TextChanged="SearchBox_OnTextChanged" />
-                <!-- Folded groups (built in code-behind); collapsed groups hold no
-                     controls, so the list stays light and scrolls smoothly. -->
-                <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
-                    <StackPanel Name="browserStack" Spacing="2" />
-                </ScrollViewer>
+
+                <!-- Mini preview of the selected entry + the single Add button.
+                     Both are docked at the bottom, under the flat vehicle list. -->
+                <Button Name="addVehicleButton" DockPanel.Dock="Bottom" Classes="Flat Accent"
+                        HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
+                        Margin="0,8,0,0" IsEnabled="False" Cursor="Hand"
+                        Click="AddVehicleButton_OnClick"
+                        Content="{Binding [AddVehicle], Source={x:Static starterNg:App.Loc}}" />
+                <Border Name="miniPreviewPanel" DockPanel.Dock="Bottom" Height="62" Margin="0,6,0,0"
+                        Background="{StaticResource CarbonInputBg}"
+                        BorderBrush="{StaticResource CarbonBorderLight}" BorderThickness="1"
+                        CornerRadius="2">
+                    <Image Name="miniPreview" Stretch="Uniform" Margin="6" />
+                </Border>
+
+                <!-- Flat list of vehicle entries (plain text, no expanders).
+                     Selecting one shows its mini and enables Add; double-click
+                     replaces the selected consist vehicle. -->
+                <ListBox Name="vehicleListBox" Classes="Compact"
+                         SelectionChanged="VehicleListBox_OnSelectionChanged"
+                         DoubleTapped="VehicleListBox_OnDoubleTapped" />
             </DockPanel>
-        </sukiUi:GroupBox>
+        </HeaderedContentControl>
 
         <!-- Scenery + load consist (top-right) -->
-        <sukiUi:GroupBox Grid.Column="1" Grid.Row="0"
-                         Header="{Binding [LoadFromScenery], Source={x:Static starterNg:App.Loc}}">
+        <HeaderedContentControl Grid.Column="1" Grid.Row="0" Theme="{StaticResource GroupBox}"
+                                Header="{Binding [LoadFromScenery], Source={x:Static starterNg:App.Loc}}">
             <Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto" ColumnSpacing="8" RowSpacing="6">
                 <TextBlock Grid.Row="0" Grid.Column="0" VerticalAlignment="Center"
                            Text="{Binding [Scenery], Source={x:Static starterNg:App.Loc}}" />
@@ -54,11 +71,11 @@
                           DropDownOpened="SceneryConsistCombo_OnDropDownOpened"
                           SelectionChanged="SceneryConsistCombo_OnSelectionChanged" />
             </Grid>
-        </sukiUi:GroupBox>
+        </HeaderedContentControl>
 
         <!-- Brakes / Loads editor (middle-right) -->
-        <sukiUi:GroupBox Grid.Column="1" Grid.Row="1"
-                         Header="{Binding [SelectedVehicle], Source={x:Static starterNg:App.Loc}}">
+        <HeaderedContentControl Grid.Column="1" Grid.Row="1" Theme="{StaticResource GroupBox}"
+                                Header="{Binding [SelectedVehicle], Source={x:Static starterNg:App.Loc}}">
             <DockPanel LastChildFill="True">
                 <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Spacing="8" Margin="0,0,0,8">
                     <Button Name="newConsistButton" Classes="Flat" Cursor="Hand"
@@ -81,11 +98,11 @@
                     </TabItem>
                 </TabControl>
             </DockPanel>
-        </sukiUi:GroupBox>
+        </HeaderedContentControl>
 
         <!-- Consist (full-width bottom, horizontally scrollable) -->
-        <sukiUi:GroupBox Grid.Row="2" Grid.ColumnSpan="2"
-                         Header="{Binding [Consist], Source={x:Static starterNg:App.Loc}}">
+        <HeaderedContentControl Grid.Row="2" Grid.ColumnSpan="2" Theme="{StaticResource GroupBox}"
+                                Header="{Binding [Consist], Source={x:Static starterNg:App.Loc}}">
             <Panel>
                 <TextBlock Name="emptyHint" VerticalAlignment="Center" HorizontalAlignment="Center"
                            TextWrapping="Wrap" MaxWidth="520" Opacity="0.6" TextAlignment="Center"
@@ -95,6 +112,6 @@
                                 VerticalAlignment="Center" Spacing="0" />
                 </ScrollViewer>
             </Panel>
-        </sukiUi:GroupBox>
+        </HeaderedContentControl>
     </Grid>
 </UserControl>

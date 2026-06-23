@@ -1,0 +1,190 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <!--
+      Carbon theme for StarterNG.
+
+      Recreates the dark "Carbon" VCL look of the original Delphi Starter without
+      SukiUI: a flat charcoal palette, square bordered group panels, top tab-style
+      navigation and a full-width START button. Plain Avalonia controls only, so
+      every view's code-behind keeps working unchanged.
+    -->
+    <Styles.Resources>
+        <!-- ── Palette ──────────────────────────────────────────────────── -->
+        <Color x:Key="CarbonAppBgColor">#15171B</Color>
+        <Color x:Key="CarbonPanelBgColor">#1E2327</Color>
+        <Color x:Key="CarbonHeaderBgColor">#2A3036</Color>
+        <Color x:Key="CarbonInputBgColor">#262C31</Color>
+        <Color x:Key="CarbonAccentColor">#177f00</Color>
+
+        <SolidColorBrush x:Key="CarbonAppBg" Color="#15171B" />
+        <SolidColorBrush x:Key="CarbonPanelBg" Color="#1E2327" />
+        <SolidColorBrush x:Key="CarbonHeaderBg" Color="#2A3036" />
+        <SolidColorBrush x:Key="CarbonHoverBg" Color="#2A3036" />
+        <SolidColorBrush x:Key="CarbonInputBg" Color="#262C31" />
+        <SolidColorBrush x:Key="CarbonBorderLight" Color="#3A424A" />
+        <SolidColorBrush x:Key="CarbonBorderDark" Color="#0E0F12" />
+        <SolidColorBrush x:Key="CarbonFg" Color="#E6E8EA" />
+        <SolidColorBrush x:Key="CarbonFgDim" Color="#9098A0" />
+        <!-- Accents in MaSzyna green: a readable dark green for fills, bright green
+             for hover/highlights. -->
+        <SolidColorBrush x:Key="CarbonAccent" Color="#177f00" />
+        <SolidColorBrush x:Key="CarbonAccentHover" Color="#41c400" />
+        <SolidColorBrush x:Key="CarbonAccentBright" Color="#41c400" />
+
+        <!-- ── GroupBox (replaces SukiUI GroupBox) ──────────────────────────
+             Use on a HeaderedContentControl via Theme="{StaticResource GroupBox}". -->
+        <ControlTheme x:Key="GroupBox" TargetType="HeaderedContentControl">
+            <Setter Property="Foreground" Value="{StaticResource CarbonFg}" />
+            <Setter Property="Template">
+                <ControlTemplate>
+                    <Border Background="{StaticResource CarbonPanelBg}"
+                            BorderBrush="{StaticResource CarbonBorderLight}"
+                            BorderThickness="1" CornerRadius="2">
+                        <DockPanel LastChildFill="True">
+                            <Border DockPanel.Dock="Top"
+                                    Background="{StaticResource CarbonHeaderBg}"
+                                    BorderBrush="{StaticResource CarbonBorderLight}"
+                                    BorderThickness="0,0,0,1"
+                                    Padding="8,5">
+                                <TextBlock Text="{TemplateBinding Header}"
+                                           FontWeight="SemiBold"
+                                           Foreground="{StaticResource CarbonFg}" />
+                            </Border>
+                            <ContentPresenter Content="{TemplateBinding Content}"
+                                              Margin="8" />
+                        </DockPanel>
+                    </Border>
+                </ControlTemplate>
+            </Setter>
+        </ControlTheme>
+
+        <!-- ── Top navigation tab (RadioButton) ─────────────────────────────
+             Use via Theme="{StaticResource NavTab}". Single GroupName = one active. -->
+        <ControlTheme x:Key="NavTab" TargetType="RadioButton">
+            <Setter Property="Foreground" Value="{StaticResource CarbonFgDim}" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="FontSize" Value="14" />
+            <Setter Property="MinWidth" Value="150" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Template">
+                <ControlTemplate>
+                    <Border Name="root" Background="Transparent"
+                            BorderBrush="Transparent" BorderThickness="0,0,0,2">
+                        <ContentPresenter HorizontalAlignment="Center"
+                                          VerticalAlignment="Center"
+                                          Content="{TemplateBinding Content}" />
+                    </Border>
+                </ControlTemplate>
+            </Setter>
+            <Style Selector="^:pointerover /template/ Border#root">
+                <Setter Property="Background" Value="{StaticResource CarbonHoverBg}" />
+            </Style>
+            <Style Selector="^:checked /template/ Border#root">
+                <Setter Property="Background" Value="{StaticResource CarbonHoverBg}" />
+                <Setter Property="BorderBrush" Value="{StaticResource CarbonAccentBright}" />
+            </Style>
+            <Style Selector="^:checked">
+                <Setter Property="Foreground" Value="{StaticResource CarbonFg}" />
+            </Style>
+        </ControlTheme>
+    </Styles.Resources>
+
+    <!-- ── Window / page surfaces ─────────────────────────────────────────── -->
+    <Style Selector="Window">
+        <Setter Property="Background" Value="{StaticResource CarbonAppBg}" />
+        <Setter Property="Foreground" Value="{StaticResource CarbonFg}" />
+        <Setter Property="FontFamily" Value="Tahoma, Segoe UI, Inter" />
+    </Style>
+
+    <!-- ── START button (full-width, bold) ────────────────────────────────── -->
+    <Style Selector="Button.Start">
+        <Setter Property="Background" Value="{StaticResource CarbonAccent}" />
+        <Setter Property="Foreground" Value="White" />
+        <Setter Property="FontWeight" Value="Bold" />
+        <Setter Property="FontSize" Value="16" />
+        <Setter Property="HorizontalAlignment" Value="Stretch" />
+        <Setter Property="HorizontalContentAlignment" Value="Center" />
+        <Setter Property="VerticalContentAlignment" Value="Center" />
+        <Setter Property="CornerRadius" Value="2" />
+    </Style>
+    <Style Selector="Button.Start /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="{StaticResource CarbonAccent}" />
+    </Style>
+    <Style Selector="Button.Start:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="{StaticResource CarbonAccentHover}" />
+        <Setter Property="TextBlock.Foreground" Value="White" />
+    </Style>
+    <Style Selector="Button.Start:pressed /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="{StaticResource CarbonAccent}" />
+    </Style>
+
+    <!-- ── Accent button (Save etc.) ──────────────────────────────────────── -->
+    <Style Selector="Button.Accent /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="{StaticResource CarbonAccent}" />
+        <Setter Property="TextBlock.Foreground" Value="White" />
+    </Style>
+    <Style Selector="Button.Accent:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="{StaticResource CarbonAccentHover}" />
+        <Setter Property="TextBlock.Foreground" Value="White" />
+    </Style>
+
+    <!-- ── Flat button (toolbar/secondary) ────────────────────────────────── -->
+    <Style Selector="Button.Flat">
+        <Setter Property="Background" Value="{StaticResource CarbonInputBg}" />
+        <Setter Property="BorderBrush" Value="{StaticResource CarbonBorderLight}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="CornerRadius" Value="2" />
+    </Style>
+
+    <!-- ── Basic button (borderless icon buttons) ─────────────────────────── -->
+    <Style Selector="Button.Basic">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="Padding" Value="6" />
+        <Setter Property="Foreground" Value="{StaticResource CarbonFgDim}" />
+    </Style>
+    <Style Selector="Button.Basic /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="Transparent" />
+    </Style>
+    <Style Selector="Button.Basic:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="{StaticResource CarbonHoverBg}" />
+        <Setter Property="TextBlock.Foreground" Value="{StaticResource CarbonFg}" />
+    </Style>
+
+    <!-- ── Selection highlight in MaSzyna green (not the OS accent) ────────── -->
+    <Style Selector="ListBoxItem:selected /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="{StaticResource CarbonAccent}" />
+    </Style>
+    <Style Selector="ListBoxItem:selected:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="{StaticResource CarbonAccentHover}" />
+    </Style>
+    <Style Selector="ListBoxItem:selected:focus /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="{StaticResource CarbonAccent}" />
+    </Style>
+    <Style Selector="TreeViewItem:selected /template/ Border#PART_LayoutRoot">
+        <Setter Property="Background" Value="{StaticResource CarbonAccent}" />
+    </Style>
+    <Style Selector="TreeViewItem:selected:pointerover /template/ Border#PART_LayoutRoot">
+        <Setter Property="Background" Value="{StaticResource CarbonAccentHover}" />
+    </Style>
+    <Style Selector="ComboBoxItem:selected /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="{StaticResource CarbonAccent}" />
+    </Style>
+
+    <!-- ── Tabs: smaller headers (Fluent's default is oversized) ──────────── -->
+    <Style Selector="TabItem">
+        <Setter Property="FontSize" Value="14" />
+        <Setter Property="MinHeight" Value="0" />
+        <Setter Property="Padding" Value="10,6" />
+    </Style>
+
+    <!-- ── Compact list (tight rows that fill the available space) ─────────── -->
+    <Style Selector="ListBox.Compact">
+        <Setter Property="Padding" Value="0" />
+    </Style>
+    <Style Selector="ListBox.Compact ListBoxItem">
+        <Setter Property="Padding" Value="6,2" />
+        <Setter Property="MinHeight" Value="0" />
+        <Setter Property="FontSize" Value="12" />
+    </Style>
+</Styles>

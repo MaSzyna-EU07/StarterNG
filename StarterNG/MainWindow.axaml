@@ -1,112 +1,116 @@
-<sukiUi:SukiWindow
+<Window
     x:Class="StarterNG.MainWindow"
     x:CompileBindings="True"
     xmlns="https://github.com/avaloniaui"
-    xmlns:sukiUi="clr-namespace:SukiUI.Controls;assembly=SukiUI"
     xmlns:materialIcons="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:views="clr-namespace:StarterNG.Views"
     xmlns:starterNg="clr-namespace:StarterNG"
-    BackgroundStyle="Flat"
-    Title="MaSzyna - Symulator pojazdów szynowych" Height="800" Width="1200" WindowStartupLocation="CenterScreen">
-    <sukiUi:SukiWindow.RightWindowTitleBarControls>
-        <Button Classes="Basic" Click="openLastLogClick" 
-                ToolTip.Tip="{Binding [ShowLatestLogTooltip], Source={x:Static starterNg:App.Loc}}">
-            <materialIcons:MaterialIcon Kind="FileDocument"/>
-        </Button>
-        <Label VerticalAlignment="Center" Content="{x:Static starterNg:AppInfo.Version}"/>
-    </sukiUi:SukiWindow.RightWindowTitleBarControls>
-    <sukiUi:SukiSideMenu IsMenuExpanded="False">
-        <sukiUi:SukiSideMenu.Items>
-            <!-- SCENARIUSZE -->
-            <sukiUi:SukiSideMenuItem 
-                Header="{Binding [NavScenarios], Source={x:Static starterNg:App.Loc}}" 
-                Classes="Compact">
-                <sukiUi:SukiSideMenuItem.Icon>
-                    <materialIcons:MaterialIcon Kind="ListBox" />
-                </sukiUi:SukiSideMenuItem.Icon>
-                <sukiUi:SukiSideMenuItem.PageContent>
-                    <views:Scenarios />
-                </sukiUi:SukiSideMenuItem.PageContent>
-            </sukiUi:SukiSideMenuItem>
+    Title="Starter MaSzyna"
+    Width="1200" Height="768" MinWidth="1200" MinHeight="666"
+    WindowStartupLocation="CenterScreen">
+    <!-- The client area is extended over the title bar in code-behind (the
+         ExtendClientArea* hints), so the logo + nav sit on the top bar while the
+         OS minimise / maximise / close buttons stay in the top-right corner. -->
 
-            <!-- Lokomotywownia -->
-            <sukiUi:SukiSideMenuItem 
-                Header="{Binding [NavDepot], Source={x:Static starterNg:App.Loc}}" 
-                Classes="Compact">
-                <sukiUi:SukiSideMenuItem.Icon>
-                    <materialIcons:MaterialIcon Kind="Train" />
-                </sukiUi:SukiSideMenuItem.Icon>
-                <sukiUi:SukiSideMenuItem.PageContent>
-                    <views:Depot />
-                </sukiUi:SukiSideMenuItem.PageContent>
-            </sukiUi:SukiSideMenuItem>
+    <DockPanel LastChildFill="True">
 
-            <!-- Ustawienia -->
-            <sukiUi:SukiSideMenuItem 
-                Header="{Binding [NavSettings], Source={x:Static starterNg:App.Loc}}" 
-                Classes="Compact">
-                <sukiUi:SukiSideMenuItem.Icon>
-                    <materialIcons:MaterialIcon Kind="Settings" />
-                </sukiUi:SukiSideMenuItem.Icon>
-                <sukiUi:SukiSideMenuItem.PageContent>
-                    <views:Settings/>
-                </sukiUi:SukiSideMenuItem.PageContent>
-            </sukiUi:SukiSideMenuItem>
-            
-            <!-- Sterowanie -->
-            <sukiUi:SukiSideMenuItem 
-                Header="{Binding [NavControls], Source={x:Static starterNg:App.Loc}}" 
-                Classes="Compact">
-                <sukiUi:SukiSideMenuItem.Icon>
-                    <materialIcons:MaterialIcon Kind="Controller" />
-                </sukiUi:SukiSideMenuItem.Icon>
-                <sukiUi:SukiSideMenuItem.PageContent>
-                    <Label>Work in progress</Label>
-                </sukiUi:SukiSideMenuItem.PageContent>
-            </sukiUi:SukiSideMenuItem>
+        <!-- ── Top bar: thin caption strip (row 0) + toolbar (row 1) ────────────
+             The OS minimise / maximise / close buttons render at the top-right of
+             the caption strip, so they sit ABOVE the social-icon cluster, which
+             lives on the right of the toolbar row. -->
+        <Border DockPanel.Dock="Top"
+                Background="{StaticResource CarbonPanelBg}"
+                BorderBrush="{StaticResource CarbonBorderLight}"
+                BorderThickness="0,0,0,1">
+            <Grid RowDefinitions="32,48">
 
+                <!-- Row 0: title / caption strip (draggable; OS buttons top-right) -->
+                <TextBlock Grid.Row="0" Text="Starter MaSzyna" VerticalAlignment="Center"
+                           Margin="14,0,0,0" FontSize="11"
+                           Foreground="{StaticResource CarbonFgDim}" />
 
-        </sukiUi:SukiSideMenu.Items>
+                <!-- Row 1: logo + navigation (left) and the right cluster (right) -->
+                <Grid Grid.Row="1" ColumnDefinitions="Auto,Auto,*,Auto">
 
+                    <!-- Logo -->
+                    <Image Grid.Column="0" Source="/Assets/Logo/maszyna_white.png"
+                           Height="34" Margin="14,0,18,0" VerticalAlignment="Center" />
 
-        <sukiUi:SukiSideMenu.HeaderContent>
-            <!-- Logo PNG. Replace Assets/Logo/maszyna_white.png (white logo for the
-                 dark side-menu header). A maszyna_black.png variant also lives in
-                 Assets/Logo for light backgrounds - swap the Source if needed. -->
-            <Image
-                Source="/Assets/Logo/maszyna_white.png"
-                Width="200"
-                Margin="16"
-                Height="60" />
+                    <!-- Page tabs -->
+                    <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Stretch">
+                        <RadioButton x:Name="NavScenarios" GroupName="nav" Theme="{StaticResource NavTab}"
+                                     Tag="scenarios" IsChecked="True"
+                                     IsCheckedChanged="Nav_OnCheckedChanged"
+                                     Content="{Binding [NavScenarios], Source={x:Static starterNg:App.Loc}}" />
+                        <RadioButton x:Name="NavDepot" GroupName="nav" Theme="{StaticResource NavTab}"
+                                     Tag="depot"
+                                     IsCheckedChanged="Nav_OnCheckedChanged"
+                                     Content="{Binding [NavDepot], Source={x:Static starterNg:App.Loc}}" />
+                        <RadioButton x:Name="NavSettings" GroupName="nav" Theme="{StaticResource NavTab}"
+                                     Tag="settings"
+                                     IsCheckedChanged="Nav_OnCheckedChanged"
+                                     Content="{Binding [NavSettings], Source={x:Static starterNg:App.Loc}}" />
+                        <Button Classes="Basic" Width="48" Cursor="Hand"
+                                ToolTip.Tip="{Binding [Help], Source={x:Static starterNg:App.Loc}}"
+                                Tag="https://wiki.eu07.pl/" Click="linkClick"
+                                Content="?" FontWeight="Bold" FontSize="16"
+                                HorizontalContentAlignment="Center" />
+                    </StackPanel>
 
-        </sukiUi:SukiSideMenu.HeaderContent>
+                    <!-- Right cluster: version, language, log, social links.
+                         In the toolbar row, so it sits below the OS caption buttons. -->
+                    <StackPanel Grid.Column="3" Orientation="Horizontal" VerticalAlignment="Center"
+                                Margin="0,0,8,0" Spacing="4">
+                        <StackPanel Orientation="Vertical" VerticalAlignment="Center" Margin="0,0,8,0">
+                            <Label Content="{Binding [Version], Source={x:Static starterNg:App.Loc}}"
+                                   FontSize="10" Foreground="{StaticResource CarbonFgDim}" Padding="0" />
+                            <Label Content="{x:Static starterNg:AppInfo.Version}"
+                                   FontSize="10" Foreground="{StaticResource CarbonFg}" Padding="0" />
+                        </StackPanel>
 
-        <sukiUi:SukiSideMenu.FooterContent>
-            <StackPanel HorizontalAlignment="Center" Orientation="Horizontal">
-                <!-- eu07.pl -->
-                <Button Classes="Basic" Cursor="Hand" Tag="http://eu07.pl/" Click="linkClick">
-                    <materialIcons:MaterialIcon Kind="Web" />
-                </Button>
-                <!-- Discord -->
-                <Button Classes="Basic" Cursor="Hand" Tag="https://discord.gg/eu07" Click="linkClick">
-                    <PathIcon Data="{StaticResource DiscordLogo}" Height="12" />
-                </Button>
-                <!-- Facebook -->
-                <Button Classes="Basic" Cursor="Hand" Tag="http://www.facebook.com/MaSzynaeu07pl" Click="linkClick">
-                    <materialIcons:MaterialIcon Kind="Facebook" />
-                </Button>
-                <!-- Youtube -->
-                <Button Classes="Basic" Cursor="Hand" Tag="http://www.youtube.com/@eu07official" Click="linkClick">
-                    <materialIcons:MaterialIcon Kind="Youtube" />
-                </Button>
-                <!-- Github -->
-                <Button Classes="Basic" Cursor="Hand" Tag="http://github.com/MaSzyna-EU07/" Click="linkClick">
-                    <materialIcons:MaterialIcon Kind="Github" />
-                </Button>
-            </StackPanel>
-        </sukiUi:SukiSideMenu.FooterContent>
-    </sukiUi:SukiSideMenu>
-</sukiUi:SukiWindow>
+                        <ComboBox x:Name="LangCombo" Width="100" VerticalAlignment="Center"
+                                  SelectionChanged="LangCombo_OnSelectionChanged">
+                            <ComboBoxItem>Polski</ComboBoxItem>
+                            <ComboBoxItem>English</ComboBoxItem>
+                        </ComboBox>
+
+                        <Button Classes="Basic" Click="openLastLogClick"
+                                ToolTip.Tip="{Binding [ShowLatestLogTooltip], Source={x:Static starterNg:App.Loc}}">
+                            <materialIcons:MaterialIcon Kind="FileDocument" />
+                        </Button>
+                        <Button Classes="Basic" Cursor="Hand" Tag="http://eu07.pl/" Click="linkClick">
+                            <materialIcons:MaterialIcon Kind="Web" />
+                        </Button>
+                        <Button Classes="Basic" Cursor="Hand" Tag="https://discord.gg/eu07" Click="linkClick">
+                            <PathIcon Data="{StaticResource DiscordLogo}" Height="12" />
+                        </Button>
+                        <Button Classes="Basic" Cursor="Hand" Tag="http://www.facebook.com/MaSzynaeu07pl" Click="linkClick">
+                            <materialIcons:MaterialIcon Kind="Facebook" />
+                        </Button>
+                        <Button Classes="Basic" Cursor="Hand" Tag="http://www.youtube.com/@eu07official" Click="linkClick">
+                            <materialIcons:MaterialIcon Kind="Youtube" />
+                        </Button>
+                        <Button Classes="Basic" Cursor="Hand" Tag="http://github.com/MaSzyna-EU07/" Click="linkClick">
+                            <materialIcons:MaterialIcon Kind="Github" />
+                        </Button>
+                    </StackPanel>
+                </Grid>
+            </Grid>
+        </Border>
+
+        <!-- ── Full-width START button (bottom) ─────────────────────────────── -->
+        <Button DockPanel.Dock="Bottom" Classes="Start" Height="44" Margin="6"
+                Click="StartButton_OnClick"
+                Content="{Binding [Start], Source={x:Static starterNg:App.Loc}}" />
+
+        <!-- ── Page host (one view visible at a time, like the original PageControl) -->
+        <Panel Margin="6,6,6,0">
+            <views:Scenarios x:Name="ScenariosView" />
+            <views:Depot x:Name="DepotView" IsVisible="False" />
+            <views:Settings x:Name="SettingsView" IsVisible="False" />
+        </Panel>
+    </DockPanel>
+</Window>
