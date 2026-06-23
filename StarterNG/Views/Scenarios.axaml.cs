@@ -76,8 +76,21 @@ public partial class Scenarios : UserControl
     {
         var item = sceneryList.SelectedItem as TreeViewItem;
         if (item?.Tag is not int tag)
+        {
+            foreach (TreeViewItem? toCollapse in sceneryList.Items)
+            {
+                if (toCollapse != null) 
+                    toCollapse.IsExpanded = false;
+            }
+
+            if (item != null) 
+                item.IsExpanded = true;
+            if (item is { Items.Count: > 0 })
+                sceneryList.SelectedItem = item.Items[0];
             return;
+        }
         Scenery selectedScn = Sceneries[tag];
+        
         vehicleList.Items.Clear();
 
         // scenery-level info (distinct from the per-consist scenario description)
@@ -103,6 +116,10 @@ public partial class Scenarios : UserControl
             });
         }
 
+        if (vehicleList.Items.Count > 0)
+        {
+            vehicleList.SelectedIndex = 0;
+        }
     }
 
     // Shows the selected scenery's description (//$d) and 1:1 image (//$i).
