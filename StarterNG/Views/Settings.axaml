@@ -68,6 +68,14 @@
                 </ScrollViewer>
             </TabItem>
 
+            <!-- Controls / key bindings -->
+            <TabItem Header="{Binding [Controls], Source={x:Static starterNg:App.Loc}}">
+                <Grid x:Name="ControlsHost" RowDefinitions="Auto,*,Auto" Margin="12">
+                    <!-- Built in code-behind (BuildControlsTab): a search bar, the
+                         scrollable binding list, and the keyboard visualisation. -->
+                </Grid>
+            </TabItem>
+
             <!-- Others -->
             <TabItem Header="{Binding [Others], Source={x:Static starterNg:App.Loc}}">
                 <ScrollViewer VerticalScrollBarVisibility="Auto">

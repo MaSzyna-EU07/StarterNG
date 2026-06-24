@@ -27,6 +27,9 @@ public partial class Scenarios : UserControl
     // stored Day stays 0 so the scenery keeps using the live date.
     private bool _todaySeason;
 
+    // suppresses the list-filter handlers while their state is restored at startup
+    private bool _loadingFilters;
+
     public Scenarios()
     {
         InitializeComponent();
@@ -34,61 +37,15 @@ public partial class Scenarios : UserControl
         // Sceneries are parsed once at startup (behind the splash).
         Sceneries = GameData.Instance.Sceneries;
 
-        var groupNodes = new Dictionary<string, TreeViewItem>();
-        var topLevel = new List<TreeViewItem>();
+        // Restore the persisted list filters before building the tree/list. Guarded
+        // so assigning IsChecked here doesn't run the rebuild handlers prematurely.
+        _loadingFilters = true;
+        showAiCheck.IsChecked = StarterNG.Classes.Settings.Instance.ShowAiVehicles;
+        drivableOnlyCheck.IsChecked = StarterNG.Classes.Settings.Instance.DrivableOnly;
+        archivalSwitch.IsChecked = StarterNG.Classes.Settings.Instance.ShowArchivalSceneries;
+        _loadingFilters = false;
 
-        for (int i = 0; i < Sceneries.Count; i++)
-        {
-            var scenery = Sceneries[i];
-
-            // case 1: no group - put without parent
-            if (string.IsNullOrEmpty(scenery.Group))
-            {
-                topLevel.Add(new TreeViewItem
-                {
-                    Header = Path.GetFileNameWithoutExtension(scenery.Path),
-                    Tag = i
-                });
-
-                continue;
-            }
-
-            // case 2 - group scenery with others
-            if (!groupNodes.TryGetValue(scenery.Group, out var groupNode))
-            {
-                groupNode = new TreeViewItem
-                {
-                    Header = scenery.Group,
-                    IsExpanded = false
-                };
-
-                groupNodes[scenery.Group] = groupNode;
-                topLevel.Add(groupNode);
-            }
-
-            groupNode.Items.Add(new TreeViewItem
-            {
-                Header = Path.GetFileNameWithoutExtension(scenery.Path),
-                Tag = i
-            });
-        }
-
-        // Sort the scenery tree alphabetically: group folders' inner sceneries
-        // first, then the top-level (group folders + ungrouped sceneries). The Tag
-        // keeps each node's original scenery index, so sorting only reorders the
-        // display - the vehicles/trainsets list stays in scenery order.
-        foreach (var node in groupNodes.Values)
-        {
-            var children = node.Items.Cast<TreeViewItem>()
-                .OrderBy(c => c.Header as string, StringComparer.OrdinalIgnoreCase)
-                .ToList();
-            node.Items.Clear();
-            foreach (var child in children)
-                node.Items.Add(child);
-        }
-
-        foreach (var item in topLevel.OrderBy(t => t.Header as string, StringComparer.OrdinalIgnoreCase))
-            sceneryList.Items.Add(item);
+        BuildSceneryTree();
 
         // refresh the consist preview when the view is shown again (e.g. after
         // editing the consist in the depot). Switching tabs only toggles IsVisible
@@ -108,6 +65,139 @@ public partial class Scenarios : UserControl
     {
         RefreshVehicleLabels();
         RefreshSelectedConsist();
+    }
+
+    // (Re)builds the scenery tree, honouring the "show archival" switch. Archival
+    // sceneries (those declaring //$a) are skipped when the switch is off; group
+    // folders that end up empty are omitted. The Tag keeps each node's original
+    // scenery index, so the vehicles list stays aligned. Top-level nodes and group
+    // children are sorted alphabetically.
+    private void BuildSceneryTree()
+    {
+        sceneryList.Items.Clear();
+
+        bool showArchival = archivalSwitch.IsChecked ?? true;
+        var groupNodes = new Dictionary<string, TreeViewItem>();
+        var topLevel = new List<TreeViewItem>();
+
+        for (int i = 0; i < Sceneries.Count; i++)
+        {
+            var scenery = Sceneries[i];
+            if (scenery.Archival && !showArchival)
+                continue;
+
+            if (string.IsNullOrEmpty(scenery.Group))
+            {
+                topLevel.Add(new TreeViewItem
+                {
+                    Header = Path.GetFileNameWithoutExtension(scenery.Path),
+                    Tag = i
+                });
+                continue;
+            }
+
+            if (!groupNodes.TryGetValue(scenery.Group, out var groupNode))
+            {
+                groupNode = new TreeViewItem { Header = scenery.Group, IsExpanded = false };
+                groupNodes[scenery.Group] = groupNode;
+                topLevel.Add(groupNode);
+            }
+
+            groupNode.Items.Add(new TreeViewItem
+            {
+                Header = Path.GetFileNameWithoutExtension(scenery.Path),
+                Tag = i
+            });
+        }
+
+        foreach (var node in groupNodes.Values)
+        {
+            var children = node.Items.Cast<TreeViewItem>()
+                .OrderBy(c => c.Header as string, StringComparer.OrdinalIgnoreCase)
+                .ToList();
+            node.Items.Clear();
+            foreach (var child in children)
+                node.Items.Add(child);
+        }
+
+        foreach (var item in topLevel.OrderBy(t => t.Header as string, StringComparer.OrdinalIgnoreCase))
+            sceneryList.Items.Add(item);
+    }
+
+    // Fills the Vehicles list for a scenery, honouring the two filters:
+    //  - "AI vehicles" off hides consists whose //$o description starts with '-';
+    //  - "Drivable only" on hides decoration consists (the //$decor flag).
+    private void PopulateVehicleList(Scenery scn)
+    {
+        vehicleList.Items.Clear();
+
+        bool showAi = showAiCheck.IsChecked ?? true;
+        bool drivableOnly = drivableOnlyCheck.IsChecked ?? true;
+
+        for (int i = 0; i < scn.Trainsets.Count; i++)
+        {
+            var trainset = scn.Trainsets[i];
+            string trainsetName = string.Join(" + ", trainset.Vehicles.Select(dyn => dyn.Name));
+            if (string.IsNullOrWhiteSpace(trainsetName)) continue; // skip empty
+
+            if (IsAiTrainset(trainset) && !showAi) continue;
+            if (trainset.Decor && drivableOnly) continue;
+
+            var listItem = new ListBoxItem
+            {
+                Content = trainsetName,
+                Tag = i
+            };
+            // right-click: save/load to the warehouse + clipboard copy/paste
+            listItem.ContextMenu = ConsistContextMenu.Build(
+                listItem,
+                () => trainset,
+                vehicles => ApplyConsist(listItem, trainset, vehicles));
+            vehicleList.Items.Add(listItem);
+        }
+
+        if (vehicleList.Items.Count > 0)
+            vehicleList.SelectedIndex = 0;
+    }
+
+    // A computer-driven consist marks its //$o description with a leading '-'.
+    private static bool IsAiTrainset(Trainset trainset) =>
+        !string.IsNullOrEmpty(trainset.Description) &&
+        trainset.Description.TrimStart().StartsWith("-", StringComparison.Ordinal);
+
+    // AI/player vehicle filter toggled: persist the choice and rebuild the list
+    // for the currently selected scenery.
+    private void VehicleFilter_OnChanged(object? sender, RoutedEventArgs e)
+    {
+        if (_loadingFilters) return;
+
+        StarterNG.Classes.Settings.Instance.ShowAiVehicles = showAiCheck.IsChecked ?? true;
+        StarterNG.Classes.Settings.Instance.DrivableOnly = drivableOnlyCheck.IsChecked ?? true;
+        StarterNG.Classes.Settings.Instance.Save();
+
+        if (sceneryList.SelectedItem is TreeViewItem { Tag: int tag } && tag < Sceneries.Count)
+            PopulateVehicleList(Sceneries[tag]);
+    }
+
+    // Archival-scenery switch toggled: persist the choice and rebuild the tree.
+    private void ArchivalSwitch_OnChanged(object? sender, RoutedEventArgs e)
+    {
+        if (_loadingFilters) return;
+
+        StarterNG.Classes.Settings.Instance.ShowArchivalSceneries = archivalSwitch.IsChecked ?? true;
+        StarterNG.Classes.Settings.Instance.Save();
+
+        BuildSceneryTree();
+    }
+
+    // Replaces a consist's vehicles (from a loaded warehouse preset or a pasted
+    // clipboard consist) and refreshes the row caption / consist preview.
+    private void ApplyConsist(ListBoxItem item, Trainset trainset, List<Dynamic> vehicles)
+    {
+        trainset.Vehicles = vehicles;
+        item.Content = string.Join(" + ", trainset.Vehicles.Select(d => d.Name));
+        if (ReferenceEquals(AppState.Instance.CurrentTrainset, trainset))
+            ShowConsist(trainset);
     }
 
     // Rebuilds the caption of each entry in the Vehicles list from its trainset's
@@ -144,8 +234,6 @@ public partial class Scenarios : UserControl
             return;
         }
         Scenery selectedScn = Sceneries[tag];
-        
-        vehicleList.Items.Clear();
 
         // scenery-level info (distinct from the per-consist scenario description)
         ShowSceneryInfo(selectedScn);
@@ -155,25 +243,8 @@ public partial class Scenarios : UserControl
         missionDescription.Text = "";
         timetableContent.Text = App.Loc["NoTimetable"];
 
-        // add all trainsets to list
-        for (int i = 0; i < selectedScn.Trainsets.Count; i++)
-        {
-            string trainsetName = string.Join(
-                " + ",
-                selectedScn.Trainsets[i].Vehicles.Select(dyn => dyn.Name)
-            );
-            if (string.IsNullOrWhiteSpace(trainsetName)) continue; // skip empty
-            vehicleList.Items.Add(new ListBoxItem
-            {
-                Content = trainsetName,
-                Tag = i
-            });
-        }
-
-        if (vehicleList.Items.Count > 0)
-        {
-            vehicleList.SelectedIndex = 0;
-        }
+        // add the (filtered) trainsets to the Vehicles list
+        PopulateVehicleList(selectedScn);
     }
 
     // Shows the selected scenery's description (//$d) and 1:1 image (//$i).

@@ -9,8 +9,8 @@
         <BuiltInComInteropSupport>true</BuiltInComInteropSupport>
         <ApplicationManifest>app.manifest</ApplicationManifest>
         <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
-        <AssemblyVersion>1.1.0.3</AssemblyVersion>
-        <FileVersion>1.1.0.3</FileVersion>
+        <AssemblyVersion>1.2.0.4</AssemblyVersion>
+        <FileVersion>1.2.0.4</FileVersion>
         <AssemblyName>Starter</AssemblyName>
         <Company>eu07.pl</Company>
     </PropertyGroup>
@@ -58,6 +58,12 @@
       <Content Include="startercfg\lang\*.xml">
         <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
         <Link>startercfg\lang\%(Filename)%(Extension)</Link>
+      </Content>
+      <!-- Default key-binding layout, used as a template when the user has no
+           eu07_input-keyboard.ini yet (and for "Restore defaults"). -->
+      <Content Include="startercfg\eu07_input-keyboard.ini">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        <Link>startercfg\eu07_input-keyboard.ini</Link>
       </Content>
     </ItemGroup>
 </Project>

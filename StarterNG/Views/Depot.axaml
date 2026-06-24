@@ -69,7 +69,8 @@
                 <TextBlock Name="mapSceneryLabel" DockPanel.Dock="Top" FontSize="12"
                            Opacity="0.8" Margin="0,0,0,6" TextTrimming="CharacterEllipsis" />
                 <ListBox Name="sceneryConsistList" Classes="Compact"
-                         SelectionChanged="SceneryConsistList_OnSelectionChanged" />
+                         SelectionChanged="SceneryConsistList_OnSelectionChanged"
+                         KeyDown="SceneryConsistList_OnKeyDown" />
             </DockPanel>
         </HeaderedContentControl>
 

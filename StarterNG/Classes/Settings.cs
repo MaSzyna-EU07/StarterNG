@@ -112,6 +112,11 @@ public sealed class Settings
     public bool LargeThumbnails;                   // starter.largethumbnails
     public bool AutoExpandSceneryTree;             // starter.expandtree
 
+    // List filters (launcher-only). Default on.
+    public bool ShowAiVehicles = true;             // starter.show.ai (show //$o "-" consists)
+    public bool DrivableOnly = true;               // starter.drivableonly (hide //$decor consists)
+    public bool ShowArchivalSceneries = true;      // starter.show.archival
+
     /// <summary>gfxrenderer tokens in the order shown by the render-engine combo.</summary>
     public static readonly string[] RenderEngines =
         { "full", "legacy", "simpleshader", "simple", "off", "experimental" };
@@ -357,6 +362,9 @@ public sealed class Settings
         AutoCloseStarter = c.GetBool("starter.autoclose", false);
         LargeThumbnails = c.GetBool("starter.largethumbnails", false);
         AutoExpandSceneryTree = c.GetBool("starter.expandtree", false);
+        ShowAiVehicles = c.GetBool("starter.show.ai", true);
+        DrivableOnly = c.GetBool("starter.drivableonly", true);
+        ShowArchivalSceneries = c.GetBool("starter.show.archival", true);
     }
 
     // ── fields → config ───────────────────────────────────────────────────
@@ -444,6 +452,9 @@ public sealed class Settings
         c.SetBool("starter.autoclose", AutoCloseStarter);
         c.SetBool("starter.largethumbnails", LargeThumbnails);
         c.SetBool("starter.expandtree", AutoExpandSceneryTree);
+        c.SetBool("starter.show.ai", ShowAiVehicles);
+        c.SetBool("starter.drivableonly", DrivableOnly);
+        c.SetBool("starter.show.archival", ShowArchivalSceneries);
     }
 
     // ── small helpers ──────────────────────────────────────────────────────

@@ -30,9 +30,13 @@ public class Trainset
     /// <summary>True if the block parsed cleanly; false blocks are exported verbatim.</summary>
     public bool Parsed;
 
+    /// <summary>True when the block carries the //$decor flag (decoration, not drivable).</summary>
+    public bool Decor;
+
     public Trainset(string trainsetEntry)
     {
         RawEntry = trainsetEntry;
+        Decor = Regex.IsMatch(trainsetEntry, @"//\$decor\b", RegexOptions.IgnoreCase);
         Vehicles = new List<Dynamic>();
         Description = "";
         try

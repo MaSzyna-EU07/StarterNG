@@ -1,11 +1,18 @@
 using System;
+using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
+using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
+using Avalonia.Input;
 using Avalonia.Interactivity;
+using Avalonia.Layout;
 using Avalonia.Markup.Xaml.Styling;
+using Avalonia.Media;
 using StarterNG.Classes;
+// Disambiguate from Avalonia.Input.KeyBinding (a command-input binding) imported above.
+using KeyBinding = StarterNG.Classes.KeyBinding;
 
 namespace StarterNG.Views;
 
@@ -35,6 +42,13 @@ public partial class Settings : UserControl
         StarterNG.Classes.Settings.Instance.CaptureFromUi = ReadFromUi;
 
         ApplyToUi();
+
+        // Controls tab: load the key bindings and build the editor + on-screen
+        // keyboard. The tunnelling handler lets us capture a key press before the
+        // focused button consumes it (Space/Enter would otherwise click it).
+        KeyboardConfig.Instance.Load();
+        BuildControlsTab();
+        AddHandler(KeyDownEvent, OnControlsKeyDown, RoutingStrategies.Tunnel);
     }
 
     // ── Settings instance → controls ──────────────────────────────────────
@@ -209,6 +223,7 @@ public partial class Settings : UserControl
     {
         ReadFromUi();
         StarterNG.Classes.Settings.Instance.Save();
+        KeyboardConfig.Instance.Save();
         if (SaveStatus is not null)
             SaveStatus.Text = App.Loc["SettingsSaved"];
     }
@@ -217,6 +232,10 @@ public partial class Settings : UserControl
     {
         StarterNG.Classes.Settings.Instance.Load();
         ApplyToUi();
+        CancelCapture();
+        KeyboardConfig.Instance.Load();
+        RebuildBindingList();
+        RebuildKeyboard();
         if (SaveStatus is not null)
             SaveStatus.Text = string.Empty;
     }
@@ -311,4 +330,598 @@ public partial class Settings : UserControl
                 return i + 1;
         return 4; // default → 8x
     }
+
+    // ══════════════════════════════════════════════════════════════════════
+    //  Controls tab — key-binding editor and on-screen keyboard
+    // ══════════════════════════════════════════════════════════════════════
+
+    private TextBox? _controlsSearch;
+    private StackPanel? _bindingListPanel;
+    private StackPanel? _keyboardPanel;
+
+    // Binding currently waiting for a key press, and the button that launched it.
+    private KeyBinding? _capturing;
+    private Button? _capturingButton;
+
+    // On-screen key cells, keyed by token, so colours can be refreshed in place
+    // (rebuilding the whole keyboard would detach an open assignment flyout).
+    private readonly Dictionary<string, Grid> _keyCells = new(StringComparer.OrdinalIgnoreCase);
+
+    // Guards the assignment flyout's combo boxes against feedback during programmatic updates.
+    private bool _flyoutLoading;
+
+    // State colours (match the legend): unassigned/filler, plain, +shift, +ctrl.
+    private static readonly IBrush KeyUnassignedBrush = new SolidColorBrush(Color.Parse("#2A3036"));
+    private static readonly IBrush KeyFillerBrush = new SolidColorBrush(Color.Parse("#21262B"));
+    private static readonly IBrush KeyPlainBrush = new SolidColorBrush(Color.Parse("#2E9E1F"));
+    private static readonly IBrush KeyShiftBrush = new SolidColorBrush(Color.Parse("#C9A227"));
+    private static readonly IBrush KeyCtrlBrush = new SolidColorBrush(Color.Parse("#2D7FD3"));
+    private static readonly IBrush KeyBorderBrush = new SolidColorBrush(Color.Parse("#3A424A"));
+    private static readonly IBrush FgBrush = new SolidColorBrush(Color.Parse("#E6E8EA"));
+    private static readonly IBrush FgDimBrush = new SolidColorBrush(Color.Parse("#9098A0"));
+    private static readonly IBrush ConflictBrush = new SolidColorBrush(Color.Parse("#E06C5A"));
+
+    private const double KeyUnit = 30;   // px per relative width unit
+    private const double KeyHeight = 34;
+    private const double KeyGap = 4;
+
+    private void BuildControlsTab()
+    {
+        if (ControlsHost is null)
+            return;
+
+        // Row 0 — search / restore bar.
+        var topBar = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8, Margin = new Thickness(0, 0, 0, 8) };
+        topBar.Children.Add(new TextBlock
+        {
+            Text = App.Loc["BindingsHint"],
+            VerticalAlignment = VerticalAlignment.Center,
+            Foreground = FgDimBrush
+        });
+        _controlsSearch = new TextBox { Width = 240, Watermark = App.Loc["Search"] };
+        _controlsSearch.TextChanged += (_, _) => RebuildBindingList();
+        topBar.Children.Add(_controlsSearch);
+
+        var restoreBtn = new Button { Content = App.Loc["RestoreDefaults"] };
+        restoreBtn.Classes.Add("Flat");
+        restoreBtn.Click += (_, _) =>
+        {
+            CancelCapture();
+            KeyboardConfig.Instance.LoadDefaults();
+            KeyboardConfig.Instance.Dirty = true;
+            RebuildBindingList();
+            RebuildKeyboard();
+        };
+        topBar.Children.Add(restoreBtn);
+        Grid.SetRow(topBar, 0);
+        ControlsHost.Children.Add(topBar);
+
+        // Row 1 — scrollable binding list.
+        _bindingListPanel = new StackPanel { Spacing = 3 };
+        var listScroll = new ScrollViewer
+        {
+            Content = _bindingListPanel,
+            VerticalScrollBarVisibility = ScrollBarVisibility.Auto
+        };
+        Grid.SetRow(listScroll, 1);
+        ControlsHost.Children.Add(listScroll);
+
+        // Row 2 — legend + on-screen keyboard.
+        var bottom = new StackPanel { Spacing = 8, Margin = new Thickness(0, 10, 0, 0) };
+        bottom.Children.Add(BuildLegend());
+        _keyboardPanel = new StackPanel();
+        bottom.Children.Add(new ScrollViewer
+        {
+            Content = _keyboardPanel,
+            HorizontalScrollBarVisibility = ScrollBarVisibility.Auto,
+            VerticalScrollBarVisibility = ScrollBarVisibility.Disabled
+        });
+        Grid.SetRow(bottom, 2);
+        ControlsHost.Children.Add(bottom);
+
+        RebuildBindingList();
+        RebuildKeyboard();
+    }
+
+    // ── binding list ───────────────────────────────────────────────────────
+    private void RebuildBindingList()
+    {
+        if (_bindingListPanel is null)
+            return;
+
+        _bindingListPanel.Children.Clear();
+        string filter = _controlsSearch?.Text?.Trim().ToLowerInvariant() ?? string.Empty;
+        var conflicts = ComputeConflicts();
+
+        foreach (var b in KeyboardConfig.Instance.Bindings)
+        {
+            if (filter.Length > 0 && !MatchesFilter(b, filter))
+                continue;
+            _bindingListPanel.Children.Add(BuildBindingRow(b, conflicts));
+        }
+    }
+
+    private static bool MatchesFilter(KeyBinding b, string filter) =>
+        b.Command.ToLowerInvariant().Contains(filter) ||
+        b.Description.ToLowerInvariant().Contains(filter);
+
+    private Control BuildBindingRow(KeyBinding b, HashSet<string> conflicts)
+    {
+        var grid = new Grid
+        {
+            ColumnDefinitions = new ColumnDefinitions("*,Auto,Auto"),
+            VerticalAlignment = VerticalAlignment.Center
+        };
+
+        var label = new StackPanel { VerticalAlignment = VerticalAlignment.Center };
+        label.Children.Add(new TextBlock
+        {
+            Text = CommandLabel(b),
+            Foreground = FgBrush,
+            FontSize = 13,
+            TextTrimming = TextTrimming.CharacterEllipsis
+        });
+        label.Children.Add(new TextBlock
+        {
+            Text = b.Command,
+            Foreground = FgDimBrush,
+            FontSize = 11,
+            TextTrimming = TextTrimming.CharacterEllipsis
+        });
+        Grid.SetColumn(label, 0);
+        grid.Children.Add(label);
+
+        bool conflict = b.IsAssigned && conflicts.Contains(ComboKey(b));
+        var comboButton = new Button
+        {
+            Content = _capturing == b ? App.Loc["PressKey"] : ComboText(b),
+            MinWidth = 140,
+            HorizontalContentAlignment = HorizontalAlignment.Center,
+            VerticalAlignment = VerticalAlignment.Center,
+            Foreground = conflict ? ConflictBrush : FgBrush
+        };
+        comboButton.Classes.Add("Flat");
+        if (conflict)
+            ToolTip.SetTip(comboButton, App.Loc["ConflictTooltip"]);
+        comboButton.Click += (_, _) => StartCapture(b, comboButton);
+        Grid.SetColumn(comboButton, 1);
+        grid.Children.Add(comboButton);
+
+        var clearButton = new Button
+        {
+            Content = "✕",
+            Margin = new Thickness(6, 0, 0, 0),
+            VerticalAlignment = VerticalAlignment.Center
+        };
+        clearButton.Classes.Add("Basic");
+        ToolTip.SetTip(clearButton, App.Loc["ClearBinding"]);
+        clearButton.Click += (_, _) =>
+        {
+            CancelCapture();
+            b.Shift = b.Ctrl = false;
+            b.Key = "none";
+            KeyboardConfig.Instance.Dirty = true;
+            RebuildBindingList();
+            RebuildKeyboard();
+        };
+        Grid.SetColumn(clearButton, 2);
+        grid.Children.Add(clearButton);
+
+        return new Border
+        {
+            Background = KeyUnassignedBrush,
+            BorderBrush = KeyBorderBrush,
+            BorderThickness = new Thickness(1),
+            CornerRadius = new CornerRadius(2),
+            Padding = new Thickness(8, 4),
+            Child = grid
+        };
+    }
+
+    // ── key capture ──────────────────────────────────────────────────────--
+    private void StartCapture(KeyBinding b, Button button)
+    {
+        // Restore the previously listening button, if any, before switching.
+        if (_capturing is not null && _capturingButton is not null)
+            _capturingButton.Content = ComboText(_capturing);
+
+        _capturing = b;
+        _capturingButton = button;
+        button.Content = App.Loc["PressKey"];
+        button.Focus(); // keep focus inside the view so the tunnel handler sees keys
+    }
+
+    private void CancelCapture()
+    {
+        if (_capturing is not null && _capturingButton is not null)
+            _capturingButton.Content = ComboText(_capturing);
+        _capturing = null;
+        _capturingButton = null;
+    }
+
+    private void OnControlsKeyDown(object? sender, KeyEventArgs e)
+    {
+        if (_capturing is null)
+            return;
+
+        if (e.Key == Key.Escape)
+        {
+            CancelCapture();
+            e.Handled = true;
+            return;
+        }
+
+        // Wait for a real key while only modifiers are held.
+        if (KeyMap.IsModifierKey(e.Key))
+            return;
+
+        string? token = KeyMap.FromInput(e.Key, e.PhysicalKey);
+        if (token is null)
+        {
+            e.Handled = true; // swallow unsupported keys instead of clicking the button
+            return;
+        }
+
+        _capturing.Shift = e.KeyModifiers.HasFlag(KeyModifiers.Shift);
+        _capturing.Ctrl = e.KeyModifiers.HasFlag(KeyModifiers.Control);
+        _capturing.Key = token;
+        KeyboardConfig.Instance.Dirty = true;
+        e.Handled = true;
+
+        _capturing = null;
+        _capturingButton = null;
+        RebuildBindingList();
+        RebuildKeyboard();
+    }
+
+    // ── on-screen keyboard ───────────────────────────────────────────────--
+    private void RebuildKeyboard()
+    {
+        if (_keyboardPanel is null)
+            return;
+
+        _keyCells.Clear();
+        _keyboardPanel.Children.Clear();
+        var states = ComputeKeyStates();
+
+        var row = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 16 };
+        row.Children.Add(BuildKeyBlock(KeyMap.MainBlock, states));
+        row.Children.Add(BuildKeyBlock(KeyMap.NavBlock, states));
+        row.Children.Add(BuildKeyBlock(KeyMap.NumpadBlock, states));
+        _keyboardPanel.Children.Add(row);
+    }
+
+    // Recolours every key in place without rebuilding the tree, so an open
+    // assignment flyout keeps its anchor.
+    private void UpdateKeyboardColors()
+    {
+        var states = ComputeKeyStates();
+        foreach (var (token, content) in _keyCells)
+        {
+            if (content.Children.Count > 0)
+                content.Children.RemoveAt(0); // drop the old background, keep the label
+            content.Children.Insert(0, BuildKeyBackground(token, states));
+            states.TryGetValue(token, out var state);
+            ToolTip.SetTip(content, BuildKeyTooltip(token, state));
+        }
+    }
+
+    private Control BuildKeyBlock(KeyCap[][] rows, Dictionary<string, KeyState> states)
+    {
+        var block = new StackPanel { Spacing = KeyGap, VerticalAlignment = VerticalAlignment.Top };
+        foreach (var rowCaps in rows)
+        {
+            var rowPanel = new StackPanel { Orientation = Orientation.Horizontal, Spacing = KeyGap };
+            foreach (var cap in rowCaps)
+                rowPanel.Children.Add(BuildKeyCap(cap, states));
+            block.Children.Add(rowPanel);
+        }
+        return block;
+    }
+
+    private Control BuildKeyCap(KeyCap cap, Dictionary<string, KeyState> states)
+    {
+        double width = cap.Width * KeyUnit + (cap.Width - 1) * KeyGap;
+        var content = new Grid { Width = width, Height = KeyHeight };
+
+        var keyBorder = new Border
+        {
+            BorderBrush = KeyBorderBrush,
+            BorderThickness = new Thickness(1),
+            CornerRadius = new CornerRadius(3),
+            ClipToBounds = true,
+            Child = content
+        };
+
+        if (cap.Token is null)
+        {
+            // Reserved key (Esc, F1-F12, modifiers …): greyed out and not editable.
+            content.Children.Add(new Border { Background = KeyFillerBrush });
+            content.Children.Add(new TextBlock
+            {
+                Text = cap.Label,
+                Foreground = FgDimBrush,
+                FontSize = 9,
+                HorizontalAlignment = HorizontalAlignment.Center,
+                VerticalAlignment = VerticalAlignment.Center
+            });
+            keyBorder.Opacity = 0.55;
+            if (!string.IsNullOrEmpty(cap.Label))
+                ToolTip.SetTip(keyBorder, App.Loc["KbReserved"]);
+            return keyBorder;
+        }
+
+        string token = cap.Token;
+        states.TryGetValue(token.ToLowerInvariant(), out var st);
+        content.Children.Add(BuildKeyBackground(token, states));
+        content.Children.Add(new TextBlock
+        {
+            Text = cap.Label,
+            Foreground = FgBrush,
+            FontSize = 10,
+            FontWeight = FontWeight.SemiBold,
+            HorizontalAlignment = HorizontalAlignment.Center,
+            VerticalAlignment = VerticalAlignment.Center
+        });
+        ToolTip.SetTip(content, BuildKeyTooltip(token, st));
+
+        keyBorder.Cursor = new Cursor(StandardCursorType.Hand);
+        keyBorder.PointerPressed += (_, _) => ShowKeyFlyout(token, keyBorder);
+        _keyCells[token] = content;
+        return keyBorder;
+    }
+
+    private Control BuildKeyBackground(string token, Dictionary<string, KeyState> states)
+    {
+        states.TryGetValue(token.ToLowerInvariant(), out var state);
+        var colours = new List<IBrush>();
+        if (state is { Plain: true }) colours.Add(KeyPlainBrush);
+        if (state is { Shift: true }) colours.Add(KeyShiftBrush);
+        if (state is { Ctrl: true }) colours.Add(KeyCtrlBrush);
+
+        if (colours.Count == 0)
+            return new Border { Background = KeyUnassignedBrush };
+
+        var stripes = new UniformGrid { Rows = 1, Columns = colours.Count };
+        foreach (var c in colours)
+            stripes.Children.Add(new Border { Background = c });
+        return stripes;
+    }
+
+    private string BuildKeyTooltip(string token, KeyState? state)
+    {
+        string head = KeyMap.DisplayName(token);
+        if (state is null || state.Tips.Count == 0)
+            return $"{head}: {App.Loc["KbUnassigned"]}";
+        return head + "\n" + string.Join("\n", state.Tips);
+    }
+
+    // ── key assignment flyout (one combo per modifier combination) ──────────
+    private void ShowKeyFlyout(string token, Control anchor)
+    {
+        CancelCapture();
+        var commands = KeyboardConfig.Instance.Bindings;
+
+        var items = new List<string> { App.Loc["BindNone"] };
+        foreach (var c in commands)
+            items.Add(CommandLabel(c));
+
+        var slots = new (bool shift, bool ctrl, string labelKey)[]
+        {
+            (false, false, "BindNoMod"),
+            (true,  false, "BindShift"),
+            (false, true,  "BindCtrl"),
+            (true,  true,  "BindShiftCtrl"),
+        };
+
+        var combos = new ComboBox[slots.Length];
+        var grid = new Grid
+        {
+            ColumnDefinitions = new ColumnDefinitions("Auto,*"),
+            RowDefinitions = new RowDefinitions("Auto,Auto,Auto,Auto")
+        };
+
+        for (int i = 0; i < slots.Length; i++)
+        {
+            var (shift, ctrl, labelKey) = slots[i];
+
+            var lbl = new TextBlock
+            {
+                Text = App.Loc[labelKey],
+                Foreground = FgBrush,
+                VerticalAlignment = VerticalAlignment.Center,
+                Margin = new Thickness(0, 4, 12, 4)
+            };
+            Grid.SetRow(lbl, i);
+            Grid.SetColumn(lbl, 0);
+            grid.Children.Add(lbl);
+
+            var cb = new ComboBox
+            {
+                ItemsSource = items,
+                MinWidth = 280,
+                MaxDropDownHeight = 320,
+                Margin = new Thickness(0, 4),
+                HorizontalAlignment = HorizontalAlignment.Stretch
+            };
+            cb.SelectionChanged += (_, _) =>
+            {
+                if (_flyoutLoading)
+                    return;
+                AssignSlot(token, shift, ctrl, cb.SelectedIndex, commands);
+                SyncFlyoutCombos(token, combos);
+                UpdateKeyboardColors();
+                RebuildBindingList();
+            };
+            Grid.SetRow(cb, i);
+            Grid.SetColumn(cb, 1);
+            grid.Children.Add(cb);
+            combos[i] = cb;
+        }
+
+        SyncFlyoutCombos(token, combos);
+
+        var panel = new StackPanel { Spacing = 8, Margin = new Thickness(12), MinWidth = 360 };
+        panel.Children.Add(new TextBlock
+        {
+            Text = $"{App.Loc["BindKeyTitle"]} {KeyMap.DisplayName(token)}",
+            FontWeight = FontWeight.SemiBold,
+            Foreground = FgBrush
+        });
+        panel.Children.Add(new TextBlock
+        {
+            Text = App.Loc["BindKeyHint"],
+            Foreground = FgDimBrush,
+            FontSize = 11,
+            TextWrapping = TextWrapping.Wrap
+        });
+        panel.Children.Add(grid);
+
+        var flyout = new Flyout { Content = panel };
+        flyout.ShowAt(anchor);
+    }
+
+    private void SyncFlyoutCombos(string token, ComboBox[] combos)
+    {
+        var commands = KeyboardConfig.Instance.Bindings;
+        var slots = new (bool shift, bool ctrl)[] { (false, false), (true, false), (false, true), (true, true) };
+        _flyoutLoading = true;
+        for (int i = 0; i < combos.Length; i++)
+        {
+            var cmd = CommandInSlot(token, slots[i].shift, slots[i].ctrl);
+            combos[i].SelectedIndex = cmd is null ? 0 : commands.IndexOf(cmd) + 1;
+        }
+        _flyoutLoading = false;
+    }
+
+    private void AssignSlot(string token, bool shift, bool ctrl, int selectedIndex, List<KeyBinding> commands)
+    {
+        KeyBinding? chosen = selectedIndex <= 0 ? null : commands[selectedIndex - 1];
+
+        // Free the slot: unbind any other command currently sitting on it.
+        foreach (var b in KeyboardConfig.Instance.Bindings)
+        {
+            if (!ReferenceEquals(b, chosen) && b.IsAssigned &&
+                string.Equals(b.Key, token, StringComparison.OrdinalIgnoreCase) &&
+                b.Shift == shift && b.Ctrl == ctrl)
+            {
+                b.Shift = b.Ctrl = false;
+                b.Key = "none";
+            }
+        }
+
+        if (chosen is not null)
+        {
+            chosen.Key = token;
+            chosen.Shift = shift;
+            chosen.Ctrl = ctrl;
+        }
+
+        KeyboardConfig.Instance.Dirty = true;
+    }
+
+    private static KeyBinding? CommandInSlot(string token, bool shift, bool ctrl) =>
+        KeyboardConfig.Instance.Bindings.FirstOrDefault(b =>
+            b.IsAssigned &&
+            string.Equals(b.Key, token, StringComparison.OrdinalIgnoreCase) &&
+            b.Shift == shift && b.Ctrl == ctrl);
+
+    private Control BuildLegend()
+    {
+        var legend = new WrapPanel { Orientation = Orientation.Horizontal };
+        legend.Children.Add(LegendItem(KeyUnassignedBrush, App.Loc["KbUnassigned"]));
+        legend.Children.Add(LegendItem(KeyPlainBrush, App.Loc["KbAssigned"]));
+        legend.Children.Add(LegendItem(KeyShiftBrush, App.Loc["KbShift"]));
+        legend.Children.Add(LegendItem(KeyCtrlBrush, App.Loc["KbCtrl"]));
+        return legend;
+    }
+
+    private Control LegendItem(IBrush brush, string text)
+    {
+        var sp = new StackPanel
+        {
+            Orientation = Orientation.Horizontal,
+            Spacing = 6,
+            Margin = new Thickness(0, 0, 16, 0),
+            VerticalAlignment = VerticalAlignment.Center
+        };
+        sp.Children.Add(new Border
+        {
+            Width = 16,
+            Height = 16,
+            Background = brush,
+            BorderBrush = KeyBorderBrush,
+            BorderThickness = new Thickness(1),
+            CornerRadius = new CornerRadius(2),
+            VerticalAlignment = VerticalAlignment.Center
+        });
+        sp.Children.Add(new TextBlock { Text = text, Foreground = FgDimBrush, VerticalAlignment = VerticalAlignment.Center });
+        return sp;
+    }
+
+    // ── shared helpers ─────────────────────────────────────────────────────
+    private sealed class KeyState
+    {
+        public bool Plain;
+        public bool Shift;
+        public bool Ctrl;
+        public readonly List<string> Tips = new();
+    }
+
+    private static Dictionary<string, KeyState> ComputeKeyStates()
+    {
+        var map = new Dictionary<string, KeyState>(StringComparer.OrdinalIgnoreCase);
+        foreach (var b in KeyboardConfig.Instance.Bindings)
+        {
+            if (!b.IsAssigned)
+                continue;
+            string key = b.Key.ToLowerInvariant();
+            if (!map.TryGetValue(key, out var state))
+                map[key] = state = new KeyState();
+
+            if (!b.Shift && !b.Ctrl) state.Plain = true;
+            if (b.Shift) state.Shift = true;
+            if (b.Ctrl) state.Ctrl = true;
+
+            state.Tips.Add($"{ComboText(b)} — {CommandLabel(b)}");
+        }
+        return map;
+    }
+
+    private static HashSet<string> ComputeConflicts()
+    {
+        var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var dup = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var b in KeyboardConfig.Instance.Bindings)
+        {
+            if (!b.IsAssigned)
+                continue;
+            string k = ComboKey(b);
+            if (!seen.Add(k))
+                dup.Add(k);
+        }
+        return dup;
+    }
+
+    private static string ComboKey(KeyBinding b) =>
+        $"{(b.Ctrl ? 1 : 0)}|{(b.Shift ? 1 : 0)}|{b.Key.ToLowerInvariant()}";
+
+    private static string ComboText(KeyBinding b)
+    {
+        if (!b.IsAssigned)
+            return "—";
+        var parts = new List<string>();
+        if (b.Ctrl) parts.Add("Ctrl");
+        if (b.Shift) parts.Add("Shift");
+        parts.Add(KeyMap.DisplayName(b.Key));
+        return string.Join(" + ", parts);
+    }
+
+    // Display label for a command: its (capitalised) description, or the raw
+    // command token when the file has no comment for it.
+    private static string CommandLabel(KeyBinding b) =>
+        string.IsNullOrEmpty(b.Description) ? b.Command : Capitalize(b.Description);
+
+    private static string Capitalize(string s) =>
+        string.IsNullOrEmpty(s) ? s : char.ToUpperInvariant(s[0]) + s.Substring(1);
 }

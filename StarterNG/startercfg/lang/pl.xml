@@ -14,6 +14,9 @@
     <!-- Widok ogolny -->
     <String key="Sceneries">Scenerie</String>
     <String key="Vehicles">Pojazdy</String>
+    <String key="ShowAiVehicles">Pojazdy AI</String>
+    <String key="ShowDrivableOnly">Tylko do prowadzenia</String>
+    <String key="ShowArchival">Scenerie archiwalne</String>
     <String key="ScenarioDescription">Opis scenariusza</String>
     <String key="SceneryDescription">Opis scenerii</String>
     <String key="TabDescription">Opis</String>
@@ -163,6 +166,12 @@
     <String key="LoadCount">Ilość</String>
     <String key="LoadHint">Ustaw ilość większą od 0, aby załadować pojazd.</String>
     <String key="WagonNumber">Numer wagonu</String>
+    <String key="LoadCopyPrev">Kopiuj ładunek z poprzedniego pojazdu</String>
+    <String key="LoadMax">Maksymalny możliwy ładunek</String>
+    <String key="ConsistLoadTools">Ładunek całego składu</String>
+    <String key="ConsistRandomType">Losowy ładunek</String>
+    <String key="ConsistMaxAmount">Maksymalna ilość</String>
+    <String key="ConsistRandomAmount">Losowa ilość</String>
     <String key="Set">Ustaw</String>
     <String key="Length">Długość</String>
     <String key="Mass">Masa</String>
@@ -174,6 +183,16 @@
     <String key="AddVehicle">Dodaj</String>
     <String key="TipAddVehicle">Dodaj ten pojazd do składu</String>
     <String key="TipAddUnit">Dodaj cały zespół do składu</String>
+
+    <!-- Magazyn składów / schowek (menu pod prawym przyciskiem) -->
+    <String key="PresetSave">Zapisz zestawienie</String>
+    <String key="PresetLoad">Wczytaj zestawienie z magazynu</String>
+    <String key="PresetEmpty">(magazyn pusty)</String>
+    <String key="PresetDelete">Usuń z magazynu</String>
+    <String key="PresetNamePrompt">Nazwa zestawienia</String>
+    <String key="ConsistCopy">Skopiuj skład do schowka</String>
+    <String key="ConsistPaste">Wklej skład ze schowka</String>
+    <String key="ConsistRemoveAll">Usuń wszystkie pojazdy ze składu</String>
 
     <!-- Ekran ładowania -->
     <String key="LoadingVehicles">Wczytywanie bazy pojazdów</String>
@@ -284,6 +303,26 @@
     <String key="AutoCloseStarter">Zamknij starter automatycznie</String>
     <String key="LargeThumbnails">Duże miniaturki</String>
     <String key="AutoExpandSceneryTree">Automatycznie rozwijanie drzewka scenerii</String>
+
+    <!-- Sterowanie / przypisania klawiszy -->
+    <String key="Controls">Sterowanie</String>
+    <String key="BindingsHint">Kliknij przypisanie i naciśnij klawisz (przytrzymaj Shift / Ctrl dla kombinacji):</String>
+    <String key="RestoreDefaults">Przywróć domyślne</String>
+    <String key="PressKey">Naciśnij klawisz…</String>
+    <String key="ClearBinding">Wyczyść przypisanie</String>
+    <String key="ConflictTooltip">Konflikt: ten skrót jest używany przez więcej niż jedną komendę</String>
+    <String key="KbUnassigned">Nieprzypisany</String>
+    <String key="KbAssigned">Przypisany</String>
+    <String key="KbShift">Z klawiszem Shift</String>
+    <String key="KbCtrl">Z klawiszem Ctrl</String>
+    <String key="KbReserved">Zarezerwowany przez symulator</String>
+    <String key="BindKeyTitle">Klawisz:</String>
+    <String key="BindKeyHint">Przypisz komendę do każdej kombinacji modyfikatorów dla tego klawisza.</String>
+    <String key="BindNone">— brak —</String>
+    <String key="BindNoMod">Bez modyfikatora</String>
+    <String key="BindShift">Shift</String>
+    <String key="BindCtrl">Ctrl</String>
+    <String key="BindShiftCtrl">Shift + Ctrl</String>
 
     <!-- Settings actions -->
     <String key="Save">Zapisz</String>

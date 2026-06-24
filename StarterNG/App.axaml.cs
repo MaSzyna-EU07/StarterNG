@@ -26,6 +26,9 @@ public partial class App : Application
         // fall back to the system culture only when the file has no lang entry.
         Settings.Instance.Load();
 
+        // Key bindings live in eu07_input-keyboard.ini next to eu07.ini.
+        KeyboardConfig.Instance.Load();
+
         CultureInfo ci = CultureInfo.InstalledUICulture ;
 
         var langName = Settings.Instance.LanguageWasSet
@@ -62,8 +65,14 @@ public partial class App : Application
             // Code page 1250 is needed to parse scenery files (done during load).
             Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
 
-            // Persist settings when the launcher is closing.
-            desktop.ShutdownRequested += (_, _) => Settings.Instance.CaptureAndSave();
+            // Persist settings when the launcher is closing. Key bindings are only
+            // rewritten when actually edited, so an untouched file keeps its layout.
+            desktop.ShutdownRequested += (_, _) =>
+            {
+                Settings.Instance.CaptureAndSave();
+                if (KeyboardConfig.Instance.Dirty)
+                    KeyboardConfig.Instance.Save();
+            };
 
             var splash = new SplashWindow();
             desktop.MainWindow = splash;

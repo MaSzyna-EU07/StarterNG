@@ -19,6 +19,9 @@ public class Scenery
     public string Description; // //$d - scenery description
     public string ImageName;   // //$i - main-window image (scenery thumbnail)
 
+    /// <summary>True when the scenery declares the //$a "archival" flag.</summary>
+    public bool Archival;
+
     // Weather / environment. Like the original Starter, these are editable and are
     // written into the scenery's "config" block on launch (see RewriteWeather).
     // Defaults mirror the original (15 °C, day 0, 10:30, clear sky).
@@ -59,6 +62,8 @@ public class Scenery
         // //$d may appear on several lines; each is one line of the description.
         this.Description = MatchAllDirectives(content, "d");
         this.ImageName = MatchDirective(content, "i");
+        // //$a marks an archival scenery (present = archival, regardless of value).
+        this.Archival = MatchDirective(content, "a") != null;
 
         // weather/environment is read from the raw text before trainset blocks
         // are stripped out below (the atmosphere commands live outside trainsets)

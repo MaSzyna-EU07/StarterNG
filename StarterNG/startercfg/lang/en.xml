@@ -14,6 +14,9 @@
     <!-- General view -->
     <String key="Sceneries">Sceneries</String>
     <String key="Vehicles">Vehicles</String>
+    <String key="ShowAiVehicles">AI vehicles</String>
+    <String key="ShowDrivableOnly">Drivable only</String>
+    <String key="ShowArchival">Archival sceneries</String>
     <String key="ScenarioDescription">Scenario description</String>
     <String key="SceneryDescription">Scenery description</String>
     <String key="TabDescription">Description</String>
@@ -163,6 +166,12 @@
     <String key="LoadCount">Amount</String>
     <String key="LoadHint">Set an amount above 0 to load the vehicle.</String>
     <String key="WagonNumber">Wagon number</String>
+    <String key="LoadCopyPrev">Copy load from previous vehicle</String>
+    <String key="LoadMax">Maximum possible load</String>
+    <String key="ConsistLoadTools">Whole-consist load</String>
+    <String key="ConsistRandomType">Random load</String>
+    <String key="ConsistMaxAmount">Maximum amount</String>
+    <String key="ConsistRandomAmount">Random amount</String>
     <String key="Set">Set</String>
     <String key="Length">Length</String>
     <String key="Mass">Mass</String>
@@ -174,6 +183,16 @@
     <String key="AddVehicle">Add</String>
     <String key="TipAddVehicle">Add this vehicle to the consist</String>
     <String key="TipAddUnit">Add the whole unit to the consist</String>
+
+    <!-- Consist warehouse / clipboard (right-click menu) -->
+    <String key="PresetSave">Save consist</String>
+    <String key="PresetLoad">Load consist from warehouse</String>
+    <String key="PresetEmpty">(warehouse empty)</String>
+    <String key="PresetDelete">Remove from warehouse</String>
+    <String key="PresetNamePrompt">Consist name</String>
+    <String key="ConsistCopy">Copy consist to clipboard</String>
+    <String key="ConsistPaste">Paste consist from clipboard</String>
+    <String key="ConsistRemoveAll">Remove all vehicles</String>
 
     <!-- Loading splash -->
     <String key="LoadingVehicles">Loading vehicle database</String>
@@ -284,6 +303,26 @@
     <String key="AutoCloseStarter">Automatically close starter</String>
     <String key="LargeThumbnails">Large thumbnails</String>
     <String key="AutoExpandSceneryTree">Automatically expand scenery tree</String>
+
+    <!-- Controls / key bindings -->
+    <String key="Controls">Controls</String>
+    <String key="BindingsHint">Click a binding, then press the key (hold Shift / Ctrl for a combination):</String>
+    <String key="RestoreDefaults">Restore defaults</String>
+    <String key="PressKey">Press a key…</String>
+    <String key="ClearBinding">Clear binding</String>
+    <String key="ConflictTooltip">Conflict: this shortcut is used by more than one command</String>
+    <String key="KbUnassigned">Unassigned</String>
+    <String key="KbAssigned">Assigned</String>
+    <String key="KbShift">With Shift</String>
+    <String key="KbCtrl">With Ctrl</String>
+    <String key="KbReserved">Reserved by the simulator</String>
+    <String key="BindKeyTitle">Key:</String>
+    <String key="BindKeyHint">Assign a command to each modifier combination for this key.</String>
+    <String key="BindNone">— none —</String>
+    <String key="BindNoMod">No modifier</String>
+    <String key="BindShift">Shift</String>
+    <String key="BindCtrl">Ctrl</String>
+    <String key="BindShiftCtrl">Shift + Ctrl</String>
 
     <!-- Settings actions -->
     <String key="Save">Save</String>

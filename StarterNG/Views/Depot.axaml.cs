@@ -35,6 +35,9 @@ public partial class Depot : UserControl
     private readonly Cursor _hand = new(StandardCursorType.Hand);
     private int _nameCounter;
 
+    // shared RNG for the "random load / random amount" consist tools
+    private static readonly Random _rng = new();
+
     // suppresses combo SelectionChanged handlers while we populate them
     private bool _suppress;
 
@@ -557,9 +560,16 @@ public partial class Depot : UserControl
 
                 var entry = new ListBoxItem
                 {
-                    Content = ConsistText(trainset),
+                    Content = ConsistLabel(trainset),
                     Tag = trainset
                 };
+                // right-click: warehouse save/load, clipboard copy/paste, clear-all
+                var ts = trainset;
+                entry.ContextMenu = ConsistContextMenu.Build(
+                    entry,
+                    () => ts,
+                    vehicles => ApplyConsist(ts, vehicles),
+                    () => RemoveAllVehicles(ts));
                 sceneryConsistList.Items.Add(entry);
 
                 if (ReferenceEquals(trainset, AppState.Instance.CurrentTrainset))
@@ -581,8 +591,43 @@ public partial class Depot : UserControl
         LoadTrainset(trainset);
     }
 
+    // Shift+Delete clears the selected scenery consist (same as the context-menu
+    // "remove all vehicles" entry).
+    private void SceneryConsistList_OnKeyDown(object? sender, KeyEventArgs e)
+    {
+        if (e.Key == Key.Delete && e.KeyModifiers.HasFlag(KeyModifiers.Shift) &&
+            sceneryConsistList.SelectedItem is ListBoxItem { Tag: Trainset trainset } &&
+            trainset.Vehicles.Count > 0)
+        {
+            RemoveAllVehicles(trainset);
+            e.Handled = true;
+        }
+    }
+
+    // Replaces a scenery consist's vehicles (from a warehouse preset or a pasted
+    // clipboard consist), keeping the consist's map slot (name/track/offset), then
+    // loads it into the editor and refreshes the list.
+    private void ApplyConsist(Trainset target, List<Dynamic> vehicles)
+    {
+        target.Vehicles = vehicles;
+        AppState.Instance.CurrentScenery = _listScenery;
+        AppState.Instance.CurrentTrainset = target;
+        LoadTrainset(target);
+        PopulateSceneryConsists();
+    }
+
+    // Clears every vehicle from a scenery consist.
+    private void RemoveAllVehicles(Trainset target)
+    {
+        target.Vehicles = new List<Dynamic>();
+        AppState.Instance.CurrentScenery = _listScenery;
+        AppState.Instance.CurrentTrainset = target;
+        LoadTrainset(target);
+        PopulateSceneryConsists();
+    }
+
     // Plain-text label for a scenery consist (no thumbnails).
-    private static string ConsistText(Trainset trainset)
+    private static string ConsistLabel(Trainset trainset)
     {
         string text = string.Join(" + ", trainset.Vehicles.Select(v => v.SkinFile));
         if (string.IsNullOrWhiteSpace(text))
@@ -928,12 +973,9 @@ public partial class Depot : UserControl
             // highlight this vehicle's entry there
             SelectInBrowser(item.Cars[0]);
         };
-        // right-click a vehicle to set its wagon number (node "#<n>" suffix)
-        card.ContextRequested += (_, args) =>
-        {
-            ShowWagonNumberFlyout(card, item.Cars[0]);
-            args.Handled = true;
-        };
+        // right-click a vehicle: wagon number + load actions (copy load from the
+        // previous vehicle, fill to the maximum possible load)
+        card.ContextMenu = BuildCardMenu(card, item);
         return card;
     }
 
@@ -1128,6 +1170,9 @@ public partial class Depot : UserControl
         loadsPanel.Children.Clear();
         damagePanel.Children.Clear();
 
+        // whole-consist load tools sit at the top of the Loads tab, always available
+        loadsPanel.Children.Add(BuildConsistLoadTools());
+
         if (_selected is null)
         {
             brakesPanel.Children.Add(DetailHint(App.Loc["SelectVehicleHint"]));
@@ -1139,6 +1184,179 @@ public partial class Depot : UserControl
         BuildBrakesEditor(_selected);
         BuildLoadsEditor(_selected);
         BuildDamageEditor(_selected);
+    }
+
+    // ---------------------------------------------------------------- load tools
+
+    // The per-vehicle right-click menu: wagon number plus the two load shortcuts.
+    private ContextMenu BuildCardMenu(Control anchor, ConsistItem item)
+    {
+        var menu = new ContextMenu();
+        menu.Opening += (_, _) =>
+        {
+            menu.Items.Clear();
+
+            var num = new MenuItem { Header = App.Loc["WagonNumber"] };
+            num.Click += (_, _) => ShowWagonNumberFlyout(anchor, item.Cars[0]);
+            menu.Items.Add(num);
+
+            menu.Items.Add(new Separator());
+
+            var copyPrev = new MenuItem
+            {
+                Header = App.Loc["LoadCopyPrev"],
+                IsEnabled = _consist.IndexOf(item) > 0
+            };
+            copyPrev.Click += (_, _) => CopyLoadFromPrevious(item);
+            menu.Items.Add(copyPrev);
+
+            var max = new MenuItem
+            {
+                Header = App.Loc["LoadMax"],
+                IsEnabled = IsLoadable(item)
+            };
+            max.Click += (_, _) => SetUnitMaxLoad(item);
+            menu.Items.Add(max);
+        };
+        return menu;
+    }
+
+    // Button bar that applies a load operation to every vehicle in the consist.
+    private Control BuildConsistLoadTools()
+    {
+        var panel = new StackPanel { Spacing = 4, Margin = new Thickness(0, 0, 0, 4) };
+        panel.Children.Add(new TextBlock
+        {
+            Text = App.Loc["ConsistLoadTools"], FontWeight = FontWeight.Bold, FontSize = 12
+        });
+
+        var row = new WrapPanel { Orientation = Orientation.Horizontal };
+        row.Children.Add(LoadToolButton(App.Loc["ConsistRandomType"], RandomLoadTypeForConsist));
+        row.Children.Add(LoadToolButton(App.Loc["ConsistMaxAmount"], MaxAmountForConsist));
+        row.Children.Add(LoadToolButton(App.Loc["ConsistRandomAmount"], RandomAmountForConsist));
+        panel.Children.Add(row);
+        return panel;
+    }
+
+    private Button LoadToolButton(string text, Action onClick)
+    {
+        var b = new Button
+        {
+            Content = text, FontSize = 11, Margin = new Thickness(0, 0, 4, 4),
+            Padding = new Thickness(8, 3), Cursor = _hand,
+            IsEnabled = _consist.Count > 0
+        };
+        b.Classes.Add("Flat");
+        b.Click += (_, _) => onClick();
+        return b;
+    }
+
+    // True when the unit's lead car can actually carry cargo.
+    private bool IsLoadable(ConsistItem item)
+    {
+        var p = PhysicsFor(item.Cars[0]);
+        return p != null && (p.MaxLoad > 0 || !string.IsNullOrWhiteSpace(p.LoadAccepted));
+    }
+
+    // The largest cargo this car accepts (.fiz MaxLoad), 1000 as a fallback for a
+    // car that lists accepted cargo but no explicit maximum, 0 when it can't load.
+    private int MaxLoadFor(Dynamic car)
+    {
+        var p = PhysicsFor(car);
+        if (p == null) return 0;
+        if (p.MaxLoad > 0) return p.MaxLoad;
+        return string.IsNullOrWhiteSpace(p.LoadAccepted) ? 0 : 1000;
+    }
+
+    // Cargo types this car accepts (.fiz LoadAccepted), else the global list.
+    private List<string> AcceptedTypesFor(Dynamic car)
+    {
+        var p = PhysicsFor(car);
+        if (p != null && !string.IsNullOrWhiteSpace(p.LoadAccepted))
+            return p.LoadAccepted.Split(',', ';').Select(s => s.Trim()).Where(s => s.Length > 0).ToList();
+        return LoadTypes().ToList();
+    }
+
+    // Copies the previous unit's load (type + amount) onto this unit, clamped to
+    // each car's own maximum.
+    private void CopyLoadFromPrevious(ConsistItem item)
+    {
+        int idx = _consist.IndexOf(item);
+        if (idx <= 0) return;
+
+        var source = _consist[idx - 1].Cars[0];
+        foreach (var c in item.Cars)
+        {
+            int max = MaxLoadFor(c);
+            c.LoadType = max > 0 ? source.LoadType : null;
+            c.LoadCount = max > 0 ? Math.Min(source.LoadCount, max) : 0;
+            if (c.LoadCount > 0) c.HasVelocity = true;
+        }
+        RebuildConsist();
+    }
+
+    // Fills one unit's cars to their maximum load (keeping the cargo type, or
+    // assigning the first accepted one when none is set yet).
+    private void SetUnitMaxLoad(ConsistItem item)
+    {
+        foreach (var c in item.Cars)
+            FillToMax(c);
+        RebuildConsist();
+    }
+
+    // Random cargo type for every loadable car in the consist, filled to the max.
+    private void RandomLoadTypeForConsist()
+    {
+        foreach (var c in _consist.SelectMany(u => u.Cars))
+        {
+            int max = MaxLoadFor(c);
+            if (max <= 0) continue;
+            var types = AcceptedTypesFor(c);
+            if (types.Count == 0) continue;
+            c.LoadType = types[_rng.Next(types.Count)];
+            c.LoadCount = max;
+            c.HasVelocity = true;
+        }
+        RebuildConsist();
+    }
+
+    // Every loadable car in the consist filled to its maximum.
+    private void MaxAmountForConsist()
+    {
+        foreach (var c in _consist.SelectMany(u => u.Cars))
+            FillToMax(c);
+        RebuildConsist();
+    }
+
+    // Random amount (per car) for every loadable car in the consist, keeping the
+    // cargo type (assigning the first accepted one when none is set). Lets you roll
+    // a different tonnage for each wagon with one click.
+    private void RandomAmountForConsist()
+    {
+        foreach (var c in _consist.SelectMany(u => u.Cars))
+        {
+            int max = MaxLoadFor(c);
+            if (max <= 0) continue;
+            if (string.IsNullOrEmpty(c.LoadType))
+                c.LoadType = AcceptedTypesFor(c).FirstOrDefault();
+            if (string.IsNullOrEmpty(c.LoadType)) continue;
+            int min = Math.Max(1, max / 10);
+            c.LoadCount = _rng.Next(min, max + 1);
+            c.HasVelocity = true;
+        }
+        RebuildConsist();
+    }
+
+    // Fills a single car to its maximum load (no-op for non-loadable cars).
+    private void FillToMax(Dynamic car)
+    {
+        int max = MaxLoadFor(car);
+        if (max <= 0) return;
+        if (string.IsNullOrEmpty(car.LoadType))
+            car.LoadType = AcceptedTypesFor(car).FirstOrDefault();
+        if (string.IsNullOrEmpty(car.LoadType)) return;
+        car.LoadCount = max;
+        car.HasVelocity = true;
     }
 
     private static TextBlock DetailHint(string text) => new()

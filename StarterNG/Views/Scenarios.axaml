@@ -21,8 +21,15 @@
         <HeaderedContentControl Grid.Column="0" Grid.Row="0" Theme="{StaticResource GroupBox}"
                                 Classes="Compact"
                                 Header="{Binding [Sceneries], Source={x:Static starterNg:App.Loc}}">
-            <TreeView Name="sceneryList" Classes="Compact"
-                      SelectionChanged="SceneryList_OnSelectionChanged" />
+            <DockPanel LastChildFill="True">
+                <ToggleSwitch DockPanel.Dock="Bottom" Name="archivalSwitch"
+                              Margin="2,4,0,0" FontSize="11"
+                              IsCheckedChanged="ArchivalSwitch_OnChanged"
+                              OnContent="{Binding [ShowArchival], Source={x:Static starterNg:App.Loc}}"
+                              OffContent="{Binding [ShowArchival], Source={x:Static starterNg:App.Loc}}" />
+                <TreeView Name="sceneryList" Classes="Compact"
+                          SelectionChanged="SceneryList_OnSelectionChanged" />
+            </DockPanel>
         </HeaderedContentControl>
 
         <!-- Centre: trainsets list (compact, fills) + description/weather/timetable tabs -->
@@ -34,8 +41,19 @@
 
             <HeaderedContentControl Grid.Row="0" Theme="{StaticResource GroupBox}"
                                     Header="{Binding [Vehicles], Source={x:Static starterNg:App.Loc}}">
-                <ListBox Name="vehicleList" Classes="Compact"
-                         SelectionChanged="VehicleList_OnSelectionChanged" />
+                <DockPanel LastChildFill="True">
+                    <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal" Spacing="16"
+                                Margin="2,4,0,0">
+                        <CheckBox Name="showAiCheck" FontSize="11"
+                                  IsCheckedChanged="VehicleFilter_OnChanged"
+                                  Content="{Binding [ShowAiVehicles], Source={x:Static starterNg:App.Loc}}" />
+                        <CheckBox Name="drivableOnlyCheck" FontSize="11"
+                                  IsCheckedChanged="VehicleFilter_OnChanged"
+                                  Content="{Binding [ShowDrivableOnly], Source={x:Static starterNg:App.Loc}}" />
+                    </StackPanel>
+                    <ListBox Name="vehicleList" Classes="Compact"
+                             SelectionChanged="VehicleList_OnSelectionChanged" />
+                </DockPanel>
             </HeaderedContentControl>
 
             <TabControl Grid.Row="1">
