@@ -22,6 +22,7 @@
     <String key="NoWeatherData">No weather data in the scenery.</String>
     <String key="NoTimetable">No timetable for the selected consist.</String>
     <String key="Time">Time</String>
+    <String key="CurrentTime">Now</String>
     <String key="Day">Day of year</String>
     <String key="Sky">Sky</String>
     <String key="Fog">Fog / visibility</String>

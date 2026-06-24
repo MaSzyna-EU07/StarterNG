@@ -22,6 +22,7 @@
     <String key="NoWeatherData">Brak danych o pogodzie w scenerii.</String>
     <String key="NoTimetable">Brak rozkładu jazdy dla wybranego składu.</String>
     <String key="Time">Godzina</String>
+    <String key="CurrentTime">Czas aktualny</String>
     <String key="Day">Dzień roku</String>
     <String key="Sky">Niebo</String>
     <String key="Fog">Mgła / widoczność</String>

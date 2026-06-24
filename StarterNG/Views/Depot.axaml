@@ -27,9 +27,11 @@
                 <Grid DockPanel.Dock="Top" ColumnDefinitions="*,*" ColumnSpacing="6" Margin="0,0,0,6">
                     <ComboBox Name="categoryCombo" Grid.Column="0" HorizontalAlignment="Stretch"
                               PlaceholderText="{Binding [Category], Source={x:Static starterNg:App.Loc}}"
+                              PointerWheelChanged="Combo_OnPointerWheel"
                               SelectionChanged="CategoryCombo_OnSelectionChanged" />
                     <ComboBox Name="classCombo" Grid.Column="1" HorizontalAlignment="Stretch"
                               PlaceholderText="{Binding [Class], Source={x:Static starterNg:App.Loc}}"
+                              PointerWheelChanged="Combo_OnPointerWheel"
                               SelectionChanged="ClassCombo_OnSelectionChanged" />
                 </Grid>
                 <TextBox Name="searchBox" DockPanel.Dock="Top" Margin="0,0,0,8"

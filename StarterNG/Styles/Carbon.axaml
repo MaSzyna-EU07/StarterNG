@@ -181,8 +181,12 @@
     </Style>
 
     <!-- ── Compact list (tight rows that fill the available space) ─────────── -->
+    <!-- Transparent surface so the list blends into the GroupBox panel instead
+         of showing the Fluent theme's default light-grey ListBox background. -->
     <Style Selector="ListBox.Compact">
         <Setter Property="Padding" Value="0" />
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderThickness" Value="0" />
     </Style>
     <Style Selector="ListBox.Compact ListBoxItem">
         <Setter Property="Padding" Value="6,2" />

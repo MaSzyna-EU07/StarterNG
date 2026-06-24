@@ -1,9 +1,11 @@
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
@@ -21,6 +23,9 @@ public partial class Scenarios : UserControl
     private Scenery? _currentScenery;
     // suppresses weather change handlers while the form is being populated
     private bool _loadingWeather;
+    // "Today" season: the day field only previews the current day-of-year; the
+    // stored Day stays 0 so the scenery keeps using the live date.
+    private bool _todaySeason;
 
     public Scenarios()
     {
@@ -30,6 +35,7 @@ public partial class Scenarios : UserControl
         Sceneries = GameData.Instance.Sceneries;
 
         var groupNodes = new Dictionary<string, TreeViewItem>();
+        var topLevel = new List<TreeViewItem>();
 
         for (int i = 0; i < Sceneries.Count; i++)
         {
@@ -38,7 +44,7 @@ public partial class Scenarios : UserControl
             // case 1: no group - put without parent
             if (string.IsNullOrEmpty(scenery.Group))
             {
-                sceneryList.Items.Add(new TreeViewItem
+                topLevel.Add(new TreeViewItem
                 {
                     Header = Path.GetFileNameWithoutExtension(scenery.Path),
                     Tag = i
@@ -57,7 +63,7 @@ public partial class Scenarios : UserControl
                 };
 
                 groupNodes[scenery.Group] = groupNode;
-                sceneryList.Items.Add(groupNode);
+                topLevel.Add(groupNode);
             }
 
             groupNode.Items.Add(new TreeViewItem
@@ -67,15 +73,57 @@ public partial class Scenarios : UserControl
             });
         }
 
+        // Sort the scenery tree alphabetically: group folders' inner sceneries
+        // first, then the top-level (group folders + ungrouped sceneries). The Tag
+        // keeps each node's original scenery index, so sorting only reorders the
+        // display - the vehicles/trainsets list stays in scenery order.
+        foreach (var node in groupNodes.Values)
+        {
+            var children = node.Items.Cast<TreeViewItem>()
+                .OrderBy(c => c.Header as string, StringComparer.OrdinalIgnoreCase)
+                .ToList();
+            node.Items.Clear();
+            foreach (var child in children)
+                node.Items.Add(child);
+        }
+
+        foreach (var item in topLevel.OrderBy(t => t.Header as string, StringComparer.OrdinalIgnoreCase))
+            sceneryList.Items.Add(item);
+
         // refresh the consist preview when the view is shown again (e.g. after
         // editing the consist in the depot). Switching tabs only toggles IsVisible
         // (the view stays in the tree), so listen for that too.
-        AttachedToVisualTree += (_, _) => RefreshSelectedConsist();
+        AttachedToVisualTree += (_, _) => OnReentered();
         PropertyChanged += (_, e) =>
         {
             if (e.Property == IsVisibleProperty && IsVisible)
-                RefreshSelectedConsist();
+                OnReentered();
         };
+    }
+
+    // Called whenever this view is shown again (tab switch / re-attach). Edits made
+    // in the depot mutate the same Trainset objects, so refresh both the consist
+    // preview and the vehicle-list captions that depend on them.
+    private void OnReentered()
+    {
+        RefreshVehicleLabels();
+        RefreshSelectedConsist();
+    }
+
+    // Rebuilds the caption of each entry in the Vehicles list from its trainset's
+    // current vehicles, so a consist edited in the depot is reflected here too.
+    // Selection and order are preserved (only the text is updated).
+    private void RefreshVehicleLabels()
+    {
+        if (sceneryList.SelectedItem is not TreeViewItem { Tag: int tag } || tag >= Sceneries.Count)
+            return;
+
+        var scn = Sceneries[tag];
+        foreach (var obj in vehicleList.Items)
+        {
+            if (obj is ListBoxItem { Tag: int vi } lbi && vi < scn.Trainsets.Count)
+                lbi.Content = string.Join(" + ", scn.Trainsets[vi].Vehicles.Select(d => d.Name));
+        }
     }
 
     private void SceneryList_OnSelectionChanged(object? sender, SelectionChangedEventArgs e)
@@ -183,12 +231,14 @@ public partial class Scenarios : UserControl
         try
         {
             weatherForm.IsEnabled = true;
-            weatherTime.Text = scenery.WeatherTime;
+            weatherTime.SelectedTime = ParseTime(scenery.WeatherTime);
             weatherDay.Value = scenery.Day;
             weatherTemp.Value = scenery.Temperature;
-            weatherFog.Value = System.Math.Clamp(scenery.FogEnd, 50, 2500);
+            weatherFog.Value = System.Math.Clamp(scenery.FogEnd, 0, 10000);
             SelectByTag(weatherSeason, scenery.Day.ToString());
             SelectByTag(weatherOvercast, scenery.Overcast.ToString(CultureInfo.InvariantCulture));
+            // Day 0 maps to the "Today" season entry: preview the live day-of-year.
+            ApplyTodayPreview(scenery.Day == 0);
             UpdateWeatherLabels();
         }
         finally
@@ -204,9 +254,11 @@ public partial class Scenarios : UserControl
             return;
 
         var scn = _currentScenery;
-        if (!string.IsNullOrWhiteSpace(weatherTime.Text))
-            scn.WeatherTime = weatherTime.Text!.Trim();
-        scn.Day = (int)(weatherDay.Value ?? 0);
+        if (weatherTime.SelectedTime is { } t)
+            scn.WeatherTime = $"{t.Hours:D2}:{t.Minutes:D2}";
+        // In "Today" mode the day field is only a preview, so keep the stored day
+        // at 0 (the scenery then follows the live date).
+        scn.Day = _todaySeason ? 0 : (int)(weatherDay.Value ?? 0);
         scn.Temperature = weatherTemp.Value;
         scn.FogEnd = (int)weatherFog.Value;
         if ((weatherOvercast.SelectedItem as ComboBoxItem)?.Tag is string ov &&
@@ -235,7 +287,44 @@ public partial class Scenarios : UserControl
     }
 
     // --- weather form event handlers ---
-    private void Weather_OnChanged(object? sender, RoutedEventArgs e) => CaptureWeather();
+    private void WeatherTime_OnChanged(object? sender, TimePickerSelectedValueChangedEventArgs e) => CaptureWeather();
+
+    // "Current time" button: drop the live wall-clock time into the picker (the
+    // SelectedTimeChanged handler then captures it onto the scenery).
+    private void WeatherTimeNow_OnClick(object? sender, RoutedEventArgs e)
+    {
+        var now = DateTime.Now;
+        weatherTime.SelectedTime = new TimeSpan(now.Hour, now.Minute, 0);
+    }
+
+    // Parses a stored "hh:mm" string into a TimeSpan, or null when it is missing
+    // or malformed (so the picker simply shows no selection).
+    private static TimeSpan? ParseTime(string? text)
+    {
+        if (string.IsNullOrWhiteSpace(text))
+            return null;
+        var m = Regex.Match(text, @"^\s*(\d{1,2})[:.](\d{2})");
+        if (m.Success &&
+            int.TryParse(m.Groups[1].Value, out int h) && h is >= 0 and <= 23 &&
+            int.TryParse(m.Groups[2].Value, out int min) && min is >= 0 and <= 59)
+            return new TimeSpan(h, min, 0);
+        return null;
+    }
+
+    // Toggles "Today" preview: the day field shows the live day-of-year (read-only)
+    // and CaptureWeather keeps the stored Day at 0; any other season re-enables it.
+    private void ApplyTodayPreview(bool today)
+    {
+        _todaySeason = today;
+        weatherDay.IsEnabled = !today;
+        if (today)
+        {
+            bool prev = _loadingWeather;
+            _loadingWeather = true;
+            weatherDay.Value = DateTime.Now.DayOfYear;
+            _loadingWeather = prev;
+        }
+    }
 
     private void Weather_OnSelectionChanged(object? sender, SelectionChangedEventArgs e) => CaptureWeather();
 
@@ -251,9 +340,17 @@ public partial class Scenarios : UserControl
         if ((weatherSeason.SelectedItem as ComboBoxItem)?.Tag is string tag &&
             int.TryParse(tag, out int day))
         {
-            _loadingWeather = true;
-            weatherDay.Value = day;
-            _loadingWeather = false;
+            if (day == 0) // "Today" - preview the live day-of-year, keep stored day at 0
+            {
+                ApplyTodayPreview(true);
+            }
+            else
+            {
+                ApplyTodayPreview(false);
+                _loadingWeather = true;
+                weatherDay.Value = day;
+                _loadingWeather = false;
+            }
         }
         CaptureWeather();
     }

@@ -337,6 +337,30 @@ public partial class Depot : UserControl
         BuildList();
     }
 
+    // Hovering over the Type/Class combos and scrolling cycles the selection
+    // without having to open the dropdown (scroll up = previous, down = next).
+    // When the dropdown is open the wheel scrolls the list as usual.
+    private void Combo_OnPointerWheel(object? sender, PointerWheelEventArgs e)
+    {
+        if (sender is not ComboBox combo || combo.IsDropDownOpen)
+            return;
+
+        int count = combo.ItemCount;
+        if (count == 0)
+            return;
+
+        int index = combo.SelectedIndex;
+        if (e.Delta.Y > 0)                 // scroll up -> previous
+            index = index <= 0 ? 0 : index - 1;
+        else if (e.Delta.Y < 0)            // scroll down -> next
+            index = index < 0 ? 0 : Math.Min(index + 1, count - 1);
+        else
+            return;
+
+        combo.SelectedIndex = index;
+        e.Handled = true;
+    }
+
     // ----------------------------------------------------------- vehicle browser
 
     // Flat list of plain-text vehicle entries (no expanders, like the original
@@ -1270,20 +1294,33 @@ public partial class Depot : UserControl
         var phys = PhysicsFor(lead);
 
         // Prefer the cargo this vehicle actually accepts (.fiz LoadAccepted);
-        // otherwise suggest everything from data/load_weights.txt. Free text is
-        // still allowed.
-        var accepted = phys != null && !string.IsNullOrWhiteSpace(phys.LoadAccepted)
+        // otherwise offer everything from data/load_weights.txt.
+        var available = phys != null && !string.IsNullOrWhiteSpace(phys.LoadAccepted)
             ? phys.LoadAccepted.Split(',', ';').Select(s => s.Trim()).Where(s => s.Length > 0).ToList()
-            : null;
+            : LoadTypes().ToList();
 
-        var typeBox = new AutoCompleteBox
-        {
-            FontSize = 12,
-            MinWidth = 200,
-            Text = lead.LoadType ?? "",
-            ItemsSource = accepted ?? (IEnumerable<string>)LoadTypes(),
-            FilterMode = AutoCompleteFilterMode.ContainsOrdinal
-        };
+        // Keep a load already set on the vehicle selectable even when it is not in
+        // the accepted/known list (e.g. a custom load read from the scenery).
+        if (!string.IsNullOrEmpty(lead.LoadType) &&
+            !available.Contains(lead.LoadType!, StringComparer.OrdinalIgnoreCase))
+            available.Insert(0, lead.LoadType!);
+
+        // Dropdown of available cargo: the leading "(none)" entry clears the load.
+        var typeCombo = new ComboBox { FontSize = 12, MinWidth = 200 };
+        typeCombo.Items.Add(new ComboBoxItem { Content = App.Loc["None"], Tag = null });
+        foreach (var name in available)
+            typeCombo.Items.Add(new ComboBoxItem { Content = name, Tag = name });
+
+        // Pre-select the vehicle's current load (or "(none)").
+        typeCombo.SelectedIndex = 0;
+        if (!string.IsNullOrEmpty(lead.LoadType))
+            foreach (var obj in typeCombo.Items)
+                if (obj is ComboBoxItem ci && ci.Tag is string t &&
+                    string.Equals(t, lead.LoadType, StringComparison.OrdinalIgnoreCase))
+                {
+                    typeCombo.SelectedItem = ci;
+                    break;
+                }
 
         // Cap the amount at the .fiz MaxLoad when it is defined.
         int maxLoad = phys != null && phys.MaxLoad > 0 ? phys.MaxLoad : 1000;
@@ -1295,22 +1332,25 @@ public partial class Depot : UserControl
 
         void Apply()
         {
-            string type = typeBox.Text?.Trim() ?? "";
+            string? type = (typeCombo.SelectedItem as ComboBoxItem)?.Tag as string;
             int count = (int)(countBox.Value ?? 0);
             foreach (var c in item.Cars)
             {
-                c.LoadCount = count;
-                c.LoadType = count > 0 && !string.IsNullOrEmpty(type) ? type : c.LoadType;
-                if (count > 0)
+                // "(none)" -> no cargo at all; otherwise store the chosen type/amount.
+                c.LoadType = string.IsNullOrEmpty(type) ? null : type;
+                c.LoadCount = string.IsNullOrEmpty(type) ? 0 : count;
+                if (c.LoadCount > 0)
                     c.HasVelocity = true; // velocity token must precede loadcount
             }
         }
 
-        typeBox.LostFocus += (_, _) => Apply();
+        // Wire the handlers only after the initial selection so we don't apply
+        // (and mark the consist dirty) while merely populating the editor.
+        typeCombo.SelectionChanged += (_, _) => Apply();
         countBox.ValueChanged += (_, _) => Apply();
 
         loadsPanel.Children.Add(UnitTitle(item));
-        loadsPanel.Children.Add(LabeledRow(App.Loc["LoadType"], typeBox));
+        loadsPanel.Children.Add(LabeledRow(App.Loc["LoadType"], typeCombo));
         loadsPanel.Children.Add(LabeledRow(App.Loc["LoadCount"], countBox));
         loadsPanel.Children.Add(new TextBlock
         {

@@ -59,9 +59,15 @@
 
                                 <TextBlock Grid.Row="0" Grid.Column="0" VerticalAlignment="Center"
                                            Text="{Binding [Time], Source={x:Static starterNg:App.Loc}}" />
-                                <TextBox Grid.Row="0" Grid.Column="1" Name="weatherTime" Width="90"
-                                         HorizontalAlignment="Left" Watermark="hh:mm"
-                                         LostFocus="Weather_OnChanged" />
+                                <StackPanel Grid.Row="0" Grid.Column="1" Orientation="Horizontal" Spacing="8">
+                                    <TimePicker Name="weatherTime" ClockIdentifier="24HourClock"
+                                                MinuteIncrement="1" VerticalAlignment="Center"
+                                                SelectedTimeChanged="WeatherTime_OnChanged" />
+                                    <Button Name="weatherTimeNow" Classes="Flat" Cursor="Hand"
+                                            VerticalAlignment="Center" Padding="10,4"
+                                            Click="WeatherTimeNow_OnClick"
+                                            Content="{Binding [CurrentTime], Source={x:Static starterNg:App.Loc}}" />
+                                </StackPanel>
 
                                 <TextBlock Grid.Row="1" Grid.Column="0" VerticalAlignment="Center"
                                            Text="{Binding [Season], Source={x:Static starterNg:App.Loc}}" />
@@ -94,8 +100,8 @@
                                 <TextBlock Grid.Row="4" Grid.Column="0" VerticalAlignment="Center"
                                            Text="{Binding [Visibility], Source={x:Static starterNg:App.Loc}}" />
                                 <StackPanel Grid.Row="4" Grid.Column="1" Orientation="Horizontal" Spacing="8">
-                                    <Slider Name="weatherFog" Minimum="50" Maximum="2500" Width="220"
-                                            TickFrequency="50" IsSnapToTickEnabled="True"
+                                    <Slider Name="weatherFog" Minimum="0" Maximum="10000" Width="220"
+                                            TickFrequency="250" IsSnapToTickEnabled="True"
                                             ValueChanged="Weather_OnSliderChanged" />
                                     <TextBlock Name="weatherFogLabel" VerticalAlignment="Center" MinWidth="56" />
                                 </StackPanel>
