@@ -260,7 +260,7 @@
     <String key="RenderShadows">Render shadows</String>
     <String key="ReflectionsFramerate">Reflections refresh rate</String>
     <String key="ShadowsResolution">Shadows resolution</String>
-    <String key="ShaderRange">Reflections refresh rate</String>
+    <String key="ShaderRange">Shadow range</String>
     <String key="CabShadowsRange">Cabin shadow sources range</String>
 
     <String key="ShadowDisplay">Display shadows</String>

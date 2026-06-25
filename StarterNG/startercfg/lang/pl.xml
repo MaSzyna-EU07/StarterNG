@@ -260,7 +260,7 @@
     <String key="RenderShadows">Renderowanie cieni</String>
     <String key="ReflectionsFramerate">Odświeżanie odbić</String>
     <String key="ShadowsResolution">Rozdzielczość cieni</String>
-    <String key="ShaderRange">Odświeżanie odbić</String>
+    <String key="ShaderRange">Zasięg cieni</String>
     <String key="CabShadowsRange">Zasięg źródeł cieni w kabinie</String>
 
     <String key="ShadowDisplay">Wyświetlanie cieni</String>
