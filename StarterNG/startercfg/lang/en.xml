@@ -260,7 +260,7 @@
     <String key="RenderShadows">Render shadows</String>
     <String key="ReflectionsFramerate">Reflections refresh rate</String>
     <String key="ShadowsResolution">Shadows resolution</String>
-    <String key="ShaderRange">Reflections refresh rate</String>
+    <String key="ShaderRange">Shadow range</String>
     <String key="CabShadowsRange">Cabin shadow sources range</String>
 
     <String key="ShadowDisplay">Display shadows</String>
@@ -273,7 +273,7 @@
     <String key="RDTerrainModels">Terrain geometry and static models</String>
     <String key="RDTerrainModelsVehicles">Terrain geometry, static models and vehicles</String>
 
-    <String key="ShadowsCabRange">Cabin shadow sources range</String>
+    <String key="FieldOfView">View angle</String>
     <String key="RenderScreens">Render onboard computer screens</String>
     <String key="RenderScreensThread">Render screens in a separate thread</String>
     <String key="RenderScreensFramerate">Onboard screens refresh rate</String>
