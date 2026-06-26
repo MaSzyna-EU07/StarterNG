@@ -216,7 +216,7 @@
                             </ComboBox>
                         </StackPanel>
                         <StackPanel Spacing="8" Orientation="Horizontal">
-                            <TextBlock VerticalAlignment="Center" FontSize="14" Text="{Binding [ShadowsCabRange], Source={x:Static starterNg:App.Loc}}" />
+                            <TextBlock VerticalAlignment="Center" FontSize="14" Text="{Binding [FieldOfView], Source={x:Static starterNg:App.Loc}}" />
                             <Slider Name="fovSlider" Minimum="5" MaxWidth="400" HorizontalAlignment="Left"
                                     MinWidth="250" Maximum="110" TickFrequency="5" IsSnapToTickEnabled="True" Value="30" />
                             <Label VerticalAlignment="Center" FontSize="14" Content="{Binding #fovSlider.Value, StringFormat='{}{0} stopni'}" />

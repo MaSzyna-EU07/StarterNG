@@ -273,7 +273,7 @@
     <String key="RDTerrainModels">Geometria terenu i modele statyczne</String>
     <String key="RDTerrainModelsVehicles">Geometria terenu, modele statyczne i pojazdy</String>
 
-    <String key="ShadowsCabRange">Zasięg źródeł cieni w kabinie</String>
+    <String key="FieldOfView">Kąt widzenia</String>
     <String key="RenderScreens">Renderowanie ekranów komputerów pokładowych</String>
     <String key="RenderScreensThread">Renderowanie ekranów w osobnym wątku</String>
     <String key="RenderScreensFramerate">Częstotliwość odświeżania ekranów komputerów pokładowych</String>
