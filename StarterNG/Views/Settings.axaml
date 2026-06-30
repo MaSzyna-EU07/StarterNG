@@ -150,6 +150,11 @@
                                     MinWidth="250" Maximum="4" TickFrequency="1" IsSnapToTickEnabled="True" Value="3" />
                         </StackPanel>
                         <StackPanel Spacing="8" Orientation="Horizontal">
+                            <TextBlock VerticalAlignment="Center" FontSize="14" Text="{Binding [DynamicLights], Source={x:Static starterNg:App.Loc}}" />
+                            <Slider x:Name="DynamicLightsSlider" Minimum="0" MaxWidth="400" HorizontalAlignment="Left"
+                                    MinWidth="250" Maximum="7" TickFrequency="1" IsSnapToTickEnabled="True" Value="7" />
+                        </StackPanel>
+                        <StackPanel Spacing="8" Orientation="Horizontal">
                             <TextBlock VerticalAlignment="Center" FontSize="14" Text="{Binding [RenderRange], Source={x:Static starterNg:App.Loc}}" />
                             <Slider x:Name="RenderRangeSlider" Minimum="1" MaxWidth="400" HorizontalAlignment="Left"
                                     MinWidth="250" Maximum="3" Value="1" />

@@ -243,6 +243,7 @@
     <String key="MaxTexCabResolution">Maksymalna rozdzielczość tekstur kabiny:</String>
     <String key="TexFilteringQuality">Jakość filtrowania tekstur:</String>
     <String key="Multisampling">Multisampling:</String>
+    <String key="DynamicLights">Dynamiczne źródła światła:</String>
     <String key="RenderRange">Zasięg renderowania:</String>
     <String key="VSync">VSync</String>
     <String key="SmokeDisplay">Wyświetlanie dymu</String>

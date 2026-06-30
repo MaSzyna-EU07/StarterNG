@@ -88,6 +88,12 @@ public sealed class KeyboardConfig
             if (!string.IsNullOrEmpty(appData))
                 return Path.Combine(appData, "MaSzyna", "eu07_input-keyboard.ini");
         }
+        else if (OperatingSystem.IsMacOS())
+        {
+            string? home = Environment.GetEnvironmentVariable("HOME");
+            if (!string.IsNullOrEmpty(home))
+                return Path.Combine(home, "Library", "Application Support", "MaSzyna", "eu07_input-keyboard.ini");
+        }
         else
         {
             string? home = Environment.GetEnvironmentVariable("HOME");

@@ -243,6 +243,7 @@
     <String key="MaxTexCabResolution">Maximum cabin texture resolution:</String>
     <String key="TexFilteringQuality">Texture filtering quality:</String>
     <String key="Multisampling">Multisampling:</String>
+    <String key="DynamicLights">Dynamic light sources:</String>
     <String key="RenderRange">Rendering range:</String>
     <String key="VSync">VSync</String>
     <String key="SmokeDisplay">Smoke display</String>

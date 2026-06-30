@@ -84,6 +84,7 @@ public partial class Settings : UserControl
             cabTextureResolutionSlider.Value = Log2(s.MaxCabTextureSize, 12);
             TexFilteringSlider.Value = AnisotropyToSlider(s.TextureFiltering);
             MultisamplingSlider.Value = s.Multisampling + 1;
+            DynamicLightsSlider.Value = s.DynamicLights;
             RenderRangeSlider.Value = (int)Math.Round(s.DrawRangeFactor);
             VSyncCb.IsChecked = s.VSync;
             SmokeDisplayCb.IsChecked = s.Smoke;
@@ -171,6 +172,7 @@ public partial class Settings : UserControl
         s.TextureFiltering = StarterNG.Classes.Settings.AnisotropySteps[
             Clamp((int)TexFilteringSlider.Value - 1, 0, StarterNG.Classes.Settings.AnisotropySteps.Length - 1)];
         s.Multisampling = Clamp((int)MultisamplingSlider.Value - 1, 0, 3);
+        s.DynamicLights = (int)DynamicLightsSlider.Value;
         s.DrawRangeFactor = RenderRangeSlider.Value;
         s.VSync = IsChecked(VSyncCb);
         s.Smoke = IsChecked(SmokeDisplayCb);

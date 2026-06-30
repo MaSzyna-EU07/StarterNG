@@ -65,6 +65,7 @@ public sealed class Settings
     public int MaxCabTextureSize = 4096;           // maxcabtexturesize
     public int TextureFiltering = 8;               // anisotropicfiltering (1/2/4/8/16)
     public int Multisampling = 2;                  // multisampling (0-3)
+    public int DynamicLights = 7;                  // dynamiclights (0-7)
     public double DrawRangeFactor = 1.0;           // gfx.drawrange.factor.max
     public bool VSync = true;                      // vsync
     public bool Smoke = true;                      // gfx.smoke
@@ -143,6 +144,12 @@ public sealed class Settings
             string? appData = Environment.GetEnvironmentVariable("APPDATA");
             if (!string.IsNullOrEmpty(appData))
                 return Path.Combine(appData, "MaSzyna", "eu07.ini");
+        }
+        else if (OperatingSystem.IsMacOS())
+        {
+            string? home = Environment.GetEnvironmentVariable("HOME");
+            if (!string.IsNullOrEmpty(home))
+                return Path.Combine(home, "Library", "Application Support", "MaSzyna", "eu07.ini");
         }
         else
         {
@@ -312,6 +319,7 @@ public sealed class Settings
         MaxCabTextureSize = c.GetInt("maxcabtexturesize", 4096);
         TextureFiltering = c.GetInt("anisotropicfiltering", 8);
         Multisampling = Clamp(c.GetInt("multisampling", 2), 0, 3);
+        DynamicLights = Clamp(c.GetInt("dynamiclights", 7), 0, 7);
         DrawRangeFactor = c.GetDouble("gfx.drawrange.factor.max", 1.0);
         VSync = c.GetBool("vsync", true);
         Smoke = c.GetBool("gfx.smoke", true);
@@ -403,6 +411,7 @@ public sealed class Settings
         c.SetInt("maxcabtexturesize", MaxCabTextureSize);
         c.SetInt("anisotropicfiltering", TextureFiltering);
         c.SetInt("multisampling", Multisampling);
+        c.SetInt("dynamiclights", DynamicLights);
         c.SetDouble("gfx.drawrange.factor.max", DrawRangeFactor);
         c.SetBool("vsync", VSync);
         c.SetBool("gfx.smoke", Smoke);
