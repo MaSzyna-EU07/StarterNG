@@ -200,13 +200,6 @@
                             <Slider x:Name="SmokeParticlesSlider" Minimum="1" MaxWidth="400" HorizontalAlignment="Left"
                                     MinWidth="250" Maximum="4" TickFrequency="1" IsSnapToTickEnabled="True" Value="2" />
                         </StackPanel>
-                        <StackPanel Spacing="8" Orientation="Horizontal">
-                            <TextBlock VerticalAlignment="Center" FontSize="14" Text="{Binding [Postprocessing], Source={x:Static starterNg:App.Loc}}" />
-                            <ComboBox x:Name="PostprocessingCb" MinWidth="150" MaxWidth="150" SelectedIndex="0">
-                                <ComboBoxItem Content="{Binding [PPReinhard], Source={x:Static starterNg:App.Loc}}" />
-                                <ComboBoxItem Content="{Binding [PPACES], Source={x:Static starterNg:App.Loc}}" />
-                            </ComboBox>
-                        </StackPanel>
                         <CheckBox x:Name="ChromaticAberrationCb" Content="{Binding [ChromaticAberration], Source={x:Static starterNg:App.Loc}}" />
                         <CheckBox x:Name="MotionBlurCb" Content="{Binding [MotionBlur], Source={x:Static starterNg:App.Loc}}" />
                         <CheckBox x:Name="AdditionalShadersCb" Content="{Binding [AdditionalShadersEffects], Source={x:Static starterNg:App.Loc}}" />
@@ -262,11 +255,6 @@
                         </StackPanel>
                         <CheckBox x:Name="RenderScreensCb" Content="{Binding [RenderScreens], Source={x:Static starterNg:App.Loc}}" />
                         <CheckBox x:Name="RenderScreensThreadCb" Content="{Binding [RenderScreensThread], Source={x:Static starterNg:App.Loc}}" />
-                        <StackPanel Spacing="8" Orientation="Horizontal">
-                            <TextBlock VerticalAlignment="Center" FontSize="14" Text="{Binding [RenderScreensFramerate], Source={x:Static starterNg:App.Loc}}" />
-                            <Slider x:Name="RenderScreensFramerateSlider" Minimum="1" MaxWidth="400" HorizontalAlignment="Left"
-                                    MinWidth="250" Maximum="5" TickFrequency="1" IsSnapToTickEnabled="True" Value="5" />
-                        </StackPanel>
                     </StackPanel>
                 </ScrollViewer>
             </TabItem>
@@ -336,11 +324,6 @@
                             <TextBlock VerticalAlignment="Center" FontSize="14" Text="{Binding [AmbientVolume], Source={x:Static starterNg:App.Loc}}" />
                             <Slider x:Name="AmbientVolumeSlider" Minimum="1" MaxWidth="400" HorizontalAlignment="Left"
                                     MinWidth="250" Maximum="100" TickFrequency="5" IsSnapToTickEnabled="True" Value="100" />
-                        </StackPanel>
-                        <StackPanel Spacing="8" Orientation="Horizontal">
-                            <TextBlock VerticalAlignment="Center" FontSize="14" Text="{Binding [VolumeDuringPause], Source={x:Static starterNg:App.Loc}}" />
-                            <Slider x:Name="PauseVolumeSlider" Minimum="0" MaxWidth="400" HorizontalAlignment="Left"
-                                    MinWidth="250" Maximum="100" TickFrequency="5" IsSnapToTickEnabled="True" Value="0" />
                         </StackPanel>
                     </StackPanel>
                 </ScrollViewer>

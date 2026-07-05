@@ -268,10 +268,6 @@
     <String key="SmokeDisplay">Smoke display</String>
     <String key="SmokeParticlesMultiplier">Smoke particles multiplier</String>
 
-    <String key="Postprocessing">Post-processing</String>
-    <String key="PPReinhard">Reinhard</String>
-    <String key="PPACES">ACES</String>
-
     <String key="ChromaticAberration">Chromatic aberration</String>
     <String key="MotionBlur">Motion blur</String>
     <String key="AdditionalShadersEffects">Additional shader effects</String>
@@ -296,7 +292,6 @@
     <String key="FieldOfView">View angle</String>
     <String key="RenderScreens">Render onboard computer screens</String>
     <String key="RenderScreensThread">Render screens in a separate thread</String>
-    <String key="RenderScreensFramerate">Onboard screens refresh rate</String>
 
     <String key="Physics">Physics</String>
 
@@ -320,7 +315,6 @@
     <String key="VehiclesVolume">Vehicles volume</String>
     <String key="PositionedSoundsVolume">Positional sounds volume</String>
     <String key="AmbientVolume">Ambient volume</String>
-    <String key="VolumeDuringPause">Volume during pause</String>
 
     <String key="Advanced">Advanced</String>
     <String key="CompressTextures">Compress TGA textures</String>

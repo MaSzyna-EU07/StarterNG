@@ -186,7 +186,6 @@ public partial class Settings : UserControl
             VSyncCb.IsChecked = s.VSync;
             SmokeDisplayCb.IsChecked = s.Smoke;
             SmokeParticlesSlider.Value = s.SmokeFidelity;
-            PostprocessingCb.SelectedIndex = s.Tonemapping;
             ChromaticAberrationCb.IsChecked = s.ChromaticAberration;
             MotionBlurCb.IsChecked = s.MotionBlur;
             AdditionalShadersCb.IsChecked = s.ExtraEffects;
@@ -202,7 +201,6 @@ public partial class Settings : UserControl
             fovSlider.Value = s.FieldOfView;
             RenderScreensCb.IsChecked = s.PythonScreens;
             RenderScreensThreadCb.IsChecked = s.PythonThreadedUpload;
-            RenderScreensFramerateSlider.Value = s.ScreenRendererPriority;
             FpsLimitEnableCb.IsChecked = s.FpsLimitEnabled;
             FpsLimitSlider.Value = s.FpsLimit;
             FpsLimitSlider.IsEnabled = s.FpsLimitEnabled;
@@ -231,7 +229,6 @@ public partial class Settings : UserControl
             VehiclesVolumeSlider.Value = s.VehiclesVolume;
             PositionalVolumeSlider.Value = s.PositionalVolume;
             AmbientVolumeSlider.Value = s.AmbientVolume;
-            PauseVolumeSlider.Value = s.PausedVolume;
 
             // Advanced
             CompressTexturesCb.IsChecked = s.CompressTextures;
@@ -308,7 +305,6 @@ public partial class Settings : UserControl
         s.VSync = IsChecked(VSyncCb);
         s.Smoke = IsChecked(SmokeDisplayCb);
         s.SmokeFidelity = (int)SmokeParticlesSlider.Value;
-        s.Tonemapping = Math.Max(0, PostprocessingCb.SelectedIndex);
         s.ChromaticAberration = IsChecked(ChromaticAberrationCb);
         s.MotionBlur = IsChecked(MotionBlurCb);
         s.ExtraEffects = IsChecked(AdditionalShadersCb);
@@ -324,7 +320,6 @@ public partial class Settings : UserControl
         s.FieldOfView = Clamp((int)fovSlider.Value, 15, 75);
         s.PythonScreens = IsChecked(RenderScreensCb);
         s.PythonThreadedUpload = IsChecked(RenderScreensThreadCb);
-        s.ScreenRendererPriority = (int)RenderScreensFramerateSlider.Value;
         s.FpsLimitEnabled = IsChecked(FpsLimitEnableCb);
         s.FpsLimit = (int)FpsLimitSlider.Value;
         s.ShadowAngleLimit = ShadowAngleLimitSlider.Value;
@@ -352,7 +347,6 @@ public partial class Settings : UserControl
         s.VehiclesVolume = (int)VehiclesVolumeSlider.Value;
         s.PositionalVolume = (int)PositionalVolumeSlider.Value;
         s.AmbientVolume = (int)AmbientVolumeSlider.Value;
-        s.PausedVolume = (int)PauseVolumeSlider.Value;
 
         // Advanced
         s.CompressTextures = IsChecked(CompressTexturesCb);

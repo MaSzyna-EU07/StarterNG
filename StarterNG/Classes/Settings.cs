@@ -46,13 +46,13 @@ public sealed class Settings
     public bool Fullscreen;                       // fullscreen
     public bool PauseWhenInactive = true;         // inactivepause
     public bool PauseOnStart;                     // pause
-    public int CursorSensitivity = 3;             // |mousescale x|
+    public int CursorSensitivity = 2;             // |mousescale x|
     public bool InvertMouseHorizontal;            // mousescale x < 0
     public bool InvertMouseVertical;              // mousescale y < 0
 
     // ── Communication ─────────────────────────────────────────────────────
     public bool IgnoreGamepad;                    // input.gamepad (inverted)
-    public int FeedbackMode;                      // feedbackmode (0-5)
+    public int FeedbackMode = 1;                   // feedbackmode (0-5)
     public int FeedbackPort = 888;                // feedbackport
     public bool UartEnabled;                      // uart presence
     public string UartPort = "";                  // uart
@@ -64,7 +64,7 @@ public sealed class Settings
     public bool SelectExeAutomatically = true;    // starter.exe.auto  (launcher-only)
     public string ExecutablePath = "eu07.exe";    // starter.exe.path  (launcher-only)
     public bool DebugMode;                         // debugmode
-    public bool VirtualShunting;                   // ai.trainman
+    public bool VirtualShunting = true;            // ai.trainman
     public bool LogMissingVehicleFiles;            // starter.logmissingvehicles (launcher-only; not yet wired to any load/export codepath)
 
     // ── Graphics ──────────────────────────────────────────────────────────
@@ -77,27 +77,25 @@ public sealed class Settings
     public int TextureFiltering = 8;               // anisotropicfiltering (1/2/4/8/16)
     public int Multisampling = 2;                  // multisampling (0-3)
     public int DynamicLights = 7;                  // dynamiclights (0-7)
-    public double DrawRangeFactor = 1.0;           // gfx.drawrange.factor.max
-    public bool VSync = true;                      // vsync
+    public double DrawRangeFactor = 3.0;           // gfx.drawrange.factor.max
+    public bool VSync;                              // vsync
     public bool Smoke = true;                      // gfx.smoke
     public int SmokeFidelity = 1;                  // gfx.smoke.fidelity (1-4)
-    public int Tonemapping;                        // gfx.postfx.tonemapping (NOTE: 0=reinhard,1=aces)
-    public bool ChromaticAberration;               // gfx.postfx.chromaticaberration.enabled
+    public bool ChromaticAberration = true;        // gfx.postfx.chromaticaberration.enabled
     public bool MotionBlur = true;                 // gfx.postfx.motionblur.enabled
     public bool ExtraEffects = true;               // gfx.extraeffects
     public bool EnvMap = true;                      // gfx.envmap.enabled
     public bool UseVbo = true;                     // usevbo
     public bool RenderShadows = true;              // shadows + gfx.shadowmap.enabled
     public int ReflectionsFramerate = 60;          // gfx.reflections.framerate
-    public int ShadowMapResolution = 4096;         // shadowtune[0]
+    public int ShadowMapResolution = 2048;         // shadowtune[0]
     public int ShadowProjectionRange = 250;        // shadowtune[1]
-    public int CabShadowsRange = 30;               // gfx.shadows.cab.range
+    public int CabShadowsRange;                    // gfx.shadows.cab.range
     public int ShadowRankCutoff = 3;               // gfx.shadow.rank.cutoff (NOTE)
-    public int ReflectionsFidelity = 2;            // gfx.reflections.fidelity (0-2)
+    public int ReflectionsFidelity;                // gfx.reflections.fidelity (0-2)
     public int FieldOfView = 45;                   // fieldofview (15-75) NOTE: 'fovSlider' in XAML
     public bool PythonScreens = true;              // python.enabled
     public bool PythonThreadedUpload = true;       // python.threadedupload
-    public int ScreenRendererPriority = 4;         // pyscreenrendererpriority (1-5, see ScreenPriorities)
     public bool FpsLimitEnabled;                   // fpslimit (presence)
     public int FpsLimit = 30;                      // fpslimit (1-100)
     public double ShadowAngleLimit = 0.2;          // gfx.shadow.angle.min (0.2-1.0)
@@ -108,7 +106,7 @@ public sealed class Settings
     public int SplineFidelity = 1;                 // splinefidelity (1-4)
     public bool FullPhysics = true;                // fullphysics
     public bool EnableTraction = true;             // enabletraction (pantograph can break)
-    public bool LiveTraction;                      // livetraction
+    public bool LiveTraction = true;               // livetraction
     public bool PhysicsLog;                        // physicslog (speedometer tapes)
     public bool DebugLog = true;                   // debuglog (3 / 0)
     public bool MultipleLogs;                      // multiplelogs
@@ -116,16 +114,15 @@ public sealed class Settings
     public bool CrashDamage = true;                // crashdamage
     public double Friction = 1.0;                  // friction (0.1-3.0)
     public double BrakeStep = 1.0;                 // brakestep (0.4-3.0)
-    public double BrakeSpeed = 1.0;                // brakespeed (0.4-3.0)
+    public double BrakeSpeed = 3.0;                // brakespeed (0.4-3.0)
 
     // ── Sound ─────────────────────────────────────────────────────────────
     public bool SoundEnabled = true;               // soundenabled
-    public int Volume = 100;                        // sound.volume          (0-2 → 0-100)
-    public int RadioVolume = 80;                    // sound.volume.radio    (0-1 → 0-100)
+    public int Volume = 50;                         // sound.volume          (0-2 → 0-100)
+    public int RadioVolume = 75;                    // sound.volume.radio    (0-1 → 0-100)
     public int VehiclesVolume = 100;                // sound.volume.vehicle
     public int PositionalVolume = 100;              // sound.volume.positional
-    public int AmbientVolume = 80;                  // sound.volume.ambient
-    public int PausedVolume;                        // sound.volume.paused
+    public int AmbientVolume = 100;                 // sound.volume.ambient
 
     // ── Advanced ──────────────────────────────────────────────────────────
     public bool CompressTextures = true;           // compresstex
@@ -135,7 +132,7 @@ public sealed class Settings
     public bool ScreenMipmaps = true;               // python.mipmaps
     public bool ExtendedModelConversion;            // convertmodels ("143"/"0")
     public bool GfxResourceMove;                    // gfx.resource.move
-    public bool GfxResourceSweep;                   // gfx.resource.sweep
+    public bool GfxResourceSweep = true;             // gfx.resource.sweep
     public int TrainPhysicsThreads;                 // async.trainThreads
     public bool IgnoreIrrelevantTrains;             // starter.ignoreirrelevant (launcher-only)
 
@@ -157,12 +154,8 @@ public sealed class Settings
     /// <summary>Anisotropic-filtering steps for the texture-quality slider (1-5).</summary>
     public static readonly int[] AnisotropySteps = { 1, 2, 4, 8, 16 };
 
-    /// <summary>pyscreenrendererpriority tokens indexed by the slider value (1-5).</summary>
-    public static readonly string[] ScreenPriorities =
-        { "off", "idle", "lowest", "lower", "normal" };
-
     // Tokens of mousescale / shadowtune that the UI does not edit but must keep.
-    private double _mouseScaleYMagnitude = 0.5;
+    private double _mouseScaleYMagnitude = 0.2;
     private string[] _shadowTuneExtra = { "400", "300" }; // tokens [2], [3]
 
     private ConfigFile _config = new();
@@ -368,22 +361,30 @@ public sealed class Settings
 
         // Communication
         IgnoreGamepad = !c.GetBool("input.gamepad", true);
-        FeedbackMode = Clamp(c.GetInt("feedbackmode", 0), 0, 5);
+        FeedbackMode = Clamp(c.GetInt("feedbackmode", 1), 0, 5);
         FeedbackPort = c.GetInt("feedbackport", 888);
         UartEnabled = c.Has("uart");
         UartPort = c.GetString("uart", "");
         UartTune = c.GetString("uarttune", "");
         UartDebug = c.GetBool("uartdebug", false);
-        var uartTokens = (c.GetRaw("uartfeature") ?? "").Split('|', StringSplitOptions.RemoveEmptyEntries);
-        var uf = new HashSet<string>(uartTokens, StringComparer.OrdinalIgnoreCase);
-        UartMain = uf.Contains("main"); UartScnd = uf.Contains("scnd"); UartTrain = uf.Contains("train");
-        UartLocal = uf.Contains("local"); UartRadioVolume = uf.Contains("radiovolume"); UartRadioChannel = uf.Contains("radiochannel");
+        if (c.Has("uartfeature"))
+        {
+            var uartTokens = (c.GetRaw("uartfeature") ?? "").Split('|', StringSplitOptions.RemoveEmptyEntries);
+            var uf = new HashSet<string>(uartTokens, StringComparer.OrdinalIgnoreCase);
+            UartMain = uf.Contains("main"); UartScnd = uf.Contains("scnd"); UartTrain = uf.Contains("train");
+            UartLocal = uf.Contains("local"); UartRadioVolume = uf.Contains("radiovolume"); UartRadioChannel = uf.Contains("radiochannel");
+        }
+        else
+        {
+            UartMain = UartScnd = UartTrain = UartLocal = true;
+            UartRadioVolume = UartRadioChannel = false;
+        }
 
         // Other
         SelectExeAutomatically = c.GetBool("starter.exe.auto", true);
         ExecutablePath = c.GetString("starter.exe.path", "eu07.exe");
         DebugMode = c.GetBool("debugmode", false);
-        VirtualShunting = c.GetBool("ai.trainman", false);
+        VirtualShunting = c.GetBool("ai.trainman", true);
         LogMissingVehicleFiles = c.GetBool("starter.logmissingvehicles", false);
 
         // Graphics
@@ -396,12 +397,11 @@ public sealed class Settings
         TextureFiltering = c.GetInt("anisotropicfiltering", 8);
         Multisampling = Clamp(c.GetInt("multisampling", 2), 0, 3);
         DynamicLights = Clamp(c.GetInt("dynamiclights", 7), 0, 7);
-        DrawRangeFactor = c.GetDouble("gfx.drawrange.factor.max", 1.0);
-        VSync = c.GetBool("vsync", true);
+        DrawRangeFactor = c.GetDouble("gfx.drawrange.factor.max", 3.0);
+        VSync = c.GetBool("vsync", false);
         Smoke = c.GetBool("gfx.smoke", true);
         SmokeFidelity = Clamp(c.GetInt("gfx.smoke.fidelity", 1), 1, 4);
-        Tonemapping = c.GetString("gfx.postfx.tonemapping", "reinhard").ToLowerInvariant() == "aces" ? 1 : 0;
-        ChromaticAberration = c.GetBool("gfx.postfx.chromaticaberration.enabled", false);
+        ChromaticAberration = c.GetBool("gfx.postfx.chromaticaberration.enabled", true);
         MotionBlur = c.GetBool("gfx.postfx.motionblur.enabled", true);
         ExtraEffects = c.GetBool("gfx.extraeffects", true);
         EnvMap = c.GetBool("gfx.envmap.enabled", true);
@@ -410,17 +410,16 @@ public sealed class Settings
         ReflectionsFramerate = c.GetInt("gfx.reflections.framerate", 60);
 
         var shadowTune = c.GetTokens("shadowtune");
-        if (shadowTune.Length >= 1) ShadowMapResolution = ParseInt(shadowTune[0], 4096);
+        if (shadowTune.Length >= 1) ShadowMapResolution = ParseInt(shadowTune[0], 2048);
         if (shadowTune.Length >= 2) ShadowProjectionRange = ParseInt(shadowTune[1], 250);
         if (shadowTune.Length >= 4) _shadowTuneExtra = new[] { shadowTune[2], shadowTune[3] };
 
-        CabShadowsRange = (int)Math.Round(c.GetDouble("gfx.shadows.cab.range", 30));
+        CabShadowsRange = (int)Math.Round(c.GetDouble("gfx.shadows.cab.range", 0));
         ShadowRankCutoff = c.GetInt("gfx.shadow.rank.cutoff", 3);
-        ReflectionsFidelity = Clamp(c.GetInt("gfx.reflections.fidelity", 2), 0, 2);
+        ReflectionsFidelity = Clamp(c.GetInt("gfx.reflections.fidelity", 0), 0, 2);
         FieldOfView = Clamp((int)Math.Round(c.GetDouble("fieldofview", 45)), 15, 75);
         PythonScreens = c.GetBool("python.enabled", true);
         PythonThreadedUpload = c.GetBool("python.threadedupload", true);
-        ScreenRendererPriority = IndexOf(ScreenPriorities, c.GetString("pyscreenrendererpriority", "lower"), 3) + 1;
         FpsLimitEnabled = c.Has("fpslimit");
         FpsLimit = Clamp(c.GetInt("fpslimit", 30), 1, 100);
         ShadowAngleLimit = c.GetDouble("gfx.shadow.angle.min", 0.2);
@@ -431,7 +430,7 @@ public sealed class Settings
         SplineFidelity = Clamp(c.GetInt("splinefidelity", 1), 1, 4);
         FullPhysics = c.GetBool("fullphysics", true);
         EnableTraction = c.GetBool("enabletraction", true);
-        LiveTraction = c.GetBool("livetraction", false);
+        LiveTraction = c.GetBool("livetraction", true);
         PhysicsLog = c.GetBool("physicslog", false);
         DebugLog = c.GetInt("debuglog", 3) != 0;
         MultipleLogs = c.GetBool("multiplelogs", false);
@@ -439,16 +438,15 @@ public sealed class Settings
         CrashDamage = c.GetBool("crashdamage", true);
         Friction = c.GetDouble("friction", 1.0);
         BrakeStep = c.GetDouble("brakestep", 1.0);
-        BrakeSpeed = c.GetDouble("brakespeed", 1.0);
+        BrakeSpeed = c.GetDouble("brakespeed", 3.0);
 
         // Sound
         SoundEnabled = c.GetBool("soundenabled", true);
-        Volume = Clamp((int)Math.Round(c.GetDouble("sound.volume", 1.5) * 50), 1, 100);
-        RadioVolume = Clamp((int)Math.Round(c.GetDouble("sound.volume.radio", 0.8) * 100), 1, 100);
+        Volume = Clamp((int)Math.Round(c.GetDouble("sound.volume", 1.0) * 50), 1, 100);
+        RadioVolume = Clamp((int)Math.Round(c.GetDouble("sound.volume.radio", 0.75) * 100), 1, 100);
         VehiclesVolume = Clamp((int)Math.Round(c.GetDouble("sound.volume.vehicle", 1.0) * 100), 1, 100);
         PositionalVolume = Clamp((int)Math.Round(c.GetDouble("sound.volume.positional", 1.0) * 100), 1, 100);
-        AmbientVolume = Clamp((int)Math.Round(c.GetDouble("sound.volume.ambient", 0.8) * 100), 1, 100);
-        PausedVolume = Clamp((int)Math.Round(c.GetDouble("sound.volume.paused", 0.0) * 100), 0, 100);
+        AmbientVolume = Clamp((int)Math.Round(c.GetDouble("sound.volume.ambient", 1.0) * 100), 1, 100);
 
         // Advanced
         CompressTextures = c.GetBool("compresstex", true);
@@ -458,7 +456,7 @@ public sealed class Settings
         ScreenMipmaps = c.GetBool("python.mipmaps", true);
         ExtendedModelConversion = c.GetInt("convertmodels", 0) != 0;
         GfxResourceMove = c.GetBool("gfx.resource.move", false);
-        GfxResourceSweep = c.GetBool("gfx.resource.sweep", false);
+        GfxResourceSweep = c.GetBool("gfx.resource.sweep", true);
         TrainPhysicsThreads = Clamp(c.GetInt("async.trainThreads", 0), 0, Environment.ProcessorCount);
         IgnoreIrrelevantTrains = c.GetBool("starter.ignoreirrelevant", false);
 
@@ -526,7 +524,6 @@ public sealed class Settings
         c.SetBool("vsync", VSync);
         c.SetBool("gfx.smoke", Smoke);
         c.SetInt("gfx.smoke.fidelity", SmokeFidelity);
-        c.Set("gfx.postfx.tonemapping", Tonemapping == 1 ? "aces" : "reinhard");
         c.SetBool("gfx.postfx.chromaticaberration.enabled", ChromaticAberration);
         c.SetBool("gfx.postfx.motionblur.enabled", MotionBlur);
         c.SetBool("gfx.extraeffects", ExtraEffects);
@@ -544,8 +541,6 @@ public sealed class Settings
         c.SetInt("fieldofview", FieldOfView);
         c.SetBool("python.enabled", PythonScreens);
         c.SetBool("python.threadedupload", PythonThreadedUpload);
-        c.Set("pyscreenrendererpriority",
-            ScreenPriorities[Clamp(ScreenRendererPriority - 1, 0, ScreenPriorities.Length - 1)]);
         if (FpsLimitEnabled) c.SetInt("fpslimit", FpsLimit); else c.Remove("fpslimit");
         c.SetDouble("gfx.shadow.angle.min", ShadowAngleLimit);
         c.SetBool("fullscreenwindowed", FullscreenWindowed);
@@ -572,7 +567,6 @@ public sealed class Settings
         c.SetDouble("sound.volume.vehicle", VehiclesVolume / 100.0);
         c.SetDouble("sound.volume.positional", PositionalVolume / 100.0);
         c.SetDouble("sound.volume.ambient", AmbientVolume / 100.0);
-        c.SetDouble("sound.volume.paused", PausedVolume / 100.0);
 
         // Advanced
         c.SetBool("compresstex", CompressTextures);

@@ -268,10 +268,6 @@
     <String key="SmokeDisplay">Wyświetlanie dymu</String>
     <String key="SmokeParticlesMultiplier">Mnożnik ilości cząsteczek dymu</String>
 
-    <String key="Postprocessing">Postprocessing</String>
-    <String key="PPReinhard">Reinhard</String>
-    <String key="PPACES">ACES</String>
-
     <String key="ChromaticAberration">Aberracja chromatyczna</String>
     <String key="MotionBlur">Rozmycie podczas ruchu</String>
     <String key="AdditionalShadersEffects">Dodatkowe efekty shaderów</String>
@@ -296,7 +292,6 @@
     <String key="FieldOfView">Kąt widzenia</String>
     <String key="RenderScreens">Renderowanie ekranów komputerów pokładowych</String>
     <String key="RenderScreensThread">Renderowanie ekranów w osobnym wątku</String>
-    <String key="RenderScreensFramerate">Częstotliwość odświeżania ekranów komputerów pokładowych</String>
 
     <String key="Physics">Fizyka</String>
 
@@ -320,7 +315,6 @@
     <String key="VehiclesVolume">Głośność pojazdów</String>
     <String key="PositionedSoundsVolume">Głośność dżwięków pozycjonowanych</String>
     <String key="AmbientVolume">Głośność otoczenia</String>
-    <String key="VolumeDuringPause">Głośność podczas pauzy</String>
 
     <String key="Advanced">Zaawansowane</String>
     <String key="CompressTextures">Kompresuj tekstury TGA</String>
