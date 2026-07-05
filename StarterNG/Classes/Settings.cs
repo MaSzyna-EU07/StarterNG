@@ -1,9 +1,13 @@
 using System;
+using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
+using System.Linq;
 using System.Text;
 
 namespace StarterNG.Classes;
+
+public enum BatteryDefault { Default = 0, AlwaysOff = 1, AlwaysOn = 2 }
 
 /// <summary>
 /// Application settings backing the Settings view, persisted to the simulator's
@@ -49,12 +53,19 @@ public sealed class Settings
     // ── Communication ─────────────────────────────────────────────────────
     public bool IgnoreGamepad;                    // input.gamepad (inverted)
     public int FeedbackMode;                      // feedbackmode (0-5)
+    public int FeedbackPort = 888;                // feedbackport
+    public bool UartEnabled;                      // uart presence
+    public string UartPort = "";                  // uart
+    public string UartTune = "";                  // uarttune
+    public bool UartDebug;                        // uartdebug
+    public bool UartMain, UartScnd, UartTrain, UartLocal, UartRadioVolume, UartRadioChannel; // uartfeature tokens
 
     // ── Other ─────────────────────────────────────────────────────────────
     public bool SelectExeAutomatically = true;    // starter.exe.auto  (launcher-only)
     public string ExecutablePath = "eu07.exe";    // starter.exe.path  (launcher-only)
     public bool DebugMode;                         // debugmode
     public bool VirtualShunting;                   // ai.trainman
+    public bool LogMissingVehicleFiles;            // starter.logmissingvehicles (launcher-only; not yet wired to any load/export codepath)
 
     // ── Graphics ──────────────────────────────────────────────────────────
     public int RenderEngine;                       // gfxrenderer (index, see RenderEngines)
@@ -87,6 +98,11 @@ public sealed class Settings
     public bool PythonScreens = true;              // python.enabled
     public bool PythonThreadedUpload = true;       // python.threadedupload
     public int ScreenRendererPriority = 4;         // pyscreenrendererpriority (1-5, see ScreenPriorities)
+    public bool FpsLimitEnabled;                   // fpslimit (presence)
+    public int FpsLimit = 30;                      // fpslimit (1-100)
+    public double ShadowAngleLimit = 0.2;          // gfx.shadow.angle.min (0.2-1.0)
+    public bool FullscreenWindowed;                // fullscreenwindowed
+    public bool RenderAngleVulkan;                 // gfx.angleplatform ("vulkan")
 
     // ── Physics ───────────────────────────────────────────────────────────
     public int SplineFidelity = 1;                 // splinefidelity (1-4)
@@ -98,6 +114,9 @@ public sealed class Settings
     public bool MultipleLogs;                      // multiplelogs
     public bool DisplaySimulation = true;          // gfx.skiprendering (inverted)
     public bool CrashDamage = true;                // crashdamage
+    public double Friction = 1.0;                  // friction (0.1-3.0)
+    public double BrakeStep = 1.0;                 // brakestep (0.4-3.0)
+    public double BrakeSpeed = 1.0;                // brakespeed (0.4-3.0)
 
     // ── Sound ─────────────────────────────────────────────────────────────
     public bool SoundEnabled = true;               // soundenabled
@@ -108,10 +127,23 @@ public sealed class Settings
     public int AmbientVolume = 80;                  // sound.volume.ambient
     public int PausedVolume;                        // sound.volume.paused
 
+    // ── Advanced ──────────────────────────────────────────────────────────
+    public bool CompressTextures = true;           // compresstex
+    public bool ScaleSpeculars = true;              // scalespeculars
+    public bool UseGLES;                            // gfx.usegles
+    public bool ShaderGamma;                        // gfx.shadergamma
+    public bool ScreenMipmaps = true;               // python.mipmaps
+    public bool ExtendedModelConversion;            // convertmodels ("143"/"0")
+    public bool GfxResourceMove;                    // gfx.resource.move
+    public bool GfxResourceSweep;                   // gfx.resource.sweep
+    public int TrainPhysicsThreads;                 // async.trainThreads
+    public bool IgnoreIrrelevantTrains;             // starter.ignoreirrelevant (launcher-only)
+
     // ── Starter (launcher-only, stored under starter.* keys) ───────────────
     public bool AutoCloseStarter;                  // starter.autoclose
     public bool LargeThumbnails;                   // starter.largethumbnails
     public bool AutoExpandSceneryTree;             // starter.expandtree
+    public BatteryDefault BatteryDefault = BatteryDefault.Default; // starter.batterydefault (launcher-only)
 
     // List filters (launcher-only). Default on.
     public bool ShowAiVehicles = true;             // starter.show.ai (show //$o "-" consists)
@@ -165,6 +197,10 @@ public sealed class Settings
     private static string DefaultConfigPath() =>
         Path.Combine(Directory.GetCurrentDirectory(), "eu07.ini");
 
+    /// <summary>Directory holding the per-user eu07.ini, for locating launcher-only data alongside it.</summary>
+    public static string UserConfigDirectory() =>
+        Path.GetDirectoryName(UserConfigPath()) ?? AppContext.BaseDirectory;
+
     /// <summary>
     /// The simulator executable to launch. With auto-selection on, the working
     /// directory is scanned for an <c>eu07*</c> binary - <c>eu07</c> on Linux/macOS,
@@ -196,6 +232,25 @@ public sealed class Settings
         catch { /* fall through to the canonical name */ }
 
         return canonical;
+    }
+
+    /// <summary>
+    /// Scans <paramref name="directory"/> (defaults to the working directory) for
+    /// plausible <c>eu07*</c> launcher binaries, newest first, for populating the
+    /// manual-selection dropdown. Does not affect <see cref="ResolveExecutable"/>.
+    /// </summary>
+    public static List<string> ListCandidateExecutables(string? directory = null)
+    {
+        directory ??= Directory.GetCurrentDirectory();
+        try
+        {
+            return Directory.GetFiles(directory, "eu07*")
+                .Where(IsExecutableCandidate)
+                .OrderByDescending(File.GetLastWriteTimeUtc)
+                .Select(Path.GetFileName)
+                .ToList()!;
+        }
+        catch { return new List<string>(); }
     }
 
     // Filters the eu07* matches down to plausible launcher binaries, skipping data
@@ -233,11 +288,23 @@ public sealed class Settings
     {
         _savePath = UserConfigPath();
         string source = File.Exists(_savePath) ? _savePath : DefaultConfigPath();
+        LoadFrom(source);
+    }
 
+    /// <summary>Captures the latest UI values (if the view is open) and saves.</summary>
+    public void CaptureAndSave()
+    {
+        CaptureFromUi?.Invoke();
+        Save();
+    }
+
+    /// <summary>Loads settings from an arbitrary path without changing where <see cref="Save"/> writes.</summary>
+    public void LoadFrom(string path)
+    {
         try
         {
-            _config = File.Exists(source)
-                ? ConfigFile.Parse(File.ReadAllText(source, FileEncoding))
+            _config = File.Exists(path)
+                ? ConfigFile.Parse(File.ReadAllText(path, FileEncoding))
                 : new ConfigFile();
         }
         catch
@@ -248,27 +315,26 @@ public sealed class Settings
         ReadFromConfig();
     }
 
-    /// <summary>Captures the latest UI values (if the view is open) and saves.</summary>
-    public void CaptureAndSave()
-    {
-        CaptureFromUi?.Invoke();
-        Save();
-    }
-
     /// <summary>Persists settings to the per-user eu07.ini, keeping unknown keys.</summary>
     public void Save()
     {
         if (string.IsNullOrEmpty(_savePath))
             _savePath = UserConfigPath();
 
+        SaveTo(_savePath);
+    }
+
+    /// <summary>Writes settings to an arbitrary path without changing where <see cref="Save"/> writes.</summary>
+    public void SaveTo(string path)
+    {
         WriteToConfig();
 
         try
         {
-            string? dir = Path.GetDirectoryName(_savePath);
+            string? dir = Path.GetDirectoryName(path);
             if (!string.IsNullOrEmpty(dir))
                 Directory.CreateDirectory(dir);
-            File.WriteAllText(_savePath, _config.ToText(), FileEncoding);
+            File.WriteAllText(path, _config.ToText(), FileEncoding);
         }
         catch
         {
@@ -303,12 +369,22 @@ public sealed class Settings
         // Communication
         IgnoreGamepad = !c.GetBool("input.gamepad", true);
         FeedbackMode = Clamp(c.GetInt("feedbackmode", 0), 0, 5);
+        FeedbackPort = c.GetInt("feedbackport", 888);
+        UartEnabled = c.Has("uart");
+        UartPort = c.GetString("uart", "");
+        UartTune = c.GetString("uarttune", "");
+        UartDebug = c.GetBool("uartdebug", false);
+        var uartTokens = (c.GetRaw("uartfeature") ?? "").Split('|', StringSplitOptions.RemoveEmptyEntries);
+        var uf = new HashSet<string>(uartTokens, StringComparer.OrdinalIgnoreCase);
+        UartMain = uf.Contains("main"); UartScnd = uf.Contains("scnd"); UartTrain = uf.Contains("train");
+        UartLocal = uf.Contains("local"); UartRadioVolume = uf.Contains("radiovolume"); UartRadioChannel = uf.Contains("radiochannel");
 
         // Other
         SelectExeAutomatically = c.GetBool("starter.exe.auto", true);
         ExecutablePath = c.GetString("starter.exe.path", "eu07.exe");
         DebugMode = c.GetBool("debugmode", false);
         VirtualShunting = c.GetBool("ai.trainman", false);
+        LogMissingVehicleFiles = c.GetBool("starter.logmissingvehicles", false);
 
         // Graphics
         RenderEngine = IndexOf(RenderEngines, c.GetString("gfxrenderer", "full"), 0);
@@ -345,6 +421,11 @@ public sealed class Settings
         PythonScreens = c.GetBool("python.enabled", true);
         PythonThreadedUpload = c.GetBool("python.threadedupload", true);
         ScreenRendererPriority = IndexOf(ScreenPriorities, c.GetString("pyscreenrendererpriority", "lower"), 3) + 1;
+        FpsLimitEnabled = c.Has("fpslimit");
+        FpsLimit = Clamp(c.GetInt("fpslimit", 30), 1, 100);
+        ShadowAngleLimit = c.GetDouble("gfx.shadow.angle.min", 0.2);
+        FullscreenWindowed = c.GetBool("fullscreenwindowed", false);
+        RenderAngleVulkan = string.Equals(c.GetString("gfx.angleplatform", ""), "vulkan", StringComparison.OrdinalIgnoreCase);
 
         // Physics
         SplineFidelity = Clamp(c.GetInt("splinefidelity", 1), 1, 4);
@@ -356,6 +437,9 @@ public sealed class Settings
         MultipleLogs = c.GetBool("multiplelogs", false);
         DisplaySimulation = !c.GetBool("gfx.skiprendering", false);
         CrashDamage = c.GetBool("crashdamage", true);
+        Friction = c.GetDouble("friction", 1.0);
+        BrakeStep = c.GetDouble("brakestep", 1.0);
+        BrakeSpeed = c.GetDouble("brakespeed", 1.0);
 
         // Sound
         SoundEnabled = c.GetBool("soundenabled", true);
@@ -366,10 +450,23 @@ public sealed class Settings
         AmbientVolume = Clamp((int)Math.Round(c.GetDouble("sound.volume.ambient", 0.8) * 100), 1, 100);
         PausedVolume = Clamp((int)Math.Round(c.GetDouble("sound.volume.paused", 0.0) * 100), 0, 100);
 
+        // Advanced
+        CompressTextures = c.GetBool("compresstex", true);
+        ScaleSpeculars = c.GetBool("scalespeculars", true);
+        UseGLES = c.GetBool("gfx.usegles", false);
+        ShaderGamma = c.GetBool("gfx.shadergamma", false);
+        ScreenMipmaps = c.GetBool("python.mipmaps", true);
+        ExtendedModelConversion = c.GetInt("convertmodels", 0) != 0;
+        GfxResourceMove = c.GetBool("gfx.resource.move", false);
+        GfxResourceSweep = c.GetBool("gfx.resource.sweep", false);
+        TrainPhysicsThreads = Clamp(c.GetInt("async.trainThreads", 0), 0, Environment.ProcessorCount);
+        IgnoreIrrelevantTrains = c.GetBool("starter.ignoreirrelevant", false);
+
         // Starter
         AutoCloseStarter = c.GetBool("starter.autoclose", false);
         LargeThumbnails = c.GetBool("starter.largethumbnails", false);
         AutoExpandSceneryTree = c.GetBool("starter.expandtree", false);
+        BatteryDefault = (BatteryDefault)Clamp(c.GetInt("starter.batterydefault", 0), 0, 2);
         ShowAiVehicles = c.GetBool("starter.show.ai", true);
         DrivableOnly = c.GetBool("starter.drivableonly", true);
         ShowArchivalSceneries = c.GetBool("starter.show.archival", true);
@@ -395,12 +492,25 @@ public sealed class Settings
         // Communication
         c.SetBool("input.gamepad", !IgnoreGamepad);
         c.SetInt("feedbackmode", FeedbackMode);
+        c.SetInt("feedbackport", FeedbackPort);
+        if (UartEnabled && !string.IsNullOrWhiteSpace(UartPort)) c.Set("uart", UartPort); else c.Remove("uart");
+        c.Set("uarttune", UartTune);
+        c.SetBool("uartdebug", UartDebug);
+        var sb = new StringBuilder();
+        if (UartMain) sb.Append("main|");
+        if (UartScnd) sb.Append("scnd|");
+        if (UartTrain) sb.Append("train|");
+        if (UartLocal) sb.Append("local|");
+        if (UartRadioVolume) sb.Append("radiovolume|");
+        if (UartRadioChannel) sb.Append("radiochannel|");
+        c.Set("uartfeature", sb.ToString());
 
         // Other
         c.SetBool("starter.exe.auto", SelectExeAutomatically);
         c.Set("starter.exe.path", ExecutablePath);
         c.SetBool("debugmode", DebugMode);
         c.SetBool("ai.trainman", VirtualShunting);
+        c.SetBool("starter.logmissingvehicles", LogMissingVehicleFiles);
 
         // Graphics
         c.Set("gfxrenderer", RenderEngines[Clamp(RenderEngine, 0, RenderEngines.Length - 1)]);
@@ -436,6 +546,10 @@ public sealed class Settings
         c.SetBool("python.threadedupload", PythonThreadedUpload);
         c.Set("pyscreenrendererpriority",
             ScreenPriorities[Clamp(ScreenRendererPriority - 1, 0, ScreenPriorities.Length - 1)]);
+        if (FpsLimitEnabled) c.SetInt("fpslimit", FpsLimit); else c.Remove("fpslimit");
+        c.SetDouble("gfx.shadow.angle.min", ShadowAngleLimit);
+        c.SetBool("fullscreenwindowed", FullscreenWindowed);
+        if (RenderAngleVulkan) c.Set("gfx.angleplatform", "vulkan"); else c.Remove("gfx.angleplatform");
 
         // Physics
         c.SetInt("splinefidelity", SplineFidelity);
@@ -447,6 +561,9 @@ public sealed class Settings
         c.SetBool("multiplelogs", MultipleLogs);
         c.SetBool("gfx.skiprendering", !DisplaySimulation);
         c.SetBool("crashdamage", CrashDamage);
+        c.SetDouble("friction", Friction);
+        c.SetDouble("brakestep", BrakeStep);
+        c.SetDouble("brakespeed", BrakeSpeed);
 
         // Sound
         c.SetBool("soundenabled", SoundEnabled);
@@ -457,10 +574,23 @@ public sealed class Settings
         c.SetDouble("sound.volume.ambient", AmbientVolume / 100.0);
         c.SetDouble("sound.volume.paused", PausedVolume / 100.0);
 
+        // Advanced
+        c.SetBool("compresstex", CompressTextures);
+        c.SetBool("scalespeculars", ScaleSpeculars);
+        c.SetBool("gfx.usegles", UseGLES);
+        c.SetBool("gfx.shadergamma", ShaderGamma);
+        c.SetBool("python.mipmaps", ScreenMipmaps);
+        c.Set("convertmodels", ExtendedModelConversion ? "143" : "0");
+        c.SetBool("gfx.resource.move", GfxResourceMove);
+        c.SetBool("gfx.resource.sweep", GfxResourceSweep);
+        c.SetInt("async.trainThreads", TrainPhysicsThreads);
+        c.SetBool("starter.ignoreirrelevant", IgnoreIrrelevantTrains);
+
         // Starter
         c.SetBool("starter.autoclose", AutoCloseStarter);
         c.SetBool("starter.largethumbnails", LargeThumbnails);
         c.SetBool("starter.expandtree", AutoExpandSceneryTree);
+        c.SetInt("starter.batterydefault", (int)BatteryDefault);
         c.SetBool("starter.show.ai", ShowAiVehicles);
         c.SetBool("starter.drivableonly", DrivableOnly);
         c.SetBool("starter.show.archival", ShowArchivalSceneries);

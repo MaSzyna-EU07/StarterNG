@@ -21,6 +21,7 @@ public class Trainset
     public string Track;
     public float Offset;
     public float Velocity;
+    public float OriginalVelocity;
     public string Description;
     public List<Dynamic> Vehicles;
 
@@ -82,6 +83,7 @@ public class Trainset
                 this.Track = tokens[++i];
                 this.Offset = float.Parse(tokens[++i], CultureInfo.InvariantCulture);
                 this.Velocity = float.Parse(tokens[++i], CultureInfo.InvariantCulture);
+                this.OriginalVelocity = this.Velocity;
                 continue;
             }
             

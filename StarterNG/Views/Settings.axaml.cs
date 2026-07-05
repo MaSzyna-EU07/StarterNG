@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.IO;
 using System.Linq;
 using Avalonia;
 using Avalonia.Controls;
@@ -24,6 +25,8 @@ public partial class Settings : UserControl
     {
         InitializeComponent();
 
+        TrainPhysicsThreadsSlider.Maximum = Environment.ProcessorCount;
+
         this.AttachedToVisualTree += (_, _) =>
         {
             TextureResolutionSlider_OnValueChanged(null, null);
@@ -37,10 +40,14 @@ public partial class Settings : UserControl
             _ => 1
         };
 
+        FeedbackCb.SelectionChanged += FeedbackCb_OnSelectionChanged;
+        FpsLimitEnableCb.IsCheckedChanged += (_, _) => FpsLimitSlider.IsEnabled = IsChecked(FpsLimitEnableCb);
+
         // The settings instance pulls live values from here whenever the app
         // closes or the game is launched.
         StarterNG.Classes.Settings.Instance.CaptureFromUi = ReadFromUi;
 
+        PopulateProfileCombo();
         ApplyToUi();
 
         // Controls tab: load the key bindings and build the editor + on-screen
@@ -51,6 +58,78 @@ public partial class Settings : UserControl
         AddHandler(KeyDownEvent, OnControlsKeyDown, RoutingStrategies.Tunnel);
     }
 
+    private static int FindComboIndexByContent(ComboBox cb, string content)
+    {
+        for (int i = 0; i < cb.Items.Count; i++)
+            if (cb.Items[i] is ComboBoxItem item &&
+                string.Equals(item.Content?.ToString(), content, StringComparison.OrdinalIgnoreCase))
+                return i;
+        return -1;
+    }
+
+    private void PopulateProfileCombo()
+    {
+        string? current = (ProfileCb.SelectedItem as ComboBoxItem)?.Content?.ToString();
+        ProfileCb.Items.Clear();
+        foreach (string name in SettingsProfileStore.ListProfiles())
+            ProfileCb.Items.Add(new ComboBoxItem { Content = name });
+        if (current is not null)
+        {
+            int idx = FindComboIndexByContent(ProfileCb, current);
+            if (idx >= 0) ProfileCb.SelectedIndex = idx;
+        }
+    }
+
+    private void ProfileApplyButton_OnClick(object? sender, RoutedEventArgs e)
+    {
+        if (ProfileCb.SelectedItem is not ComboBoxItem { Content: string name } || string.IsNullOrWhiteSpace(name))
+            return;
+        string path = SettingsProfileStore.PathFor(name);
+        if (!File.Exists(path)) return;
+        StarterNG.Classes.Settings.Instance.LoadFrom(path);
+        ApplyToUi();
+    }
+
+    private void ProfileSaveAsButton_OnClick(object? sender, RoutedEventArgs e)
+    {
+        var nameBox = new TextBox { PlaceholderText = App.Loc["ProfileNamePrompt"], MinWidth = 220 };
+        var ok = new Button { Content = App.Loc["ProfileSaveAs"] };
+        var panel = new StackPanel { Spacing = 6, Margin = new Thickness(8), MinWidth = 240 };
+        panel.Children.Add(new TextBlock { Text = App.Loc["ProfileNamePrompt"], FontWeight = FontWeight.Bold, FontSize = 12 });
+        panel.Children.Add(nameBox);
+        panel.Children.Add(ok);
+        var flyout = new Flyout { Content = panel };
+
+        void Commit()
+        {
+            if (string.IsNullOrWhiteSpace(nameBox.Text)) return;
+            ReadFromUi();
+            StarterNG.Classes.Settings.Instance.SaveTo(SettingsProfileStore.PathFor(nameBox.Text));
+            PopulateProfileCombo();
+            int idx = FindComboIndexByContent(ProfileCb, nameBox.Text.Trim());
+            if (idx >= 0) ProfileCb.SelectedIndex = idx;
+            flyout.Hide();
+        }
+        ok.Click += (_, _) => Commit();
+        nameBox.KeyDown += (_, ev) => { if (ev.Key == Key.Enter) { ev.Handled = true; Commit(); } };
+        flyout.ShowAt(ProfileSaveAsBtn, showAtPointer: false);
+        nameBox.Focus(); nameBox.SelectAll();
+    }
+
+    private void PopulateExeCombo()
+    {
+        string? current = (SelectExeCb.SelectedItem as ComboBoxItem)?.Content?.ToString();
+        SelectExeCb.Items.Clear();
+        SelectExeCb.Items.Add(new ComboBoxItem { Content = App.Loc["SelectEXEAuto"] });
+        foreach (string exe in StarterNG.Classes.Settings.ListCandidateExecutables())
+            SelectExeCb.Items.Add(new ComboBoxItem { Content = exe });
+        if (current is not null)
+        {
+            int idx = FindComboIndexByContent(SelectExeCb, current);
+            SelectExeCb.SelectedIndex = idx >= 0 ? idx : 0;
+        }
+    }
+
     // ── Settings instance → controls ──────────────────────────────────────
     private void ApplyToUi()
     {
@@ -58,6 +137,9 @@ public partial class Settings : UserControl
         _loading = true;
         try
         {
+            PopulateProfileCombo();
+            PopulateExeCombo();
+
             // General
             ChangeLanguageCb.SelectedIndex = s.Language == "Polski" ? 0 : 1;
             FullscreenCb.IsChecked = s.Fullscreen;
@@ -70,11 +152,26 @@ public partial class Settings : UserControl
             // Communication
             GamepadIgnoreCb.IsChecked = s.IgnoreGamepad;
             FeedbackCb.SelectedIndex = s.FeedbackMode;
+            FeedbackPortNud.Value = (decimal)s.FeedbackPort;
+            UartEnableCb.IsChecked = s.UartEnabled;
+            UartPortTb.Text = s.UartPort;
+            UartTuneTb.Text = s.UartTune;
+            UartDebugCb.IsChecked = s.UartDebug;
+            UartMainCb.IsChecked = s.UartMain;
+            UartScndCb.IsChecked = s.UartScnd;
+            UartTrainCb.IsChecked = s.UartTrain;
+            UartLocalCb.IsChecked = s.UartLocal;
+            UartRadioVolumeCb.IsChecked = s.UartRadioVolume;
+            UartRadioChannelCb.IsChecked = s.UartRadioChannel;
+            UpdateFeedbackDetailVisibility();
 
             // Other
-            SelectExeCb.SelectedIndex = s.SelectExeAutomatically ? 0 : 1;
+            SelectExeCb.SelectedIndex = s.SelectExeAutomatically
+                ? 0
+                : Math.Max(0, FindComboIndexByContent(SelectExeCb, s.ExecutablePath));
             DebugModeCb.IsChecked = s.DebugMode;
             VirtualShuntingCb.IsChecked = s.VirtualShunting;
+            LogMissingVehicleFilesCb.IsChecked = s.LogMissingVehicleFiles;
 
             // Graphics
             RenderEngineCb.SelectedIndex = s.RenderEngine;
@@ -106,6 +203,12 @@ public partial class Settings : UserControl
             RenderScreensCb.IsChecked = s.PythonScreens;
             RenderScreensThreadCb.IsChecked = s.PythonThreadedUpload;
             RenderScreensFramerateSlider.Value = s.ScreenRendererPriority;
+            FpsLimitEnableCb.IsChecked = s.FpsLimitEnabled;
+            FpsLimitSlider.Value = s.FpsLimit;
+            FpsLimitSlider.IsEnabled = s.FpsLimitEnabled;
+            ShadowAngleLimitSlider.Value = s.ShadowAngleLimit;
+            FullscreenWindowedCb.IsChecked = s.FullscreenWindowed;
+            RenderAngleVulkanCb.IsChecked = s.RenderAngleVulkan;
 
             // Physics
             TrackCurvesSlider.Value = s.SplineFidelity;
@@ -117,6 +220,9 @@ public partial class Settings : UserControl
             KeepLogsCb.IsChecked = s.MultipleLogs;
             DisplaySimulationCb.IsChecked = s.DisplaySimulation;
             CrashDamageCb.IsChecked = s.CrashDamage;
+            FrictionSlider.Value = s.Friction;
+            BrakeStepSlider.Value = s.BrakeStep;
+            BrakeSpeedSlider.Value = s.BrakeSpeed;
 
             // Sound
             EnableSoundsCb.IsChecked = s.SoundEnabled;
@@ -127,10 +233,23 @@ public partial class Settings : UserControl
             AmbientVolumeSlider.Value = s.AmbientVolume;
             PauseVolumeSlider.Value = s.PausedVolume;
 
+            // Advanced
+            CompressTexturesCb.IsChecked = s.CompressTextures;
+            ScaleSpecularsCb.IsChecked = s.ScaleSpeculars;
+            UseGLESCb.IsChecked = s.UseGLES;
+            ShaderGammaCb.IsChecked = s.ShaderGamma;
+            ScreenMipmapsCb.IsChecked = s.ScreenMipmaps;
+            ExtendedModelConversionCb.IsChecked = s.ExtendedModelConversion;
+            GfxResourceMoveCb.IsChecked = s.GfxResourceMove;
+            GfxResourceSweepCb.IsChecked = s.GfxResourceSweep;
+            TrainPhysicsThreadsSlider.Value = s.TrainPhysicsThreads;
+            IgnoreIrrelevantTrainsCb.IsChecked = s.IgnoreIrrelevantTrains;
+
             // Starter
             AutoCloseStarterCb.IsChecked = s.AutoCloseStarter;
             LargeThumbnailsCb.IsChecked = s.LargeThumbnails;
             AutoExpandTreeCb.IsChecked = s.AutoExpandSceneryTree;
+            BatteryDefaultCb.SelectedIndex = (int)s.BatteryDefault;
         }
         finally
         {
@@ -155,6 +274,17 @@ public partial class Settings : UserControl
         // Communication
         s.IgnoreGamepad = IsChecked(GamepadIgnoreCb);
         s.FeedbackMode = Math.Max(0, FeedbackCb.SelectedIndex);
+        s.FeedbackPort = (int)(FeedbackPortNud.Value ?? 888);
+        s.UartEnabled = IsChecked(UartEnableCb);
+        s.UartPort = UartPortTb.Text ?? "";
+        s.UartTune = UartTuneTb.Text ?? "";
+        s.UartDebug = IsChecked(UartDebugCb);
+        s.UartMain = IsChecked(UartMainCb);
+        s.UartScnd = IsChecked(UartScndCb);
+        s.UartTrain = IsChecked(UartTrainCb);
+        s.UartLocal = IsChecked(UartLocalCb);
+        s.UartRadioVolume = IsChecked(UartRadioVolumeCb);
+        s.UartRadioChannel = IsChecked(UartRadioChannelCb);
 
         // Other
         s.SelectExeAutomatically = SelectExeCb.SelectedIndex == 0;
@@ -162,6 +292,7 @@ public partial class Settings : UserControl
             : (SelectExeCb.SelectedItem as ComboBoxItem)?.Content?.ToString() ?? "eu07.exe";
         s.DebugMode = IsChecked(DebugModeCb);
         s.VirtualShunting = IsChecked(VirtualShuntingCb);
+        s.LogMissingVehicleFiles = IsChecked(LogMissingVehicleFilesCb);
 
         // Graphics
         s.RenderEngine = Math.Max(0, RenderEngineCb.SelectedIndex);
@@ -194,6 +325,11 @@ public partial class Settings : UserControl
         s.PythonScreens = IsChecked(RenderScreensCb);
         s.PythonThreadedUpload = IsChecked(RenderScreensThreadCb);
         s.ScreenRendererPriority = (int)RenderScreensFramerateSlider.Value;
+        s.FpsLimitEnabled = IsChecked(FpsLimitEnableCb);
+        s.FpsLimit = (int)FpsLimitSlider.Value;
+        s.ShadowAngleLimit = ShadowAngleLimitSlider.Value;
+        s.FullscreenWindowed = IsChecked(FullscreenWindowedCb);
+        s.RenderAngleVulkan = IsChecked(RenderAngleVulkanCb);
 
         // Physics
         s.SplineFidelity = (int)TrackCurvesSlider.Value;
@@ -205,6 +341,9 @@ public partial class Settings : UserControl
         s.MultipleLogs = IsChecked(KeepLogsCb);
         s.DisplaySimulation = IsChecked(DisplaySimulationCb);
         s.CrashDamage = IsChecked(CrashDamageCb);
+        s.Friction = FrictionSlider.Value;
+        s.BrakeStep = BrakeStepSlider.Value;
+        s.BrakeSpeed = BrakeSpeedSlider.Value;
 
         // Sound
         s.SoundEnabled = IsChecked(EnableSoundsCb);
@@ -215,10 +354,23 @@ public partial class Settings : UserControl
         s.AmbientVolume = (int)AmbientVolumeSlider.Value;
         s.PausedVolume = (int)PauseVolumeSlider.Value;
 
+        // Advanced
+        s.CompressTextures = IsChecked(CompressTexturesCb);
+        s.ScaleSpeculars = IsChecked(ScaleSpecularsCb);
+        s.UseGLES = IsChecked(UseGLESCb);
+        s.ShaderGamma = IsChecked(ShaderGammaCb);
+        s.ScreenMipmaps = IsChecked(ScreenMipmapsCb);
+        s.ExtendedModelConversion = IsChecked(ExtendedModelConversionCb);
+        s.GfxResourceMove = IsChecked(GfxResourceMoveCb);
+        s.GfxResourceSweep = IsChecked(GfxResourceSweepCb);
+        s.TrainPhysicsThreads = (int)TrainPhysicsThreadsSlider.Value;
+        s.IgnoreIrrelevantTrains = IsChecked(IgnoreIrrelevantTrainsCb);
+
         // Starter
         s.AutoCloseStarter = IsChecked(AutoCloseStarterCb);
         s.LargeThumbnails = IsChecked(LargeThumbnailsCb);
         s.AutoExpandSceneryTree = IsChecked(AutoExpandTreeCb);
+        s.BatteryDefault = (BatteryDefault)Math.Max(0, BatteryDefaultCb.SelectedIndex);
     }
 
     private void SaveButton_OnClick(object? sender, RoutedEventArgs e)
@@ -310,6 +462,15 @@ public partial class Settings : UserControl
         if (string.IsNullOrEmpty(lang)) return;
 
         App.ApplyLanguage(lang);
+    }
+
+    private void FeedbackCb_OnSelectionChanged(object? sender, SelectionChangedEventArgs e) =>
+        UpdateFeedbackDetailVisibility();
+
+    private void UpdateFeedbackDetailVisibility()
+    {
+        FeedbackPortRow.IsVisible = FeedbackCb.SelectedIndex == 3;
+        UartExpander.IsVisible = FeedbackCb.SelectedIndex == 5;
     }
 
     // ── tiny helpers ──────────────────────────────────────────────────────

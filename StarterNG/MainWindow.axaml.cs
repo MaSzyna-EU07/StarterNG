@@ -100,13 +100,23 @@ public partial class MainWindow : Window
             return;
         var trainset = AppState.Instance.CurrentTrainset;
 
+        if (trainset is { Vehicles.Count: > 0 })
+        {
+            trainset.Velocity = Settings.Instance.BatteryDefault switch
+            {
+                BatteryDefault.AlwaysOff => 0f,
+                BatteryDefault.AlwaysOn  => trainset.OriginalVelocity < 0.2f ? 0.1f : trainset.OriginalVelocity,
+                _                        => trainset.OriginalVelocity
+            };
+        }
+
         // write scenery/$<name>.scn with the replaced trainsets
         string dir = Path.GetDirectoryName(scenery.Path) ?? "scenery";
         string exportName = "$" + Path.GetFileName(scenery.Path);
         string exportPath = Path.Combine(dir, exportName);
         try
         {
-            File.WriteAllText(exportPath, scenery.BuildExportContent(), Encoding.GetEncoding(1250));
+            File.WriteAllText(exportPath, scenery.BuildExportContent(Settings.Instance.IgnoreIrrelevantTrains), Encoding.GetEncoding(1250));
         }
         catch
         {

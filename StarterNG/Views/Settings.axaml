@@ -64,6 +64,30 @@
                                 <ComboBoxItem Tag="5" Content="{Binding [FeedbackSP], Source={x:Static starterNg:App.Loc}}" />
                             </ComboBox>
                         </StackPanel>
+                        <StackPanel x:Name="FeedbackPortRow" Spacing="8" Orientation="Horizontal" IsVisible="False">
+                            <Label VerticalAlignment="Center" FontSize="14" Content="{Binding [FeedbackPort], Source={x:Static starterNg:App.Loc}}" />
+                            <NumericUpDown x:Name="FeedbackPortNud" Minimum="0" Maximum="65535" Value="888" Width="120" />
+                        </StackPanel>
+                        <Expander x:Name="UartExpander" IsVisible="False" Header="{Binding [UartSection], Source={x:Static starterNg:App.Loc}}">
+                            <StackPanel Spacing="8" Orientation="Vertical" Margin="12">
+                                <CheckBox x:Name="UartEnableCb" Content="{Binding [UartEnable], Source={x:Static starterNg:App.Loc}}" />
+                                <StackPanel Spacing="8" Orientation="Horizontal">
+                                    <Label VerticalAlignment="Center" FontSize="14" Content="{Binding [UartPort], Source={x:Static starterNg:App.Loc}}" />
+                                    <TextBox x:Name="UartPortTb" MinWidth="150" PlaceholderText="COM3" />
+                                </StackPanel>
+                                <StackPanel Spacing="8" Orientation="Horizontal">
+                                    <Label VerticalAlignment="Center" FontSize="14" Content="{Binding [UartTune], Source={x:Static starterNg:App.Loc}}" />
+                                    <TextBox x:Name="UartTuneTb" MinWidth="150" />
+                                </StackPanel>
+                                <CheckBox x:Name="UartDebugCb" Content="{Binding [UartDebug], Source={x:Static starterNg:App.Loc}}" />
+                                <CheckBox x:Name="UartMainCb" Content="{Binding [UartMain], Source={x:Static starterNg:App.Loc}}" />
+                                <CheckBox x:Name="UartScndCb" Content="{Binding [UartScnd], Source={x:Static starterNg:App.Loc}}" />
+                                <CheckBox x:Name="UartTrainCb" Content="{Binding [UartTrain], Source={x:Static starterNg:App.Loc}}" />
+                                <CheckBox x:Name="UartLocalCb" Content="{Binding [UartLocal], Source={x:Static starterNg:App.Loc}}" />
+                                <CheckBox x:Name="UartRadioVolumeCb" Content="{Binding [UartRadioVolume], Source={x:Static starterNg:App.Loc}}" />
+                                <CheckBox x:Name="UartRadioChannelCb" Content="{Binding [UartRadioChannel], Source={x:Static starterNg:App.Loc}}" />
+                            </StackPanel>
+                        </Expander>
                     </StackPanel>
                 </ScrollViewer>
             </TabItem>
@@ -82,13 +106,11 @@
                     <StackPanel Spacing="8" Orientation="Vertical" Margin="12">
                         <StackPanel Spacing="8" Orientation="Horizontal">
                             <Label VerticalAlignment="Center" FontSize="14" Content="{Binding [SelectEXE], Source={x:Static starterNg:App.Loc}}" />
-                            <ComboBox x:Name="SelectExeCb" MinWidth="350" MaxWidth="350" SelectedIndex="0">
-                                <ComboBoxItem Content="{Binding [SelectEXEAuto], Source={x:Static starterNg:App.Loc}}" />
-                                <ComboBoxItem>eu07.exe</ComboBoxItem>
-                            </ComboBox>
+                            <ComboBox x:Name="SelectExeCb" MinWidth="350" MaxWidth="350" SelectedIndex="0" />
                         </StackPanel>
                         <CheckBox x:Name="DebugModeCb" Content="{Binding [DebugMode], Source={x:Static starterNg:App.Loc}}" />
                         <CheckBox x:Name="VirtualShuntingCb" Content="{Binding [VirtualShunting], Source={x:Static starterNg:App.Loc}}" />
+                        <CheckBox x:Name="LogMissingVehicleFilesCb" Content="{Binding [LogMissingVehicleFiles], Source={x:Static starterNg:App.Loc}}" />
                     </StackPanel>
                 </ScrollViewer>
             </TabItem>
@@ -159,6 +181,18 @@
                             <Slider x:Name="RenderRangeSlider" Minimum="1" MaxWidth="400" HorizontalAlignment="Left"
                                     MinWidth="250" Maximum="3" Value="1" />
                         </StackPanel>
+                        <StackPanel Spacing="8" Orientation="Horizontal">
+                            <CheckBox x:Name="FpsLimitEnableCb" Content="{Binding [FpsLimitEnable], Source={x:Static starterNg:App.Loc}}" />
+                            <Slider x:Name="FpsLimitSlider" Minimum="1" MaxWidth="400" HorizontalAlignment="Left"
+                                    MinWidth="250" Maximum="100" TickFrequency="1" IsSnapToTickEnabled="True" Value="30" />
+                        </StackPanel>
+                        <StackPanel Spacing="8" Orientation="Horizontal">
+                            <TextBlock VerticalAlignment="Center" FontSize="14" Text="{Binding [ShadowAngleLimit], Source={x:Static starterNg:App.Loc}}" />
+                            <Slider x:Name="ShadowAngleLimitSlider" Minimum="0.2" MaxWidth="400" HorizontalAlignment="Left"
+                                    MinWidth="250" Maximum="1.0" TickFrequency="0.1" Value="0.2" />
+                        </StackPanel>
+                        <CheckBox x:Name="FullscreenWindowedCb" Content="{Binding [FullscreenWindowed], Source={x:Static starterNg:App.Loc}}" />
+                        <CheckBox x:Name="RenderAngleVulkanCb" Content="{Binding [RenderAngleVulkan], Source={x:Static starterNg:App.Loc}}" />
                         <CheckBox x:Name="VSyncCb" Content="{Binding [VSync], Source={x:Static starterNg:App.Loc}}" />
                         <CheckBox x:Name="SmokeDisplayCb" Content="{Binding [SmokeDisplay], Source={x:Static starterNg:App.Loc}}" />
                         <StackPanel Spacing="8" Orientation="Horizontal">
@@ -254,6 +288,21 @@
                         <CheckBox x:Name="KeepLogsCb" Content="{Binding [KeepPrevLogs], Source={x:Static starterNg:App.Loc}}" />
                         <CheckBox x:Name="DisplaySimulationCb" Content="{Binding [DisplaySimulation], Source={x:Static starterNg:App.Loc}}" />
                         <CheckBox x:Name="CrashDamageCb" Content="{Binding [CrashDamage], Source={x:Static starterNg:App.Loc}}" />
+                        <StackPanel Spacing="8" Orientation="Horizontal">
+                            <TextBlock VerticalAlignment="Center" FontSize="14" Text="{Binding [Friction], Source={x:Static starterNg:App.Loc}}" />
+                            <Slider x:Name="FrictionSlider" Minimum="0.1" MaxWidth="400" HorizontalAlignment="Left"
+                                    MinWidth="250" Maximum="3.0" TickFrequency="0.1" Value="1.0" />
+                        </StackPanel>
+                        <StackPanel Spacing="8" Orientation="Horizontal">
+                            <TextBlock VerticalAlignment="Center" FontSize="14" Text="{Binding [BrakeStep], Source={x:Static starterNg:App.Loc}}" />
+                            <Slider x:Name="BrakeStepSlider" Minimum="0.4" MaxWidth="400" HorizontalAlignment="Left"
+                                    MinWidth="250" Maximum="3.0" TickFrequency="0.1" Value="1.0" />
+                        </StackPanel>
+                        <StackPanel Spacing="8" Orientation="Horizontal">
+                            <TextBlock VerticalAlignment="Center" FontSize="14" Text="{Binding [BrakeSpeed], Source={x:Static starterNg:App.Loc}}" />
+                            <Slider x:Name="BrakeSpeedSlider" Minimum="0.4" MaxWidth="400" HorizontalAlignment="Left"
+                                    MinWidth="250" Maximum="3.0" TickFrequency="0.1" Value="1.0" />
+                        </StackPanel>
                     </StackPanel>
                 </ScrollViewer>
             </TabItem>
@@ -297,13 +346,52 @@
                 </ScrollViewer>
             </TabItem>
 
+            <!-- Advanced -->
+            <TabItem Header="{Binding [Advanced], Source={x:Static starterNg:App.Loc}}">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel Spacing="8" Orientation="Vertical" Margin="12">
+                        <CheckBox x:Name="CompressTexturesCb" Content="{Binding [CompressTextures], Source={x:Static starterNg:App.Loc}}" />
+                        <CheckBox x:Name="ScaleSpecularsCb" Content="{Binding [ScaleSpeculars], Source={x:Static starterNg:App.Loc}}" />
+                        <CheckBox x:Name="UseGLESCb" Content="{Binding [UseGLES], Source={x:Static starterNg:App.Loc}}" />
+                        <CheckBox x:Name="ShaderGammaCb" Content="{Binding [ShaderGamma], Source={x:Static starterNg:App.Loc}}" />
+                        <CheckBox x:Name="ScreenMipmapsCb" Content="{Binding [ScreenMipmaps], Source={x:Static starterNg:App.Loc}}" />
+                        <CheckBox x:Name="ExtendedModelConversionCb" Content="{Binding [ExtendedModelConversion], Source={x:Static starterNg:App.Loc}}" />
+                        <CheckBox x:Name="GfxResourceMoveCb" Content="{Binding [GfxResourceMove], Source={x:Static starterNg:App.Loc}}" />
+                        <CheckBox x:Name="GfxResourceSweepCb" Content="{Binding [GfxResourceSweep], Source={x:Static starterNg:App.Loc}}" />
+                        <StackPanel Spacing="8" Orientation="Horizontal">
+                            <TextBlock VerticalAlignment="Center" FontSize="14" Text="{Binding [TrainPhysicsThreads], Source={x:Static starterNg:App.Loc}}" />
+                            <Slider x:Name="TrainPhysicsThreadsSlider" Minimum="0" MaxWidth="400" HorizontalAlignment="Left"
+                                    MinWidth="250" Maximum="0" TickFrequency="1" IsSnapToTickEnabled="True" Value="0" />
+                            <Label VerticalAlignment="Center" FontSize="14" Content="{Binding #TrainPhysicsThreadsSlider.Value}" />
+                        </StackPanel>
+                        <CheckBox x:Name="IgnoreIrrelevantTrainsCb" Content="{Binding [IgnoreIrrelevantTrains], Source={x:Static starterNg:App.Loc}}" />
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+
             <!-- Starter -->
             <TabItem Header="{Binding [Starter], Source={x:Static starterNg:App.Loc}}">
                 <ScrollViewer VerticalScrollBarVisibility="Auto">
                     <StackPanel Spacing="8" Orientation="Vertical" Margin="12">
+                        <StackPanel Spacing="8" Orientation="Horizontal">
+                            <TextBlock VerticalAlignment="Center" Text="{Binding [SettingsProfile], Source={x:Static starterNg:App.Loc}}" />
+                            <ComboBox x:Name="ProfileCb" MinWidth="220" />
+                            <Button x:Name="ProfileApplyBtn" Content="{Binding [ProfileApply], Source={x:Static starterNg:App.Loc}}"
+                                    Click="ProfileApplyButton_OnClick" />
+                            <Button x:Name="ProfileSaveAsBtn" Content="{Binding [ProfileSaveAs], Source={x:Static starterNg:App.Loc}}"
+                                    Click="ProfileSaveAsButton_OnClick" />
+                        </StackPanel>
                         <CheckBox x:Name="AutoCloseStarterCb" Content="{Binding [AutoCloseStarter], Source={x:Static starterNg:App.Loc}}" />
                         <CheckBox x:Name="LargeThumbnailsCb" Content="{Binding [LargeThumbnails], Source={x:Static starterNg:App.Loc}}" />
                         <CheckBox x:Name="AutoExpandTreeCb" Content="{Binding [AutoExpandSceneryTree], Source={x:Static starterNg:App.Loc}}" />
+                        <StackPanel Spacing="8" Orientation="Horizontal">
+                            <TextBlock VerticalAlignment="Center" Text="{Binding [BatteryDefault], Source={x:Static starterNg:App.Loc}}" />
+                            <ComboBox x:Name="BatteryDefaultCb" MinWidth="220" SelectedIndex="0">
+                                <ComboBoxItem Content="{Binding [BatteryDefaultScenario], Source={x:Static starterNg:App.Loc}}" />
+                                <ComboBoxItem Content="{Binding [BatteryDefaultOff], Source={x:Static starterNg:App.Loc}}" />
+                                <ComboBoxItem Content="{Binding [BatteryDefaultOn], Source={x:Static starterNg:App.Loc}}" />
+                            </ComboBox>
+                        </StackPanel>
                     </StackPanel>
                 </ScrollViewer>
             </TabItem>

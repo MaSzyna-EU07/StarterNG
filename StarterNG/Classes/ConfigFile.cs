@@ -125,6 +125,28 @@ public sealed class ConfigFile
         }
     }
 
+    /// <summary>
+    /// Deactivates <paramref name="key"/> by turning its line into a comment,
+    /// preserving indentation, the key/value that was there and any trailing
+    /// comment. No-op if the key is not currently active.
+    /// </summary>
+    public void Remove(string key)
+    {
+        if (!_index.TryGetValue(key, out int i))
+            return;
+
+        SplitLine(_lines[i], out string indent, out _, out string value, out string comment);
+        var sb = new StringBuilder();
+        sb.Append(indent).Append("// ").Append(key);
+        if (value.Length > 0)
+            sb.Append(' ').Append(value);
+        if (comment.Length > 0)
+            sb.Append('\t').Append(comment);
+        _lines[i] = sb.ToString();
+
+        _index.Remove(key);
+    }
+
     public void SetBool(string key, bool value) => Set(key, value ? "yes" : "no");
     public void SetInt(string key, int value) =>
         Set(key, value.ToString(CultureInfo.InvariantCulture));
