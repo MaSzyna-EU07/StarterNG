@@ -256,8 +256,10 @@ public sealed class Settings
             return false;
         if (OperatingSystem.IsWindows())
             return ext == ".exe";
-        // Linux / macOS: no extension (eu07) or a known binary suffix
-        return ext.Length == 0 || ext is ".x86_64" or ".run" or ".appimage";
+        // Linux / macOS: no extension (eu07), a known binary suffix, or .exe
+        // (some builds - notably this project's own build-macos.sh - ship the
+        // macOS binary under the historical "eu07.exe" name).
+        return ext.Length == 0 || ext is ".exe" or ".x86_64" or ".run" or ".appimage";
     }
 
     private static readonly Encoding FileEncoding = ResolveEncoding();

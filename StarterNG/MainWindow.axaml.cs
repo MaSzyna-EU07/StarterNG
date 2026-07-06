@@ -105,7 +105,7 @@ public partial class MainWindow : Window
             trainset.Velocity = Settings.Instance.BatteryDefault switch
             {
                 BatteryDefault.AlwaysOff => 0f,
-                BatteryDefault.AlwaysOn  => trainset.OriginalVelocity < 0.2f ? 0.1f : trainset.OriginalVelocity,
+                BatteryDefault.AlwaysOn  => MathF.Abs(trainset.OriginalVelocity) < 0.01f ? 0.1f : trainset.OriginalVelocity,
                 _                        => trainset.OriginalVelocity
             };
         }
