@@ -222,11 +222,26 @@
     <String key="FeedbackPoKeys">PoKeys55</String>
     <String key="FeedbackSP">Serialport (COM)</String>
 
+    <String key="FeedbackPort">Adres portu LPT</String>
+
+    <String key="UartSection">Konfiguracja UART</String>
+    <String key="UartEnable">Włącz komunikację UART</String>
+    <String key="UartPort">Port szeregowy</String>
+    <String key="UartTune">Parametr strojenia</String>
+    <String key="UartDebug">Wypisuj dane debugowania w konsoli</String>
+    <String key="UartMain">Nastawnik główny</String>
+    <String key="UartScnd">Nastawnik manewrowy/pomocniczy</String>
+    <String key="UartTrain">Hamulec zespolony</String>
+    <String key="UartLocal">Hamulec lokomotywy</String>
+    <String key="UartRadioVolume">Głośność radiotelefonu</String>
+    <String key="UartRadioChannel">Kanał radiotelefonu</String>
+
     <String key="Others">Inne</String>
     <String key="SelectEXE">Wybór exe:</String>
     <String key="SelectEXEAuto">Wybierz automatycznie</String>
     <String key="DebugMode">Tryb testowy (debugmode)</String>
     <String key="VirtualShunting">Wirtualny manewrowy</String>
+    <String key="LogMissingVehicleFiles">Zapisuj w logu brakujące pliki pojazdów podczas eksportu</String>
 
     <String key="Graphic">Grafika</String>
     <String key="RenderEngine">Silnik renderowania</String>
@@ -243,14 +258,15 @@
     <String key="MaxTexCabResolution">Maksymalna rozdzielczość tekstur kabiny:</String>
     <String key="TexFilteringQuality">Jakość filtrowania tekstur:</String>
     <String key="Multisampling">Multisampling:</String>
+    <String key="DynamicLights">Dynamiczne źródła światła:</String>
     <String key="RenderRange">Zasięg renderowania:</String>
+    <String key="FpsLimitEnable">Ogranicz liczbę klatek na sekundę</String>
+    <String key="ShadowAngleLimit">Limit długości cienia</String>
+    <String key="FullscreenWindowed">Automatyczna rozdzielczość (pełny ekran bez obramowania)</String>
+    <String key="RenderAngleVulkan">Użyj renderera ANGLE Vulkan</String>
     <String key="VSync">VSync</String>
     <String key="SmokeDisplay">Wyświetlanie dymu</String>
     <String key="SmokeParticlesMultiplier">Mnożnik ilości cząsteczek dymu</String>
-
-    <String key="Postprocessing">Postprocessing</String>
-    <String key="PPReinhard">Reinhard</String>
-    <String key="PPACES">ACES</String>
 
     <String key="ChromaticAberration">Aberracja chromatyczna</String>
     <String key="MotionBlur">Rozmycie podczas ruchu</String>
@@ -276,7 +292,6 @@
     <String key="FieldOfView">Kąt widzenia</String>
     <String key="RenderScreens">Renderowanie ekranów komputerów pokładowych</String>
     <String key="RenderScreensThread">Renderowanie ekranów w osobnym wątku</String>
-    <String key="RenderScreensFramerate">Częstotliwość odświeżania ekranów komputerów pokładowych</String>
 
     <String key="Physics">Fizyka</String>
 
@@ -289,6 +304,9 @@
     <String key="KeepPrevLogs">Zachowuj poprzednie logi</String>
     <String key="DisplaySimulation">Wyświetlaj symulację</String>
     <String key="CrashDamage">Uszkodzenia przy zderzeniu</String>
+    <String key="Friction">Mnożnik tarcia</String>
+    <String key="BrakeStep">Czułość zaworu hamulcowego</String>
+    <String key="BrakeSpeed">Czułość zaworu FV4a</String>
 
     <String key="Sounds">Dżwięk</String>
     <String key="EnableSounds">Włącz dźwięk</String>
@@ -297,12 +315,31 @@
     <String key="VehiclesVolume">Głośność pojazdów</String>
     <String key="PositionedSoundsVolume">Głośność dżwięków pozycjonowanych</String>
     <String key="AmbientVolume">Głośność otoczenia</String>
-    <String key="VolumeDuringPause">Głośność podczas pauzy</String>
+
+    <String key="Advanced">Zaawansowane</String>
+    <String key="CompressTextures">Kompresuj tekstury TGA</String>
+    <String key="ScaleSpeculars">Skaluj odbicia specularne (kompatybilność ze starymi modelami)</String>
+    <String key="UseGLES">Używaj OpenGL ES</String>
+    <String key="ShaderGamma">Korekcja gamma w shaderach</String>
+    <String key="ScreenMipmaps">Generuj mipmapy dla tekstur ekranów kabinowych (Python)</String>
+    <String key="ExtendedModelConversion">Rozszerzona konwersja modeli E3D (eksperymentalne)</String>
+    <String key="GfxResourceMove">Ostrożne zarządzanie pamięcią tekstur</String>
+    <String key="GfxResourceSweep">Usuwaj nieużywane tekstury z pamięci GPU</String>
+    <String key="TrainPhysicsThreads">Wątki fizyki pojazdów (0 = wątek główny)</String>
+    <String key="IgnoreIrrelevantTrains">Pomijaj składy dekoracyjne przy starcie</String>
 
     <String key="Starter">Starter</String>
+    <String key="SettingsProfile">Profil ustawień:</String>
+    <String key="ProfileApply">Zastosuj</String>
+    <String key="ProfileSaveAs">Zapisz jako…</String>
+    <String key="ProfileNamePrompt">Nazwa profilu</String>
     <String key="AutoCloseStarter">Zamknij starter automatycznie</String>
     <String key="LargeThumbnails">Duże miniaturki</String>
     <String key="AutoExpandSceneryTree">Automatycznie rozwijanie drzewka scenerii</String>
+    <String key="BatteryDefault">Akumulator przy starcie:</String>
+    <String key="BatteryDefaultScenario">Domyślnie ze scenerii</String>
+    <String key="BatteryDefaultOff">Zawsze wyłączony</String>
+    <String key="BatteryDefaultOn">Zawsze włączony</String>
 
     <!-- Sterowanie / przypisania klawiszy -->
     <String key="Controls">Sterowanie</String>

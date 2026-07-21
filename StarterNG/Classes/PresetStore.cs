@@ -27,16 +27,32 @@ public sealed class PresetCollection
 /// <summary>
 /// The user's vehicle/consist "warehouse": named trainset presets persisted as JSON.
 /// Stored under the per-user config directory so it survives reinstalls:
-///   Windows: %appdata%\MaSzyna\starter\userpresets.json
-///   Unix:    ~/.config/MaSzyna/starter/userpresets.json
-/// (both resolved via <see cref="Environment.SpecialFolder.ApplicationData"/>).
+///   Windows: %APPDATA%\MaSzyna\starter\userpresets.json
+///   macOS:   ~/Library/Application Support/MaSzyna/starter/userpresets.json
+///   Linux:   ~/.config/MaSzyna/starter/userpresets.json
 /// All operations are best-effort and never throw.
 /// </summary>
 public static class PresetStore
 {
-    public static string FilePath { get; } = Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-        "MaSzyna", "starter", "userpresets.json");
+    private static string ResolvePath()
+    {
+        if (OperatingSystem.IsWindows())
+        {
+            string appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+            return Path.Combine(appData, "MaSzyna", "starter", "userpresets.json");
+        }
+        if (OperatingSystem.IsMacOS())
+        {
+            string home = Environment.GetEnvironmentVariable("HOME") ?? AppContext.BaseDirectory;
+            return Path.Combine(home, "Library", "Application Support", "MaSzyna", "starter", "userpresets.json");
+        }
+        {
+            string home = Environment.GetEnvironmentVariable("HOME") ?? AppContext.BaseDirectory;
+            return Path.Combine(home, ".config", "MaSzyna", "starter", "userpresets.json");
+        }
+    }
+
+    public static string FilePath { get; } = ResolvePath();
 
     // Source-generated metadata keeps (de)serialisation AOT/trim-safe, matching the
     // approach used for the vehicle database.

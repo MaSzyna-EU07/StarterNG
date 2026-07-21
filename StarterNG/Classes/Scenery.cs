@@ -94,7 +94,7 @@ public class Scenery
     /// Rebuilds the full .scn content with the (possibly modified) trainsets
     /// substituted back into their original positions.
     /// </summary>
-    public string BuildExportContent()
+    public string BuildExportContent(bool skipDecorTrainsets = false)
     {
         string result = _template;
 
@@ -105,7 +105,12 @@ public class Scenery
             result = RewriteWeather(result);
 
         for (int i = 0; i < Trainsets.Count; i++)
-            result = result.Replace("{{" + i + "}}", Trainsets[i].ToSceneryEntry());
+        {
+            string entry = skipDecorTrainsets && Trainsets[i].Decor
+                ? string.Empty
+                : Trainsets[i].ToSceneryEntry();
+            result = result.Replace("{{" + i + "}}", entry);
+        }
         return result;
     }
 
