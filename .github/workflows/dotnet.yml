@@ -1,0 +1,107 @@
+name: Build NativeAOT
+
+on:
+  push:
+    branches:
+      - main
+
+  pull_request:
+    branches:
+      - main
+
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  DOTNET_CLI_TELEMETRY_OPTOUT: 1
+  DOTNET_NOLOGO: true
+  PROJECT_PATH: StarterNG/StarterNG.csproj
+
+jobs:
+  publish:
+    name: ${{ matrix.name }}
+
+    strategy:
+      fail-fast: false
+
+      matrix:
+        include:
+          - name: Windows x64
+            os: windows-2022
+            rid: win-x64
+            artifact: StarterNG-windows-x64
+            package: artifacts/StarterNG-windows-x64.zip
+
+          - name: Linux x64
+            os: ubuntu-22.04
+            rid: linux-x64
+            artifact: StarterNG-linux-x64
+            package: artifacts/StarterNG-linux-x64.tar.gz
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Setup .NET 9
+        uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: 9.0.x
+
+      # NativeAOT on Linux needs a native compiler/linker toolchain.
+      - name: Install NativeAOT dependencies
+        if: runner.os == 'Linux'
+        shell: bash
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clang zlib1g-dev
+
+      - name: Restore
+        run: >
+          dotnet restore
+          "${{ env.PROJECT_PATH }}"
+          -r "${{ matrix.rid }}"
+
+      - name: Publish NativeAOT
+        run: >
+          dotnet publish
+          "${{ env.PROJECT_PATH }}"
+          -c Release
+          -r "${{ matrix.rid }}"
+          --self-contained true
+          --no-restore
+          -p:PublishAot=true
+          -p:PublishTrimmed=true
+          -o "publish/${{ matrix.rid }}"
+
+      - name: Package Windows build
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path "artifacts" | Out-Null
+
+          Compress-Archive `
+            -Path "publish/${{ matrix.rid }}/*" `
+            -DestinationPath "${{ matrix.package }}"
+
+      - name: Package Linux build
+        if: runner.os == 'Linux'
+        shell: bash
+        run: |
+          mkdir -p artifacts
+
+          tar \
+            -C "publish/${{ matrix.rid }}" \
+            -czf "${{ matrix.package }}" \
+            .
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: ${{ matrix.artifact }}
+          path: ${{ matrix.package }}
+          if-no-files-found: error
+          archive: false
