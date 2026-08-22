@@ -1,33 +1,33 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- StarterNG language file. Loaded at runtime from the lang/ folder next to the executable. -->
+<!-- StarterNG language file (Čeština). English base + chrome translations. -->
 <!-- Add a new language by copying this file and changing the code/name attributes below. -->
-<Language code="en" name="English">
+<Language code="cz" name="Čeština">
 
     <!-- Nav menu -->
-    <String key="NavScenarios">Scenarios</String>
-    <String key="NavDepot">Depot</String>
-    <String key="NavSettings">Settings</String>
+    <String key="NavScenarios">Scénáře</String>
+    <String key="NavDepot">Depo</String>
+    <String key="NavSettings">Nastavení</String>
     <String key="NavControls">Controls</String>
-    <String key="Help">Help</String>
-    <String key="HelpWiki">MaSzyna wiki</String>
+    <String key="Help">Nápověda</String>
+    <String key="HelpWiki">Wiki MaSzyna</String>
     <String key="HelpReadme">Readme</String>
-    <String key="PresetSort">Sort warehouse</String>
-    <String key="PresetSortName">By name</String>
-    <String key="PresetSortTrack">By track</String>
-    <String key="PresetImportMagazyn">Import magazyn.ini</String>
-    <String key="Version">Version:</String>
+    <String key="PresetSort">Řadit sklad</String>
+    <String key="PresetSortName">Podle názvu</String>
+    <String key="PresetSortTrack">Podle koleje</String>
+    <String key="PresetImportMagazyn">Importovat magazyn.ini</String>
+    <String key="Version">Verze:</String>
 
     <!-- General view -->
-    <String key="Sceneries">Sceneries</String>
-    <String key="Vehicles">Vehicles</String>
+    <String key="Sceneries">Scénáře</String>
+    <String key="Vehicles">Vozidla</String>
     <String key="ShowAiVehicles">AI vehicles</String>
     <String key="ShowDrivableOnly">Drivable only</String>
     <String key="ShowArchival">Archival sceneries</String>
     <String key="ScenarioDescription">Scenario description</String>
     <String key="SceneryDescription">Scenery description</String>
     <String key="TabDescription">Description</String>
-    <String key="Weather">Weather</String>
-    <String key="Timetable">Timetable</String>
+    <String key="Weather">Počasí</String>
+    <String key="Timetable">Jízdní řád</String>
     <String key="NoWeatherData">No weather data in the scenery.</String>
     <String key="NoTimetable">No timetable for the selected consist.</String>
     <String key="Time">Time</String>
@@ -52,8 +52,8 @@
     <String key="OvercastCloudy">Cloudy</String>
     <String key="OvercastStorm">Storm</String>
     <String key="WeatherHint">Weather changes are written to the scenery on launch.</String>
-    <String key="Consist">Consist</String>
-    <String key="Start">Start</String>
+    <String key="Consist">Souprava</String>
+    <String key="Start">Spustit</String>
     <String key="StartNoScenery">Select a scenery</String>
     <String key="StartNoTrain">Select a consist</String>
     <String key="StartNoStaff">No crew / passenger (hold Ctrl to start)</String>
@@ -77,7 +77,7 @@
     <String key="VehicleDatabase">Vehicle database</String>
     <String key="TextureBaseTitle">Rolling stock database</String>
     <String key="OpenTextureBase">Stock database…</String>
-    <String key="Search">Search...</String>
+    <String key="Search">Hledat...</String>
     <String key="LoadFromScenery">Load consist from scenery</String>
     <String key="NewConsist">New consist</String>
     <String key="SelectedVehicle">Selected vehicle</String>
@@ -217,9 +217,9 @@
     <String key="RandomizeTexturesRules">Edit randomization rules</String>
     <String key="RandomizeTexturesRulesHint">One rule per line, mini names separated by commas. Lines starting with # are comments.</String>
     <String key="RandomizeTexturesRulesSave">Save</String>
-    <String key="Cancel">Cancel</String>
-    <String key="Yes">Yes</String>
-    <String key="No">No</String>
+    <String key="Cancel">Zrušit</String>
+    <String key="Yes">Ano</String>
+    <String key="No">Ne</String>
     <String key="TabInfo">Info</String>
     <String key="HdrToneMap">HDR tone mapping</String>
     <String key="SettingsFileChangedTitle">Settings</String>

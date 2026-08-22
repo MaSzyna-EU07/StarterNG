@@ -9,6 +9,12 @@
     <String key="NavSettings">Ustawienia</String>
     <String key="NavControls">Sterowanie</String>
     <String key="Help">Pomoc</String>
+    <String key="HelpWiki">Wiki MaSzyna</String>
+    <String key="HelpReadme">Instrukcja (readme)</String>
+    <String key="PresetSort">Sortuj magazyn</String>
+    <String key="PresetSortName">Według nazwy</String>
+    <String key="PresetSortTrack">Według toru</String>
+    <String key="PresetImportMagazyn">Importuj magazyn.ini</String>
     <String key="Version">Wersja:</String>
 
     <!-- Widok ogolny -->
@@ -48,10 +54,29 @@
     <String key="WeatherHint">Zmiany pogody zostaną zapisane do scenerii przy uruchomieniu.</String>
     <String key="Consist">Zestawienie</String>
     <String key="Start">Uruchom</String>
+    <String key="StartNoScenery">Wybierz scenerię</String>
+    <String key="StartNoTrain">Wybierz skład</String>
+    <String key="StartNoStaff">Brak obsady / pasażera (Ctrl = start)</String>
+    <String key="RestoreWeather">Przywróć pogodę</String>
+    <String key="ReloadSceneries">Przeładuj</String>
+    <String key="OpenSceneryFolder">Otwórz folder</String>
+    <String key="OptionalIncludes">Elementy opcjonalne</String>
+    <String key="OpenTextureFolder">Otwórz folder tekstury</String>
+    <String key="CopyTextureName">Kopiuj nazwę</String>
+    <String key="CopyCoupler">Kopiuj sprzęg z poprzedniego</String>
+    <String key="ThermoAmbient">Chłodziwo w temp. otoczenia</String>
+    <String key="TextureInfo">Tekstura</String>
+    <String key="TexOperator">Przewoźnik</String>
+    <String key="TexStation">Stacja</String>
+    <String key="TexRevision">Data rew.</String>
+    <String key="TexAuthor">Autor</String>
+    <String key="TexPhoto">Zdjęcia</String>
     <String key="ShowLatestLogTooltip">Otwórz ostatni log symulatora</String>
 
     <!-- Lokomotywownia / tworzenie składu -->
     <String key="VehicleDatabase">Baza pojazdów</String>
+    <String key="TextureBaseTitle">Baza taboru</String>
+    <String key="OpenTextureBase">Baza taboru…</String>
     <String key="Search">Szukaj...</String>
     <String key="LoadFromScenery">Wczytaj skład ze scenerii</String>
     <String key="NewConsist">Nowy skład</String>
@@ -176,6 +201,37 @@
     <String key="Length">Długość</String>
     <String key="Mass">Masa</String>
     <String key="Load">Ładunek</String>
+    <String key="VehicleCount">Pojazdy</String>
+    <String key="Track">Tor</String>
+    <String key="EmptyTrainset">Wpis bez pojazdów. (Tor: {0})</String>
+    <String key="HideArchivalVehicles">Ukryj pojazdy archiwalne</String>
+    <String key="RemoveSelectedVehicle">Usuń pojazd</String>
+    <String key="RandomizeTextures">Losuj tekstury</String>
+    <String key="TipRandomizeTextures">Dobierz podobne tekstury według klasy / reguł</String>
+    <String key="RandomizeTexturesTitle">Zmiana tekstur</String>
+    <String key="RandomizeTexturesApply">Dopasuj</String>
+    <String key="RandomizeTexturesRevDiff">Różnica rewizji nie większa niż</String>
+    <String key="RandomizeTexturesVsCurrent">względem daty rewizji obecnej tekstury</String>
+    <String key="RandomizeTexturesVsYear">względem roku:</String>
+    <String key="RandomizeTexturesNoArchival">Nie losuj tekstur oznaczonych jako archiwalne</String>
+    <String key="RandomizeTexturesRules">Ustaw reguły losowania</String>
+    <String key="RandomizeTexturesRulesHint">Jedna reguła w linii, nazwy mini rozdzielone przecinkami. Linie z # są komentarzem.</String>
+    <String key="RandomizeTexturesRulesSave">Zapisz</String>
+    <String key="Cancel">Anuluj</String>
+    <String key="Yes">Tak</String>
+    <String key="No">Nie</String>
+    <String key="TabInfo">Informacje</String>
+    <String key="HdrToneMap">Tone mapping HDR</String>
+    <String key="SettingsFileChangedTitle">Ustawienia</String>
+    <String key="SettingsFileChanged">Plik eu07.ini został zmieniony poza starterem. Wczytać ponownie?</String>
+    <String key="AddAllCategory">Dodaj całą kategorię</String>
+    <String key="TipAddAllCategory">Dodaj wszystkie tekstury z bieżącej listy przeglądarki</String>
+    <String key="AddUniqueMmd">Dodaj unikalne MMD</String>
+    <String key="TipAddUniqueMmd">Dodaj po jednej teksturze na każdy model (MMD)</String>
+    <String key="RandomizeOrder">Losuj kolejność</String>
+    <String key="RandomizeOrientation">Losuj obrócenie</String>
+    <String key="TipRandomizeOrder">Przetasuj kolejność wagonów od wybranego pojazdu do końca</String>
+    <String key="TipRandomizeOrientation">Losowo obróć pojazdy od wybranego do końca</String>
     <String key="SelectVehicleHint">Wybierz pojazd w składzie, aby go edytować.</String>
     <String key="ComingSoon">Opcje edycji wkrótce.</String>
     <String key="Split">Rozdziel</String>
