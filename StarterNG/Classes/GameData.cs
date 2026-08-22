@@ -80,6 +80,17 @@ public sealed class GameData
         Loaded = true;
     }
 
+    /// <summary>Re-reads scenery/*.scn (Pascal actReloadScenarios).</summary>
+    public void ReloadSceneries(string sceneryDir = "scenery/")
+    {
+        Sceneries.Clear();
+        foreach (string file in EnumerateScenery(sceneryDir))
+        {
+            try { Sceneries.Add(new Scenery(file)); }
+            catch { /* skip */ }
+        }
+    }
+
     private static List<string> EnumerateScenery(string sceneryDir)
     {
         if (!Directory.Exists(sceneryDir))

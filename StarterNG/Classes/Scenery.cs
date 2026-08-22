@@ -1,15 +1,43 @@
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
+using StarterNG.Domain;
 
 namespace StarterNG.Classes;
+
+public sealed class SceneryAttachment
+{
+    public string FilePath = "";
+    public string Label = "";
+}
+
+public sealed class SceneryInclude
+{
+    public string FilePath = "";
+    public string Desc = "";
+    /// <summary>0 = default off, 1 = default on, 2 = terrain (auto if no .sbt).</summary>
+    public int Kind;
+    public bool Selected;
+}
 
 public class Scenery
 {
     public List<string> Lines;
     public List<Trainset> Trainsets;
+    public List<SceneryAttachment> Attachments = new();
+    public List<SceneryInclude> Includes = new();
+    /// <summary>
+    /// Names of <c>node … dynamic</c> entries outside trainsets (kept in the
+    /// template on export; collected so the depot can avoid name clashes).
+    /// </summary>
+    public List<string> LooseVehicleNames = new();
+    /// <summary>Parsed loose dynamics (Pascal <c>SCN.Vehicles</c>).</summary>
+    public List<Dynamic> LooseVehicles = new();
+    /// <summary>Parse / vehicle faults for the Info tab (Pascal FaultList).</summary>
+    public List<string> Faults = new();
     public string Group;
     public string Path;
 
@@ -24,10 +52,16 @@ public class Scenery
 
     // Weather / environment. Like the original Starter, these are editable and are
     // written into the scenery's "config" block on launch (see RewriteWeather).
-    // Defaults mirror the original (15 °C, day 0, 10:30, clear sky).
-    public string WeatherTime = "10:30"; // h:mm   -> "time"/"scenario.time.override"
+    //
+    // Two clocks, matching Pascal TConfig.StartTime / TConfig.Time:
+    //   Time                  -> classic "time … endtime" (from the SCN; UI does not edit it)
+    //   ScenarioTimeOverride  -> "scenario.time.override" (what the Weather picker edits)
+    // Defaults: classic start 10:30; override falls back to "now" when the SCN has neither.
+    public string Time = "10:30"; // h:mm   -> "time … endtime"
+    public string ScenarioTimeOverride = "10:30"; // h:mm   -> "scenario.time.override"
     public int Day = 0;                  // "movelight <day>" (day of year / season)
     public double Temperature = 15;      // "scenario.weather.temperature"
+    public int FogStart = 10;            // atmo fog start (metres)
     public int FogEnd = 2000;            // visibility in metres (atmo fog range)
     public double Overcast = 0;          // atmo overcast factor (-1.5 .. 1.5)
 
@@ -37,9 +71,33 @@ public class Scenery
     /// <summary>Set once the user edits the weather, so export rewrites the config.</summary>
     public bool WeatherDirty;
 
+    // Snapshot of weather as loaded from the SCN (Pascal actRestoreWeather).
+    private string _origTime = "10:30";
+    private string _origOverride = "10:30";
+    private int _origDay;
+    private double _origTemperature = 15;
+    private int _origFogEnd = 2000;
+    private double _origOvercast;
+
     // The file content with each trainset block replaced by a {{i}} placeholder,
     // used to rebuild the .scn on export.
     private readonly string _template;
+
+    /// <summary>Display label: //$n when set (with @token i18n), otherwise the file name.</summary>
+    public string DisplayName
+    {
+        get
+        {
+            if (!string.IsNullOrWhiteSpace(Name))
+                return SceneryI18n.T(Name);
+            return System.IO.Path.GetFileNameWithoutExtension(Path);
+        }
+    }
+
+    /// <summary>//$d lines with @token translation applied.</summary>
+    public string LocalizedDescription =>
+        string.IsNullOrEmpty(Description) ? "" :
+        string.Join("\n", Description.Split('\n').Select(SceneryI18n.T));
 
     // Lazily resolved, cached path to the //$i image on disk (null if not found).
     private string _imagePath;
@@ -68,7 +126,10 @@ public class Scenery
         // weather/environment is read from the raw text before trainset blocks
         // are stripped out below (the atmosphere commands live outside trainsets)
         ParseWeather(content);
+        SnapshotWeather();
 
+        ParseAttachments(content);
+        content = ParseAndStripOptionalIncludes(content);
 
         // parsing trainsets
         List<string> trainsetEntries = new  List<string>();
@@ -82,12 +143,73 @@ public class Scenery
             trainsetEntries.Add(match.Value);
             return $"{{{{{idx++}}}}}";
         });
+        content = ExtractLooseVehicles(content);
         _template = content;
 
         // 1:1 with placeholders - the Trainset ctor never throws (unparsable
         // blocks are kept verbatim), so indices stay aligned for export.
         foreach (string trainsetEntry in trainsetEntries)
-            Trainsets.Add(new Trainset(trainsetEntry));
+        {
+            var ts = new Trainset(trainsetEntry);
+            Trainsets.Add(ts);
+            if (!ts.Parsed)
+                Faults.Add($"# trainset parse fault: {ts.Name} ({ts.Track})");
+        }
+    }
+
+    // Pull standalone node…dynamic blocks out of the template (Pascal SCN.Vehicles)
+    // so export can re-emit them via PrepareNode(false) and names stay editable.
+    private string ExtractLooseVehicles(string content)
+    {
+        LooseVehicles.Clear();
+        LooseVehicleNames.Clear();
+        var inv = System.Globalization.CultureInfo.InvariantCulture;
+
+        return Regex.Replace(
+            content,
+            @"(?is)\bnode\s+(\S+)\s+(\S+)\s+(\S+)\s+dynamic\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)((?:\s+(?!enddynamic)\S+)*)\s*enddynamic\b",
+            m =>
+            {
+                string name = m.Groups[3].Value;
+                if (name.StartsWith("{{", StringComparison.Ordinal))
+                    return m.Value;
+                try
+                {
+                    var d = new Dynamic
+                    {
+                        RangeMax = float.Parse(m.Groups[1].Value, inv),
+                        RangeMin = float.Parse(m.Groups[2].Value, inv),
+                        Name = name,
+                        DataFolder = m.Groups[4].Value,
+                        SkinFile = m.Groups[5].Value,
+                        MmdFile = m.Groups[6].Value,
+                        PathName = m.Groups[7].Value,
+                        Offset = float.Parse(m.Groups[8].Value, inv),
+                        DriverType = m.Groups[9].Value.ToLowerInvariant() switch
+                        {
+                            "headdriver" => eDriverType.Headdriver,
+                            "reardriver" => eDriverType.Reardriver,
+                            "passenger" => eDriverType.Passenger,
+                            _ => eDriverType.Nobody
+                        },
+                        HasVelocity = true,
+                        Velocity = float.Parse(m.Groups[10].Value, inv)
+                    };
+                    var trailing = m.Groups[11].Value
+                        .Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries)
+                        .ToList();
+                    d.ReadTrailing(trailing);
+                    LooseVehicles.Add(d);
+                    LooseVehicleNames.Add(d.Name);
+                    return "\n";
+                }
+                catch
+                {
+                    Faults.Add($"# loose dynamic parse fault: {name}");
+                    LooseVehicleNames.Add(name);
+                    return m.Value;
+                }
+            });
     }
 
     /// <summary>
@@ -98,11 +220,10 @@ public class Scenery
     {
         string result = _template;
 
-        // Inject the (edited) weather into the config block before substituting
-        // trainsets, so the {{i}} placeholders shield the trainset text from the
-        // weather rewrite. Only done when the user actually changed the weather.
         if (WeatherDirty)
             result = RewriteWeather(result);
+
+        result = InjectIncludes(result);
 
         for (int i = 0; i < Trainsets.Count; i++)
         {
@@ -111,7 +232,118 @@ public class Scenery
                 : Trainsets[i].ToSceneryEntry();
             result = result.Replace("{{" + i + "}}", entry);
         }
+
+        if (LooseVehicles.Count > 0)
+            result = AppendLooseVehicles(result);
+
         return result;
+    }
+
+    private string AppendLooseVehicles(string text)
+    {
+        var sb = new StringBuilder();
+        foreach (var v in LooseVehicles)
+            sb.Append(v.ToLooseNode());
+        if (sb.Length == 0) return text;
+
+        var fi = Regex.Match(text, @"\bFirstInit\b", RegexOptions.IgnoreCase);
+        if (fi.Success)
+            return text[..fi.Index] + sb + text[fi.Index..];
+        return text + sb;
+    }
+
+    private void ParseAttachments(string content)
+    {
+        Attachments.Clear();
+        foreach (Match m in Regex.Matches(content, @"^//\$f\b[ \t]*([^\r\n]*)", RegexOptions.Multiline))
+        {
+            string rest = m.Groups[1].Value.Trim();
+            if (rest.Length == 0) continue;
+            string[] parts = rest.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries);
+            // "$f XX path label…" (Pascal) or "$f path label"
+            if (parts.Length >= 3 && parts[0].Length <= 2)
+                Attachments.Add(new SceneryAttachment
+                {
+                    FilePath = parts[1],
+                    Label = string.Join(" ", parts.Skip(2))
+                });
+            else if (parts.Length >= 2)
+                Attachments.Add(new SceneryAttachment
+                {
+                    FilePath = parts[0],
+                    Label = string.Join(" ", parts.Skip(1))
+                });
+            else
+                Attachments.Add(new SceneryAttachment
+                {
+                    FilePath = parts[0],
+                    Label = System.IO.Path.GetFileName(parts[0])
+                });
+        }
+    }
+
+    // Pulls include … end //$optional… … endoptional out of the template so Start
+    // can re-inject only the checked ones (Pascal ParseInc / actStartExecute).
+    private string ParseAndStripOptionalIncludes(string content)
+    {
+        Includes.Clear();
+        return Regex.Replace(
+            content,
+            @"include\s+(\S+(?:\s+\S+)*?)\s+end\s*//[^\r\n]*\$optional([^\r\n]*)\r?\n([\s\S]*?)endoptional\b",
+            m =>
+            {
+                string incPath = Regex.Replace(m.Groups[1].Value.Trim(), @"\s+", " ");
+                string raw = m.Groups[2].Value.Trim().TrimStart(',', ' ');
+                string[] par = raw.Split(new[] { ',', '|', ';' },
+                    StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+
+                int kind = 1;
+                string desc = incPath;
+                if (par.Length >= 1 && int.TryParse(par[0], out int k))
+                    kind = k;
+                if (par.Length >= 2)
+                    desc = par[1];
+
+                Includes.Add(new SceneryInclude
+                {
+                    FilePath = incPath,
+                    Desc = desc,
+                    Kind = kind,
+                    Selected = kind == 1
+                });
+                return " ";
+            },
+            RegexOptions.IgnoreCase);
+    }
+
+    private string InjectIncludes(string text)
+    {
+        if (Includes.Count == 0)
+            return text;
+
+        var sb = new StringBuilder();
+        string sbt = System.IO.Path.ChangeExtension(Path, ".sbt");
+        bool hasSbt = File.Exists(sbt);
+
+        foreach (var inc in Includes)
+        {
+            if (inc.Kind == 2)
+            {
+                if (!hasSbt)
+                    sb.Append("include ").Append(inc.FilePath).Append(" end\r\n");
+                continue;
+            }
+            if (inc.Selected)
+                sb.Append("include ").Append(inc.FilePath).Append(" end\r\n");
+        }
+
+        if (sb.Length == 0)
+            return text;
+
+        var fi = Regex.Match(text, @"\bFirstInit\b", RegexOptions.IgnoreCase);
+        if (fi.Success)
+            return text[..fi.Index] + sb + text[fi.Index..];
+        return sb + text;
     }
 
     /// <summary>
@@ -121,15 +353,27 @@ public class Scenery
     /// </summary>
     private void ParseWeather(string content)
     {
-        // start time: "scenario.time.override h:mm" wins, else top-level "time h:mm"
-        var ovr = Regex.Match(content, @"(?i)scenario\.time\.override\s+(\d{1,2})[:.](\d{2})");
-        var time = ovr.Success
-            ? ovr
-            : Regex.Match(content, @"(?im)^\s*time\s+(\d{1,2})[:.](\d{2})\b");
+        // Classic "time h:mm" seeds both clocks (Pascal: Config.Time + Config.StartTime).
+        // "scenario.time.override" seeds only the UI clock (Pascal ignored it on load;
+        // we honour it so a previously exported $scn round-trips correctly).
+        var time = Regex.Match(content, @"(?im)^\s*time\s+(\d{1,2})[:.](\d{2})\b");
         if (time.Success)
         {
-            WeatherTime = $"{time.Groups[1].Value.PadLeft(2, '0')}:{time.Groups[2].Value}";
+            Time = $"{time.Groups[1].Value.PadLeft(2, '0')}:{time.Groups[2].Value}";
+            ScenarioTimeOverride = Time;
+        }
+
+        var ovr = Regex.Match(content, @"(?i)scenario\.time\.override\s+(\d{1,2})[:.](\d{2})");
+        if (ovr.Success)
+        {
+            ScenarioTimeOverride = $"{ovr.Groups[1].Value.PadLeft(2, '0')}:{ovr.Groups[2].Value}";
             HasWeather = true;
+        }
+        else if (!time.Success)
+        {
+            // No clock in the SCN → UI shows "now", classic export stays 10:30 (Pascal).
+            var now = System.DateTime.Now;
+            ScenarioTimeOverride = $"{now.Hour:D2}:{now.Minute:D2}";
         }
 
         // "movelight <day>" - day of the year (sun elevation / season)
@@ -151,14 +395,21 @@ public class Scenery
         }
 
         // "atmo R G B fogStart fogEnd R G B overcast endatmo"
+        // Pascal ParseAtmo: FogEnd := RandomRange(FogStart, FogEnd).
         var atmo = Regex.Match(content, @"(?is)\batmo\b(.*?)\bendatmo\b");
         if (atmo.Success)
         {
             var nums = Regex.Matches(atmo.Groups[1].Value, @"-?\d+(?:\.\d+)?")
                 .Select(m => m.Value).ToList();
-            if (nums.Count >= 5 && int.TryParse(nums[4], out int fog))
+            if (nums.Count >= 5 &&
+                int.TryParse(nums[3], out int fogStart) &&
+                int.TryParse(nums[4], out int fogEnd))
             {
-                FogEnd = fog;
+                FogStart = Math.Clamp(fogStart, 10, 2500);
+                fogEnd = Math.Clamp(fogEnd, FogStart, 2500);
+                FogEnd = fogEnd > FogStart
+                    ? Random.Shared.Next(FogStart, fogEnd + 1)
+                    : fogEnd;
                 HasWeather = true;
             }
             if (nums.Count >= 6 &&
@@ -166,6 +417,28 @@ public class Scenery
                     System.Globalization.CultureInfo.InvariantCulture, out double oc))
                 Overcast = oc;
         }
+    }
+
+    private void SnapshotWeather()
+    {
+        _origTime = Time;
+        _origOverride = ScenarioTimeOverride;
+        _origDay = Day;
+        _origTemperature = Temperature;
+        _origFogEnd = FogEnd;
+        _origOvercast = Overcast;
+    }
+
+    /// <summary>Restores weather fields to the values parsed from the SCN file.</summary>
+    public void RestoreWeather()
+    {
+        Time = _origTime;
+        ScenarioTimeOverride = _origOverride;
+        Day = _origDay;
+        Temperature = _origTemperature;
+        FogEnd = _origFogEnd;
+        Overcast = _origOvercast;
+        WeatherDirty = true;
     }
 
     /// <summary>
@@ -188,12 +461,13 @@ public class Scenery
             s = Regex.Replace(s, @"(?i)scenario\.time\.override\s+\S+", " ");
 
             var inv = System.Globalization.CultureInfo.InvariantCulture;
+            // Override = picker value; classic time = original SCN start (unchanged by UI).
             string config =
                 "config\r\n" +
                 $"movelight {Day}\r\n" +
                 $"scenario.weather.temperature {Temperature.ToString(inv)}\r\n" +
-                $"scenario.time.override {WeatherTime}\r\n" +
-                $"time {WeatherTime} 0 0 endtime\r\n" +
+                $"scenario.time.override {ScenarioTimeOverride}\r\n" +
+                $"time {Time} 0 0 endtime\r\n" +
                 $"atmo 0 0 0 {FogEnd} {FogEnd} 0 0 0 {Overcast.ToString(inv)} endatmo\r\n" +
                 "endconfig\r\n";
 

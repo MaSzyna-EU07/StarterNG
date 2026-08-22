@@ -34,6 +34,12 @@ public class Trainset
     /// <summary>True when the block carries the //$decor flag (decoration, not drivable).</summary>
     public bool Decor;
 
+    /// <summary>Loading-screen logo key from <c>//$il</c>.</summary>
+    public string? Logo;
+
+    /// <summary>Optional trainset mini from <c>//$it</c>.</summary>
+    public string? Mini;
+
     public Trainset(string trainsetEntry)
     {
         RawEntry = trainsetEntry;
@@ -68,6 +74,14 @@ public class Trainset
         );
         if (match.Success)
             this.Description = match.Groups[1].Value.Trim();
+
+        var logo = Regex.Match(trainsetEntry, @"^\s*//\$il\b[ \t]*([^\r\n]*)", RegexOptions.Multiline);
+        if (logo.Success)
+            Logo = logo.Groups[1].Value.Trim();
+
+        var mini = Regex.Match(trainsetEntry, @"^\s*//\$it\b[ \t]*([^\r\n]*)", RegexOptions.Multiline);
+        if (mini.Success)
+            Mini = mini.Groups[1].Value.Trim();
         
         // parse trainset
         
@@ -145,14 +159,27 @@ public class Trainset
 
     public string GetTrainsetEntry()
     {
-        string entry = "";
+        // Starter metadata comments (parsed for filters/UI). Pascal's launch rewrite
+        // omits them from $scn; we keep them so a regenerated block stays filterable
+        // if the template is re-opened or compared.
+        var sb = new StringBuilder();
+        if (Decor)
+            sb.Append("//$decor\n");
+        if (!string.IsNullOrEmpty(Description))
+            sb.Append("//$o ").Append(Description).Append('\n');
+        if (!string.IsNullOrEmpty(Logo))
+            sb.Append("//$il ").Append(Logo).Append('\n');
+        if (!string.IsNullOrEmpty(Mini))
+            sb.Append("//$it ").Append(Mini).Append('\n');
 
-        entry += "trainset ";
-        entry += this.Name + " ";
-        entry += this.Track + " ";
-        entry += this.Offset.ToString(CultureInfo.InvariantCulture) + " ";
-        entry += this.Velocity.ToString(CultureInfo.InvariantCulture) + " ";
-        entry += "\n";
+        sb.Append("trainset ");
+        sb.Append(Name).Append(' ');
+        sb.Append(Track).Append(' ');
+        sb.Append(Offset.ToString(CultureInfo.InvariantCulture)).Append(' ');
+        sb.Append(Velocity.ToString(CultureInfo.InvariantCulture));
+        sb.Append('\n');
+
+        string entry = sb.ToString();
         foreach (Dynamic vehicle in Vehicles)
         {
             string driverType = "";
@@ -323,6 +350,35 @@ public class Dynamic
         MiniName = MiniName,
         Flipped = Flipped
     };
+
+    /// <summary>Pascal <c>PrepareNode(..., TrainSet=False)</c>.</summary>
+    public string ToLooseNode()
+    {
+        string driver = DriverType switch
+        {
+            eDriverType.Headdriver => "headdriver",
+            eDriverType.Reardriver => "reardriver",
+            eDriverType.Passenger => "passenger",
+            _ => "nobody"
+        };
+        string path = string.IsNullOrEmpty(PathName) ? "none" : PathName;
+        string vel = (HasVelocity ? Velocity : 0f).ToString(CultureInfo.InvariantCulture);
+        return
+            $"node {RangeMax.ToString(CultureInfo.InvariantCulture)} " +
+            $"{RangeMin.ToString(CultureInfo.InvariantCulture)} {Name} dynamic " +
+            $"{DataFolder} {SkinFile} {MmdFile} {path} " +
+            $"{Offset.ToString(CultureInfo.InvariantCulture)} {driver} {vel}" +
+            $"{WriteTrailing()} enddynamic\n";
+    }
+}
+
+/// <summary>One entry in the depot consist: a single vehicle or a locked multi-car unit.</summary>
+public sealed class ConsistItem
+{
+    public List<Dynamic> Cars { get; set; } = new();
+    public bool Grouped { get; set; }
+    public bool Flipped { get; set; }
+    public eDriverType Driver { get; set; } = eDriverType.Nobody;
 }
 
 /// <summary>
@@ -412,6 +468,17 @@ public sealed class Coupling
         Parameters.RemoveAll(p => p.StartsWith("W", StringComparison.Ordinal));
         if (wheels != null && !wheels.IsEmpty)
             Parameters.Add(wheels.ToParameter());
+    }
+
+    /// <summary>Coolant at ambient temperature (<c>.TA</c>), like Pascal ThermoDynamic.</summary>
+    public bool ThermoDynamic
+    {
+        get => Parameters.Exists(p => p.Equals("TA", StringComparison.OrdinalIgnoreCase));
+        set
+        {
+            Parameters.RemoveAll(p => p.Equals("TA", StringComparison.OrdinalIgnoreCase));
+            if (value) Parameters.Add("TA");
+        }
     }
 
     public Coupling Clone() => new()
