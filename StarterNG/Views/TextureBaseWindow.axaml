@@ -1,0 +1,46 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:starterNg="clr-namespace:StarterNG"
+        x:Class="StarterNG.Views.TextureBaseWindow"
+        x:CompileBindings="False"
+        Title="{Binding [TextureBaseTitle], Source={x:Static starterNg:App.Loc}}"
+        Width="980" Height="560"
+        WindowStartupLocation="CenterOwner"
+        MinWidth="720" MinHeight="400">
+    <DockPanel Margin="10">
+        <Grid DockPanel.Dock="Top" ColumnDefinitions="*,*,*,*" RowDefinitions="Auto,Auto,Auto"
+              ColumnSpacing="8" RowSpacing="6" Margin="0,0,0,8">
+            <CheckBox Name="fNameOn" Grid.Row="0" Grid.Column="0" Content="{Binding [TextureInfo], Source={x:Static starterNg:App.Loc}}" />
+            <TextBox Name="fName" Grid.Row="0" Grid.Column="1" Watermark="{Binding [Search], Source={x:Static starterNg:App.Loc}}" />
+            <CheckBox Name="fOpOn" Grid.Row="0" Grid.Column="2" Content="{Binding [TexOperator], Source={x:Static starterNg:App.Loc}}" />
+            <TextBox Name="fOp" Grid.Row="0" Grid.Column="3" />
+
+            <CheckBox Name="fMiniOn" Grid.Row="1" Grid.Column="0" Content="{Binding [Class], Source={x:Static starterNg:App.Loc}}" />
+            <TextBox Name="fMini" Grid.Row="1" Grid.Column="1" />
+            <CheckBox Name="fAuthorOn" Grid.Row="1" Grid.Column="2" Content="{Binding [TexAuthor], Source={x:Static starterNg:App.Loc}}" />
+            <TextBox Name="fAuthor" Grid.Row="1" Grid.Column="3" />
+
+            <CheckBox Name="fStationOn" Grid.Row="2" Grid.Column="0" Content="{Binding [TexStation], Source={x:Static starterNg:App.Loc}}" />
+            <TextBox Name="fStation" Grid.Row="2" Grid.Column="1" />
+            <CheckBox Name="fPhotoOn" Grid.Row="2" Grid.Column="2" Content="{Binding [TexPhoto], Source={x:Static starterNg:App.Loc}}" />
+            <TextBox Name="fPhoto" Grid.Row="2" Grid.Column="3" />
+        </Grid>
+
+        <TextBlock Name="statusText" DockPanel.Dock="Bottom" Margin="0,6,0,0"
+                   FontSize="11" Opacity="0.75" />
+
+        <ListBox Name="textureList" DoubleTapped="TextureList_OnDoubleTapped">
+            <ListBox.ItemTemplate>
+                <DataTemplate>
+                    <Grid ColumnDefinitions="220,*,160,100,140" ColumnSpacing="8">
+                        <TextBlock Grid.Column="0" Text="{Binding Skin}" TextTrimming="CharacterEllipsis" />
+                        <TextBlock Grid.Column="1" Text="{Binding Mini}" Opacity="0.85" TextTrimming="CharacterEllipsis" />
+                        <TextBlock Grid.Column="2" Text="{Binding Operator}" Opacity="0.85" TextTrimming="CharacterEllipsis" />
+                        <TextBlock Grid.Column="3" Text="{Binding Revision}" Opacity="0.85" />
+                        <TextBlock Grid.Column="4" Text="{Binding Author}" Opacity="0.75" TextTrimming="CharacterEllipsis" />
+                    </Grid>
+                </DataTemplate>
+            </ListBox.ItemTemplate>
+        </ListBox>
+    </DockPanel>
+</Window>

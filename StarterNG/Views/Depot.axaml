@@ -24,6 +24,11 @@
         <HeaderedContentControl Grid.RowSpan="2" Theme="{StaticResource GroupBox}"
                                 Header="{Binding [VehicleDatabase], Source={x:Static starterNg:App.Loc}}">
             <DockPanel LastChildFill="True">
+                <Button Name="textureBaseButton" DockPanel.Dock="Top" Classes="Basic" FontSize="11"
+                        Margin="0,0,0,6" Padding="8,2" Cursor="Hand"
+                        HorizontalAlignment="Left"
+                        Click="TextureBaseButton_OnClick"
+                        Content="{Binding [OpenTextureBase], Source={x:Static starterNg:App.Loc}}" />
                 <Grid DockPanel.Dock="Top" ColumnDefinitions="*,*" ColumnSpacing="6" Margin="0,0,0,6">
                     <ComboBox Name="categoryCombo" Grid.Column="0" HorizontalAlignment="Stretch"
                               PlaceholderText="{Binding [Category], Source={x:Static starterNg:App.Loc}}"
@@ -34,12 +39,25 @@
                               PointerWheelChanged="Combo_OnPointerWheel"
                               SelectionChanged="ClassCombo_OnSelectionChanged" />
                 </Grid>
-                <TextBox Name="searchBox" DockPanel.Dock="Top" Margin="0,0,0,8"
+                <TextBox Name="searchBox" DockPanel.Dock="Top" Margin="0,0,0,6"
                          Watermark="{Binding [Search], Source={x:Static starterNg:App.Loc}}"
                          TextChanged="SearchBox_OnTextChanged" />
+                <CheckBox Name="hideArchivalCheck" DockPanel.Dock="Top" Margin="0,0,0,8"
+                          Content="{Binding [HideArchivalVehicles], Source={x:Static starterNg:App.Loc}}"
+                          IsCheckedChanged="HideArchivalCheck_OnChanged" />
 
                 <!-- Mini preview of the selected entry + the single Add button.
                      Both are docked at the bottom, under the flat vehicle list. -->
+                <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal" Spacing="4" Margin="0,4,0,0">
+                    <Button Name="addAllCategoryButton" Classes="Flat" FontSize="11" Padding="6,2"
+                            Cursor="Hand" Click="AddAllCategoryButton_OnClick"
+                            Content="{Binding [AddAllCategory], Source={x:Static starterNg:App.Loc}}"
+                            ToolTip.Tip="{Binding [TipAddAllCategory], Source={x:Static starterNg:App.Loc}}" />
+                    <Button Name="addUniqueMmdButton" Classes="Flat" FontSize="11" Padding="6,2"
+                            Cursor="Hand" Click="AddUniqueMmdButton_OnClick"
+                            Content="{Binding [AddUniqueMmd], Source={x:Static starterNg:App.Loc}}"
+                            ToolTip.Tip="{Binding [TipAddUniqueMmd], Source={x:Static starterNg:App.Loc}}" />
+                </StackPanel>
                 <Button Name="addVehicleButton" DockPanel.Dock="Bottom" Classes="Flat Accent"
                         HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
                         Margin="0,8,0,0" IsEnabled="False" Cursor="Hand"
@@ -48,16 +66,19 @@
                 <Border Name="miniPreviewPanel" DockPanel.Dock="Bottom" Height="62" Margin="0,6,0,0"
                         Background="{StaticResource CarbonInputBg}"
                         BorderBrush="{StaticResource CarbonBorderLight}" BorderThickness="1"
-                        CornerRadius="2">
+                        CornerRadius="2" Cursor="Hand"
+                        PointerPressed="MiniPreview_OnPointerPressed">
                     <Image Name="miniPreview" Stretch="Uniform" Margin="6" />
                 </Border>
+                <StackPanel Name="textureInfoPanel" DockPanel.Dock="Bottom" Margin="0,4,0,0" Spacing="1" />
 
                 <!-- Flat list of vehicle entries (plain text, no expanders).
                      Selecting one shows its mini and enables Add; double-click
                      replaces the selected consist vehicle. -->
                 <ListBox Name="vehicleListBox" Classes="Compact"
                          SelectionChanged="VehicleListBox_OnSelectionChanged"
-                         DoubleTapped="VehicleListBox_OnDoubleTapped" />
+                         DoubleTapped="VehicleListBox_OnDoubleTapped"
+                         PointerPressed="VehicleListBox_OnPointerPressed" />
             </DockPanel>
         </HeaderedContentControl>
 
@@ -78,6 +99,11 @@
         <HeaderedContentControl Grid.Column="1" Grid.Row="1" Theme="{StaticResource GroupBox}"
                                 Header="{Binding [SelectedVehicle], Source={x:Static starterNg:App.Loc}}">
             <DockPanel LastChildFill="True">
+                <Button Name="removeVehicleButton" DockPanel.Dock="Bottom" Classes="Flat"
+                        HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
+                        Margin="0,8,0,0" IsEnabled="False" Cursor="Hand"
+                        Click="RemoveVehicleButton_OnClick"
+                        Content="{Binding [RemoveSelectedVehicle], Source={x:Static starterNg:App.Loc}}" />
                 <TabControl>
                     <TabItem Header="{Binding [Brakes], Source={x:Static starterNg:App.Loc}}">
                         <ScrollViewer VerticalScrollBarVisibility="Auto">
@@ -102,10 +128,26 @@
         <HeaderedContentControl Grid.Row="2" Grid.ColumnSpan="2" Theme="{StaticResource GroupBox}"
                                 Header="{Binding [Consist], Source={x:Static starterNg:App.Loc}}">
             <DockPanel LastChildFill="True">
-                <!-- Train totals computed from the .fiz files -->
-                <TextBlock Name="trainStats" DockPanel.Dock="Top" FontSize="12"
-                           Opacity="0.85" Margin="0,0,0,6" />
-                <Panel>
+                <!-- Train totals + randomize tools -->
+                <DockPanel DockPanel.Dock="Top" Margin="0,0,0,6">
+                    <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="4">
+                        <Button Name="randomTexturesButton" Classes="Basic" FontSize="11"
+                                Padding="8,2" Cursor="Hand" Click="RandomTexturesButton_OnClick"
+                                Content="{Binding [RandomizeTextures], Source={x:Static starterNg:App.Loc}}"
+                                ToolTip.Tip="{Binding [TipRandomizeTextures], Source={x:Static starterNg:App.Loc}}" />
+                        <Button Name="randomOrderButton" Classes="Basic" FontSize="11"
+                                Padding="8,2" Cursor="Hand" Click="RandomOrderButton_OnClick"
+                                Content="{Binding [RandomizeOrder], Source={x:Static starterNg:App.Loc}}"
+                                ToolTip.Tip="{Binding [TipRandomizeOrder], Source={x:Static starterNg:App.Loc}}" />
+                        <Button Name="randomOrientButton" Classes="Basic" FontSize="11"
+                                Padding="8,2" Cursor="Hand" Click="RandomOrientButton_OnClick"
+                                Content="{Binding [RandomizeOrientation], Source={x:Static starterNg:App.Loc}}"
+                                ToolTip.Tip="{Binding [TipRandomizeOrientation], Source={x:Static starterNg:App.Loc}}" />
+                    </StackPanel>
+                    <TextBlock Name="trainStats" FontSize="12" Opacity="0.85"
+                               TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+                </DockPanel>
+                <Panel Name="consistDropTarget">
                     <TextBlock Name="emptyHint" VerticalAlignment="Center" HorizontalAlignment="Center"
                                TextWrapping="Wrap" MaxWidth="520" Opacity="0.6" TextAlignment="Center"
                                Text="{Binding [ConsistEmpty], Source={x:Static starterNg:App.Loc}}" />

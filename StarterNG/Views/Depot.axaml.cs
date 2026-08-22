@@ -3,14 +3,18 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
+using Avalonia.Input.Platform;
 using Avalonia.Layout;
 using Avalonia.Media;
 using Avalonia.Media.Imaging;
 using Avalonia.Threading;
+using Avalonia.VisualTree;
 using StarterNG.Classes;
+using StarterNG.Domain;
 
 namespace StarterNG.Views;
 
@@ -30,7 +34,8 @@ public partial class Depot : UserControl
 
     // Shared, size-limited thumbnail cache (decoded down to display height).
     private readonly Dictionary<string, Bitmap?> _miniCache = new();
-    private const int ConsistThumbHeight = 34;
+    private int ConsistThumbHeight =>
+        StarterNG.Classes.Settings.Instance.LargeThumbnails ? 68 : 34;
 
     private readonly Cursor _hand = new(StandardCursorType.Hand);
     private int _nameCounter;
@@ -54,6 +59,22 @@ public partial class Depot : UserControl
     // the vehicle currently highlighted in the flat list (drives the mini preview
     // and the single Add button)
     private VehicleTexture? _browserSelected;
+
+    // drag-drop payload while a pointer drag is in progress
+    private VehicleTexture? _dragTexture;
+    private int _dragConsistIndex = -1;
+    private const string DragVehicleFormat = "starterng/vehicle";
+    private const string DragConsistFormat = "starterng/consist-index";
+
+    // Armed on press, started only after the pointer moves past DragThreshold.
+    // Starting DoDragDropAsync on every click freezes Avalonia (pointer capture).
+    private PointerPressedEventArgs? _pendingDragPress;
+    private Point _pendingDragOrigin;
+    private VehicleTexture? _pendingDragTexture;
+    private int _pendingDragConsistIndex = -1;
+    private ConsistItem? _pendingBrowserSync;
+    private bool _dragSessionActive;
+    private const double DragThreshold = 6;
 
     // hard cap on how many entries the flat list shows at once
     private const int MaxListRows = 2000;
@@ -144,10 +165,21 @@ public partial class Depot : UserControl
         // Defer population so the tab renders immediately, then fills in.
         Dispatcher.UIThread.Post(() =>
         {
+            hideArchivalCheck.IsChecked = StarterNG.Classes.Settings.Instance.HideArchivalVehicles;
             PopulateCategoryCombo();   // -> populates class combo -> builds browser
             PopulateSceneryConsists(); // -> lists the current scenery's consists
             RebuildConsist();
         }, DispatcherPriority.Background);
+
+        // Consist strip accepts drops from the browser and reorders via card drag.
+        DragDrop.SetAllowDrop(consistDropTarget, true);
+        consistDropTarget.AddHandler(DragDrop.DragOverEvent, Consist_OnDragOver);
+        consistDropTarget.AddHandler(DragDrop.DropEvent, Consist_OnDrop);
+
+        vehicleListBox.AddHandler(InputElement.PointerMovedEvent, PendingDrag_OnPointerMoved, handledEventsToo: true);
+        vehicleListBox.AddHandler(InputElement.PointerReleasedEvent, PendingDrag_OnPointerReleased, handledEventsToo: true);
+        miniPreviewPanel.AddHandler(InputElement.PointerMovedEvent, PendingDrag_OnPointerMoved, handledEventsToo: true);
+        miniPreviewPanel.AddHandler(InputElement.PointerReleasedEvent, PendingDrag_OnPointerReleased, handledEventsToo: true);
 
         // Switching tabs only toggles IsVisible (the view stays in the visual
         // tree), so refresh whenever the depot becomes visible - this picks up a
@@ -162,12 +194,24 @@ public partial class Depot : UserControl
 
     private void SyncFromSelection()
     {
+        // pick up Settings-tab changes to the archival-vehicle filter
+        bool hideArchival = StarterNG.Classes.Settings.Instance.HideArchivalVehicles;
+        if (hideArchivalCheck.IsChecked != hideArchival)
+        {
+            _suppress = true;
+            hideArchivalCheck.IsChecked = hideArchival;
+            _suppress = false;
+            BuildList();
+        }
+
         // refresh the on-map consists list to the scenery picked in the Scenarios tab
         PopulateSceneryConsists();
 
         var trainset = AppState.Instance.CurrentTrainset;
         if (trainset != null && !ReferenceEquals(trainset, _editingTrainset))
             LoadTrainset(trainset);
+        else if (_editingTrainset != null)
+            RebuildConsist(); // pick up LargeThumbnails / filter-driven list changes
     }
 
     // Loads a scenery trainset into the editor and binds edits back to it.
@@ -214,7 +258,9 @@ public partial class Depot : UserControl
                     {
                         Cars = group,
                         Grouped = true,
-                        Driver = group.Select(c => c.DriverType).FirstOrDefault(d => d != eDriverType.Nobody)
+                        // FirstOrDefault(predicate) defaults the enum to Headdriver(0) when
+                        // every car is Nobody — that re-staffed decorative consists (#12).
+                        Driver = UnitDriver(group)
                     });
                     i = j;
                     continue;
@@ -236,7 +282,7 @@ public partial class Depot : UserControl
                     {
                         Cars = group,
                         Grouped = true,
-                        Driver = group.Select(c => c.DriverType).FirstOrDefault(d => d != eDriverType.Nobody)
+                        Driver = UnitDriver(group)
                     });
                     i = j;
                     continue;
@@ -253,7 +299,21 @@ public partial class Depot : UserControl
         }
 
         _selected = _consist.FirstOrDefault();
+        SyncStartingVehicle();
         RebuildConsist();
+    }
+
+    // First staffed occupancy on the unit, or Nobody when the whole unit is unstaffed.
+    private static eDriverType UnitDriver(IReadOnlyList<Dynamic> group) =>
+        group.Select(c => c.DriverType)
+            .Where(d => d != eDriverType.Nobody)
+            .DefaultIfEmpty(eDriverType.Nobody)
+            .First();
+
+    private void SyncStartingVehicle()
+    {
+        if (_selected?.Cars.Count > 0)
+            AppState.Instance.StartingVehicleName = _selected.Cars[0].Name;
     }
 
     // ----------------------------------------------------- series / unit helpers
@@ -307,10 +367,11 @@ public partial class Depot : UserControl
     private void RebuildClassCombo()
     {
         // No "All" entry: an unselected class means "every class in the category".
+        // Each class row shows its category mini thumbnail (like the Pascal starter).
         _suppress = true;
         classCombo.Items.Clear();
         foreach (string cls in ClassesForCategory(_categoryFilter))
-            classCombo.Items.Add(new ComboBoxItem { Content = cls, Tag = cls });
+            classCombo.Items.Add(new ComboBoxItem { Content = ClassComboContent(cls), Tag = cls });
         classCombo.SelectedIndex = -1;
         _suppress = false;
 
@@ -318,9 +379,34 @@ public partial class Depot : UserControl
         BuildList();
     }
 
+    private Control ClassComboContent(string cls)
+    {
+        var row = new StackPanel
+        {
+            Orientation = Orientation.Horizontal,
+            Spacing = 8,
+            VerticalAlignment = VerticalAlignment.Center
+        };
+        var bmp = GetMiniBitmap(cls, 28);
+        if (bmp != null)
+            row.Children.Add(new Image
+            {
+                Source = bmp, Height = 28, Width = 56,
+                Stretch = Stretch.Uniform, VerticalAlignment = VerticalAlignment.Center
+            });
+        row.Children.Add(new TextBlock
+        {
+            Text = cls,
+            VerticalAlignment = VerticalAlignment.Center
+        });
+        return row;
+    }
+
     private IEnumerable<string> ClassesForCategory(Func<string?, bool>? category) =>
         _db.Textures
             .Where(t => category == null || category(CategoryOf(t)))
+            .Where(t => !_db.IsSetFollower(t))
+            .Where(t => !StarterNG.Classes.Settings.Instance.HideArchivalVehicles || !t.ResolvedArchived)
             .Select(ClassOf)
             .Where(s => !string.IsNullOrEmpty(s))
             .Distinct(StringComparer.OrdinalIgnoreCase)
@@ -393,11 +479,13 @@ public partial class Depot : UserControl
 
         foreach (var texture in matched)
         {
-            vehicleListBox.Items.Add(new ListBoxItem
+            var row = new ListBoxItem
             {
                 Content = BrowserLabel(texture, _db.ResolveSet(texture)),
                 Tag = texture
-            });
+            };
+            row.ContextMenu = BuildBrowserMenu(texture);
+            vehicleListBox.Items.Add(row);
         }
 
         if (vehicleListBox.Items.Count == 0)
@@ -416,13 +504,73 @@ public partial class Depot : UserControl
             _browserSelected = texture;
             miniPreview.Source = GetMiniBitmap(_db.ResolveMiniName(texture), 54);
             addVehicleButton.IsEnabled = true;
+            ShowTextureInfo(texture);
         }
         else
         {
             _browserSelected = null;
             miniPreview.Source = null;
             addVehicleButton.IsEnabled = false;
+            textureInfoPanel.Children.Clear();
         }
+    }
+
+    private ContextMenu BuildBrowserMenu(VehicleTexture texture)
+    {
+        var menu = new ContextMenu();
+        var copy = new MenuItem { Header = App.Loc["CopyTextureName"] };
+        copy.Click += async (_, _) =>
+        {
+            var top = TopLevel.GetTopLevel(this);
+            if (top?.Clipboard != null)
+                await top.Clipboard.SetTextAsync(BrowserLabel(texture, _db.ResolveSet(texture)));
+        };
+        menu.Items.Add(copy);
+
+        var open = new MenuItem { Header = App.Loc["OpenTextureFolder"] };
+        open.Click += (_, _) =>
+        {
+            string dir = Path.Combine(Directory.GetCurrentDirectory(), "dynamic",
+                texture.Directory.Replace('/', Path.DirectorySeparatorChar).TrimEnd('\\', '/'));
+            if (!Directory.Exists(dir))
+                dir = Path.Combine(Directory.GetCurrentDirectory(), texture.Directory);
+            if (!Directory.Exists(dir)) return;
+            try
+            {
+                System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(dir)
+                {
+                    UseShellExecute = true
+                });
+            }
+            catch { }
+        };
+        menu.Items.Add(open);
+        return menu;
+    }
+
+    private void ShowTextureInfo(VehicleTexture texture)
+    {
+        textureInfoPanel.Children.Clear();
+        void Row(string label, string? value)
+        {
+            if (string.IsNullOrWhiteSpace(value)) return;
+            textureInfoPanel.Children.Add(new TextBlock
+            {
+                Text = $"{label}: {value}",
+                FontSize = 10,
+                Opacity = 0.85,
+                TextTrimming = TextTrimming.CharacterEllipsis
+            });
+        }
+
+        Row(App.Loc["TextureInfo"], Base(texture.Skinfile));
+        var meta = texture.Meta;
+        if (meta == null) return;
+        Row(App.Loc["TexOperator"], meta.Operator);
+        Row(App.Loc["TexStation"], meta.Depot);
+        Row(App.Loc["TexRevision"], meta.RevisionDate);
+        Row(App.Loc["TexAuthor"], meta.TextureAuthor);
+        Row(App.Loc["TexPhoto"], meta.PhotoAuthor);
     }
 
     // Double-click an entry to replace the selected consist vehicle.
@@ -440,6 +588,36 @@ public partial class Depot : UserControl
             AddTexture(_browserSelected);
     }
 
+    // Pascal actAddVehiclesCategory — every skin currently listed in the browser.
+    private void AddAllCategoryButton_OnClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    {
+        foreach (var t in CurrentBrowserTextures())
+            InsertTextureAt(t, _consist.Count);
+    }
+
+    // Pascal actAddVehiclesMMD — first skin per distinct model/MMD.
+    private void AddUniqueMmdButton_OnClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    {
+        var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var t in CurrentBrowserTextures())
+        {
+            string key = string.IsNullOrEmpty(t.Model) ? t.Skinfile : t.Model!;
+            if (!seen.Add(key)) continue;
+            InsertTextureAt(t, _consist.Count);
+        }
+    }
+
+    private List<VehicleTexture> CurrentBrowserTextures()
+    {
+        var list = new List<VehicleTexture>();
+        foreach (var obj in vehicleListBox.Items)
+        {
+            if (obj is ListBoxItem { Tag: VehicleTexture t, IsEnabled: true })
+                list.Add(t);
+        }
+        return list;
+    }
+
     private bool PassesFilters(VehicleTexture t, string search, bool hasSearch)
     {
         if (_categoryFilter != null && !_categoryFilter(CategoryOf(t)))
@@ -447,6 +625,13 @@ public partial class Depot : UserControl
 
         if (_classFilter != null &&
             !string.Equals(ClassOf(t), _classFilter, StringComparison.OrdinalIgnoreCase))
+            return false;
+
+        // Hide subsequent multi-unit cars; adding the lead expands the whole set.
+        if (_db.IsSetFollower(t))
+            return false;
+
+        if (StarterNG.Classes.Settings.Instance.HideArchivalVehicles && t.ResolvedArchived)
             return false;
 
         if (hasSearch && !Matches(t, search))
@@ -496,9 +681,15 @@ public partial class Depot : UserControl
 
     private string BrowserLabel(VehicleTexture texture, IReadOnlyList<VehicleTexture>? set)
     {
-        string name = !string.IsNullOrEmpty(texture.TextureMini)
-            ? texture.TextureMini!
-            : Base(texture.Skinfile);
+        // When texture_mini is missing or only the class/category mini, use the
+        // skin basename so the list doesn't show the category name as the vehicle.
+        string name;
+        if (!string.IsNullOrEmpty(texture.TextureMini) &&
+            !string.Equals(texture.TextureMini, texture.ResolvedClass, StringComparison.OrdinalIgnoreCase))
+            name = texture.TextureMini!;
+        else
+            name = Base(texture.Skinfile);
+
         if (!string.IsNullOrEmpty(texture.Meta?.Operator))
             name += $"  ·  {texture.Meta!.Operator}";
         if (set is { Count: > 1 })
@@ -506,10 +697,20 @@ public partial class Depot : UserControl
         return name;
     }
 
-    // Clicking "Add" appends to the consist. If the texture belongs to an
-    // auto-consist set, the whole set is added as one locked unit; otherwise the
-    // single vehicle is added.
+    // Clicking "Add" inserts after the selected vehicle (or appends). If the
+    // texture belongs to an auto-consist set, the whole set is one locked unit.
     private void AddTexture(VehicleTexture texture)
+    {
+        int at = _consist.Count;
+        if (_selected != null)
+        {
+            int si = _consist.IndexOf(_selected);
+            if (si >= 0) at = si + 1;
+        }
+        InsertTextureAt(texture, at);
+    }
+
+    private void InsertTextureAt(VehicleTexture texture, int at)
     {
         var set = _db.ResolveSet(texture);
         var unit = set ?? new List<VehicleTexture> { texture };
@@ -522,18 +723,35 @@ public partial class Depot : UserControl
             Flipped = false
         };
 
-        // insert after the selected vehicle, or append when nothing is selected
-        int at = _consist.Count;
-        if (_selected != null)
-        {
-            int si = _consist.IndexOf(_selected);
-            if (si >= 0) at = si + 1;
-        }
+        at = Math.Clamp(at, 0, _consist.Count);
+        MatchOccupancy(item, at);
         _consist.Insert(at, item);
         _selected = item;
         AutoConnectAll();
         RebuildConsist();
     }
+
+    // Like the Pascal MatchOccupancy: only powered units get a driver, and only
+    // when the consist has no crew yet (or the unit is placed at the front).
+    private void MatchOccupancy(ConsistItem item, int position)
+    {
+        item.Driver = eDriverType.Nobody;
+        var lead = item.Cars.FirstOrDefault();
+        if (lead is null) return;
+
+        var tex = _db.TextureForSkin(lead.SkinFile);
+        string? cat = tex != null ? CategoryOf(tex) : null;
+        if (!IsPoweredCategory(cat))
+            return;
+
+        bool staffed = _consist.Any(i =>
+            i.Driver is eDriverType.Headdriver or eDriverType.Reardriver);
+        if (position == 0 || !staffed)
+            item.Driver = eDriverType.Headdriver;
+    }
+
+    private static bool IsPoweredCategory(string? c) =>
+        c is "e" or "s" or "p" or "z" or "a";
 
     // ------------------------------------------------------------- scenery combos
 
@@ -551,16 +769,17 @@ public partial class Depot : UserControl
 
         if (_listScenery != null)
         {
+            bool showAi = StarterNG.Classes.Settings.Instance.ShowAiVehicles;
+            bool drivableOnly = StarterNG.Classes.Settings.Instance.DrivableOnly;
+
             foreach (var trainset in _listScenery.Trainsets)
             {
-                if (trainset.Vehicles.Count == 0)
-                    continue;
-                if (trainset.Vehicles.All(v => string.IsNullOrWhiteSpace(v.Name)))
-                    continue;
+                if (IsAiTrainset(trainset) && !showAi) continue;
+                if (trainset.Decor && drivableOnly) continue;
 
                 var entry = new ListBoxItem
                 {
-                    Content = ConsistLabel(trainset),
+                    Content = ConsistListContent(trainset),
                     Tag = trainset
                 };
                 // right-click: warehouse save/load, clipboard copy/paste, clear-all
@@ -588,8 +807,13 @@ public partial class Depot : UserControl
 
         AppState.Instance.CurrentScenery = _listScenery;
         AppState.Instance.CurrentTrainset = trainset;
+        AppState.Instance.StartingVehicleName = TrainsetDisplay.DefaultStartingVehicle(trainset);
         LoadTrainset(trainset);
     }
+
+    private static bool IsAiTrainset(Trainset trainset) =>
+        !string.IsNullOrEmpty(trainset.Description) &&
+        trainset.Description.TrimStart().StartsWith("-", StringComparison.Ordinal);
 
     // Shift+Delete clears the selected scenery consist (same as the context-menu
     // "remove all vehicles" entry).
@@ -626,13 +850,30 @@ public partial class Depot : UserControl
         PopulateSceneryConsists();
     }
 
-    // Plain-text label for a scenery consist (no thumbnails).
+    // List caption for a scenery consist — grows with the list width (ellipsis).
+    private static Control ConsistListContent(Trainset trainset) =>
+        new TextBlock
+        {
+            Text = ConsistLabel(trainset),
+            TextTrimming = TextTrimming.CharacterEllipsis,
+            TextWrapping = TextWrapping.NoWrap
+        };
+
     private static string ConsistLabel(Trainset trainset)
     {
-        string text = string.Join(" + ", trainset.Vehicles.Select(v => v.SkinFile));
-        if (string.IsNullOrWhiteSpace(text))
-            text = string.Join(" + ", trainset.Vehicles.Select(v => v.Name));
-        return text.Length > 80 ? text[..77] + "…" : text;
+        string? text = TrainsetDisplay.CompositionText(trainset);
+        if (text != null)
+            return text;
+        return string.Format(App.Loc["EmptyTrainset"], trainset.Track ?? "");
+    }
+
+    private void RefreshConsistListLabels()
+    {
+        foreach (var obj in sceneryConsistList.Items)
+        {
+            if (obj is ListBoxItem { Tag: Trainset ts } item)
+                item.Content = ConsistListContent(ts);
+        }
     }
 
     // ------------------------------------------------------------ consist edits
@@ -660,7 +901,32 @@ public partial class Depot : UserControl
     {
         if (string.IsNullOrWhiteSpace(baseName)) baseName = "vehicle";
         baseName = baseName.Replace(' ', '_');
-        return $"{baseName}_{++_nameCounter}";
+
+        var used = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var item in _consist)
+            foreach (var c in item.Cars)
+                if (!string.IsNullOrEmpty(c.Name))
+                    used.Add(c.Name!);
+
+        var scn = _listScenery ?? AppState.Instance.CurrentScenery;
+        if (scn != null)
+        {
+            foreach (string n in scn.LooseVehicleNames)
+                used.Add(n);
+            foreach (var ts in scn.Trainsets)
+            {
+                if (ReferenceEquals(ts, _editingTrainset)) continue;
+                foreach (var v in ts.Vehicles)
+                    if (!string.IsNullOrEmpty(v.Name))
+                        used.Add(v.Name!);
+            }
+        }
+
+        string candidate;
+        do
+            candidate = $"{baseName}_{++_nameCounter}";
+        while (used.Contains(candidate));
+        return candidate;
     }
 
     private static string StripDynamicPrefix(string directory)
@@ -714,7 +980,10 @@ public partial class Depot : UserControl
             eDriverType.Reardriver => eDriverType.Passenger,
             _ => eDriverType.Nobody
         };
+        if (ReferenceEquals(_selected, item))
+            SyncStartingVehicle();
         RebuildConsist();
+        AppState.Instance.NotifyChanged(); // crew change may enable/disable Start
     }
 
     // Breaks a grouped unit into individual single-car items.
@@ -742,17 +1011,17 @@ public partial class Depot : UserControl
 
     private void RebuildConsist()
     {
-        // The first vehicle drives from cab A by default (unless a crew is set).
-        if (_consist.Count > 0 && _consist.All(i => i.Driver == eDriverType.Nobody))
-            _consist[0].Driver = eDriverType.Headdriver;
-
         consistStack.Children.Clear();
         for (int i = 0; i < _consist.Count; i++)
         {
             var item = _consist[i];
-            consistStack.Children.Add(BuildCard(item));
+            consistStack.Children.Add(BuildCard(item, i));
+            // Coupler between units, plus a trailing coupler after the last unit
+            // so end-of-train coupling / lights can be set (#10).
             if (i < _consist.Count - 1)
                 consistStack.Children.Add(BuildCoupler(item));
+            else
+                consistStack.Children.Add(BuildCoupler(item, trailing: true));
         }
 
         emptyHint.IsVisible = _consist.Count == 0;
@@ -780,6 +1049,7 @@ public partial class Depot : UserControl
             }
         }
         _editingTrainset.Vehicles = flat;
+        RefreshConsistListLabels();
     }
 
     // Resolves the .fiz physics for a consist car: the .fiz is named after the
@@ -830,42 +1100,24 @@ public partial class Depot : UserControl
         }
     }
 
-    // Train totals (length / mass / Vmax / load) read from the .fiz files.
+    // Train totals — same Pascal mass rules as Scenarios (IncludeVehicleToMass + 200 t retry).
     private void UpdateTrainStats()
     {
-        if (_consist.Count == 0)
+        if (_editingTrainset is null)
         {
             trainStats.Text = "";
             return;
         }
 
-        double lengthM = 0, massKg = 0, loadKg = 0;
-        double vmax = double.PositiveInfinity;
-
-        foreach (var item in _consist)
-            foreach (var c in item.Cars)
-            {
-                var p = PhysicsFor(c);
-                if (p != null)
-                {
-                    lengthM += p.Length;
-                    massKg += p.Mass;
-                    if (p.VMax > 0) vmax = Math.Min(vmax, p.VMax);
-                }
-                if (c.LoadCount > 0 && !string.IsNullOrEmpty(c.LoadType))
-                    loadKg += (double)c.LoadCount * LoadWeight(c.LoadType);
-            }
-
-        var inv = System.Globalization.CultureInfo.InvariantCulture;
-        string v = double.IsInfinity(vmax) ? "—" : $"{vmax.ToString("0", inv)} km/h";
-        trainStats.Text =
-            $"{App.Loc["Length"]}: {lengthM.ToString("0.#", inv)} m    ·    " +
-            $"{App.Loc["Mass"]}: {(massKg / 1000.0).ToString("0.#", inv)} t    ·    " +
-            $"Vmax: {v}    ·    " +
-            $"{App.Loc["Load"]}: {(loadKg / 1000.0).ToString("0.#", inv)} t";
+        trainStats.Text = TrainsetDisplay.FormatStats(
+            _editingTrainset,
+            PhysicsFor,
+            App.Loc["Length"], App.Loc["Mass"], App.Loc["VehicleCount"], App.Loc["Track"],
+            car => _db.TextureForSkin(car.SkinFile) is { } t ? CategoryOf(t) : null,
+            LoadWeight);
     }
 
-    private Control BuildCard(ConsistItem item)
+    private Control BuildCard(ConsistItem item, int index)
     {
         bool selected = ReferenceEquals(_selected, item);
 
@@ -925,7 +1177,6 @@ public partial class Depot : UserControl
         controls.Children.Add(SmallButton("◀", App.Loc["TipMoveLeft"], () => MoveLeft(item)));
         controls.Children.Add(DriverButton(item));
         controls.Children.Add(SmallButton("⇄", App.Loc["TipFlip"], () => FlipItem(item)));
-        controls.Children.Add(SmallButton("✕", App.Loc["TipRemove"], () => RemoveItem(item)));
         controls.Children.Add(SmallButton("▶", App.Loc["TipMoveRight"], () => MoveRight(item)));
 
         var inner = new StackPanel { Spacing = 4 };
@@ -958,58 +1209,96 @@ public partial class Depot : UserControl
             BorderBrush = selected ? CardBorderSel : CardBorder,
             Background = selected ? CardBgSel : Brushes.Transparent,
             Cursor = _hand,
-            Child = inner
+            Child = inner,
+            Tag = item
         };
         card.PointerPressed += (_, e) =>
         {
-            // left button only - right-click is reserved for the context popup,
-            // and rebuilding here would detach the card it anchors to
+            // left button only - right-click is reserved for the context popup
             if (!e.GetCurrentPoint(card).Properties.IsLeftButtonPressed)
                 return;
+            // Buttons on the card (split / remove) handle their own clicks.
+            if (e.Source is Control src && src.GetVisualAncestors().OfType<Button>().Any())
+                return;
 
+            // Update selection without RebuildConsist so the pressed card stays
+            // alive for a possible drag. Browser sync waits until click/release
+            // so BuildList does not run under an active drag capture.
             _selected = item;
-            RebuildConsist();
-            // mirror the click into the database browser: pick the category and
-            // highlight this vehicle's entry there
-            SelectInBrowser(item.Cars[0]);
+            SyncStartingVehicle();
+            RefreshCardSelectionChrome();
+            UpdateDetails();
+
+            ArmConsistDrag(e, card, index, item);
         };
+        card.AddHandler(InputElement.PointerMovedEvent, PendingDrag_OnPointerMoved, handledEventsToo: true);
+        card.AddHandler(InputElement.PointerReleasedEvent, PendingDrag_OnPointerReleased, handledEventsToo: true);
+        DragDrop.SetAllowDrop(card, true);
+        card.AddHandler(DragDrop.DragOverEvent, Consist_OnDragOver);
+        card.AddHandler(DragDrop.DropEvent, (s, e) => ConsistCard_OnDrop(e, index, card));
         // right-click a vehicle: wagon number + load actions (copy load from the
         // previous vehicle, fill to the maximum possible load)
         card.ContextMenu = BuildCardMenu(card, item);
         return card;
     }
 
-    // Selects, in the left database browser, the category and the list entry of the
-    // given vehicle - so clicking a consist car reveals it in the database.
+    private void RefreshCardSelectionChrome()
+    {
+        foreach (var child in consistStack.Children)
+        {
+            if (child is not Border { Tag: ConsistItem ci } border)
+                continue;
+            bool sel = ReferenceEquals(ci, _selected);
+            border.BorderThickness = new Thickness(sel ? 2 : 1);
+            border.BorderBrush = sel ? CardBorderSel : CardBorder;
+            border.Background = sel ? CardBgSel : Brushes.Transparent;
+        }
+    }
+
+    // Selects, in the left database browser, the category, class and list entry of
+    // the given vehicle - so clicking a consist car reveals it in the database.
     private void SelectInBrowser(Dynamic car)
     {
         var texture = _db.TextureForSkin(car.SkinFile);
         if (texture is null)
             return;
 
-        string? category = CategoryOf(texture);
+        // Prefer the set lead so multi-unit followers (hidden in the browser) still
+        // select their lead texture / class.
+        var set = _db.ResolveSet(texture);
+        var browserTex = set is { Count: > 0 } ? set[0] : texture;
+
+        string? category = CategoryOf(browserTex);
         var catItem = categoryCombo.Items.OfType<ComboBoxItem>()
             .FirstOrDefault(it => it.Tag is Func<string?, bool> f && f(category));
 
-        if (catItem != null && !ReferenceEquals(categoryCombo.SelectedItem, catItem))
+        if (catItem != null)
         {
-            categoryCombo.SelectedItem = catItem; // -> rebuilds class combo (class=all) + list
+            if (!ReferenceEquals(categoryCombo.SelectedItem, catItem))
+                categoryCombo.SelectedItem = catItem; // -> rebuilds class combo + list
+            else
+                RebuildClassCombo();
         }
-        else
+
+        // Select the vehicle's class (type) in the class combo.
+        string cls = ClassOf(browserTex);
+        var classItem = classCombo.Items.OfType<ComboBoxItem>()
+            .FirstOrDefault(it => it.Tag is string s &&
+                                  string.Equals(s, cls, StringComparison.OrdinalIgnoreCase));
+        if (classItem != null)
         {
-            // same category already chosen: drop any class filter so the entry shows
             _suppress = true;
-            classCombo.SelectedIndex = -1;
+            classCombo.SelectedItem = classItem;
+            _classFilter = cls;
             _suppress = false;
-            _classFilter = null;
             BuildList();
         }
 
         // highlight the matching entry (selection drives the mini + Add button)
         foreach (var obj in vehicleListBox.Items)
             if (obj is ListBoxItem { Tag: VehicleTexture t } entry &&
-                string.Equals(t.Skinfile, texture.Skinfile, StringComparison.OrdinalIgnoreCase) &&
-                string.Equals(t.Directory, texture.Directory, StringComparison.OrdinalIgnoreCase))
+                string.Equals(t.Skinfile, browserTex.Skinfile, StringComparison.OrdinalIgnoreCase) &&
+                string.Equals(t.Directory, browserTex.Directory, StringComparison.OrdinalIgnoreCase))
             {
                 vehicleListBox.SelectedItem = entry;
                 entry.BringIntoView();
@@ -1071,16 +1360,15 @@ public partial class Depot : UserControl
         return item.Cars.Count > 1 ? $"{key}  [{item.Cars.Count}]" : key;
     }
 
-    // Coupling indicator between two units. Click it to open a (clickable) flyout
-    // with the 8-bit coupling editor for the left unit's last car - a flyout, not a
-    // tooltip, so it stays open while you toggle the options.
-    private Control BuildCoupler(ConsistItem item)
+    // Coupling indicator between two units (or trailing after the last unit).
+    // Click it to open a flyout with the 8-bit coupling editor for the unit's last car.
+    private Control BuildCoupler(ConsistItem item, bool trailing = false)
     {
         var glyph = new TextBlock
         {
-            Text = "≣",
+            Text = trailing ? "╡" : "≣",
             FontSize = 18,
-            Opacity = 0.7,
+            Opacity = trailing ? 0.55 : 0.7,
             VerticalAlignment = VerticalAlignment.Center,
             HorizontalAlignment = HorizontalAlignment.Center
         };
@@ -1093,7 +1381,7 @@ public partial class Depot : UserControl
             Content = glyph,
             Flyout = new Flyout
             {
-                Content = BuildCouplingBox(item.Cars[^1]),
+                Content = BuildCouplingBox(item),
                 Placement = PlacementMode.Top
             }
         };
@@ -1102,8 +1390,11 @@ public partial class Depot : UserControl
         return coupler;
     }
 
-    private Control BuildCouplingBox(Dynamic d)
+    private Control BuildCouplingBox(ConsistItem item)
     {
+        var d = item.Cars[^1];
+        int unitIdx = _consist.IndexOf(item);
+
         var panel = new StackPanel { Spacing = 2 };
         panel.Children.Add(new TextBlock
         {
@@ -1122,12 +1413,37 @@ public partial class Depot : UserControl
                 IsChecked = d.Coupling.Has(bit),
                 FontSize = 11
             };
-            // edits the shared Dynamic, so the change is written back on export
             check.IsCheckedChanged += (_, _) => d.Coupling.Set(bit, check.IsChecked == true);
             panel.Children.Add(check);
         }
 
-        // The brake setting lives in the Brakes tab now, not here.
+        var copy = new Button
+        {
+            Content = App.Loc["CopyCoupler"],
+            FontSize = 11,
+            Margin = new Thickness(0, 4, 0, 0),
+            IsEnabled = unitIdx > 0,
+            Cursor = _hand
+        };
+        copy.Classes.Add("Flat");
+        copy.Click += (_, _) =>
+        {
+            if (unitIdx <= 0) return;
+            d.Coupling.Flags = _consist[unitIdx - 1].Cars[^1].Coupling.Flags;
+            RebuildConsist();
+        };
+        panel.Children.Add(copy);
+
+        var thermo = new CheckBox
+        {
+            Content = App.Loc["ThermoAmbient"],
+            IsChecked = d.Coupling.ThermoDynamic,
+            FontSize = 11,
+            Margin = new Thickness(0, 2, 0, 0)
+        };
+        thermo.IsCheckedChanged += (_, _) => d.Coupling.ThermoDynamic = thermo.IsChecked == true;
+        panel.Children.Add(thermo);
+
         return new Border { Padding = new Thickness(8), Child = panel };
     }
 
@@ -1169,6 +1485,7 @@ public partial class Depot : UserControl
         brakesPanel.Children.Clear();
         loadsPanel.Children.Clear();
         damagePanel.Children.Clear();
+        removeVehicleButton.IsEnabled = _selected != null;
 
         // whole-consist load tools sit at the top of the Loads tab, always available
         loadsPanel.Children.Add(BuildConsistLoadTools());
@@ -1667,13 +1984,495 @@ public partial class Depot : UserControl
         _searchTimer.Start();
     }
 
-}
+    private void HideArchivalCheck_OnChanged(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    {
+        if (_suppress) return;
+        StarterNG.Classes.Settings.Instance.HideArchivalVehicles = hideArchivalCheck.IsChecked ?? true;
+        StarterNG.Classes.Settings.Instance.Save();
+        BuildList();
+    }
 
-// One entry in the consist: a single vehicle or a locked multi-car unit.
-public sealed class ConsistItem
-{
-    public List<Dynamic> Cars { get; set; } = new();
-    public bool Grouped { get; set; }
-    public bool Flipped { get; set; }
-    public eDriverType Driver { get; set; } = eDriverType.Nobody;
+    private void RemoveVehicleButton_OnClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    {
+        if (_selected != null)
+            RemoveItem(_selected);
+    }
+
+    private async void TextureBaseButton_OnClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    {
+        if (TopLevel.GetTopLevel(this) is not Window owner) return;
+        var win = new TextureBaseWindow();
+        await win.ShowDialog(owner);
+        if (win.Picked != null)
+            ReplaceSelected(win.Picked);
+    }
+
+    private async void RandomTexturesButton_OnClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    {
+        if (_consist.Count == 0) return;
+        if (TopLevel.GetTopLevel(this) is not Window owner) return;
+
+        var dlg = BuildTextureRandomizerDialog();
+        bool? ok = await dlg.ShowDialog<bool?>(owner);
+        if (ok != true) return;
+
+        if (dlg.Tag is not TexRandomizerOpts opts) return;
+        var rnd = new TexRandomizer(_db, _rng)
+        {
+            WithoutArchival = opts.WithoutArchival,
+            RevisionTolerance = opts.RevisionTolerance,
+            RevYear = opts.RevYear
+        };
+        if (rnd.Apply(_consist, MakeDynamic) > 0)
+        {
+            AutoConnectAll();
+            RebuildConsist();
+        }
+    }
+
+    private Window BuildTextureRandomizerDialog()
+    {
+        var revDiff = new CheckBox
+        {
+            Content = App.Loc["RandomizeTexturesRevDiff"],
+            IsChecked = true,
+            FontSize = 12
+        };
+        var age = new NumericUpDown
+        {
+            Minimum = 2, Maximum = 8, Value = 3, Width = 56,
+            FormatString = "0", ShowButtonSpinner = true
+        };
+        var vsCurrent = new RadioButton
+        {
+            Content = App.Loc["RandomizeTexturesVsCurrent"],
+            IsChecked = true,
+            FontSize = 12,
+            GroupName = "revBase"
+        };
+        var vsYear = new RadioButton
+        {
+            Content = App.Loc["RandomizeTexturesVsYear"],
+            FontSize = 12,
+            GroupName = "revBase"
+        };
+        var year = new NumericUpDown
+        {
+            Minimum = 1950, Maximum = 2050, Value = DateTime.Now.Year, Width = 72,
+            FormatString = "0", ShowButtonSpinner = true, IsEnabled = false
+        };
+        var noArch = new CheckBox
+        {
+            Content = App.Loc["RandomizeTexturesNoArchival"],
+            IsChecked = true,
+            FontSize = 12
+        };
+
+        revDiff.IsCheckedChanged += (_, _) => age.IsEnabled = revDiff.IsChecked == true;
+        vsYear.IsCheckedChanged += (_, _) => year.IsEnabled = vsYear.IsChecked == true;
+
+        var win = new Window
+        {
+            Title = App.Loc["RandomizeTexturesTitle"],
+            Width = 320,
+            Height = 300,
+            CanResize = false,
+            WindowStartupLocation = WindowStartupLocation.CenterOwner
+        };
+
+        var rulesBtn = new Button
+        {
+            Content = App.Loc["RandomizeTexturesRules"],
+            HorizontalAlignment = HorizontalAlignment.Stretch,
+            Cursor = _hand
+        };
+        rulesBtn.Classes.Add("Basic");
+        rulesBtn.Click += async (_, _) => await EditRandomizerRules(win);
+
+        var ok = new Button
+        {
+            Content = App.Loc["RandomizeTexturesApply"],
+            HorizontalAlignment = HorizontalAlignment.Stretch,
+            Cursor = _hand
+        };
+        ok.Classes.Add("Accent");
+        ok.Click += (_, _) =>
+        {
+            win.Tag = new TexRandomizerOpts
+            {
+                WithoutArchival = noArch.IsChecked == true,
+                RevisionTolerance = revDiff.IsChecked == true ? (int)(age.Value ?? 3) : -1,
+                RevYear = vsYear.IsChecked == true ? (int)(year.Value ?? DateTime.Now.Year) : -1
+            };
+            win.Close(true);
+        };
+
+        var cancel = new Button { Content = App.Loc["Cancel"], Cursor = _hand };
+        cancel.Classes.Add("Flat");
+        cancel.Click += (_, _) => win.Close(false);
+
+        win.Content = new StackPanel
+        {
+            Margin = new Thickness(12),
+            Spacing = 8,
+            Children =
+            {
+                new TextBlock
+                {
+                    Text = App.Loc["RandomizeTexturesTitle"],
+                    FontWeight = FontWeight.Bold,
+                    HorizontalAlignment = HorizontalAlignment.Center
+                },
+                new StackPanel
+                {
+                    Orientation = Orientation.Horizontal,
+                    Spacing = 8,
+                    Children = { revDiff, age }
+                },
+                vsCurrent,
+                new StackPanel
+                {
+                    Orientation = Orientation.Horizontal,
+                    Spacing = 8,
+                    Children = { vsYear, year }
+                },
+                noArch,
+                rulesBtn,
+                ok,
+                cancel
+            }
+        };
+        return win;
+    }
+
+    private async Task EditRandomizerRules(Window owner)
+    {
+        string path = TexRandomizer.RulesPath;
+        string text = "";
+        try
+        {
+            if (File.Exists(path))
+                text = File.ReadAllText(path);
+        }
+        catch { }
+
+        var box = new TextBox
+        {
+            Text = text,
+            AcceptsReturn = true,
+            TextWrapping = TextWrapping.NoWrap,
+            FontFamily = new FontFamily("Consolas,Courier New,monospace"),
+            FontSize = 12
+        };
+        ScrollViewer.SetHorizontalScrollBarVisibility(box, Avalonia.Controls.Primitives.ScrollBarVisibility.Auto);
+        ScrollViewer.SetVerticalScrollBarVisibility(box, Avalonia.Controls.Primitives.ScrollBarVisibility.Auto);
+
+        var win = new Window
+        {
+            Title = App.Loc["RandomizeTexturesRules"],
+            Width = 480,
+            Height = 360,
+            WindowStartupLocation = WindowStartupLocation.CenterOwner
+        };
+
+        var save = new Button { Content = App.Loc["RandomizeTexturesRulesSave"], Cursor = _hand };
+        save.Classes.Add("Accent");
+        save.Click += (_, _) =>
+        {
+            try
+            {
+                string? dir = Path.GetDirectoryName(path);
+                if (!string.IsNullOrEmpty(dir))
+                    Directory.CreateDirectory(dir);
+                File.WriteAllText(path, box.Text ?? "");
+            }
+            catch { }
+            win.Close();
+        };
+
+        var cancel = new Button { Content = App.Loc["Cancel"], Cursor = _hand };
+        cancel.Classes.Add("Flat");
+        cancel.Click += (_, _) => win.Close();
+
+        var buttons = new StackPanel
+        {
+            Orientation = Orientation.Horizontal,
+            HorizontalAlignment = HorizontalAlignment.Right,
+            Spacing = 8,
+            Margin = new Thickness(0, 8, 0, 0),
+            Children = { save, cancel }
+        };
+        DockPanel.SetDock(buttons, Dock.Bottom);
+
+        win.Content = new DockPanel
+        {
+            Margin = new Thickness(10),
+            Children =
+            {
+                buttons,
+                new StackPanel
+                {
+                    Spacing = 6,
+                    Children =
+                    {
+                        new TextBlock
+                        {
+                            Text = App.Loc["RandomizeTexturesRulesHint"],
+                            TextWrapping = TextWrapping.Wrap,
+                            Opacity = 0.8,
+                            FontSize = 11
+                        },
+                        box
+                    }
+                }
+            }
+        };
+
+        await win.ShowDialog(owner);
+    }
+
+    private sealed class TexRandomizerOpts
+    {
+        public bool WithoutArchival;
+        public int RevisionTolerance;
+        public int RevYear;
+    }
+
+    private void RandomOrderButton_OnClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e) =>
+        RandomizeOrder();
+
+    private void RandomOrientButton_OnClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e) =>
+        RandomizeOrientation();
+
+    // Shuffle wagon order from the selected unit to the end (multi-unit groups stay put).
+    private void RandomizeOrder()
+    {
+        int start = _selected != null ? _consist.IndexOf(_selected) : 0;
+        if (start < 0) start = 0;
+
+        var indices = new List<int>();
+        for (int i = start; i < _consist.Count; i++)
+        {
+            if (_consist[i].Grouped) continue;
+            var tex = _db.TextureForSkin(_consist[i].Cars[0].SkinFile);
+            string? cat = tex != null ? CategoryOf(tex) : null;
+            if (cat is { Length: 1 } && char.IsUpper(cat[0]))
+                indices.Add(i);
+        }
+
+        if (indices.Count < 2) return;
+
+        var items = indices.Select(i => _consist[i]).ToList();
+        for (int i = items.Count - 1; i > 0; i--)
+        {
+            int j = _rng.Next(i + 1);
+            (items[i], items[j]) = (items[j], items[i]);
+        }
+        for (int k = 0; k < indices.Count; k++)
+            _consist[indices[k]] = items[k];
+
+        AutoConnectAll();
+        RebuildConsist();
+    }
+
+    // Randomly flip units from the selected one to the end of the consist.
+    private void RandomizeOrientation()
+    {
+        int start = _selected != null ? _consist.IndexOf(_selected) : 0;
+        if (start < 0) start = 0;
+        if (start >= _consist.Count) return;
+
+        for (int i = start; i < _consist.Count; i++)
+            if (_rng.Next(2) == 0)
+                _consist[i].Flipped = !_consist[i].Flipped;
+
+        AutoConnectAll();
+        RebuildConsist();
+    }
+
+    // ── drag / drop (browser → consist, reorder inside consist) ────────────
+
+    private void MiniPreview_OnPointerPressed(object? sender, PointerPressedEventArgs e)
+    {
+        if (_browserSelected is null || !e.GetCurrentPoint(miniPreviewPanel).Properties.IsLeftButtonPressed)
+            return;
+        ArmVehicleDrag(e, miniPreviewPanel, _browserSelected);
+    }
+
+    private void VehicleListBox_OnPointerPressed(object? sender, PointerPressedEventArgs e)
+    {
+        if (!e.GetCurrentPoint(vehicleListBox).Properties.IsLeftButtonPressed)
+            return;
+        // Resolve the row under the pointer so a drag can start before selection settles.
+        var hit = e.Source as Control;
+        while (hit != null && hit is not ListBoxItem)
+            hit = hit.Parent as Control;
+        if (hit is ListBoxItem { Tag: VehicleTexture texture })
+            ArmVehicleDrag(e, vehicleListBox, texture);
+    }
+
+    private void ArmVehicleDrag(PointerPressedEventArgs e, Visual relativeTo, VehicleTexture texture)
+    {
+        ClearPendingDrag();
+        _pendingDragPress = e;
+        _pendingDragOrigin = e.GetPosition(relativeTo);
+        _pendingDragTexture = texture;
+        _pendingDragConsistIndex = -1;
+    }
+
+    private void ArmConsistDrag(PointerPressedEventArgs e, Visual relativeTo, int index, ConsistItem item)
+    {
+        ClearPendingDrag();
+        _pendingDragPress = e;
+        _pendingDragOrigin = e.GetPosition(relativeTo);
+        _pendingDragTexture = null;
+        _pendingDragConsistIndex = index;
+        _pendingBrowserSync = item;
+    }
+
+    private void ClearPendingDrag()
+    {
+        _pendingDragPress = null;
+        _pendingDragTexture = null;
+        _pendingDragConsistIndex = -1;
+        _pendingBrowserSync = null;
+        _dragSessionActive = false;
+    }
+
+    private async void PendingDrag_OnPointerMoved(object? sender, PointerEventArgs e)
+    {
+        if (_pendingDragPress is null || _dragSessionActive || sender is not Visual relativeTo)
+            return;
+        if (!e.GetCurrentPoint(relativeTo).Properties.IsLeftButtonPressed)
+        {
+            FinishPendingClick();
+            return;
+        }
+
+        var delta = e.GetPosition(relativeTo) - _pendingDragOrigin;
+        if (Math.Abs(delta.X) < DragThreshold && Math.Abs(delta.Y) < DragThreshold)
+            return;
+
+        var press = _pendingDragPress;
+        var texture = _pendingDragTexture;
+        int consistIndex = _pendingDragConsistIndex;
+        // Keep browser sync cancelled for the drag session; click path uses it.
+        _pendingBrowserSync = null;
+        _pendingDragPress = null;
+        _dragSessionActive = true;
+
+        if (texture != null)
+        {
+            _dragTexture = texture;
+            _dragConsistIndex = -1;
+            var data = new DataTransfer();
+            data.Add(DataTransferItem.CreateText(DragVehicleFormat));
+            try
+            {
+                await DragDrop.DoDragDropAsync(press, data, DragDropEffects.Copy);
+            }
+            finally
+            {
+                _dragTexture = null;
+                ClearPendingDrag();
+            }
+            return;
+        }
+
+        if (consistIndex >= 0)
+        {
+            _dragTexture = null;
+            _dragConsistIndex = consistIndex;
+            var data = new DataTransfer();
+            data.Add(DataTransferItem.CreateText(DragConsistFormat));
+            try
+            {
+                await DragDrop.DoDragDropAsync(press, data, DragDropEffects.Move);
+            }
+            finally
+            {
+                _dragConsistIndex = -1;
+                ClearPendingDrag();
+            }
+        }
+    }
+
+    private void PendingDrag_OnPointerReleased(object? sender, PointerReleasedEventArgs e)
+    {
+        if (_dragSessionActive) return;
+        FinishPendingClick();
+    }
+
+    private void FinishPendingClick()
+    {
+        var sync = _pendingBrowserSync;
+        ClearPendingDrag();
+        // Plain click on a consist card: reveal it in the vehicle browser.
+        if (sync is { Cars.Count: > 0 })
+            SelectInBrowser(sync.Cars[0]);
+    }
+
+    private void Consist_OnDragOver(object? sender, DragEventArgs e)
+    {
+        // Payload is kept in fields set before DoDragDropAsync; formats are markers.
+        if (_dragTexture != null || _dragConsistIndex >= 0)
+        {
+            e.DragEffects = _dragConsistIndex >= 0 ? DragDropEffects.Move : DragDropEffects.Copy;
+            e.Handled = true;
+        }
+        else
+        {
+            e.DragEffects = DragDropEffects.None;
+        }
+    }
+
+    private void Consist_OnDrop(object? sender, DragEventArgs e)
+    {
+        if (_dragTexture != null)
+        {
+            InsertTextureAt(_dragTexture, _consist.Count);
+            e.Handled = true;
+        }
+        else if (_dragConsistIndex >= 0)
+        {
+            MoveConsistUnit(_dragConsistIndex, _consist.Count);
+            e.Handled = true;
+        }
+    }
+
+    private void ConsistCard_OnDrop(DragEventArgs e, int targetIndex, Control card)
+    {
+        double x = e.GetPosition(card).X;
+        bool after = x > card.Bounds.Width / 2;
+        int insertAt = after ? targetIndex + 1 : targetIndex;
+
+        if (_dragConsistIndex >= 0)
+        {
+            MoveConsistUnit(_dragConsistIndex, insertAt);
+            e.Handled = true;
+            return;
+        }
+
+        if (_dragTexture != null)
+        {
+            InsertTextureAt(_dragTexture, insertAt);
+            e.Handled = true;
+        }
+    }
+
+    private void MoveConsistUnit(int from, int to)
+    {
+        if (from < 0 || from >= _consist.Count) return;
+        if (to > from) to--; // account for removal shifting indices
+        to = Math.Clamp(to, 0, _consist.Count - 1);
+        if (from == to) return;
+
+        var item = _consist[from];
+        _consist.RemoveAt(from);
+        _consist.Insert(to, item);
+        _selected = item;
+        AutoConnectAll();
+        RebuildConsist();
+    }
+
 }
