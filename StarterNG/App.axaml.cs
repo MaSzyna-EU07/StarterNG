@@ -70,6 +70,7 @@ public partial class App : Application
             desktop.ShutdownRequested += (_, _) =>
             {
                 Settings.Instance.CaptureAndSave();
+                Settings.Instance.DumpMissingVehicleLog();
                 if (KeyboardConfig.Instance.Dirty)
                     KeyboardConfig.Instance.Save();
             };

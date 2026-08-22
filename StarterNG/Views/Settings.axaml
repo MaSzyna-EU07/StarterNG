@@ -131,6 +131,13 @@
                             </ComboBox>
                         </StackPanel>
                         <StackPanel Spacing="8" Orientation="Horizontal">
+                            <Label VerticalAlignment="Center" FontSize="14" Content="{Binding [HdrToneMap], Source={x:Static starterNg:App.Loc}}" />
+                            <ComboBox x:Name="HdrToneMapCb" MinWidth="150" MaxWidth="150" SelectedIndex="0">
+                                <ComboBoxItem Content="Reinhard" />
+                                <ComboBoxItem Content="ACES Film" />
+                            </ComboBox>
+                        </StackPanel>
+                        <StackPanel Spacing="8" Orientation="Horizontal">
                             <Label VerticalAlignment="Center" FontSize="14" Content="{Binding [Resolution], Source={x:Static starterNg:App.Loc}}" />
                             <ComboBox x:Name="ResolutionCb" MinWidth="150" MaxWidth="150" SelectedIndex="0">
                                 <ComboBoxItem>3840x2160</ComboBoxItem>
@@ -367,6 +374,7 @@
                         <CheckBox x:Name="AutoCloseStarterCb" Content="{Binding [AutoCloseStarter], Source={x:Static starterNg:App.Loc}}" />
                         <CheckBox x:Name="LargeThumbnailsCb" Content="{Binding [LargeThumbnails], Source={x:Static starterNg:App.Loc}}" />
                         <CheckBox x:Name="AutoExpandTreeCb" Content="{Binding [AutoExpandSceneryTree], Source={x:Static starterNg:App.Loc}}" />
+                        <CheckBox x:Name="HideArchivalVehiclesCb" Content="{Binding [HideArchivalVehicles], Source={x:Static starterNg:App.Loc}}" />
                         <StackPanel Spacing="8" Orientation="Horizontal">
                             <TextBlock VerticalAlignment="Center" Text="{Binding [BatteryDefault], Source={x:Static starterNg:App.Loc}}" />
                             <ComboBox x:Name="BatteryDefaultCb" MinWidth="220" SelectedIndex="0">

@@ -65,13 +65,15 @@ public sealed class Settings
     public string ExecutablePath = "eu07.exe";    // starter.exe.path  (launcher-only)
     public bool DebugMode;                         // debugmode
     public bool VirtualShunting = true;            // ai.trainman
-    public bool LogMissingVehicleFiles;            // starter.logmissingvehicles (launcher-only; not yet wired to any load/export codepath)
+    public bool LogMissingVehicleFiles;            // starter.logmissingvehicles → bledy.txt dump
 
     // ── Graphics ──────────────────────────────────────────────────────────
     public int RenderEngine;                       // gfxrenderer (index, see RenderEngines)
     public int Width = 1280;                       // width
     public int Height = 720;                       // height
-    public int BufferScalePercent = 100;           // starter.bufferscale (NOTE: launcher-only)
+    public int BufferScalePercent = 100;           // starter.bufferscale → gfx.framebuffer.fidelity
+    /// <summary>0 = Reinhard, 1 = ACESFilm (Pascal ChangeHDR).</summary>
+    public int HdrToneMap;                         // starter.hdr
     public int MaxTextureSize = 4096;              // maxtexturesize
     public int MaxCabTextureSize = 4096;           // maxcabtexturesize
     public int TextureFiltering = 8;               // anisotropicfiltering (1/2/4/8/16)
@@ -146,6 +148,9 @@ public sealed class Settings
     public bool ShowAiVehicles = true;             // starter.show.ai (show //$o "-" consists)
     public bool DrivableOnly = true;               // starter.drivableonly (hide //$decor consists)
     public bool ShowArchivalSceneries = true;      // starter.show.archival
+    public bool HideArchivalVehicles = true;       // starter.hide.archivalvehicles
+    /// <summary>Last selected scenery file name (without path), restored on next launch.</summary>
+    public string LastScenery = "";                // starter.last.scenery
 
     /// <summary>gfxrenderer tokens in the order shown by the render-engine combo.</summary>
     public static readonly string[] RenderEngines =
@@ -160,6 +165,7 @@ public sealed class Settings
 
     private ConfigFile _config = new();
     private string _savePath = string.Empty;
+    private DateTime _configAgeUtc = DateTime.MinValue;
 
     /// <summary>Resolves the per-user eu07.ini path for the current OS.</summary>
     public static string UserConfigPath()
@@ -308,6 +314,7 @@ public sealed class Settings
         }
 
         ReadFromConfig();
+        TouchConfigAge();
     }
 
     /// <summary>Persists settings to the per-user eu07.ini, keeping unknown keys.</summary>
@@ -323,6 +330,8 @@ public sealed class Settings
     public void SaveTo(string path)
     {
         WriteToConfig();
+        ApplyFramebufferFidelity();
+        ApplyHdrShader();
 
         try
         {
@@ -330,11 +339,109 @@ public sealed class Settings
             if (!string.IsNullOrEmpty(dir))
                 Directory.CreateDirectory(dir);
             File.WriteAllText(path, _config.ToText(), FileEncoding);
+            TouchConfigAge();
         }
         catch
         {
             // Could not write (permissions / path). Leave values in memory.
         }
+    }
+
+    public void TouchConfigAge()
+    {
+        string path = string.IsNullOrEmpty(_savePath) ? UserConfigPath() : _savePath;
+        try
+        {
+            _configAgeUtc = File.Exists(path)
+                ? File.GetLastWriteTimeUtc(path)
+                : DateTime.UtcNow;
+        }
+        catch
+        {
+            _configAgeUtc = DateTime.UtcNow;
+        }
+    }
+
+    /// <summary>Pascal CheckSettingsFile: true when eu07.ini is newer than last load/save.</summary>
+    public bool IsConfigNewerOnDisk()
+    {
+        string path = string.IsNullOrEmpty(_savePath) ? UserConfigPath() : _savePath;
+        try
+        {
+            if (!File.Exists(path) || _configAgeUtc == DateTime.MinValue)
+                return false;
+            return File.GetLastWriteTimeUtc(path) > _configAgeUtc + TimeSpan.FromSeconds(1);
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    // Map BufferScalePercent → gfx.framebuffer.fidelity like Pascal's 720/1080/1440/Custom.
+    private void ApplyFramebufferFidelity()
+    {
+        int fidelity = BufferScalePercent switch
+        {
+            <= 75 => 1,
+            <= 125 => 2,
+            <= 175 => 3,
+            _ => 0
+        };
+        if (fidelity > 0)
+            _config.SetInt("gfx.framebuffer.fidelity", fidelity);
+        else
+            _config.Remove("gfx.framebuffer.fidelity");
+    }
+
+    /// <summary>Copy Reinhard/ACESFilm GLSL into shaders/tonemapping.glsl when present.</summary>
+    public void ApplyHdrShader()
+    {
+        // Only meaningful for full / legacy / experimental renderers (Pascal).
+        if (RenderEngine is not (0 or 1 or 5))
+            return;
+
+        string name = HdrToneMap == 0 ? "Reinhard.glsl" : "ACESFilm.glsl";
+        string? src = FindBundled(name);
+        if (src is null) return;
+
+        try
+        {
+            string destDir = Path.Combine(Directory.GetCurrentDirectory(), "shaders");
+            Directory.CreateDirectory(destDir);
+            File.Copy(src, Path.Combine(destDir, "tonemapping.glsl"), overwrite: true);
+        }
+        catch { /* missing shaders dir / permissions */ }
+    }
+
+    private static string? FindBundled(string fileName)
+    {
+        foreach (string dir in new[]
+                 {
+                     Path.Combine(Directory.GetCurrentDirectory(), "starter"),
+                     Path.Combine(AppContext.BaseDirectory, "startercfg"),
+                     Path.Combine(Directory.GetCurrentDirectory(), "startercfg")
+                 })
+        {
+            string path = Path.Combine(dir, fileName);
+            if (File.Exists(path)) return path;
+        }
+        return null;
+    }
+
+    /// <summary>Pascal chLogExt on exit: dump missing vehicle assets to starter/bledy.txt.</summary>
+    public void DumpMissingVehicleLog()
+    {
+        if (!LogMissingVehicleFiles) return;
+        try
+        {
+            var lines = GameData.Instance.Vehicles.CollectMissingAssetLines();
+            if (lines.Count == 0) return;
+            string dir = Path.Combine(Directory.GetCurrentDirectory(), "starter");
+            Directory.CreateDirectory(dir);
+            File.WriteAllLines(Path.Combine(dir, "bledy.txt"), lines);
+        }
+        catch { }
     }
 
     // ── config → fields ───────────────────────────────────────────────────
@@ -388,6 +495,7 @@ public sealed class Settings
         DebugMode = c.GetBool("debugmode", false);
         VirtualShunting = c.GetBool("ai.trainman", true);
         LogMissingVehicleFiles = c.GetBool("starter.logmissingvehicles", false);
+        HdrToneMap = Clamp(c.GetInt("starter.hdr", 0), 0, 1);
 
         // Graphics
         RenderEngine = IndexOf(RenderEngines, c.GetString("gfxrenderer", "full"), 0);
@@ -470,6 +578,8 @@ public sealed class Settings
         ShowAiVehicles = c.GetBool("starter.show.ai", true);
         DrivableOnly = c.GetBool("starter.drivableonly", true);
         ShowArchivalSceneries = c.GetBool("starter.show.archival", true);
+        HideArchivalVehicles = c.GetBool("starter.hide.archivalvehicles", true);
+        LastScenery = c.GetString("starter.last.scenery", "");
     }
 
     // ── fields → config ───────────────────────────────────────────────────
@@ -511,6 +621,7 @@ public sealed class Settings
         c.SetBool("debugmode", DebugMode);
         c.SetBool("ai.trainman", VirtualShunting);
         c.SetBool("starter.logmissingvehicles", LogMissingVehicleFiles);
+        c.SetInt("starter.hdr", Clamp(HdrToneMap, 0, 1));
 
         // Graphics
         c.Set("gfxrenderer", RenderEngines[Clamp(RenderEngine, 0, RenderEngines.Length - 1)]);
@@ -590,6 +701,11 @@ public sealed class Settings
         c.SetBool("starter.show.ai", ShowAiVehicles);
         c.SetBool("starter.drivableonly", DrivableOnly);
         c.SetBool("starter.show.archival", ShowArchivalSceneries);
+        c.SetBool("starter.hide.archivalvehicles", HideArchivalVehicles);
+        if (!string.IsNullOrWhiteSpace(LastScenery))
+            c.Set("starter.last.scenery", LastScenery);
+        else
+            c.Remove("starter.last.scenery");
     }
 
     // ── small helpers ──────────────────────────────────────────────────────

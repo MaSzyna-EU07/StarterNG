@@ -131,6 +131,8 @@ public partial class Settings : UserControl
     }
 
     // ── Settings instance → controls ──────────────────────────────────────
+    public void ReloadFromSettings() => ApplyToUi();
+
     private void ApplyToUi()
     {
         var s = StarterNG.Classes.Settings.Instance;
@@ -175,6 +177,7 @@ public partial class Settings : UserControl
 
             // Graphics
             RenderEngineCb.SelectedIndex = s.RenderEngine;
+            HdrToneMapCb.SelectedIndex = Clamp(s.HdrToneMap, 0, 1);
             SelectResolution(s.Width, s.Height);
             bufferScale.Value = s.BufferScalePercent;
             textureResolutionSlider.Value = Log2(s.MaxTextureSize, 12);
@@ -246,6 +249,7 @@ public partial class Settings : UserControl
             AutoCloseStarterCb.IsChecked = s.AutoCloseStarter;
             LargeThumbnailsCb.IsChecked = s.LargeThumbnails;
             AutoExpandTreeCb.IsChecked = s.AutoExpandSceneryTree;
+            HideArchivalVehiclesCb.IsChecked = s.HideArchivalVehicles;
             BatteryDefaultCb.SelectedIndex = (int)s.BatteryDefault;
         }
         finally
@@ -293,6 +297,7 @@ public partial class Settings : UserControl
 
         // Graphics
         s.RenderEngine = Math.Max(0, RenderEngineCb.SelectedIndex);
+        s.HdrToneMap = Clamp(HdrToneMapCb.SelectedIndex, 0, 1);
         ReadResolution(s);
         s.BufferScalePercent = (int)bufferScale.Value;
         s.MaxTextureSize = 1 << (int)textureResolutionSlider.Value;
@@ -364,6 +369,7 @@ public partial class Settings : UserControl
         s.AutoCloseStarter = IsChecked(AutoCloseStarterCb);
         s.LargeThumbnails = IsChecked(LargeThumbnailsCb);
         s.AutoExpandSceneryTree = IsChecked(AutoExpandTreeCb);
+        s.HideArchivalVehicles = IsChecked(HideArchivalVehiclesCb);
         s.BatteryDefault = (BatteryDefault)Math.Max(0, BatteryDefaultCb.SelectedIndex);
     }
 
