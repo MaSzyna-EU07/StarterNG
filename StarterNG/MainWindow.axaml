@@ -9,11 +9,14 @@
     xmlns:views="clr-namespace:StarterNG.Views"
     xmlns:starterNg="clr-namespace:StarterNG"
     Title="Starter MaSzyna"
+    Icon="/Assets/starter.ico"
     Width="1200" Height="768" MinWidth="1200" MinHeight="666"
     WindowStartupLocation="CenterScreen">
     <!-- The client area is extended over the title bar in code-behind (the
          ExtendClientArea* hints), so the logo + nav sit on the top bar while the
-         OS minimise / maximise / close buttons stay in the top-right corner. -->
+         standard minimise / maximise / close buttons stay in the top-right corner.
+         Extending the client area also makes Avalonia 12 add an extra full-screen caption
+         button; it is hidden in App.axaml via its WindowDecorationProperties.ElementRole. -->
 
     <DockPanel LastChildFill="True">
 
@@ -27,27 +30,24 @@
                 BorderThickness="0,0,0,1">
             <Grid RowDefinitions="32,48">
 
-                <!-- Row 0: title / caption strip. Transparent background makes the
-                     whole strip a drag handle (PointerPressed -> BeginMoveDrag),
-                     and the OS buttons render at its top-right. The log button sits
-                     on top of the strip, just left of the OS min/max/close buttons. -->
-                <StackPanel Orientation="Horizontal" Spacing="16" Grid.Row="0">
-                    <Border Background="Transparent"
-                            PointerPressed="TitleBar_OnPointerPressed">
-                        <TextBlock Text="Starter MaSzyna" VerticalAlignment="Center"
-                                   Margin="14,0,0,0" FontSize="11"
-                                   Foreground="{StaticResource CarbonFgDim}" />
-                    </Border>
+                <!-- Row 0: title / caption strip. The transparent background spans the
+                     whole strip so PointerPressed -> BeginMoveDrag drags the window from
+                     anywhere on it (the log button and the OS caption buttons handle their
+                     own clicks). The OS min/max/close buttons render at its top-right, so
+                     ~140px is reserved on the right for them. -->
+                <Grid Grid.Row="0" Background="Transparent"
+                      PointerPressed="TitleBar_OnPointerPressed"
+                      ColumnDefinitions="*,Auto">
+                    <TextBlock Grid.Column="0" Text="Starter MaSzyna" VerticalAlignment="Center"
+                               Margin="14,0,0,0" FontSize="11"
+                               Foreground="{StaticResource CarbonFgDim}" />
 
-                    <!-- Reserve ~140px on the right for the OS caption buttons so the
-                         log button lands immediately to their left. -->
-                    <Button Classes="Basic" Click="openLastLogClick"
-                            HorizontalAlignment="Left" VerticalAlignment="Stretch"
-                            Margin="0,0,0,0" Padding="10,0" Cursor="Hand"
+                    <Button Grid.Column="1" Classes="Basic" Click="openLastLogClick"
+                            VerticalAlignment="Stretch" Margin="0,0,140,0" Padding="10,0" Cursor="Hand"
                             ToolTip.Tip="{Binding [ShowLatestLogTooltip], Source={x:Static starterNg:App.Loc}}">
                         <materialIcons:MaterialIcon Kind="FileDocument" Height="16" Width="16" />
                     </Button>
-                </StackPanel>
+                </Grid>
 
                 <!-- Row 1: logo + navigation (left) and the right cluster (right) -->
                 <Grid Grid.Row="1" ColumnDefinitions="Auto,Auto,*,Auto">
