@@ -61,6 +61,25 @@ public static class ConsistContextMenu
         }
         menu.Items.Add(load);
 
+        var sort = new MenuItem { Header = App.Loc["PresetSort"] };
+        var sortName = new MenuItem
+        {
+            Header = (PresetStore.SortMode == PresetSort.Name ? "● " : "○ ") + App.Loc["PresetSortName"]
+        };
+        sortName.Click += (_, _) => PresetStore.SortMode = PresetSort.Name;
+        var sortTrack = new MenuItem
+        {
+            Header = (PresetStore.SortMode == PresetSort.Track ? "● " : "○ ") + App.Loc["PresetSortTrack"]
+        };
+        sortTrack.Click += (_, _) => PresetStore.SortMode = PresetSort.Track;
+        sort.Items.Add(sortName);
+        sort.Items.Add(sortTrack);
+        menu.Items.Add(sort);
+
+        var import = new MenuItem { Header = App.Loc["PresetImportMagazyn"] };
+        import.Click += (_, _) => PresetStore.ImportMagazyn();
+        menu.Items.Add(import);
+
         menu.Items.Add(new Separator());
 
         // ── Clipboard (full trainset text) ─────────────────────────────────────

@@ -1,12 +1,21 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Text.Json.Serialization.Metadata;
+using System.Text.RegularExpressions;
 
 namespace StarterNG.Classes;
+
+public enum PresetSort
+{
+    Name,
+    Track
+}
 
 /// <summary>One saved consist in the user's vehicle warehouse.</summary>
 public sealed class TrainsetPreset
@@ -54,6 +63,9 @@ public static class PresetStore
 
     public static string FilePath { get; } = ResolvePath();
 
+    /// <summary>Pascal miSortByVehicleName / miSortByTrackName for the warehouse menu.</summary>
+    public static PresetSort SortMode { get; set; } = PresetSort.Name;
+
     // Source-generated metadata keeps (de)serialisation AOT/trim-safe, matching the
     // approach used for the vehicle database.
     private static readonly JsonSerializerOptions Options = new()
@@ -65,8 +77,16 @@ public static class PresetStore
     private static JsonTypeInfo<PresetCollection> TypeInfo =>
         (JsonTypeInfo<PresetCollection>)Options.GetTypeInfo(typeof(PresetCollection));
 
-    /// <summary>All saved presets, sorted by name. Empty when none / unreadable.</summary>
-    public static IReadOnlyList<TrainsetPreset> All() => Load().Presets;
+    /// <summary>All saved presets, sorted per <see cref="SortMode"/>.</summary>
+    public static IReadOnlyList<TrainsetPreset> All()
+    {
+        var list = Load().Presets.ToList();
+        if (SortMode == PresetSort.Track)
+            list.Sort((a, b) => string.Compare(TrackOf(a), TrackOf(b), StringComparison.OrdinalIgnoreCase));
+        else
+            list.Sort((a, b) => string.Compare(a.Name, b.Name, StringComparison.OrdinalIgnoreCase));
+        return list;
+    }
 
     /// <summary>
     /// Saves (or overwrites, by name) a consist preset. No-op on a blank name or
@@ -92,6 +112,77 @@ public static class PresetStore
         if (col.Presets.RemoveAll(p => string.Equals(p.Name, name, StringComparison.OrdinalIgnoreCase)) > 0)
             Persist(col);
     }
+
+    /// <summary>
+    /// Import Pascal <c>starter/magazyn.ini</c> (or legacy starter.ini / RAINSTED.INI)
+    /// into the JSON warehouse. Returns how many consists were added.
+    /// </summary>
+    public static int ImportMagazyn(string? path = null)
+    {
+        path ??= FindMagazynPath();
+        if (path is null || !File.Exists(path)) return 0;
+
+        int added = 0;
+        try
+        {
+            string text = File.ReadAllText(path, Encoding.GetEncoding(1250));
+            var section = Regex.Matches(text,
+                @"\[TRAINSET\d+\s*=\s*([^\]]*)\](.*?)(?=\[TRAINSET|\z)",
+                RegexOptions.IgnoreCase | RegexOptions.Singleline);
+
+            foreach (Match m in section)
+            {
+                string name = m.Groups[1].Value.Trim();
+                if (name.Length == 0) name = $"import_{added + 1}";
+
+                var nodes = new List<string>();
+                foreach (Match line in Regex.Matches(m.Groups[2].Value, @"(?m)^\s*\d+\s*=\s*(.+)$"))
+                {
+                    string body = line.Groups[1].Value.Trim();
+                    if (!body.Contains("enddynamic", StringComparison.OrdinalIgnoreCase))
+                        body += " enddynamic";
+                    nodes.Add(body);
+                }
+                if (nodes.Count == 0) continue;
+
+                var sb = new StringBuilder();
+                sb.Append("trainset ").Append(Sanitize(name)).Append(" none 0 0\n");
+                foreach (string n in nodes)
+                    sb.Append(n).Append('\n');
+                sb.Append("endtrainset\n");
+
+                Save(name, sb.ToString());
+                added++;
+            }
+        }
+        catch { }
+        return added;
+    }
+
+    private static string? FindMagazynPath()
+    {
+        string cwd = Directory.GetCurrentDirectory();
+        foreach (string rel in new[]
+                 {
+                     Path.Combine("starter", "magazyn.ini"),
+                     "starter.ini",
+                     "RAINSTED.INI"
+                 })
+        {
+            string p = Path.Combine(cwd, rel);
+            if (File.Exists(p)) return p;
+        }
+        return null;
+    }
+
+    private static string TrackOf(TrainsetPreset p)
+    {
+        var m = Regex.Match(p.Entry ?? "", @"^\s*trainset\s+\S+\s+(\S+)", RegexOptions.Multiline | RegexOptions.IgnoreCase);
+        return m.Success ? m.Groups[1].Value : "";
+    }
+
+    private static string Sanitize(string name) =>
+        string.IsNullOrWhiteSpace(name) ? "preset" : name.Replace(' ', '_');
 
     private static PresetCollection Load()
     {
