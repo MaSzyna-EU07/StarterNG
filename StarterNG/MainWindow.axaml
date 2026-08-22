@@ -70,9 +70,9 @@
                                      Tag="settings"
                                      IsCheckedChanged="Nav_OnCheckedChanged"
                                      Content="{Binding [NavSettings], Source={x:Static starterNg:App.Loc}}" />
-                        <Button Classes="Basic" Width="48" Cursor="Hand"
+                        <Button x:Name="HelpButton" Classes="Basic" Width="48" Cursor="Hand"
                                 ToolTip.Tip="{Binding [Help], Source={x:Static starterNg:App.Loc}}"
-                                Tag="https://wiki.eu07.pl/" Click="linkClick"
+                                Click="HelpButton_OnClick"
                                 Content="?" FontWeight="Bold" FontSize="16"
                                 HorizontalContentAlignment="Center" />
                     </StackPanel>
@@ -88,11 +88,8 @@
                                    FontSize="10" Foreground="{StaticResource CarbonFg}" Padding="0" />
                         </StackPanel>
 
-                        <ComboBox x:Name="LangCombo" Width="100" VerticalAlignment="Center"
-                                  SelectionChanged="LangCombo_OnSelectionChanged">
-                            <ComboBoxItem>Polski</ComboBoxItem>
-                            <ComboBoxItem>English</ComboBoxItem>
-                        </ComboBox>
+                        <ComboBox x:Name="LangCombo" Width="110" VerticalAlignment="Center"
+                                  SelectionChanged="LangCombo_OnSelectionChanged" />
 
                         <Button Classes="Basic" Cursor="Hand" Tag="http://eu07.pl/" Click="linkClick">
                             <materialIcons:MaterialIcon Kind="Web" />
@@ -115,7 +112,7 @@
         </Border>
 
         <!-- ── Full-width START button (bottom) ─────────────────────────────── -->
-        <Button DockPanel.Dock="Bottom" Classes="Start" Height="44" Margin="6"
+        <Button Name="startButton" DockPanel.Dock="Bottom" Classes="Start" Height="44" Margin="6"
                 Click="StartButton_OnClick"
                 Content="{Binding [Start], Source={x:Static starterNg:App.Loc}}" />
 
