@@ -66,6 +66,9 @@ public class VehicleTexture
 
     /// <summary>Group's "category" letter, or null when the group is unknown.</summary>
     [JsonIgnore] public string? ResolvedCategory { get; internal set; }
+
+    /// <summary>True when the texture's group is marked archival (<c>archived</c> in JSON).</summary>
+    [JsonIgnore] public bool ResolvedArchived { get; internal set; }
 }
 
 /// <summary>Alternate mapping from a malformed multi-= legacy line.</summary>
@@ -297,7 +300,24 @@ public class VehicleDatabase
 
             t.ResolvedCategory = category;
             t.ResolvedClass = mini;
+            t.ResolvedArchived = g?.Archived ?? false;
         }
+    }
+
+    /// <summary>
+    /// True when the texture is a non-leading member of an auto-consist set
+    /// (subsequent multi-unit cars that the depot browser should hide).
+    /// </summary>
+    public bool IsSetFollower(VehicleTexture texture)
+    {
+        if (string.IsNullOrEmpty(texture.Uuid)) return false;
+        if (!SetByTextureUuid.TryGetValue(texture.Uuid!, out var set) ||
+            set.TextureRefs is null || set.TextureRefs.Count < 2)
+            return false;
+
+        string? lead = set.TextureRefs.FirstOrDefault(r => !string.IsNullOrEmpty(r));
+        return lead != null &&
+               !string.Equals(lead, texture.Uuid, StringComparison.OrdinalIgnoreCase);
     }
 
     /// <summary>
@@ -330,6 +350,31 @@ public class VehicleDatabase
         if (string.IsNullOrEmpty(skinFile)) return null;
         string key = Path.GetFileNameWithoutExtension(skinFile).ToLowerInvariant();
         return TextureBySkin.TryGetValue(key, out var tex) ? tex : null;
+    }
+
+    /// <summary>Lines for starter/bledy.txt (Pascal chLogExt / missing assets).</summary>
+    public List<string> CollectMissingAssetLines()
+    {
+        var lines = new List<string>();
+        foreach (var t in Textures)
+        {
+            string dir = Path.Combine(Directory.GetCurrentDirectory(), "dynamic",
+                t.Directory.Replace('/', Path.DirectorySeparatorChar).TrimEnd('\\', '/'));
+            string skin = Path.Combine(dir, t.Skinfile);
+            if (!string.IsNullOrEmpty(t.Skinfile) && !File.Exists(skin) &&
+                !File.Exists(Path.ChangeExtension(skin, ".mat")) &&
+                !File.Exists(Path.ChangeExtension(skin, ".bmp")))
+                lines.Add($"# no file: {t.Directory}{t.Skinfile}");
+
+            if (!string.IsNullOrEmpty(t.Model))
+            {
+                string model = Path.Combine(dir, t.Model!);
+                if (!File.Exists(model) && !File.Exists(Path.ChangeExtension(model, ".t3d")) &&
+                    !File.Exists(Path.ChangeExtension(model, ".e3d")))
+                    lines.Add($"# no model: {t.Directory}{t.Model}");
+            }
+        }
+        return lines;
     }
 
     /// <summary>Header label for the group a texture belongs to.</summary>
