@@ -839,6 +839,16 @@ public partial class Depot : UserControl
     private static bool IsPoweredCategory(string? c) =>
         c is "e" or "s" or "p" or "z" or "a";
 
+    // Every caption here is read from App.Loc when it is built, so a language
+    // switch has to build them again.
+    public void RebuildAfterLanguageChange()
+    {
+        PopulateCategoryCombo();     // -> class combo -> browser list
+        PopulateSceneryConsists();
+        RebuildConsist();            // -> train stats
+        UpdateDetails();
+    }
+
     // ------------------------------------------------------------- scenery combos
 
     // Lists the consists of the scenery currently selected in the Scenarios tab,
@@ -1501,13 +1511,35 @@ public partial class Depot : UserControl
         int unitIdx = _consist.IndexOf(item);
 
         var panel = new StackPanel { Spacing = 2 };
-        panel.Children.Add(new TextBlock
+
+        var copy = new Button
+        {
+            Content = App.Loc["CopyCoupler"],
+            FontSize = 11,
+            Padding = new Thickness(6, 1),
+            Margin = new Thickness(12, 0, 0, 0),
+            IsEnabled = unitIdx > 0,
+            Cursor = _hand
+        };
+        copy.Classes.Add("Flat");
+        copy.Click += (_, _) =>
+        {
+            if (unitIdx <= 0) return;
+            d.Coupling.Flags = _consist[unitIdx - 1].Cars[^1].Coupling.Flags;
+            RebuildConsist();
+        };
+
+        var header = new DockPanel { Margin = new Thickness(0, 0, 0, 2) };
+        DockPanel.SetDock(copy, Dock.Right);
+        header.Children.Add(copy);
+        header.Children.Add(new TextBlock
         {
             Text = App.Loc["Coupling"],
             FontWeight = FontWeight.Bold,
             FontSize = 11,
-            Margin = new Thickness(0, 0, 0, 2)
+            VerticalAlignment = VerticalAlignment.Center
         });
+        panel.Children.Add(header);
 
         for (int i = 0; i < CouplingBitKeys.Length; i++)
         {
@@ -1521,23 +1553,6 @@ public partial class Depot : UserControl
             check.IsCheckedChanged += (_, _) => d.Coupling.Set(bit, check.IsChecked == true);
             panel.Children.Add(check);
         }
-
-        var copy = new Button
-        {
-            Content = App.Loc["CopyCoupler"],
-            FontSize = 11,
-            Margin = new Thickness(0, 4, 0, 0),
-            IsEnabled = unitIdx > 0,
-            Cursor = _hand
-        };
-        copy.Classes.Add("Flat");
-        copy.Click += (_, _) =>
-        {
-            if (unitIdx <= 0) return;
-            d.Coupling.Flags = _consist[unitIdx - 1].Cars[^1].Coupling.Flags;
-            RebuildConsist();
-        };
-        panel.Children.Add(copy);
 
         var thermo = new CheckBox
         {

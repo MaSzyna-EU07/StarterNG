@@ -54,7 +54,8 @@
                                      Tag="settings"
                                      IsCheckedChanged="Nav_OnCheckedChanged"
                                      Content="{Binding [NavSettings], Source={x:Static starterNg:App.Loc}}" />
-                        <Button Classes="Basic" Click="openLastLogClick" VerticalAlignment="Center" Padding="10,0" Cursor="Hand"
+                        <Button Classes="Basic" Click="openLastLogClick" Width="48" Cursor="Hand"
+                                HorizontalContentAlignment="Center"
                                 ToolTip.Tip="{Binding [ShowLatestLogTooltip], Source={x:Static starterNg:App.Loc}}">
                             <materialIcons:MaterialIcon Kind="FileDocument" Height="16" Width="16" />
                         </Button>

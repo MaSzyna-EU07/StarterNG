@@ -487,6 +487,7 @@ public partial class Scenarios : UserControl
         }
         if (AppState.Instance.CurrentScenery != null)
             ShowSceneryInfo(AppState.Instance.CurrentScenery);
+        RefreshSelectedConsist();   // stats labels (length / mass / track)
     }
 
     private async void ReloadSceneries_OnClick(object? sender, RoutedEventArgs e)

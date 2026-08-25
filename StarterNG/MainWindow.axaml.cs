@@ -101,6 +101,8 @@ public partial class MainWindow : Window
         {
             App.ApplyLanguage(lang);
             ScenariosView?.RebuildAfterLanguageChange();
+            DepotView?.RebuildAfterLanguageChange();
+            UpdateStartButton();
         }
     }
 
