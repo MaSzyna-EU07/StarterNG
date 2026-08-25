@@ -20,6 +20,9 @@ namespace StarterNG;
 
 public partial class MainWindow : Window
 {
+    // Height of the caption strip the OS buttons live in.
+    private const int TitleBarHeight = 32;
+
     private DateTime _openedUtc = DateTime.UtcNow;
 
     public MainWindow()
@@ -33,13 +36,13 @@ public partial class MainWindow : Window
         // caption buttons, so only the two supported hints are set here (this
         // Avalonia build no longer exposes ExtendClientAreaChromeHints).
         ExtendClientAreaToDecorationsHint = true;
-        ExtendClientAreaTitleBarHeightHint = 32;
+        ExtendClientAreaTitleBarHeightHint = TitleBarHeight;
 
-        // Windows draws the min / max / close buttons over the top-right corner of
-        // the extended client area, on top of the version + social cluster. Keep
-        // that corner free (3 buttons at the default 46px, plus a little air).
+        // Windows draws the min / max / close buttons over the top of the extended
+        // client area, on top of the toolbar row. Push the bar down by the caption
+        // height so they get a strip of their own.
         if (OperatingSystem.IsWindows())
-            RightCluster.Margin = new Thickness(0, 0, 146, 0);
+            TopBar.Padding = new Thickness(0, TitleBarHeight, 0, 0);
 
         PopulateLangCombo();
 
