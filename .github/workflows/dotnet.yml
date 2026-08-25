@@ -127,8 +127,10 @@ jobs:
       RELEASE_NAME: ${{ github.ref_name == 'main' && 'Latest build' || 'Staging build' }}
 
     steps:
+      # v8, not v7: the packages are uploaded with archive: false, and only v8
+      # can pull those non-zipped artifacts back down.
       - name: Collect the packages
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           path: dist
           merge-multiple: true
