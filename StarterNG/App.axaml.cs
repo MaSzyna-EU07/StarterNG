@@ -75,25 +75,35 @@ public partial class App : Application
                     KeyboardConfig.Instance.Save();
             };
 
-            var splash = new SplashWindow();
-            desktop.MainWindow = splash;
-            splash.Show();
-
-            // Progress<T> marshals callbacks back to this (UI) thread.
-            var progress = new Progress<LoadStatus>(splash.Report);
+            SplashWindow? splash = null;
+            var sw = System.Diagnostics.Stopwatch.StartNew();
 
             Task.Run(async () =>
             {
+                var progress = new Progress<LoadStatus>(status =>
+                {
+                    Dispatcher.UIThread.Post(() =>
+                    {
+                        // Show splash only if loading takes more than 300ms
+                        if (sw.ElapsedMilliseconds > 300 && splash == null)
+                        {
+                            splash = new SplashWindow();
+                            desktop.MainWindow = splash;
+                            splash.Show();
+                        }
+                        splash?.Report(status);
+                    });
+                });
+
                 GameData.Instance.Load(progress);
-                await Task.Delay(400); // let the completed bar be visible briefly
             }).ContinueWith(_ =>
             {
                 Dispatcher.UIThread.Post(() =>
                 {
                     var main = new MainWindow();
-                    desktop.MainWindow = main;   // keep a main window before closing the splash
+                    desktop.MainWindow = main;
                     main.Show();
-                    splash.Close();
+                    splash?.Close();
                 });
             });
         }

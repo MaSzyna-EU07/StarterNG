@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace StarterNG.Classes;
 
@@ -66,15 +67,26 @@ public sealed class GameData
         // (length / mass / couplings) resolve without a UI-thread directory scan.
         Physics.PreloadIndex();
 
-        // Phase 2 - sceneries
-        foreach (string file in scnFiles)
-        {
-            progress?.Report(new LoadStatus((double)done / total, LoadPhase.Sceneries,
-                Path.GetFileName(file)));
-            try { Sceneries.Add(new Scenery(file)); }
-            catch { /* skip unreadable scenery */ }
-            done++;
-        }
+        // Phase 2 - sceneries (parallelized)
+        var sceneryLock = new object();
+        var doneCount = done;
+        Parallel.ForEach(scnFiles, new ParallelOptions { MaxDegreeOfParallelism = Environment.ProcessorCount },
+            file =>
+            {
+                try
+                {
+                    var scenery = new Scenery(file);
+                    lock (sceneryLock)
+                    {
+                        Sceneries.Add(scenery);
+                        doneCount++;
+                        progress?.Report(new LoadStatus((double)doneCount / total, LoadPhase.Sceneries,
+                            Path.GetFileName(file)));
+                    }
+                }
+                catch { /* skip unreadable scenery */ }
+            });
+        done = doneCount;
 
         progress?.Report(new LoadStatus(1.0, LoadPhase.Done, null));
         Loaded = true;
@@ -84,11 +96,19 @@ public sealed class GameData
     public void ReloadSceneries(string sceneryDir = "scenery/")
     {
         Sceneries.Clear();
-        foreach (string file in EnumerateScenery(sceneryDir))
-        {
-            try { Sceneries.Add(new Scenery(file)); }
-            catch { /* skip */ }
-        }
+        var scnFiles = EnumerateScenery(sceneryDir);
+        var sceneryLock = new object();
+        Parallel.ForEach(scnFiles, new ParallelOptions { MaxDegreeOfParallelism = Environment.ProcessorCount },
+            file =>
+            {
+                try
+                {
+                    var scenery = new Scenery(file);
+                    lock (sceneryLock)
+                        Sceneries.Add(scenery);
+                }
+                catch { /* skip */ }
+            });
     }
 
     private static List<string> EnumerateScenery(string sceneryDir)

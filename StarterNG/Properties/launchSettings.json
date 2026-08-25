@@ -2,7 +2,7 @@
   "profiles": {
     "StarterNG": {
       "commandName": "Project",
-      "workingDirectory": "E:\\Hirek\\Games\\Steam\\steamapps\\common\\MaSzyna"
+      "workingDirectory": "/home/maj00r/.local/share/Steam/steamapps/common/MaSzyna/"
     }
   }
 }

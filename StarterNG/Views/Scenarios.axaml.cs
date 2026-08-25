@@ -6,6 +6,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
@@ -488,18 +489,26 @@ public partial class Scenarios : UserControl
             ShowSceneryInfo(AppState.Instance.CurrentScenery);
     }
 
-    private void ReloadSceneries_OnClick(object? sender, RoutedEventArgs e)
+    private async void ReloadSceneries_OnClick(object? sender, RoutedEventArgs e)
     {
-        string? selected = AppState.Instance.CurrentScenery?.Path;
-        GameData.Instance.ReloadSceneries();
-        Sceneries = GameData.Instance.Sceneries;
-        BuildSceneryTree();
-        if (!string.IsNullOrEmpty(selected))
+        reloadButton.IsEnabled = false;
+        try
         {
-            StarterNG.Classes.Settings.Instance.LastScenery =
-                Path.GetFileNameWithoutExtension(selected);
+            string? selected = AppState.Instance.CurrentScenery?.Path;
+            await Task.Run(() => GameData.Instance.ReloadSceneries());
+            Sceneries = GameData.Instance.Sceneries;
+            BuildSceneryTree();
+            if (!string.IsNullOrEmpty(selected))
+            {
+                StarterNG.Classes.Settings.Instance.LastScenery =
+                    Path.GetFileNameWithoutExtension(selected);
+            }
+            RestoreLastScenery();
         }
-        RestoreLastScenery();
+        finally
+        {
+            reloadButton.IsEnabled = true;
+        }
     }
 
     private void OpenSceneryDir_OnClick(object? sender, RoutedEventArgs e)

@@ -28,29 +28,13 @@
                 Background="{StaticResource CarbonPanelBg}"
                 BorderBrush="{StaticResource CarbonBorderLight}"
                 BorderThickness="0,0,0,1">
-            <Grid RowDefinitions="32,48">
+            <Grid RowDefinitions="48">
 
-                <!-- Row 0: title / caption strip. The transparent background spans the
-                     whole strip so PointerPressed -> BeginMoveDrag drags the window from
-                     anywhere on it (the log button and the OS caption buttons handle their
-                     own clicks). The OS min/max/close buttons render at its top-right, so
-                     ~140px is reserved on the right for them. -->
-                <Grid Grid.Row="0" Background="Transparent"
-                      PointerPressed="TitleBar_OnPointerPressed"
-                      ColumnDefinitions="*,Auto">
-                    <TextBlock Grid.Column="0" Text="Starter MaSzyna" VerticalAlignment="Center"
-                               Margin="14,0,0,0" FontSize="11"
-                               Foreground="{StaticResource CarbonFgDim}" />
-
-                    <Button Grid.Column="1" Classes="Basic" Click="openLastLogClick"
-                            VerticalAlignment="Stretch" Margin="0,0,140,0" Padding="10,0" Cursor="Hand"
-                            ToolTip.Tip="{Binding [ShowLatestLogTooltip], Source={x:Static starterNg:App.Loc}}">
-                        <materialIcons:MaterialIcon Kind="FileDocument" Height="16" Width="16" />
-                    </Button>
-                </Grid>
-
-                <!-- Row 1: logo + navigation (left) and the right cluster (right) -->
-                <Grid Grid.Row="1" ColumnDefinitions="Auto,Auto,*,Auto">
+                <!-- Logo + navigation (left) and the right cluster (right) -->
+                <!-- Drag-to-move handled by PointerPressed on parent grid -->
+                <Grid ColumnDefinitions="Auto,Auto,*,Auto"
+                      Background="Transparent"
+                      PointerPressed="TitleBar_OnPointerPressed">
 
                     <!-- Logo -->
                     <Image Grid.Column="0" Source="/Assets/Logo/maszyna_white.png"
@@ -70,6 +54,10 @@
                                      Tag="settings"
                                      IsCheckedChanged="Nav_OnCheckedChanged"
                                      Content="{Binding [NavSettings], Source={x:Static starterNg:App.Loc}}" />
+                        <Button Classes="Basic" Click="openLastLogClick" VerticalAlignment="Center" Padding="10,0" Cursor="Hand"
+                                ToolTip.Tip="{Binding [ShowLatestLogTooltip], Source={x:Static starterNg:App.Loc}}">
+                            <materialIcons:MaterialIcon Kind="FileDocument" Height="16" Width="16" />
+                        </Button>
                         <Button x:Name="HelpButton" Classes="Basic" Width="48" Cursor="Hand"
                                 ToolTip.Tip="{Binding [Help], Source={x:Static starterNg:App.Loc}}"
                                 Click="HelpButton_OnClick"
