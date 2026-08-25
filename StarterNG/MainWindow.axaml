@@ -20,10 +20,9 @@
 
     <DockPanel LastChildFill="True">
 
-        <!-- ── Top bar: thin caption strip (row 0) + toolbar (row 1) ────────────
-             The OS minimise / maximise / close buttons render at the top-right of
-             the caption strip, so they sit ABOVE the social-icon cluster, which
-             lives on the right of the toolbar row. -->
+        <!-- ── Top bar: logo, navigation and the right cluster in one row.
+             The OS minimise / maximise / close buttons render over its top-right
+             corner (see RightCluster). -->
         <Border DockPanel.Dock="Top"
                 Background="{StaticResource CarbonPanelBg}"
                 BorderBrush="{StaticResource CarbonBorderLight}"
@@ -66,10 +65,11 @@
                                 HorizontalContentAlignment="Center" />
                     </StackPanel>
 
-                    <!-- Right cluster: version, language, social links.
-                         In the toolbar row, so it sits below the OS caption buttons. -->
-                    <StackPanel Grid.Column="3" Orientation="Horizontal" VerticalAlignment="Center"
-                                Margin="0,0,8,0" Spacing="4">
+                    <!-- Right cluster: version, language, social links. On Windows
+                         the OS caption buttons are drawn over this corner, so the
+                         margin is widened in code-behind to clear them. -->
+                    <StackPanel x:Name="RightCluster" Grid.Column="3" Orientation="Horizontal"
+                                VerticalAlignment="Center" Margin="0,0,8,0" Spacing="4">
                         <StackPanel Orientation="Vertical" VerticalAlignment="Center" Margin="0,0,8,0">
                             <Label Content="{Binding [Version], Source={x:Static starterNg:App.Loc}}"
                                    FontSize="10" Foreground="{StaticResource CarbonFgDim}" Padding="0" />

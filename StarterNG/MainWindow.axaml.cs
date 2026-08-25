@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading;
+using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
@@ -32,9 +33,13 @@ public partial class MainWindow : Window
         // caption buttons, so only the two supported hints are set here (this
         // Avalonia build no longer exposes ExtendClientAreaChromeHints).
         ExtendClientAreaToDecorationsHint = true;
-        // Match the thin caption strip (row 0 of the top bar): the OS min/max/close
-        // buttons fill this height at the top-right, sitting above the social row.
         ExtendClientAreaTitleBarHeightHint = 32;
+
+        // Windows draws the min / max / close buttons over the top-right corner of
+        // the extended client area, on top of the version + social cluster. Keep
+        // that corner free (3 buttons at the default 46px, plus a little air).
+        if (OperatingSystem.IsWindows())
+            RightCluster.Margin = new Thickness(0, 0, 146, 0);
 
         PopulateLangCombo();
 
