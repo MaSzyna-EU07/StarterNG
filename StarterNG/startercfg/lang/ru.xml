@@ -223,7 +223,6 @@
     <String key="Yes">Да</String>
     <String key="No">Нет</String>
     <String key="TabInfo">Информация</String>
-    <String key="HdrToneMap">Тональная компрессия HDR</String>
     <String key="SettingsFileChangedTitle">Настройки</String>
     <String key="SettingsFileChanged">Файл eu07.ini изменён вне стартера. Загрузить заново?</String>
     <String key="AddAllCategory">Добавить всю категорию</String>

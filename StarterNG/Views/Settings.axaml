@@ -26,10 +26,9 @@
                     <StackPanel Spacing="8" Orientation="Vertical" Margin="12">
                         <StackPanel Spacing="8" Orientation="Horizontal">
                             <Label Content="{Binding [Language], Source={x:Static starterNg:App.Loc}}" VerticalAlignment="Center" FontSize="14" />
-                            <ComboBox x:Name="ChangeLanguageCb" MinWidth="350" MaxWidth="350" SelectedIndex="1" SelectionChanged="LanguageComboBox_OnSelectionChanged">
-                                <ComboBoxItem>Polski</ComboBoxItem>
-                                <ComboBoxItem>English</ComboBoxItem>
-                            </ComboBox>
+                            <!-- Filled from the lang/ folder in the constructor. -->
+                            <ComboBox x:Name="ChangeLanguageCb" MinWidth="350" MaxWidth="350"
+                                      SelectionChanged="LanguageComboBox_OnSelectionChanged" />
                         </StackPanel>
 
                         <CheckBox x:Name="FullscreenCb" Content="{Binding [Fullscreen], Source={x:Static starterNg:App.Loc}}" />
@@ -131,13 +130,6 @@
                             </ComboBox>
                         </StackPanel>
                         <StackPanel Spacing="8" Orientation="Horizontal">
-                            <Label VerticalAlignment="Center" FontSize="14" Content="{Binding [HdrToneMap], Source={x:Static starterNg:App.Loc}}" />
-                            <ComboBox x:Name="HdrToneMapCb" MinWidth="150" MaxWidth="150" SelectedIndex="0">
-                                <ComboBoxItem Content="Reinhard" />
-                                <ComboBoxItem Content="ACES Film" />
-                            </ComboBox>
-                        </StackPanel>
-                        <StackPanel Spacing="8" Orientation="Horizontal">
                             <Label VerticalAlignment="Center" FontSize="14" Content="{Binding [Resolution], Source={x:Static starterNg:App.Loc}}" />
                             <ComboBox x:Name="ResolutionCb" MinWidth="150" MaxWidth="150" SelectedIndex="0">
                                 <ComboBoxItem>3840x2160</ComboBoxItem>
@@ -187,6 +179,11 @@
                             <TextBlock VerticalAlignment="Center" FontSize="14" Text="{Binding [RenderRange], Source={x:Static starterNg:App.Loc}}" />
                             <Slider x:Name="RenderRangeSlider" Minimum="1" MaxWidth="400" HorizontalAlignment="Left"
                                     MinWidth="250" Maximum="3" Value="1" />
+                        </StackPanel>
+                        <StackPanel Spacing="8" Orientation="Horizontal">
+                            <TextBlock VerticalAlignment="Center" FontSize="14" Text="{Binding [TrackCurvesQuality], Source={x:Static starterNg:App.Loc}}" />
+                            <Slider x:Name="TrackCurvesSlider" Minimum="1" MaxWidth="400" HorizontalAlignment="Left"
+                                    MinWidth="250" Maximum="4" TickFrequency="1" IsSnapToTickEnabled="True" Value="4" />
                         </StackPanel>
                         <StackPanel Spacing="8" Orientation="Horizontal">
                             <CheckBox x:Name="FpsLimitEnableCb" Content="{Binding [FpsLimitEnable], Source={x:Static starterNg:App.Loc}}" />
@@ -258,7 +255,7 @@
                             <TextBlock VerticalAlignment="Center" FontSize="14" Text="{Binding [FieldOfView], Source={x:Static starterNg:App.Loc}}" />
                             <Slider Name="fovSlider" Minimum="5" MaxWidth="400" HorizontalAlignment="Left"
                                     MinWidth="250" Maximum="110" TickFrequency="5" IsSnapToTickEnabled="True" Value="30" />
-                            <Label VerticalAlignment="Center" FontSize="14" Content="{Binding #fovSlider.Value, StringFormat='{}{0} stopni'}" />
+                            <Label VerticalAlignment="Center" FontSize="14" Content="{Binding #fovSlider.Value, StringFormat='{}{0}°'}" />
                         </StackPanel>
                         <CheckBox x:Name="RenderScreensCb" Content="{Binding [RenderScreens], Source={x:Static starterNg:App.Loc}}" />
                         <CheckBox x:Name="RenderScreensThreadCb" Content="{Binding [RenderScreensThread], Source={x:Static starterNg:App.Loc}}" />
@@ -270,11 +267,6 @@
             <TabItem Header="{Binding [Physics], Source={x:Static starterNg:App.Loc}}">
                 <ScrollViewer VerticalScrollBarVisibility="Auto">
                     <StackPanel Spacing="8" Orientation="Vertical" Margin="12">
-                        <StackPanel Spacing="8" Orientation="Horizontal">
-                            <TextBlock VerticalAlignment="Center" FontSize="14" Text="{Binding [TrackCurvesQuality], Source={x:Static starterNg:App.Loc}}" />
-                            <Slider x:Name="TrackCurvesSlider" Minimum="1" MaxWidth="400" HorizontalAlignment="Left"
-                                    MinWidth="250" Maximum="4" TickFrequency="1" IsSnapToTickEnabled="True" Value="4" />
-                        </StackPanel>
                         <CheckBox x:Name="PhysicsAccuracyCb" Content="{Binding [PhysicsAccuracyIncreased], Source={x:Static starterNg:App.Loc}}" />
                         <CheckBox x:Name="PantographBreakCb" Content="{Binding [BreakingPantographPossibility], Source={x:Static starterNg:App.Loc}}" />
                         <CheckBox x:Name="OverheadOnlyCb" Content="{Binding [PowerOverheadLineOnly], Source={x:Static starterNg:App.Loc}}" />

@@ -223,7 +223,6 @@
     <String key="Yes">Tak</String>
     <String key="No">Nie</String>
     <String key="TabInfo">Informacje</String>
-    <String key="HdrToneMap">Tone mapping HDR</String>
     <String key="SettingsFileChangedTitle">Ustawienia</String>
     <String key="SettingsFileChanged">Plik eu07.ini został zmieniony poza starterem. Wczytać ponownie?</String>
     <String key="AddAllCategory">Dodaj całą kategorię</String>

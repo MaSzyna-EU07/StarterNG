@@ -45,6 +45,7 @@ public partial class MainWindow : Window
             TopBar.Padding = new Thickness(0, TitleBarHeight, 0, 0);
 
         PopulateLangCombo();
+        App.Loc.LanguageChanged += OnLanguageChanged;
 
         // Keep Start enabled/caption in sync with selection (Pascal actStartUpdate).
         AppState.Instance.Changed += UpdateStartButton;
@@ -79,39 +80,56 @@ public partial class MainWindow : Window
         SettingsView.IsVisible = page == "settings";
     }
 
+    // One entry per file in lang/. The entries are language names, which are not
+    // translated, so this runs once - never from OnLanguageChanged, where it
+    // would clear the combo from inside its own SelectionChanged and throw.
     private void PopulateLangCombo()
     {
         LangCombo.Items.Clear();
-        int selected = 0;
-        var langs = LocalizationService.AvailableLanguages();
-        if (langs.Count == 0)
-        {
-            LangCombo.Items.Add(new ComboBoxItem { Content = "English" });
-            LangCombo.SelectedIndex = 0;
-            return;
-        }
-        for (int i = 0; i < langs.Count; i++)
-        {
-            LangCombo.Items.Add(new ComboBoxItem { Content = langs[i].Name, Tag = langs[i].Code });
-            if (string.Equals(langs[i].Name, App.Loc.CurrentLanguage, StringComparison.OrdinalIgnoreCase) ||
-                string.Equals(langs[i].Code, App.Loc.CurrentLangCode, StringComparison.OrdinalIgnoreCase))
-                selected = i;
-        }
-        LangCombo.SelectedIndex = selected;
+        foreach (var lang in LocalizationService.AvailableLanguages())
+            LangCombo.Items.Add(new ComboBoxItem { Content = lang.Name, Tag = lang.Code });
+        if (LangCombo.ItemCount == 0)
+            LangCombo.Items.Add(new ComboBoxItem { Content = "English", Tag = "en" });
+
+        SelectActiveLanguage();
+    }
+
+    // Points the combo at the loaded language; a no-op when it already shows it,
+    // which is the case for a pick made here.
+    private void SelectActiveLanguage()
+    {
+        var item = LangCombo.Items.OfType<ComboBoxItem>()
+            .FirstOrDefault(it => string.Equals(it.Tag as string, App.Loc.CurrentLangCode,
+                                                StringComparison.OrdinalIgnoreCase))
+            ?? LangCombo.Items.OfType<ComboBoxItem>().FirstOrDefault();
+
+        if (item != null && !ReferenceEquals(LangCombo.SelectedItem, item))
+            LangCombo.SelectedItem = item;
     }
 
     private void LangCombo_OnSelectionChanged(object? sender, SelectionChangedEventArgs e)
     {
-        if (sender is not ComboBox { SelectedItem: ComboBoxItem item }) return;
-        if (!item.IsKeyboardFocusWithin) return; // ignore the programmatic initial set
-        var lang = item.Tag as string ?? item.Content?.ToString();
-        if (!string.IsNullOrEmpty(lang))
-        {
-            App.ApplyLanguage(lang);
-            ScenariosView?.RebuildAfterLanguageChange();
-            DepotView?.RebuildAfterLanguageChange();
-            UpdateStartButton();
-        }
+        if ((LangCombo.SelectedItem as ComboBoxItem)?.Tag is not string code)
+            return;
+
+        // Filling the combo in selects the language that is already loaded, which
+        // lands here as well - comparing against the loaded one is what tells the
+        // two apart, and it keeps the handler idempotent.
+        if (string.Equals(code, App.Loc.CurrentLangCode, StringComparison.OrdinalIgnoreCase))
+            return;
+
+        App.ApplyLanguage(code);
+    }
+
+    // Captions built in code (train stats, panel headers, combo items) are read
+    // from App.Loc once, so they have to be built again. Runs for a pick made
+    // here or in the settings tab, hence hanging off Loc rather off the combo.
+    private void OnLanguageChanged()
+    {
+        SelectActiveLanguage();
+        ScenariosView?.RebuildAfterLanguageChange();
+        DepotView?.RebuildAfterLanguageChange();
+        UpdateStartButton();
     }
 
     private void HelpButton_OnClick(object? sender, RoutedEventArgs e)

@@ -223,7 +223,6 @@
     <String key="Yes">Igen</String>
     <String key="No">Nem</String>
     <String key="TabInfo">Információ</String>
-    <String key="HdrToneMap">HDR tónusleképezés</String>
     <String key="SettingsFileChangedTitle">Beállítások</String>
     <String key="SettingsFileChanged">Az eu07.ini fájl a starteren kívül módosult. Újratölti?</String>
     <String key="AddAllCategory">Teljes kategória hozzáadása</String>

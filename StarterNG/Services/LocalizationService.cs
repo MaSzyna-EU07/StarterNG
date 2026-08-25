@@ -29,6 +29,13 @@ public class LocalizationService : INotifyPropertyChanged
 
     public event PropertyChangedEventHandler? PropertyChanged;
 
+    /// <summary>
+    /// Raised after a language file is loaded. XAML bindings refresh themselves
+    /// through <see cref="PropertyChanged"/>; this is for captions that code
+    /// builds once and has to build again.
+    /// </summary>
+    public event Action? LanguageChanged;
+
     /// <summary>Display name of the active language (e.g. "English", "Polski").</summary>
     public string CurrentLanguage { get; private set; } = "English";
 
@@ -113,7 +120,11 @@ public class LocalizationService : INotifyPropertyChanged
             CurrentLanguage = "English";
         }
 
-        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs("Item"));
+        // "Item[]" is the indexer name bindings listen for; the empty name asks
+        // every binding on this object to re-read.
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs("Item[]"));
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(string.Empty));
+        LanguageChanged?.Invoke();
         return CurrentLanguage;
     }
 

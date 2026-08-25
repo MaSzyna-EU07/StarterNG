@@ -72,8 +72,6 @@ public sealed class Settings
     public int Width = 1280;                       // width
     public int Height = 720;                       // height
     public int BufferScalePercent = 100;           // starter.bufferscale → gfx.framebuffer.fidelity
-    /// <summary>0 = Reinhard, 1 = ACESFilm (Pascal ChangeHDR).</summary>
-    public int HdrToneMap;                         // starter.hdr
     public int MaxTextureSize = 4096;              // maxtexturesize
     public int MaxCabTextureSize = 4096;           // maxcabtexturesize
     public int TextureFiltering = 8;               // anisotropicfiltering (1/2/4/8/16)
@@ -394,15 +392,14 @@ public sealed class Settings
             _config.Remove("gfx.framebuffer.fidelity");
     }
 
-    /// <summary>Copy Reinhard/ACESFilm GLSL into shaders/tonemapping.glsl when present.</summary>
+    /// <summary>Copy the Reinhard GLSL into shaders/tonemapping.glsl when present.</summary>
     public void ApplyHdrShader()
     {
         // Only meaningful for full / legacy / experimental renderers (Pascal).
         if (RenderEngine is not (0 or 1 or 5))
             return;
 
-        string name = HdrToneMap == 0 ? "Reinhard.glsl" : "ACESFilm.glsl";
-        string? src = FindBundled(name);
+        string? src = FindBundled("Reinhard.glsl");
         if (src is null) return;
 
         try
@@ -495,7 +492,6 @@ public sealed class Settings
         DebugMode = c.GetBool("debugmode", false);
         VirtualShunting = c.GetBool("ai.trainman", true);
         LogMissingVehicleFiles = c.GetBool("starter.logmissingvehicles", false);
-        HdrToneMap = Clamp(c.GetInt("starter.hdr", 0), 0, 1);
 
         // Graphics
         RenderEngine = IndexOf(RenderEngines, c.GetString("gfxrenderer", "full"), 0);
@@ -621,7 +617,6 @@ public sealed class Settings
         c.SetBool("debugmode", DebugMode);
         c.SetBool("ai.trainman", VirtualShunting);
         c.SetBool("starter.logmissingvehicles", LogMissingVehicleFiles);
-        c.SetInt("starter.hdr", Clamp(HdrToneMap, 0, 1));
 
         // Graphics
         c.Set("gfxrenderer", RenderEngines[Clamp(RenderEngine, 0, RenderEngines.Length - 1)]);

@@ -223,7 +223,6 @@
     <String key="Yes">Ano</String>
     <String key="No">Ne</String>
     <String key="TabInfo">Informace</String>
-    <String key="HdrToneMap">Mapování tónů HDR</String>
     <String key="SettingsFileChangedTitle">Nastavení</String>
     <String key="SettingsFileChanged">Soubor eu07.ini byl změněn mimo starter. Načíst jej znovu?</String>
     <String key="AddAllCategory">Přidat celou kategorii</String>

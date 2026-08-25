@@ -223,7 +223,6 @@
     <String key="Yes">Yes</String>
     <String key="No">No</String>
     <String key="TabInfo">Info</String>
-    <String key="HdrToneMap">HDR tone mapping</String>
     <String key="SettingsFileChangedTitle">Settings</String>
     <String key="SettingsFileChanged">eu07.ini was changed outside the starter. Reload it?</String>
     <String key="AddAllCategory">Add whole category</String>

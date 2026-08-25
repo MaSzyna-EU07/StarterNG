@@ -12,6 +12,7 @@ using Avalonia.Layout;
 using Avalonia.Markup.Xaml.Styling;
 using Avalonia.Media;
 using StarterNG.Classes;
+using StarterNG.Services;
 // Disambiguate from Avalonia.Input.KeyBinding (a command-input binding) imported above.
 using KeyBinding = StarterNG.Classes.KeyBinding;
 
@@ -34,11 +35,10 @@ public partial class Settings : UserControl
             shaderResolutionSlider_OnValueChanged(null, null);
         };
 
-        ChangeLanguageCb.SelectedIndex = App.Loc.CurrentLanguage switch
-        {
-            "Polski" => 0,
-            _ => 1
-        };
+        FillLanguageCombo();
+        // The other picker is in the main window's top bar; both follow whatever
+        // language ends up loaded.
+        App.Loc.LanguageChanged += SelectActiveLanguage;
 
         FeedbackCb.SelectionChanged += FeedbackCb_OnSelectionChanged;
         FpsLimitEnableCb.IsCheckedChanged += (_, _) => FpsLimitSlider.IsEnabled = IsChecked(FpsLimitEnableCb);
@@ -143,7 +143,7 @@ public partial class Settings : UserControl
             PopulateExeCombo();
 
             // General
-            ChangeLanguageCb.SelectedIndex = s.Language == "Polski" ? 0 : 1;
+            SelectActiveLanguage();
             FullscreenCb.IsChecked = s.Fullscreen;
             PauseInactiveCb.IsChecked = s.PauseWhenInactive;
             PauseStartCb.IsChecked = s.PauseOnStart;
@@ -177,7 +177,6 @@ public partial class Settings : UserControl
 
             // Graphics
             RenderEngineCb.SelectedIndex = s.RenderEngine;
-            HdrToneMapCb.SelectedIndex = Clamp(s.HdrToneMap, 0, 1);
             SelectResolution(s.Width, s.Height);
             bufferScale.Value = s.BufferScalePercent;
             textureResolutionSlider.Value = Log2(s.MaxTextureSize, 12);
@@ -264,7 +263,10 @@ public partial class Settings : UserControl
         var s = StarterNG.Classes.Settings.Instance;
 
         // General
-        s.Language = ChangeLanguageCb.SelectedIndex == 0 ? "Polski" : "English";
+        // Keep the loaded language rather than writing a wrong one over it when
+        // the combo has no valid pick.
+        s.Language = (ChangeLanguageCb.SelectedItem as ComboBoxItem)?.Content?.ToString()
+                     ?? App.Loc.CurrentLanguage;
         s.Fullscreen = IsChecked(FullscreenCb);
         s.PauseWhenInactive = IsChecked(PauseInactiveCb);
         s.PauseOnStart = IsChecked(PauseStartCb);
@@ -297,7 +299,6 @@ public partial class Settings : UserControl
 
         // Graphics
         s.RenderEngine = Math.Max(0, RenderEngineCb.SelectedIndex);
-        s.HdrToneMap = Clamp(HdrToneMapCb.SelectedIndex, 0, 1);
         ReadResolution(s);
         s.BufferScalePercent = (int)bufferScale.Value;
         s.MaxTextureSize = 1 << (int)textureResolutionSlider.Value;
@@ -454,14 +455,39 @@ public partial class Settings : UserControl
         shaderResolution.Text = $"{resolution} px";
     }
 
+    // One entry per file in the lang/ folder, so every translation is reachable
+    // (the list used to be a hard-coded Polski / English pair).
+    private void FillLanguageCombo()
+    {
+        ChangeLanguageCb.Items.Clear();
+        foreach (var lang in LocalizationService.AvailableLanguages())
+            ChangeLanguageCb.Items.Add(new ComboBoxItem { Content = lang.Name, Tag = lang.Code });
+        if (ChangeLanguageCb.ItemCount == 0)
+            ChangeLanguageCb.Items.Add(new ComboBoxItem { Content = "English", Tag = "en" });
+        SelectActiveLanguage();
+    }
+
+    // Points the combo at the language currently loaded. The selection change
+    // lands in the handler below, which sees it is already loaded and stops.
+    private void SelectActiveLanguage()
+    {
+        var item = ChangeLanguageCb.Items.OfType<ComboBoxItem>()
+            .FirstOrDefault(it => string.Equals(it.Tag as string, App.Loc.CurrentLangCode,
+                                                StringComparison.OrdinalIgnoreCase))
+            ?? ChangeLanguageCb.Items.OfType<ComboBoxItem>().FirstOrDefault();
+
+        if (item != null && !ReferenceEquals(ChangeLanguageCb.SelectedItem, item))
+            ChangeLanguageCb.SelectedItem = item;
+    }
+
     private void LanguageComboBox_OnSelectionChanged(object? sender, SelectionChangedEventArgs e)
     {
-        if (sender is not ComboBox { SelectedItem: ComboBoxItem item }) return;
-        if (!item.IsKeyboardFocusWithin) return; // ignore programmatic (ApplyToUi) changes
-        var lang = item.Content?.ToString();
-        if (string.IsNullOrEmpty(lang)) return;
+        if ((ChangeLanguageCb.SelectedItem as ComboBoxItem)?.Tag is not string code)
+            return;
+        if (string.Equals(code, App.Loc.CurrentLangCode, StringComparison.OrdinalIgnoreCase))
+            return;
 
-        App.ApplyLanguage(lang);
+        App.ApplyLanguage(code);
     }
 
     private void FeedbackCb_OnSelectionChanged(object? sender, SelectionChangedEventArgs e) =>
