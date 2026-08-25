@@ -56,7 +56,9 @@
     <String key="Start">Uruchom</String>
     <String key="StartNoScenery">Wybierz scenerię</String>
     <String key="StartNoTrain">Wybierz skład</String>
-    <String key="StartNoStaff">Brak obsady / pasażera (Ctrl = start)</String>
+    <String key="StartNoStaff">Brak obsady / pasażera</String>
+    <String key="StartNoStaffTitle">Skład bez obsady</String>
+    <String key="StartNoStaffConfirm">Skład nie ma obsady ani pasażera — nie będzie czym kierować. Uruchomić mimo to?</String>
     <String key="RestoreWeather">Przywróć pogodę</String>
     <String key="ReloadSceneries">Przeładuj</String>
     <String key="OpenSceneryFolder">Otwórz folder</String>

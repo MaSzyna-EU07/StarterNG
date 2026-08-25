@@ -19,8 +19,6 @@ namespace StarterNG;
 
 public partial class MainWindow : Window
 {
-    // Tracks Ctrl for Start bypass (Pascal btnStart.Tag while Ctrl held).
-    private KeyModifiers _mods;
     private DateTime _openedUtc = DateTime.UtcNow;
 
     public MainWindow()
@@ -48,13 +46,6 @@ public partial class MainWindow : Window
             UpdateStartButton();
         };
         Activated += (_, _) => CheckExternalSettings();
-        AddHandler(InputElement.KeyDownEvent, (_, e) => { _mods = e.KeyModifiers; UpdateStartButton(); }, handledEventsToo: true);
-        AddHandler(InputElement.KeyUpEvent, (_, e) => { _mods = e.KeyModifiers; UpdateStartButton(); }, handledEventsToo: true);
-        AddHandler(InputElement.PointerMovedEvent, (_, e) =>
-        {
-            var m = e.KeyModifiers;
-            if (m != _mods) { _mods = m; UpdateStartButton(); }
-        }, handledEventsToo: true);
     }
 
     // Lets the user drag the window by the top caption strip.
@@ -185,15 +176,14 @@ public partial class MainWindow : Window
         }
     }
 
-    // Pascal actStartUpdate: Start needs scenery + trainset + staffed/passenger
-    // vehicle. Hold Ctrl to force START (bypass crew check).
+    // Pascal actStartUpdate: Start needs a scenery and a trainset. A consist with
+    // nobody aboard still starts, after the confirmation in StartButton_OnClick.
     private void UpdateStartButton()
     {
         if (startButton is null) return;
 
         var scenery = AppState.Instance.CurrentScenery;
         var trainset = AppState.Instance.CurrentTrainset;
-        bool ctrl = _mods.HasFlag(KeyModifiers.Control);
 
         if (scenery is null)
         {
@@ -207,14 +197,11 @@ public partial class MainWindow : Window
             startButton.IsEnabled = false;
             return;
         }
-        if (!HasStartableVehicle(trainset) && !ctrl)
-        {
-            startButton.Content = App.Loc["StartNoStaff"];
-            startButton.IsEnabled = false;
-            return;
-        }
-
-        startButton.Content = App.Loc["Start"];
+        // No driver and no passenger: still startable, but say so on the button
+        // and ask before launching.
+        bool staffed = HasStartableVehicle(trainset);
+        startButton.Content = staffed ? App.Loc["Start"] : App.Loc["StartNoStaff"];
+        ToolTip.SetTip(startButton, staffed ? null : App.Loc["StartNoStaffConfirm"]);
         startButton.IsEnabled = true;
     }
 
@@ -236,7 +223,7 @@ public partial class MainWindow : Window
 
     // ── START: export the (possibly depot-modified) scenery and launch the sim.
     // Global on the main window, like the original Starter's bottom START button.
-    private void StartButton_OnClick(object? sender, RoutedEventArgs e)
+    private async void StartButton_OnClick(object? sender, RoutedEventArgs e)
     {
         var scenery = AppState.Instance.CurrentScenery;
         if (scenery is null)
@@ -245,7 +232,11 @@ public partial class MainWindow : Window
         if (trainset is null)
             return;
 
-        if (!HasStartableVehicle(trainset) && !_mods.HasFlag(KeyModifiers.Control))
+        // Launching a consist with no driver and no passenger is legal (a scenery
+        // can be watched from the outside), so confirm instead of blocking it.
+        if (!HasStartableVehicle(trainset) &&
+            !await MessageBox.Show(this, App.Loc["StartNoStaffConfirm"],
+                                   App.Loc["StartNoStaffTitle"], MessageBoxButtons.YesNo))
             return;
 
         if (trainset.Vehicles.Count > 0)

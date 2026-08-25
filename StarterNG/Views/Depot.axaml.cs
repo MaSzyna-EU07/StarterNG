@@ -6,6 +6,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Controls.Templates;
 using Avalonia.Input;
 using Avalonia.Input.Platform;
 using Avalonia.Layout;
@@ -37,6 +38,12 @@ public partial class Depot : UserControl
     private int ConsistThumbHeight =>
         StarterNG.Classes.Settings.Instance.LargeThumbnails ? 68 : 34;
 
+    // Display height of the mini under the vehicle list; the class combo uses
+    // the same size.
+    private const int MiniPreviewHeight = 54;
+
+    private const int CompactThumbHeight = 24;
+
     private readonly Cursor _hand = new(StandardCursorType.Hand);
     private int _nameCounter;
 
@@ -45,6 +52,7 @@ public partial class Depot : UserControl
 
     // suppresses combo SelectionChanged handlers while we populate them
     private bool _suppress;
+    private bool _syncingCombos;   // set while the combos mirror a pick
 
     // debounces search input so we don't rebuild on every keystroke
     private DispatcherTimer? _searchTimer;
@@ -166,6 +174,7 @@ public partial class Depot : UserControl
         Dispatcher.UIThread.Post(() =>
         {
             hideArchivalCheck.IsChecked = StarterNG.Classes.Settings.Instance.HideArchivalVehicles;
+            InitClassComboTemplates();
             PopulateCategoryCombo();   // -> populates class combo -> builds browser
             PopulateSceneryConsists(); // -> lists the current scenery's consists
             RebuildConsist();
@@ -366,12 +375,8 @@ public partial class Depot : UserControl
 
     private void RebuildClassCombo()
     {
-        // No "All" entry: an unselected class means "every class in the category".
-        // Each class row shows its category mini thumbnail (like the Pascal starter).
         _suppress = true;
-        classCombo.Items.Clear();
-        foreach (string cls in ClassesForCategory(_categoryFilter))
-            classCombo.Items.Add(new ComboBoxItem { Content = ClassComboContent(cls), Tag = cls });
+        FillClassCombo();
         classCombo.SelectedIndex = -1;
         _suppress = false;
 
@@ -379,27 +384,88 @@ public partial class Depot : UserControl
         BuildList();
     }
 
-    private Control ClassComboContent(string cls)
+    // The dropdown shows the big stacked miniature, the closed combo a one-line
+    // row. Plain "=": SelectionBoxItemTemplate coerces to ItemTemplate while
+    // unset, so "??=" would never assign.
+    private void InitClassComboTemplates()
     {
-        var row = new StackPanel
+        classCombo.ItemTemplate = new FuncDataTemplate<string>(
+            (cls, _) => ClassComboContent(cls, large: true), false);
+        classCombo.SelectionBoxItemTemplate = new FuncDataTemplate<string>(
+            (cls, _) => ClassComboContent(cls, large: false), false);
+    }
+
+    // Fills the class combo for the current category filter; the caller owns the
+    // selection and _classFilter. Runs under _suppress.
+    // No "All" entry: an unselected class means "every class in the category".
+    private void FillClassCombo()
+    {
+        classCombo.Items.Clear();
+        foreach (string cls in ClassesForCategory(_categoryFilter))
+            classCombo.Items.Add(cls);
+    }
+
+    // Points both combos at the given category/class pair without firing their
+    // handlers. Returns false when they already matched.
+    private bool ApplyFilters(string? category, string? cls)
+    {
+        var catItem = categoryCombo.Items.OfType<ComboBoxItem>()
+            .FirstOrDefault(it => it.Tag is Func<string?, bool> f && f(category));
+
+        if (catItem != null && ReferenceEquals(categoryCombo.SelectedItem, catItem) &&
+            string.Equals(_classFilter, cls, StringComparison.OrdinalIgnoreCase))
+            return false;
+
+        _suppress = true;
+        try
         {
-            Orientation = Orientation.Horizontal,
-            Spacing = 8,
+            if (catItem != null)
+            {
+                categoryCombo.SelectedItem = catItem;
+                _categoryFilter = catItem.Tag as Func<string?, bool>;
+            }
+            FillClassCombo();
+            classCombo.SelectedItem = classCombo.Items.OfType<string>()
+                .FirstOrDefault(s => string.Equals(s, cls, StringComparison.OrdinalIgnoreCase));
+            _classFilter = classCombo.SelectedItem as string;
+        }
+        finally { _suppress = false; }
+        return true;
+    }
+
+    // Every texture of a class shares its category.
+    private string? CategoryOfClass(string cls) =>
+        _db.Textures.FirstOrDefault(t => string.Equals(ClassOf(t), cls, StringComparison.OrdinalIgnoreCase))
+            is { } t ? CategoryOf(t) : null;
+
+    private Control ClassComboContent(string cls, bool large)
+    {
+        int height = large ? MiniPreviewHeight : CompactThumbHeight;
+        var cell = new StackPanel
+        {
+            Orientation = large ? Orientation.Vertical : Orientation.Horizontal,
+            Spacing = large ? 2 : 8,
+            HorizontalAlignment = large ? HorizontalAlignment.Center : HorizontalAlignment.Left,
             VerticalAlignment = VerticalAlignment.Center
         };
-        var bmp = GetMiniBitmap(cls, 28);
+        var bmp = GetMiniBitmap(cls, height);
         if (bmp != null)
-            row.Children.Add(new Image
+            cell.Children.Add(new Image
             {
-                Source = bmp, Height = 28, Width = 56,
-                Stretch = Stretch.Uniform, VerticalAlignment = VerticalAlignment.Center
+                Source = bmp, Height = height,
+                Stretch = Stretch.Uniform,
+                HorizontalAlignment = HorizontalAlignment.Center,
+                VerticalAlignment = VerticalAlignment.Center
             });
-        row.Children.Add(new TextBlock
+        cell.Children.Add(new TextBlock
         {
             Text = cls,
-            VerticalAlignment = VerticalAlignment.Center
+            HorizontalAlignment = large ? HorizontalAlignment.Center : HorizontalAlignment.Left,
+            VerticalAlignment = VerticalAlignment.Center,
+            TextAlignment = TextAlignment.Center,
+            TextTrimming = TextTrimming.CharacterEllipsis
         });
-        return row;
+        return cell;
     }
 
     private IEnumerable<string> ClassesForCategory(Func<string?, bool>? category) =>
@@ -422,7 +488,14 @@ public partial class Depot : UserControl
     private void ClassCombo_OnSelectionChanged(object? sender, SelectionChangedEventArgs e)
     {
         if (_suppress) return;
-        _classFilter = (classCombo.SelectedItem as ComboBoxItem)?.Tag as string;
+        string? cls = classCombo.SelectedItem as string;
+        _classFilter = cls;
+
+        // ApplyFilters refills this very combo, so it cannot run from here.
+        if (cls != null && _categoryFilter == null &&
+            PostSyncing(() => { ApplyFilters(CategoryOfClass(cls), cls); BuildList(); }))
+            return;
+
         BuildList();
     }
 
@@ -453,22 +526,25 @@ public partial class Depot : UserControl
     // ----------------------------------------------------------- vehicle browser
 
     // Flat list of plain-text vehicle entries (no expanders, like the original
-    // Starter). Empty by default: an entry only appears once a category is chosen
-    // or a search is typed. Picking one drives the mini preview and Add button.
+    // Starter). Empty by default: an entry only appears once a category or class
+    // is chosen or a search is typed. Picking one drives the mini preview and the
+    // Add button.
     private void BuildList()
     {
         // reset selection-dependent UI
         _browserSelected = null;
         miniPreview.Source = null;
         addVehicleButton.IsEnabled = false;
+        browserDetails.IsVisible = false;
 
         vehicleListBox.Items.Clear();
 
         string search = searchBox.Text?.Trim() ?? "";
         bool hasSearch = search.Length > 0;
 
-        // nothing selected and nothing searched -> keep the list empty
-        if (_categoryFilter == null && !hasSearch)
+        // no filter and nothing searched -> keep the list empty (a class counts
+        // as a filter: it can be picked without a category)
+        if (_categoryFilter == null && _classFilter == null && !hasSearch)
             return;
 
         var matched = _db.Textures
@@ -502,9 +578,11 @@ public partial class Depot : UserControl
         if (vehicleListBox.SelectedItem is ListBoxItem { Tag: VehicleTexture texture })
         {
             _browserSelected = texture;
-            miniPreview.Source = GetMiniBitmap(_db.ResolveMiniName(texture), 54);
+            miniPreview.Source = GetMiniBitmap(_db.ResolveMiniName(texture), MiniPreviewHeight);
             addVehicleButton.IsEnabled = true;
             ShowTextureInfo(texture);
+            browserDetails.IsVisible = true;
+            SyncCombosTo(texture);
         }
         else
         {
@@ -512,6 +590,7 @@ public partial class Depot : UserControl
             miniPreview.Source = null;
             addVehicleButton.IsEnabled = false;
             textureInfoPanel.Children.Clear();
+            browserDetails.IsVisible = false;
         }
     }
 
@@ -551,12 +630,16 @@ public partial class Depot : UserControl
     private void ShowTextureInfo(VehicleTexture texture)
     {
         textureInfoPanel.Children.Clear();
+        // The rows are trimmed, so the tooltip carries the full text.
+        var full = new List<string>();
         void Row(string label, string? value)
         {
             if (string.IsNullOrWhiteSpace(value)) return;
+            string line = $"{label}: {value}";
+            full.Add(line);
             textureInfoPanel.Children.Add(new TextBlock
             {
-                Text = $"{label}: {value}",
+                Text = line,
                 FontSize = 10,
                 Opacity = 0.85,
                 TextTrimming = TextTrimming.CharacterEllipsis
@@ -565,12 +648,15 @@ public partial class Depot : UserControl
 
         Row(App.Loc["TextureInfo"], Base(texture.Skinfile));
         var meta = texture.Meta;
-        if (meta == null) return;
-        Row(App.Loc["TexOperator"], meta.Operator);
-        Row(App.Loc["TexStation"], meta.Depot);
-        Row(App.Loc["TexRevision"], meta.RevisionDate);
-        Row(App.Loc["TexAuthor"], meta.TextureAuthor);
-        Row(App.Loc["TexPhoto"], meta.PhotoAuthor);
+        if (meta != null)
+        {
+            Row(App.Loc["TexOperator"], meta.Operator);
+            Row(App.Loc["TexStation"], meta.Depot);
+            Row(App.Loc["TexRevision"], meta.RevisionDate);
+            Row(App.Loc["TexAuthor"], meta.TextureAuthor);
+            Row(App.Loc["TexPhoto"], meta.PhotoAuthor);
+        }
+        ToolTip.SetTip(textureInfoPanel, string.Join("\n", full));
     }
 
     // Double-click an entry to replace the selected consist vehicle.
@@ -763,8 +849,8 @@ public partial class Depot : UserControl
         sceneryConsistList.Items.Clear();
 
         _listScenery = AppState.Instance.CurrentScenery ?? _sceneries.FirstOrDefault();
-        mapSceneryLabel.Text = _listScenery != null
-            ? Path.GetFileNameWithoutExtension(_listScenery.Path)
+        mapConsistsPanel.Header = _listScenery != null
+            ? $"{App.Loc["MapConsists"]}: {Path.GetFileNameWithoutExtension(_listScenery.Path)}"
             : App.Loc["NoSceneryConsists"];
 
         if (_listScenery != null)
@@ -1179,6 +1265,11 @@ public partial class Depot : UserControl
         controls.Children.Add(SmallButton("⇄", App.Loc["TipFlip"], () => FlipItem(item)));
         controls.Children.Add(SmallButton("▶", App.Loc["TipMoveRight"], () => MoveRight(item)));
 
+        var remove = SmallButton("✕", App.Loc["RemoveSelectedVehicle"], () => RemoveItem(item));
+        remove.Foreground = new SolidColorBrush(Color.Parse("#E05252"));
+        remove.FontWeight = FontWeight.Bold;
+        controls.Children.Add(remove);
+
         var inner = new StackPanel { Spacing = 4 };
         inner.Children.Add(minis);
         inner.Children.Add(nameBlock);
@@ -1268,37 +1359,51 @@ public partial class Depot : UserControl
         var set = _db.ResolveSet(texture);
         var browserTex = set is { Count: > 0 } ? set[0] : texture;
 
-        string? category = CategoryOf(browserTex);
-        var catItem = categoryCombo.Items.OfType<ComboBoxItem>()
-            .FirstOrDefault(it => it.Tag is Func<string?, bool> f && f(category));
-
-        if (catItem != null)
+        WhileSyncing(() =>
         {
-            if (!ReferenceEquals(categoryCombo.SelectedItem, catItem))
-                categoryCombo.SelectedItem = catItem; // -> rebuilds class combo + list
-            else
-                RebuildClassCombo();
-        }
-
-        // Select the vehicle's class (type) in the class combo.
-        string cls = ClassOf(browserTex);
-        var classItem = classCombo.Items.OfType<ComboBoxItem>()
-            .FirstOrDefault(it => it.Tag is string s &&
-                                  string.Equals(s, cls, StringComparison.OrdinalIgnoreCase));
-        if (classItem != null)
-        {
-            _suppress = true;
-            classCombo.SelectedItem = classItem;
-            _classFilter = cls;
-            _suppress = false;
+            ApplyFilters(CategoryOf(browserTex), ClassOf(browserTex));
             BuildList();
-        }
+            SelectListEntry(browserTex);
+        });
+    }
 
-        // highlight the matching entry (selection drives the mini + Add button)
+    // Mirrors a list pick in the combos, then restores the selection that the
+    // rebuilt list dropped.
+    private void SyncCombosTo(VehicleTexture texture)
+    {
+        if (_syncingCombos || !ApplyFilters(CategoryOf(texture), ClassOf(texture)))
+            return;
+
+        PostSyncing(() => { BuildList(); SelectListEntry(texture); });
+    }
+
+    // Runs work with the sync flag up, so the selections it makes do not come
+    // back as another sync.
+    private void WhileSyncing(Action work)
+    {
+        _syncingCombos = true;
+        try { work(); }
+        finally { _syncingCombos = false; }
+    }
+
+    // Same, on the next dispatcher pass: clearing Items from inside a
+    // SelectionChanged throws. False when a sync is already pending.
+    private bool PostSyncing(Action work)
+    {
+        if (_syncingCombos)
+            return false;
+
+        _syncingCombos = true;
+        Dispatcher.UIThread.Post(() => WhileSyncing(work), DispatcherPriority.Background);
+        return true;
+    }
+
+    private void SelectListEntry(VehicleTexture texture)
+    {
         foreach (var obj in vehicleListBox.Items)
             if (obj is ListBoxItem { Tag: VehicleTexture t } entry &&
-                string.Equals(t.Skinfile, browserTex.Skinfile, StringComparison.OrdinalIgnoreCase) &&
-                string.Equals(t.Directory, browserTex.Directory, StringComparison.OrdinalIgnoreCase))
+                string.Equals(t.Skinfile, texture.Skinfile, StringComparison.OrdinalIgnoreCase) &&
+                string.Equals(t.Directory, texture.Directory, StringComparison.OrdinalIgnoreCase))
             {
                 vehicleListBox.SelectedItem = entry;
                 entry.BringIntoView();
@@ -1485,7 +1590,11 @@ public partial class Depot : UserControl
         brakesPanel.Children.Clear();
         loadsPanel.Children.Clear();
         damagePanel.Children.Clear();
-        removeVehicleButton.IsEnabled = _selected != null;
+
+        selectedVehiclePanel.Header = _selected is null
+            ? App.Loc["SelectedVehicle"]
+            : $"{App.Loc["SelectedVehicle"]}: " +
+              (_selected.Grouped ? UnitLabel(_selected) : _selected.Cars[0].Name);
 
         // whole-consist load tools sit at the top of the Loads tab, always available
         loadsPanel.Children.Add(BuildConsistLoadTools());
@@ -1542,11 +1651,6 @@ public partial class Depot : UserControl
     private Control BuildConsistLoadTools()
     {
         var panel = new StackPanel { Spacing = 4, Margin = new Thickness(0, 0, 0, 4) };
-        panel.Children.Add(new TextBlock
-        {
-            Text = App.Loc["ConsistLoadTools"], FontWeight = FontWeight.Bold, FontSize = 12
-        });
-
         var row = new WrapPanel { Orientation = Orientation.Horizontal };
         row.Children.Add(LoadToolButton(App.Loc["ConsistRandomType"], RandomLoadTypeForConsist));
         row.Children.Add(LoadToolButton(App.Loc["ConsistMaxAmount"], MaxAmountForConsist));
@@ -1681,12 +1785,6 @@ public partial class Depot : UserControl
         Text = text, Opacity = 0.6, FontSize = 12, TextWrapping = TextWrapping.Wrap
     };
 
-    private static TextBlock UnitTitle(ConsistItem item) => new()
-    {
-        Text = item.Grouped ? UnitLabel(item) : item.Cars[0].Name,
-        FontWeight = FontWeight.Bold, FontSize = 12
-    };
-
     // Row of "<label> <control>".
     private static Control LabeledRow(string label, Control control)
     {
@@ -1745,7 +1843,6 @@ public partial class Depot : UserControl
         loadCombo.SelectionChanged += (_, _) => Apply();
         switchCombo.SelectionChanged += (_, _) => Apply();
 
-        brakesPanel.Children.Add(UnitTitle(item));
         brakesPanel.Children.Add(LabeledRow(App.Loc["BrakeMode"], modeCombo));
         brakesPanel.Children.Add(LabeledRow(App.Loc["BrakeLoad"], loadCombo));
         brakesPanel.Children.Add(LabeledRow(App.Loc["BrakeSwitch"], switchCombo));
@@ -1789,7 +1886,7 @@ public partial class Depot : UserControl
         NumericUpDown Spin(int value, int max) => new()
         {
             FontSize = 12, Minimum = 0, Maximum = max, Increment = 1,
-            Value = value, MinWidth = 120, FormatString = "0"
+            Value = value, MinWidth = 0, Width = 100, FormatString = "0"
         };
 
         var sway = Spin(w.Sway, 100);
@@ -1815,11 +1912,39 @@ public partial class Depot : UserControl
         flatRand.ValueChanged += (_, _) => Apply();
         flatProb.ValueChanged += (_, _) => Apply();
 
-        damagePanel.Children.Add(UnitTitle(item));
-        damagePanel.Children.Add(LabeledRow(App.Loc["DamageSway"], sway));
-        damagePanel.Children.Add(LabeledRow(App.Loc["DamageFlatness"], flat));
-        damagePanel.Children.Add(LabeledRow(App.Loc["DamageFlatnessRand"], flatRand));
-        damagePanel.Children.Add(LabeledRow(App.Loc["DamageFlatnessProb"], flatProb));
+        var grid = new Grid
+        {
+            ColumnDefinitions = new ColumnDefinitions("Auto,*"),
+            RowSpacing = 6,
+            ColumnSpacing = 8
+        };
+        void Row(string label, Control control)
+        {
+            int r = grid.RowDefinitions.Count;
+            grid.RowDefinitions.Add(new RowDefinition(GridLength.Auto));
+
+            var caption = new TextBlock
+            {
+                Text = label, FontSize = 12,
+                TextWrapping = TextWrapping.Wrap,
+                VerticalAlignment = VerticalAlignment.Center
+            };
+            Grid.SetRow(caption, r);
+            Grid.SetColumn(caption, 0);
+
+            control.HorizontalAlignment = HorizontalAlignment.Left;
+            Grid.SetRow(control, r);
+            Grid.SetColumn(control, 1);
+
+            grid.Children.Add(caption);
+            grid.Children.Add(control);
+        }
+
+        Row(App.Loc["DamageSway"], sway);
+        Row(App.Loc["DamageFlatness"], flat);
+        Row(App.Loc["DamageFlatnessRand"], flatRand);
+        Row(App.Loc["DamageFlatnessProb"], flatProb);
+        damagePanel.Children.Add(grid);
     }
 
     // Cargo type + amount, written into each car's node::dynamic trailing params.
@@ -1884,13 +2009,8 @@ public partial class Depot : UserControl
         typeCombo.SelectionChanged += (_, _) => Apply();
         countBox.ValueChanged += (_, _) => Apply();
 
-        loadsPanel.Children.Add(UnitTitle(item));
         loadsPanel.Children.Add(LabeledRow(App.Loc["LoadType"], typeCombo));
         loadsPanel.Children.Add(LabeledRow(App.Loc["LoadCount"], countBox));
-        loadsPanel.Children.Add(new TextBlock
-        {
-            Text = App.Loc["LoadHint"], Opacity = 0.6, FontSize = 11, TextWrapping = TextWrapping.Wrap
-        });
     }
 
     // Cargo names + per-unit weights parsed once from data/load_weights.txt (the
@@ -1992,12 +2112,6 @@ public partial class Depot : UserControl
         BuildList();
     }
 
-    private void RemoveVehicleButton_OnClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
-    {
-        if (_selected != null)
-            RemoveItem(_selected);
-    }
-
     private async void TextureBaseButton_OnClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
     {
         if (TopLevel.GetTopLevel(this) is not Window owner) return;
@@ -2032,38 +2146,54 @@ public partial class Depot : UserControl
 
     private Window BuildTextureRandomizerDialog()
     {
+        static Control Docked(Control c, Dock side)
+        {
+            DockPanel.SetDock(c, side);
+            c.Margin = new Thickness(8, 0, 0, 0);
+            c.VerticalAlignment = VerticalAlignment.Center;
+            return c;
+        }
+
+        static TextBlock Caption(string text) => new()
+        {
+            Text = text,
+            FontSize = 12,
+            TextWrapping = TextWrapping.Wrap,
+            VerticalAlignment = VerticalAlignment.Center
+        };
+
         var revDiff = new CheckBox
         {
-            Content = App.Loc["RandomizeTexturesRevDiff"],
+            Content = Caption(App.Loc["RandomizeTexturesRevDiff"]),
             IsChecked = true,
             FontSize = 12
         };
         var age = new NumericUpDown
         {
-            Minimum = 2, Maximum = 8, Value = 3, Width = 56,
+            Minimum = 2, Maximum = 8, Value = 3, Width = 110,
             FormatString = "0", ShowButtonSpinner = true
         };
         var vsCurrent = new RadioButton
         {
-            Content = App.Loc["RandomizeTexturesVsCurrent"],
+            Content = Caption(App.Loc["RandomizeTexturesVsCurrent"]),
             IsChecked = true,
             FontSize = 12,
             GroupName = "revBase"
         };
         var vsYear = new RadioButton
         {
-            Content = App.Loc["RandomizeTexturesVsYear"],
+            Content = Caption(App.Loc["RandomizeTexturesVsYear"]),
             FontSize = 12,
             GroupName = "revBase"
         };
         var year = new NumericUpDown
         {
-            Minimum = 1950, Maximum = 2050, Value = DateTime.Now.Year, Width = 72,
+            Minimum = 1950, Maximum = 2050, Value = DateTime.Now.Year, Width = 150,
             FormatString = "0", ShowButtonSpinner = true, IsEnabled = false
         };
         var noArch = new CheckBox
         {
-            Content = App.Loc["RandomizeTexturesNoArchival"],
+            Content = Caption(App.Loc["RandomizeTexturesNoArchival"]),
             IsChecked = true,
             FontSize = 12
         };
@@ -2074,8 +2204,8 @@ public partial class Depot : UserControl
         var win = new Window
         {
             Title = App.Loc["RandomizeTexturesTitle"],
-            Width = 320,
-            Height = 300,
+            Width = 420,
+            SizeToContent = SizeToContent.Height,
             CanResize = false,
             WindowStartupLocation = WindowStartupLocation.CenterOwner
         };
@@ -2092,7 +2222,7 @@ public partial class Depot : UserControl
         var ok = new Button
         {
             Content = App.Loc["RandomizeTexturesApply"],
-            HorizontalAlignment = HorizontalAlignment.Stretch,
+            MinWidth = 90,
             Cursor = _hand
         };
         ok.Classes.Add("Accent");
@@ -2107,7 +2237,7 @@ public partial class Depot : UserControl
             win.Close(true);
         };
 
-        var cancel = new Button { Content = App.Loc["Cancel"], Cursor = _hand };
+        var cancel = new Button { Content = App.Loc["Cancel"], MinWidth = 90, Cursor = _hand };
         cancel.Classes.Add("Flat");
         cancel.Click += (_, _) => win.Close(false);
 
@@ -2123,23 +2253,36 @@ public partial class Depot : UserControl
                     FontWeight = FontWeight.Bold,
                     HorizontalAlignment = HorizontalAlignment.Center
                 },
-                new StackPanel
+                // DockPanel: in a horizontal StackPanel the caption gets infinite
+                // width, never wraps and shoves the spinner off the edge.
+                new DockPanel
                 {
-                    Orientation = Orientation.Horizontal,
-                    Spacing = 8,
-                    Children = { revDiff, age }
+                    LastChildFill = true,
+                    Children =
+                    {
+                        Docked(age, Dock.Right),
+                        revDiff
+                    }
                 },
                 vsCurrent,
-                new StackPanel
+                new DockPanel
                 {
-                    Orientation = Orientation.Horizontal,
-                    Spacing = 8,
-                    Children = { vsYear, year }
+                    LastChildFill = true,
+                    Children =
+                    {
+                        Docked(year, Dock.Right),
+                        vsYear
+                    }
                 },
                 noArch,
                 rulesBtn,
-                ok,
-                cancel
+                new StackPanel
+                {
+                    Orientation = Orientation.Horizontal,
+                    HorizontalAlignment = HorizontalAlignment.Right,
+                    Spacing = 8,
+                    Children = { ok, cancel }
+                }
             }
         };
         return win;
@@ -2161,7 +2304,7 @@ public partial class Depot : UserControl
             Text = text,
             AcceptsReturn = true,
             TextWrapping = TextWrapping.NoWrap,
-            FontFamily = new FontFamily("Consolas,Courier New,monospace"),
+            FontFamily = StarterNG.Infrastructure.MonoFont.Family,
             FontSize = 12
         };
         ScrollViewer.SetHorizontalScrollBarVisibility(box, Avalonia.Controls.Primitives.ScrollBarVisibility.Auto);

@@ -56,7 +56,9 @@
     <String key="Start">Start</String>
     <String key="StartNoScenery">Select a scenery</String>
     <String key="StartNoTrain">Select a consist</String>
-    <String key="StartNoStaff">No crew / passenger (hold Ctrl to start)</String>
+    <String key="StartNoStaff">No crew / passenger</String>
+    <String key="StartNoStaffTitle">Consist without crew</String>
+    <String key="StartNoStaffConfirm">This consist has no crew and no passenger — there will be nothing to drive. Start anyway?</String>
     <String key="RestoreWeather">Restore weather</String>
     <String key="ReloadSceneries">Reload</String>
     <String key="OpenSceneryFolder">Open folder</String>
