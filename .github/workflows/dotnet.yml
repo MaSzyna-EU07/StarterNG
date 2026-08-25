@@ -4,10 +4,12 @@ on:
   push:
     branches:
       - main
+      - staging
 
   pull_request:
     branches:
       - main
+      - staging
 
   workflow_dispatch:
 
@@ -105,3 +107,53 @@ jobs:
           path: ${{ matrix.package }}
           if-no-files-found: error
           archive: false
+
+  # Workflow artifacts are only reachable for signed-in users with repository
+  # access, so every build of a release branch also lands in a rolling
+  # pre-release, whose assets anyone can download:
+  #   https://github.com/${{ github.repository }}/releases/download/<tag>/<file>
+  # main -> "latest", staging -> "staging"; the two never overwrite each other.
+  release:
+    name: Rolling pre-release
+    needs: publish
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: write
+
+    env:
+      RELEASE_TAG: ${{ github.ref_name == 'main' && 'latest' || 'staging' }}
+      RELEASE_NAME: ${{ github.ref_name == 'main' && 'Latest build' || 'Staging build' }}
+
+    steps:
+      # v8, not v7: the packages are uploaded with archive: false, and only v8
+      # can pull those non-zipped artifacts back down. skip-decompress keeps the
+      # Windows .zip a file - unpacked, its contents would end up in the release
+      # instead of the package.
+      - name: Collect the packages
+        uses: actions/download-artifact@v8
+        with:
+          path: dist
+          merge-multiple: true
+          skip-decompress: true
+
+      # Recreated rather than edited, so the tag follows its branch and no asset
+      # from an older build is left behind.
+      - name: Replace the rolling pre-release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+
+          ls -l dist
+
+          gh release delete "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --yes --cleanup-tag || true
+          gh release create "$RELEASE_TAG" \
+            dist/StarterNG-windows-x64.zip \
+            dist/StarterNG-linux-x64.tar.gz \
+            --repo "$GITHUB_REPOSITORY" \
+            --target "$GITHUB_SHA" \
+            --prerelease \
+            --title "$RELEASE_NAME" \
+            --notes "Automatic build of $GITHUB_REF_NAME (${GITHUB_SHA::7}), $(date -u '+%Y-%m-%d %H:%M UTC')."
