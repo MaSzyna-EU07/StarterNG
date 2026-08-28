@@ -467,9 +467,9 @@ public class Scenery
                 $"movelight {Day}\r\n" +
                 $"scenario.weather.temperature {Temperature.ToString(inv)}\r\n" +
                 $"scenario.time.override {ScenarioTimeOverride}\r\n" +
-                $"time {Time} 0 0 endtime\r\n" +
+                "endconfig\r\n" +
                 $"atmo 0 0 0 {FogEnd} {FogEnd} 0 0 0 {Overcast.ToString(inv)} endatmo\r\n" +
-                "endconfig\r\n";
+                $"time {Time} 0 0 endtime\r\n";
 
             return config + s;
         }
