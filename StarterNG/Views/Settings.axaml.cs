@@ -158,9 +158,20 @@ public partial class Settings : UserControl
             UartRadioChannelCb.IsChecked = s.UartRadioChannel;
             UpdateFeedbackDetailVisibility();
 
-            SelectExeCb.SelectedIndex = s.SelectExeAutomatically
-                ? 0
-                : Math.Max(0, FindComboIndexByContent(SelectExeCb, s.ExecutablePath));
+            if (s.SelectExeAutomatically)
+            {
+                SelectExeCb.SelectedIndex = 0;
+            }
+            else
+            {
+                int exeIdx = FindComboIndexByContent(SelectExeCb, s.ExecutablePath);
+                if (exeIdx < 0)
+                {
+                    SelectExeCb.Items.Add(new ComboBoxItem { Content = s.ExecutablePath });
+                    exeIdx = SelectExeCb.Items.Count - 1;
+                }
+                SelectExeCb.SelectedIndex = exeIdx;
+            }
             DebugModeCb.IsChecked = s.DebugMode;
             VirtualShuntingCb.IsChecked = s.VirtualShunting;
             LogMissingVehicleFilesCb.IsChecked = s.LogMissingVehicleFiles;

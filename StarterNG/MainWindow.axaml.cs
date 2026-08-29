@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading;
+using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
@@ -223,6 +224,18 @@ public partial class MainWindow : Window
         return trainset.Vehicles.Any(CanStart);
     }
 
+    private Task<bool> ShowExeProblem(ExeProblem problem, string exe)
+    {
+        string key = problem switch
+        {
+            ExeProblem.NotExecutable => "ExeNotExecutable",
+            ExeProblem.WrongPlatform => "ExeWrongPlatform",
+            _ => "ExeNotFound"
+        };
+        return MessageBox.Show(this, $"{exe}\n\n{App.Loc[key]}",
+            App.Loc["ExeLaunchFailed"], MessageBoxButtons.Ok);
+    }
+
     private async void StartButton_OnClick(object? sender, RoutedEventArgs e)
     {
         var scenery = AppState.Instance.CurrentScenery;
@@ -271,10 +284,16 @@ public partial class MainWindow : Window
 
         SettingsModel.Instance.CaptureAndSave();
 
+        string exe = Path.GetFullPath(SettingsModel.Instance.ResolveExecutable(out var exeProblem));
+        if (exeProblem != ExeProblem.None)
+        {
+            await ShowExeProblem(exeProblem, exe);
+            return;
+        }
+
         Process? sim;
         try
         {
-            string exe = Path.GetFullPath(SettingsModel.Instance.ResolveExecutable());
             sim = Process.Start(new ProcessStartInfo
             {
                 FileName = exe,
@@ -283,8 +302,10 @@ public partial class MainWindow : Window
                 UseShellExecute = false
             });
         }
-        catch
+        catch (Exception ex)
         {
+            await MessageBox.Show(this, $"{exe}\n\n{ex.Message}",
+                App.Loc["ExeLaunchFailed"], MessageBoxButtons.Ok);
             return;
         }
 

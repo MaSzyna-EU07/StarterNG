@@ -222,6 +222,11 @@
     <String key="Cancel">Anuluj</String>
     <String key="Yes">Tak</String>
     <String key="No">Nie</String>
+    <String key="Ok">OK</String>
+    <String key="ExeLaunchFailed">Nie udało się uruchomić symulatora</String>
+    <String key="ExeNotFound">Nie znaleziono pliku wykonywalnego symulatora.</String>
+    <String key="ExeNotExecutable">Plik nie ma prawa wykonywania (chmod +x).</String>
+    <String key="ExeWrongPlatform">To jest plik wykonywalny dla innego systemu niż uruchomiony.</String>
     <String key="TabInfo">Informacje</String>
     <String key="SettingsFileChangedTitle">Ustawienia</String>
     <String key="SettingsFileChanged">Plik eu07.ini został zmieniony poza starterem. Wczytać ponownie?</String>

@@ -9,6 +9,8 @@ namespace StarterNG.Classes;
 
 public enum BatteryDefault { Default = 0, AlwaysOff = 1, AlwaysOn = 2 }
 
+public enum ExeProblem { None, NotFound, NotExecutable, WrongPlatform }
+
 public sealed class Settings
 {
     public static Settings Instance { get; } = new();
@@ -114,7 +116,6 @@ public sealed class Settings
     public bool DrivableOnly = true;
     public bool ShowArchivalSceneries = true;
     public bool HideArchivalVehicles = true;
-
     public string LastScenery = "";
 
     public static readonly string[] RenderEngines =
@@ -159,31 +160,85 @@ public sealed class Settings
     public static string UserConfigDirectory() =>
         Path.GetDirectoryName(UserConfigPath()) ?? AppContext.BaseDirectory;
 
-    public string ResolveExecutable()
+    public string ResolveExecutable() => ResolveExecutable(out _);
+
+    public string ResolveExecutable(out ExeProblem problem)
     {
         if (!SelectExeAutomatically && !string.IsNullOrWhiteSpace(ExecutablePath))
+        {
+            problem = ValidateExecutable(FullPath(ExecutablePath));
             return ExecutablePath;
+        }
 
         string canonical = OperatingSystem.IsWindows() ? "eu07.exe" : "eu07";
+        string? fallback = null;
         try
         {
-            string? best = null;
-            foreach (string path in Directory.GetFiles(Directory.GetCurrentDirectory(), "eu07*"))
+            var candidates = Directory.GetFiles(Directory.GetCurrentDirectory(), "eu07*")
+                .Where(IsExecutableCandidate)
+                .OrderBy(p => string.Equals(Path.GetFileName(p), canonical, StringComparison.OrdinalIgnoreCase) ? 0 : 1)
+                .ThenBy(p => Path.GetFileName(p)!.Length);
+
+            foreach (string path in candidates)
             {
-                if (!IsExecutableCandidate(path))
-                    continue;
-                string file = Path.GetFileName(path);
-                if (string.Equals(file, canonical, StringComparison.OrdinalIgnoreCase))
+                if (ValidateExecutable(path) == ExeProblem.None)
+                {
+                    problem = ExeProblem.None;
                     return path;
-                if (best == null || file.Length < Path.GetFileName(best).Length)
-                    best = path;
+                }
+                fallback ??= path;
             }
-            if (best != null)
-                return best;
         }
         catch {  }
 
+        if (fallback != null)
+        {
+            problem = ValidateExecutable(fallback);
+            return fallback;
+        }
+
+        problem = ExeProblem.NotFound;
         return canonical;
+    }
+
+    private static string FullPath(string path) =>
+        Path.IsPathRooted(path) ? path : Path.Combine(Directory.GetCurrentDirectory(), path);
+
+    public static ExeProblem ValidateExecutable(string path)
+    {
+        try
+        {
+            if (!File.Exists(path))
+                return ExeProblem.NotFound;
+
+            if (!OperatingSystem.IsWindows())
+            {
+                const UnixFileMode anyExecute =
+                    UnixFileMode.UserExecute | UnixFileMode.GroupExecute | UnixFileMode.OtherExecute;
+                if ((File.GetUnixFileMode(path) & anyExecute) == 0)
+                    return ExeProblem.NotExecutable;
+            }
+
+            byte[] head = new byte[4];
+            using (var fs = File.OpenRead(path))
+            {
+                if (fs.Read(head, 0, 4) == 4)
+                {
+                    bool pe = head[0] == 0x4D && head[1] == 0x5A;
+                    bool elf = head[0] == 0x7F && head[1] == 0x45 && head[2] == 0x4C && head[3] == 0x46;
+                    if (OperatingSystem.IsWindows() && elf)
+                        return ExeProblem.WrongPlatform;
+                    if (OperatingSystem.IsLinux() && pe)
+                        return ExeProblem.WrongPlatform;
+                }
+            }
+
+            return ExeProblem.None;
+        }
+        catch
+        {
+            return ExeProblem.NotFound;
+        }
     }
 
     public static List<string> ListCandidateExecutables(string? directory = null)
@@ -208,6 +263,8 @@ public sealed class Settings
             return false;
         if (OperatingSystem.IsWindows())
             return ext == ".exe";
+        if (OperatingSystem.IsLinux())
+            return ext.Length == 0 || ext is ".x86_64" or ".run" or ".appimage";
 
         return ext.Length == 0 || ext is ".exe" or ".x86_64" or ".run" or ".appimage";
     }
@@ -270,7 +327,6 @@ public sealed class Settings
     {
         WriteToConfig();
         ApplyFramebufferFidelity();
-        ApplyHdrShader();
 
         try
         {
@@ -329,39 +385,6 @@ public sealed class Settings
             _config.SetInt("gfx.framebuffer.fidelity", fidelity);
         else
             _config.Remove("gfx.framebuffer.fidelity");
-    }
-
-    public void ApplyHdrShader()
-    {
-
-        if (RenderEngine is not (0 or 1 or 5))
-            return;
-
-        string? src = FindBundled("Reinhard.glsl");
-        if (src is null) return;
-
-        try
-        {
-            string destDir = Path.Combine(Directory.GetCurrentDirectory(), "shaders");
-            Directory.CreateDirectory(destDir);
-            File.Copy(src, Path.Combine(destDir, "tonemapping.glsl"), overwrite: true);
-        }
-        catch {  }
-    }
-
-    private static string? FindBundled(string fileName)
-    {
-        foreach (string dir in new[]
-                 {
-                     Path.Combine(Directory.GetCurrentDirectory(), "starter"),
-                     Path.Combine(AppContext.BaseDirectory, "startercfg"),
-                     Path.Combine(Directory.GetCurrentDirectory(), "startercfg")
-                 })
-        {
-            string path = Path.Combine(dir, fileName);
-            if (File.Exists(path)) return path;
-        }
-        return null;
     }
 
     public void DumpMissingVehicleLog()
@@ -506,9 +529,17 @@ public sealed class Settings
         LastScenery = c.GetString("starter.last.scenery", "");
     }
 
+    private static readonly string[] ObsoleteKeys =
+    {
+        "gfx.postfx.tonemapping",
+    };
+
     private void WriteToConfig()
     {
         var c = _config;
+
+        foreach (string key in ObsoleteKeys)
+            c.Remove(key);
 
         c.Set("lang", Language == "Polski" ? "pl" : "en");
         c.SetBool("fullscreen", Fullscreen);

@@ -222,6 +222,11 @@
     <String key="Cancel">Cancel</String>
     <String key="Yes">Yes</String>
     <String key="No">No</String>
+    <String key="Ok">OK</String>
+    <String key="ExeLaunchFailed">Could not start the simulator</String>
+    <String key="ExeNotFound">The simulator executable was not found.</String>
+    <String key="ExeNotExecutable">The file is not marked as executable (chmod +x).</String>
+    <String key="ExeWrongPlatform">This binary is built for a different operating system.</String>
     <String key="TabInfo">Info</String>
     <String key="SettingsFileChangedTitle">Settings</String>
     <String key="SettingsFileChanged">eu07.ini was changed outside the starter. Reload it?</String>

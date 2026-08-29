@@ -7,13 +7,13 @@ namespace StarterNG.Views;
 
 public enum MessageBoxButtons
 {
-    YesNo
+    YesNo,
+    Ok
 }
 
 public static class MessageBox
 {
-
-    public static async Task<bool> Show(Window owner, string message, string title, MessageBoxButtons _)
+    public static async Task<bool> Show(Window owner, string message, string title, MessageBoxButtons buttons)
     {
         var win = new Window
         {
@@ -32,6 +32,12 @@ public static class MessageBox
         var noBtn = new Button { Content = App.Loc["No"], MinWidth = 80, Cursor = new Avalonia.Input.Cursor(Avalonia.Input.StandardCursorType.Hand) };
         noBtn.Classes.Add("Flat");
         noBtn.Click += (_, _) => win.Close();
+
+        if (buttons == MessageBoxButtons.Ok)
+        {
+            yesBtn.Content = App.Loc["Ok"];
+            noBtn.IsVisible = false;
+        }
 
         win.Content = new StackPanel
         {

@@ -222,6 +222,11 @@
     <String key="Cancel">Отмена</String>
     <String key="Yes">Да</String>
     <String key="No">Нет</String>
+    <String key="Ok">OK</String>
+    <String key="ExeLaunchFailed">Не удалось запустить симулятор</String>
+    <String key="ExeNotFound">Исполняемый файл симулятора не найден.</String>
+    <String key="ExeNotExecutable">Файл не помечен как исполняемый (chmod +x).</String>
+    <String key="ExeWrongPlatform">Этот исполняемый файл собран для другой операционной системы.</String>
     <String key="TabInfo">Информация</String>
     <String key="SettingsFileChangedTitle">Настройки</String>
     <String key="SettingsFileChanged">Файл eu07.ini изменён вне стартера. Загрузить заново?</String>

@@ -222,6 +222,11 @@
     <String key="Cancel">Mégse</String>
     <String key="Yes">Igen</String>
     <String key="No">Nem</String>
+    <String key="Ok">OK</String>
+    <String key="ExeLaunchFailed">A szimulátor indítása sikertelen</String>
+    <String key="ExeNotFound">A szimulátor futtatható fájlja nem található.</String>
+    <String key="ExeNotExecutable">A fájl nincs futtathatóként megjelölve (chmod +x).</String>
+    <String key="ExeWrongPlatform">Ez a bináris másik operációs rendszerhez készült.</String>
     <String key="TabInfo">Információ</String>
     <String key="SettingsFileChangedTitle">Beállítások</String>
     <String key="SettingsFileChanged">Az eu07.ini fájl a starteren kívül módosult. Újratölti?</String>

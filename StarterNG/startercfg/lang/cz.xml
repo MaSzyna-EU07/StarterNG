@@ -222,6 +222,11 @@
     <String key="Cancel">Zrušit</String>
     <String key="Yes">Ano</String>
     <String key="No">Ne</String>
+    <String key="Ok">OK</String>
+    <String key="ExeLaunchFailed">Nepodařilo se spustit simulátor</String>
+    <String key="ExeNotFound">Spustitelný soubor simulátoru nebyl nalezen.</String>
+    <String key="ExeNotExecutable">Soubor není označen jako spustitelný (chmod +x).</String>
+    <String key="ExeWrongPlatform">Tento binární soubor je pro jiný operační systém.</String>
     <String key="TabInfo">Informace</String>
     <String key="SettingsFileChangedTitle">Nastavení</String>
     <String key="SettingsFileChanged">Soubor eu07.ini byl změněn mimo starter. Načíst jej znovu?</String>
