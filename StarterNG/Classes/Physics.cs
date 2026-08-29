@@ -6,17 +6,11 @@ using System.Text;
 
 namespace StarterNG.Classes;
 
-/// <summary>
-/// Vehicle physics read from a .fiz file (dynamic/&lt;dir&gt;/&lt;model&gt;.fiz), mirroring
-/// the original Starter's TLexParser.ParsePhysics. Provides mass, top speed,
-/// length, accepted loads and the coupler AllowedFlag / ControlType used for the
-/// automatic coupling calculation.
-/// </summary>
 public sealed class Physics
 {
-    public double Mass;        // kg, as written in the .fiz
-    public double VMax;        // km/h
-    public double Length;      // metres
+    public double Mass;
+    public double VMax;
+    public double Length;
     public string LoadAccepted = "";
     public int MaxLoad;
     public int AllowedFlagA = 3;
@@ -26,12 +20,8 @@ public sealed class Physics
 
     private static readonly Dictionary<string, Physics?> Cache = new(StringComparer.OrdinalIgnoreCase);
 
-    // Index of every .fiz under dynamic/, keyed by its file name without extension
-    // (e.g. "en57", "en57dumb"). Built once - the directory layout of the data
-    // folder vs the scenery's mmd token is unreliable, so we resolve by model name.
     private static Dictionary<string, string>? _fizIndex;
 
-    /// <summary>Builds the .fiz index up front (call from the startup load).</summary>
     public static void PreloadIndex(string dynamicRoot = "dynamic") => FizIndex(dynamicRoot);
 
     private static Dictionary<string, string> FizIndex(string dynamicRoot)
@@ -46,23 +36,18 @@ public sealed class Physics
                 foreach (string f in Directory.EnumerateFiles(dynamicRoot, "*.fiz", SearchOption.AllDirectories))
                     index[Path.GetFileNameWithoutExtension(f)] = f;
         }
-        catch { /* unreadable dynamic/ - no physics */ }
+        catch {  }
 
         _fizIndex = index;
         return index;
     }
 
-    /// <summary>
-    /// Loads (and caches) the physics for a model name (the .fiz is located by name
-    /// anywhere under dynamic/). The <paramref name="dataFolder"/> is unused now but
-    /// kept for call-site clarity. Returns null when nothing matches. Never throws.
-    /// </summary>
     public static Physics? For(string? dataFolder, string? model, string dynamicRoot = "dynamic")
     {
         if (string.IsNullOrEmpty(model))
             return null;
 
-        string m = Path.GetFileNameWithoutExtension(model!); // strip any .mmd/.t3d/etc.
+        string m = Path.GetFileNameWithoutExtension(model!);
         if (m.Length == 0)
             return null;
 
@@ -77,12 +62,10 @@ public sealed class Physics
         Physics? phys = null;
         if (path != null)
         {
-            phys = new Physics { AllowedFlagB = -1 }; // -1 = "B end not declared yet"
+            phys = new Physics { AllowedFlagB = -1 };
             try { Parse(phys, path, Path.GetDirectoryName(path) ?? "", null, 0); }
-            catch { /* partial data still useful */ }
+            catch {  }
 
-            // The original copies the A-end coupler onto the B-end when only one
-            // BuffCoupl section is declared.
             if (phys.AllowedFlagB == -1)
             {
                 phys.AllowedFlagB = phys.AllowedFlagA;
@@ -116,7 +99,6 @@ public sealed class Physics
             if (tok == "=")
                 continue;
 
-            // include <file> <params...> end  -> parse the included physics
             if (tok.Equals("include", StringComparison.OrdinalIgnoreCase))
             {
                 if (++i >= tokens.Count) break;
@@ -149,13 +131,11 @@ public sealed class Physics
             }
             else if (KnownKeys.Contains(t))
             {
-                pendingKey = t; // value comes in a following token (spaced "Key = value")
+                pendingKey = t;
             }
             else
             {
-                // any other bare identifier is a section header (Param, Load,
-                // Dimensions, BuffCoupl/1/2, or one we don't read). Keep only
-                // letters/digits so "Param:" or "Param," still match.
+
                 section = new string(t.Where(char.IsLetterOrDigit).ToArray()).ToLowerInvariant();
             }
         }
@@ -188,7 +168,6 @@ public sealed class Physics
         }
     }
 
-    // A negative AllowedFlag means a permanent coupling: abs + 128 (workshop-lock bit).
     private static int Flag(string v, int fallback)
         => int.TryParse(v, System.Globalization.NumberStyles.Integer,
                System.Globalization.CultureInfo.InvariantCulture, out int f)
@@ -201,8 +180,6 @@ public sealed class Physics
             ? d
             : fallback;
 
-    // Substitutes an include placeholder like "(c1)" with the matching include
-    // parameter (1-based), otherwise returns the token unchanged.
     private static string Resolve(string token, string[]? prms)
     {
         if (prms == null || token.Length < 3 || token[0] != '(' || token[^1] != ')')

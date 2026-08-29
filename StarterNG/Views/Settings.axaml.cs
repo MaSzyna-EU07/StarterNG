@@ -13,7 +13,7 @@ using Avalonia.Markup.Xaml.Styling;
 using Avalonia.Media;
 using StarterNG.Classes;
 using StarterNG.Services;
-// Disambiguate from Avalonia.Input.KeyBinding (a command-input binding) imported above.
+
 using KeyBinding = StarterNG.Classes.KeyBinding;
 
 namespace StarterNG.Views;
@@ -36,23 +36,17 @@ public partial class Settings : UserControl
         };
 
         FillLanguageCombo();
-        // The other picker is in the main window's top bar; both follow whatever
-        // language ends up loaded.
+
         App.Loc.LanguageChanged += SelectActiveLanguage;
 
         FeedbackCb.SelectionChanged += FeedbackCb_OnSelectionChanged;
         FpsLimitEnableCb.IsCheckedChanged += (_, _) => FpsLimitSlider.IsEnabled = IsChecked(FpsLimitEnableCb);
 
-        // The settings instance pulls live values from here whenever the app
-        // closes or the game is launched.
         StarterNG.Classes.Settings.Instance.CaptureFromUi = ReadFromUi;
 
         PopulateProfileCombo();
         ApplyToUi();
 
-        // Controls tab: load the key bindings and build the editor + on-screen
-        // keyboard. The tunnelling handler lets us capture a key press before the
-        // focused button consumes it (Space/Enter would otherwise click it).
         KeyboardConfig.Instance.Load();
         BuildControlsTab();
         AddHandler(KeyDownEvent, OnControlsKeyDown, RoutingStrategies.Tunnel);
@@ -130,7 +124,6 @@ public partial class Settings : UserControl
         }
     }
 
-    // ── Settings instance → controls ──────────────────────────────────────
     public void ReloadFromSettings() => ApplyToUi();
 
     private void ApplyToUi()
@@ -142,7 +135,6 @@ public partial class Settings : UserControl
             PopulateProfileCombo();
             PopulateExeCombo();
 
-            // General
             SelectActiveLanguage();
             FullscreenCb.IsChecked = s.Fullscreen;
             PauseInactiveCb.IsChecked = s.PauseWhenInactive;
@@ -151,7 +143,6 @@ public partial class Settings : UserControl
             MouseHorInvertCb.IsChecked = s.InvertMouseHorizontal;
             MouseVertInvertCb.IsChecked = s.InvertMouseVertical;
 
-            // Communication
             GamepadIgnoreCb.IsChecked = s.IgnoreGamepad;
             FeedbackCb.SelectedIndex = s.FeedbackMode;
             FeedbackPortNud.Value = (decimal)s.FeedbackPort;
@@ -167,7 +158,6 @@ public partial class Settings : UserControl
             UartRadioChannelCb.IsChecked = s.UartRadioChannel;
             UpdateFeedbackDetailVisibility();
 
-            // Other
             SelectExeCb.SelectedIndex = s.SelectExeAutomatically
                 ? 0
                 : Math.Max(0, FindComboIndexByContent(SelectExeCb, s.ExecutablePath));
@@ -175,7 +165,6 @@ public partial class Settings : UserControl
             VirtualShuntingCb.IsChecked = s.VirtualShunting;
             LogMissingVehicleFilesCb.IsChecked = s.LogMissingVehicleFiles;
 
-            // Graphics
             RenderEngineCb.SelectedIndex = s.RenderEngine;
             SelectResolution(s.Width, s.Height);
             bufferScale.Value = s.BufferScalePercent;
@@ -210,7 +199,6 @@ public partial class Settings : UserControl
             FullscreenWindowedCb.IsChecked = s.FullscreenWindowed;
             RenderAngleVulkanCb.IsChecked = s.RenderAngleVulkan;
 
-            // Physics
             TrackCurvesSlider.Value = s.SplineFidelity;
             PhysicsAccuracyCb.IsChecked = s.FullPhysics;
             PantographBreakCb.IsChecked = s.EnableTraction;
@@ -224,7 +212,6 @@ public partial class Settings : UserControl
             BrakeStepSlider.Value = s.BrakeStep;
             BrakeSpeedSlider.Value = s.BrakeSpeed;
 
-            // Sound
             EnableSoundsCb.IsChecked = s.SoundEnabled;
             VolumeSlider.Value = s.Volume;
             RadioVolumeSlider.Value = s.RadioVolume;
@@ -232,7 +219,6 @@ public partial class Settings : UserControl
             PositionalVolumeSlider.Value = s.PositionalVolume;
             AmbientVolumeSlider.Value = s.AmbientVolume;
 
-            // Advanced
             CompressTexturesCb.IsChecked = s.CompressTextures;
             ScaleSpecularsCb.IsChecked = s.ScaleSpeculars;
             UseGLESCb.IsChecked = s.UseGLES;
@@ -244,7 +230,6 @@ public partial class Settings : UserControl
             TrainPhysicsThreadsSlider.Value = s.TrainPhysicsThreads;
             IgnoreIrrelevantTrainsCb.IsChecked = s.IgnoreIrrelevantTrains;
 
-            // Starter
             AutoCloseStarterCb.IsChecked = s.AutoCloseStarter;
             LargeThumbnailsCb.IsChecked = s.LargeThumbnails;
             AutoExpandTreeCb.IsChecked = s.AutoExpandSceneryTree;
@@ -257,14 +242,10 @@ public partial class Settings : UserControl
         }
     }
 
-    // ── controls → Settings instance ──────────────────────────────────────
     private void ReadFromUi()
     {
         var s = StarterNG.Classes.Settings.Instance;
 
-        // General
-        // Keep the loaded language rather than writing a wrong one over it when
-        // the combo has no valid pick.
         s.Language = (ChangeLanguageCb.SelectedItem as ComboBoxItem)?.Content?.ToString()
                      ?? App.Loc.CurrentLanguage;
         s.Fullscreen = IsChecked(FullscreenCb);
@@ -274,7 +255,6 @@ public partial class Settings : UserControl
         s.InvertMouseHorizontal = IsChecked(MouseHorInvertCb);
         s.InvertMouseVertical = IsChecked(MouseVertInvertCb);
 
-        // Communication
         s.IgnoreGamepad = IsChecked(GamepadIgnoreCb);
         s.FeedbackMode = Math.Max(0, FeedbackCb.SelectedIndex);
         s.FeedbackPort = (int)(FeedbackPortNud.Value ?? 888);
@@ -289,7 +269,6 @@ public partial class Settings : UserControl
         s.UartRadioVolume = IsChecked(UartRadioVolumeCb);
         s.UartRadioChannel = IsChecked(UartRadioChannelCb);
 
-        // Other
         s.SelectExeAutomatically = SelectExeCb.SelectedIndex == 0;
         s.ExecutablePath = s.SelectExeAutomatically ? "eu07.exe"
             : (SelectExeCb.SelectedItem as ComboBoxItem)?.Content?.ToString() ?? "eu07.exe";
@@ -297,7 +276,6 @@ public partial class Settings : UserControl
         s.VirtualShunting = IsChecked(VirtualShuntingCb);
         s.LogMissingVehicleFiles = IsChecked(LogMissingVehicleFilesCb);
 
-        // Graphics
         s.RenderEngine = Math.Max(0, RenderEngineCb.SelectedIndex);
         ReadResolution(s);
         s.BufferScalePercent = (int)bufferScale.Value;
@@ -332,7 +310,6 @@ public partial class Settings : UserControl
         s.FullscreenWindowed = IsChecked(FullscreenWindowedCb);
         s.RenderAngleVulkan = IsChecked(RenderAngleVulkanCb);
 
-        // Physics
         s.SplineFidelity = (int)TrackCurvesSlider.Value;
         s.FullPhysics = IsChecked(PhysicsAccuracyCb);
         s.EnableTraction = IsChecked(PantographBreakCb);
@@ -346,7 +323,6 @@ public partial class Settings : UserControl
         s.BrakeStep = BrakeStepSlider.Value;
         s.BrakeSpeed = BrakeSpeedSlider.Value;
 
-        // Sound
         s.SoundEnabled = IsChecked(EnableSoundsCb);
         s.Volume = (int)VolumeSlider.Value;
         s.RadioVolume = (int)RadioVolumeSlider.Value;
@@ -354,7 +330,6 @@ public partial class Settings : UserControl
         s.PositionalVolume = (int)PositionalVolumeSlider.Value;
         s.AmbientVolume = (int)AmbientVolumeSlider.Value;
 
-        // Advanced
         s.CompressTextures = IsChecked(CompressTexturesCb);
         s.ScaleSpeculars = IsChecked(ScaleSpecularsCb);
         s.UseGLES = IsChecked(UseGLESCb);
@@ -366,7 +341,6 @@ public partial class Settings : UserControl
         s.TrainPhysicsThreads = (int)TrainPhysicsThreadsSlider.Value;
         s.IgnoreIrrelevantTrains = IsChecked(IgnoreIrrelevantTrainsCb);
 
-        // Starter
         s.AutoCloseStarter = IsChecked(AutoCloseStarterCb);
         s.LargeThumbnails = IsChecked(LargeThumbnailsCb);
         s.AutoExpandSceneryTree = IsChecked(AutoExpandTreeCb);
@@ -395,7 +369,6 @@ public partial class Settings : UserControl
             SaveStatus.Text = string.Empty;
     }
 
-    // ── resolution combo helpers ──────────────────────────────────────────
     private void SelectResolution(int width, int height)
     {
         string target = $"{width}x{height}";
@@ -407,7 +380,7 @@ public partial class Settings : UserControl
                 return;
             }
         }
-        // Not in the predefined list: add and select it.
+
         var added = new ComboBoxItem { Content = target };
         ResolutionCb.Items.Add(added);
         ResolutionCb.SelectedItem = added;
@@ -427,7 +400,6 @@ public partial class Settings : UserControl
         }
     }
 
-    // ── existing slider readouts ──────────────────────────────────────────
     private void TextureResolutionSlider_OnValueChanged(object? sender, RangeBaseValueChangedEventArgs e)
     {
         if (texResolution is null || textureResolutionSlider is null)
@@ -455,8 +427,6 @@ public partial class Settings : UserControl
         shaderResolution.Text = $"{resolution} px";
     }
 
-    // One entry per file in the lang/ folder, so every translation is reachable
-    // (the list used to be a hard-coded Polski / English pair).
     private void FillLanguageCombo()
     {
         ChangeLanguageCb.Items.Clear();
@@ -467,8 +437,6 @@ public partial class Settings : UserControl
         SelectActiveLanguage();
     }
 
-    // Points the combo at the language currently loaded. The selection change
-    // lands in the handler below, which sees it is already loaded and stops.
     private void SelectActiveLanguage()
     {
         var item = ChangeLanguageCb.Items.OfType<ComboBoxItem>()
@@ -499,7 +467,6 @@ public partial class Settings : UserControl
         UartExpander.IsVisible = FeedbackCb.SelectedIndex == 5;
     }
 
-    // ── tiny helpers ──────────────────────────────────────────────────────
     private static bool IsChecked(CheckBox cb) => cb.IsChecked == true;
 
     private static int Clamp(int v, int lo, int hi) => v < lo ? lo : (v > hi ? hi : v);
@@ -517,29 +484,20 @@ public partial class Settings : UserControl
         for (int i = 0; i < steps.Length; i++)
             if (steps[i] == anisotropy)
                 return i + 1;
-        return 4; // default → 8x
+        return 4;
     }
-
-    // ══════════════════════════════════════════════════════════════════════
-    //  Controls tab — key-binding editor and on-screen keyboard
-    // ══════════════════════════════════════════════════════════════════════
 
     private TextBox? _controlsSearch;
     private StackPanel? _bindingListPanel;
     private StackPanel? _keyboardPanel;
 
-    // Binding currently waiting for a key press, and the button that launched it.
     private KeyBinding? _capturing;
     private Button? _capturingButton;
 
-    // On-screen key cells, keyed by token, so colours can be refreshed in place
-    // (rebuilding the whole keyboard would detach an open assignment flyout).
     private readonly Dictionary<string, Grid> _keyCells = new(StringComparer.OrdinalIgnoreCase);
 
-    // Guards the assignment flyout's combo boxes against feedback during programmatic updates.
     private bool _flyoutLoading;
 
-    // State colours (match the legend): unassigned/filler, plain, +shift, +ctrl.
     private static readonly IBrush KeyUnassignedBrush = new SolidColorBrush(Color.Parse("#2A3036"));
     private static readonly IBrush KeyFillerBrush = new SolidColorBrush(Color.Parse("#21262B"));
     private static readonly IBrush KeyPlainBrush = new SolidColorBrush(Color.Parse("#2E9E1F"));
@@ -550,7 +508,7 @@ public partial class Settings : UserControl
     private static readonly IBrush FgDimBrush = new SolidColorBrush(Color.Parse("#9098A0"));
     private static readonly IBrush ConflictBrush = new SolidColorBrush(Color.Parse("#E06C5A"));
 
-    private const double KeyUnit = 30;   // px per relative width unit
+    private const double KeyUnit = 30;
     private const double KeyHeight = 34;
     private const double KeyGap = 4;
 
@@ -559,7 +517,6 @@ public partial class Settings : UserControl
         if (ControlsHost is null)
             return;
 
-        // Row 0 — search / restore bar.
         var topBar = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8, Margin = new Thickness(0, 0, 0, 8) };
         topBar.Children.Add(new TextBlock
         {
@@ -585,7 +542,6 @@ public partial class Settings : UserControl
         Grid.SetRow(topBar, 0);
         ControlsHost.Children.Add(topBar);
 
-        // Row 1 — scrollable binding list.
         _bindingListPanel = new StackPanel { Spacing = 3 };
         var listScroll = new ScrollViewer
         {
@@ -595,7 +551,6 @@ public partial class Settings : UserControl
         Grid.SetRow(listScroll, 1);
         ControlsHost.Children.Add(listScroll);
 
-        // Row 2 — legend + on-screen keyboard.
         var bottom = new StackPanel { Spacing = 8, Margin = new Thickness(0, 10, 0, 0) };
         bottom.Children.Add(BuildLegend());
         _keyboardPanel = new StackPanel();
@@ -612,7 +567,6 @@ public partial class Settings : UserControl
         RebuildKeyboard();
     }
 
-    // ── binding list ───────────────────────────────────────────────────────
     private void RebuildBindingList()
     {
         if (_bindingListPanel is null)
@@ -707,17 +661,16 @@ public partial class Settings : UserControl
         };
     }
 
-    // ── key capture ──────────────────────────────────────────────────────--
     private void StartCapture(KeyBinding b, Button button)
     {
-        // Restore the previously listening button, if any, before switching.
+
         if (_capturing is not null && _capturingButton is not null)
             _capturingButton.Content = ComboText(_capturing);
 
         _capturing = b;
         _capturingButton = button;
         button.Content = App.Loc["PressKey"];
-        button.Focus(); // keep focus inside the view so the tunnel handler sees keys
+        button.Focus();
     }
 
     private void CancelCapture()
@@ -740,14 +693,13 @@ public partial class Settings : UserControl
             return;
         }
 
-        // Wait for a real key while only modifiers are held.
         if (KeyMap.IsModifierKey(e.Key))
             return;
 
         string? token = KeyMap.FromInput(e.Key, e.PhysicalKey);
         if (token is null)
         {
-            e.Handled = true; // swallow unsupported keys instead of clicking the button
+            e.Handled = true;
             return;
         }
 
@@ -763,7 +715,6 @@ public partial class Settings : UserControl
         RebuildKeyboard();
     }
 
-    // ── on-screen keyboard ───────────────────────────────────────────────--
     private void RebuildKeyboard()
     {
         if (_keyboardPanel is null)
@@ -780,15 +731,13 @@ public partial class Settings : UserControl
         _keyboardPanel.Children.Add(row);
     }
 
-    // Recolours every key in place without rebuilding the tree, so an open
-    // assignment flyout keeps its anchor.
     private void UpdateKeyboardColors()
     {
         var states = ComputeKeyStates();
         foreach (var (token, content) in _keyCells)
         {
             if (content.Children.Count > 0)
-                content.Children.RemoveAt(0); // drop the old background, keep the label
+                content.Children.RemoveAt(0);
             content.Children.Insert(0, BuildKeyBackground(token, states));
             states.TryGetValue(token, out var state);
             ToolTip.SetTip(content, BuildKeyTooltip(token, state));
@@ -824,7 +773,7 @@ public partial class Settings : UserControl
 
         if (cap.Token is null)
         {
-            // Reserved key (Esc, F1-F12, modifiers …): greyed out and not editable.
+
             content.Children.Add(new Border { Background = KeyFillerBrush });
             content.Children.Add(new TextBlock
             {
@@ -885,7 +834,6 @@ public partial class Settings : UserControl
         return head + "\n" + string.Join("\n", state.Tips);
     }
 
-    // ── key assignment flyout (one combo per modifier combination) ──────────
     private void ShowKeyFlyout(string token, Control anchor)
     {
         CancelCapture();
@@ -987,7 +935,6 @@ public partial class Settings : UserControl
     {
         KeyBinding? chosen = selectedIndex <= 0 ? null : commands[selectedIndex - 1];
 
-        // Free the slot: unbind any other command currently sitting on it.
         foreach (var b in KeyboardConfig.Instance.Bindings)
         {
             if (!ReferenceEquals(b, chosen) && b.IsAssigned &&
@@ -1048,7 +995,6 @@ public partial class Settings : UserControl
         return sp;
     }
 
-    // ── shared helpers ─────────────────────────────────────────────────────
     private sealed class KeyState
     {
         public bool Plain;
@@ -1106,8 +1052,6 @@ public partial class Settings : UserControl
         return string.Join(" + ", parts);
     }
 
-    // Display label for a command: its (capitalised) description, or the raw
-    // command token when the file has no comment for it.
     private static string CommandLabel(KeyBinding b) =>
         string.IsNullOrEmpty(b.Description) ? b.Command : Capitalize(b.Description);
 

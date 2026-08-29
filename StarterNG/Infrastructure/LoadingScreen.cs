@@ -8,10 +8,6 @@ using Avalonia.Platform;
 
 namespace StarterNG.Infrastructure;
 
-/// <summary>
-/// Pascal <c>PrepareLoadingScreen</c>: pick a logo and write <c>textures/logo.bmp</c>
-/// for the simulator splash.
-/// </summary>
 public static class LoadingScreen
 {
     public static void Prepare(string? logoKey, string? sceneryName = null)
@@ -35,7 +31,7 @@ public static class LoadingScreen
         }
         catch
         {
-            // never block launch on a bad logo
+
         }
     }
 

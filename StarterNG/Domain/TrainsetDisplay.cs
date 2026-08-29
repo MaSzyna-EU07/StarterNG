@@ -8,17 +8,12 @@ using StarterNG.Classes;
 
 namespace StarterNG.Domain;
 
-/// <summary>Shared trainset list labels and status-bar formatting for Scenarios / Depot.</summary>
 public static class TrainsetDisplay
 {
     public static bool IsEmpty(Trainset trainset) =>
         trainset.Vehicles.Count == 0 ||
         trainset.Vehicles.All(v => string.IsNullOrWhiteSpace(v.Name) && string.IsNullOrWhiteSpace(v.SkinFile));
 
-    /// <summary>
-    /// Composition caption like Pascal <c>PrepareTrainsetDesc</c>: first loco/EZT by
-    /// name, then collapse consecutive same-class wagons as <c>Mini(N)</c>.
-    /// </summary>
     public static string? CompositionText(Trainset trainset)
     {
         if (IsEmpty(trainset))
@@ -78,10 +73,6 @@ public static class TrainsetDisplay
         string.IsNullOrWhiteSpace(v.SkinFile) ? "?" :
         System.IO.Path.GetFileNameWithoutExtension(v.SkinFile);
 
-    /// <summary>
-    /// Like Pascal <c>SelectTrain</c>: prefer the last car if it has cab crew
-    /// (push-pull), else the first staffed/passenger car, else the first car.
-    /// </summary>
     public static string? DefaultStartingVehicle(Trainset trainset)
     {
         if (trainset.Vehicles.Count == 0)
@@ -96,10 +87,6 @@ public static class TrainsetDisplay
         return staffed?.Name ?? trainset.Vehicles[0].Name;
     }
 
-    /// <summary>
-    /// Length / mass / vehicle count / track (+ speed), with Pascal mass rules
-    /// (<c>IncludeVehicleToMass</c> + 200 t AllVehicles retry).
-    /// </summary>
     public static string FormatStats(Trainset? trainset, Func<Dynamic, Physics?> physicsFor,
         string lengthLabel, string massLabel, string vehiclesLabel, string trackLabel,
         Func<Dynamic, string?>? categoryOf = null,
@@ -171,11 +158,6 @@ public static class TrainsetDisplay
         return p.LoadAccepted.Contains(loadType, StringComparison.OrdinalIgnoreCase);
     }
 
-    /// <summary>
-    /// Pascal <c>UniqueVehicleName</c> / <c>UniqueVehiclesName</c> at launch:
-    /// EZT/szynobus → rename every car; otherwise only the start vehicle.
-    /// Returns the (possibly new) name of the start vehicle.
-    /// </summary>
     public static string? UniquifyForLaunch(Trainset trainset, Scenery scenery, string? startName)
     {
         var used = CollectNames(scenery);
@@ -220,7 +202,7 @@ public static class TrainsetDisplay
         var tex = GameData.Instance.Vehicles.TextureForSkin(v.SkinFile);
         if (tex != null)
         {
-            // Prefer texture_mini when it is more specific than the class mini (≈ MiniD).
+
             if (!string.IsNullOrEmpty(tex.TextureMini) &&
                 !string.Equals(tex.TextureMini, tex.ResolvedClass, StringComparison.OrdinalIgnoreCase))
                 return SanitizeName(tex.TextureMini!);

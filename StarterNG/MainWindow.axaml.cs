@@ -20,7 +20,7 @@ namespace StarterNG;
 
 public partial class MainWindow : Window
 {
-    // Height of the caption strip the OS buttons live in.
+
     private const int TitleBarHeight = 32;
 
     private DateTime _openedUtc = DateTime.UtcNow;
@@ -30,24 +30,15 @@ public partial class MainWindow : Window
         Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
         InitializeComponent();
 
-        // Extend the client area over the title bar so the logo + navigation sit
-        // on the top bar, while the OS caption buttons (min / max / close) stay in
-        // the top-right corner. The default chrome hints already keep the system
-        // caption buttons, so only the two supported hints are set here (this
-        // Avalonia build no longer exposes ExtendClientAreaChromeHints).
         ExtendClientAreaToDecorationsHint = true;
         ExtendClientAreaTitleBarHeightHint = TitleBarHeight;
 
-        // Windows draws the min / max / close buttons over the top of the extended
-        // client area, on top of the toolbar row. Push the bar down by the caption
-        // height so they get a strip of their own.
         if (OperatingSystem.IsWindows())
             TopBar.Padding = new Thickness(0, TitleBarHeight, 0, 0);
 
         PopulateLangCombo();
         App.Loc.LanguageChanged += OnLanguageChanged;
 
-        // Keep Start enabled/caption in sync with selection (Pascal actStartUpdate).
         AppState.Instance.Changed += UpdateStartButton;
         Opened += (_, _) =>
         {
@@ -57,20 +48,17 @@ public partial class MainWindow : Window
         Activated += (_, _) => CheckExternalSettings();
     }
 
-    // Lets the user drag the window by the top caption strip.
     private void TitleBar_OnPointerPressed(object? sender, PointerPressedEventArgs e)
     {
         if (e.GetCurrentPoint(this).Properties.IsLeftButtonPressed)
             BeginMoveDrag(e);
     }
 
-    // ── Navigation: show the page whose RadioButton was just checked ──────────
     private void Nav_OnCheckedChanged(object? sender, RoutedEventArgs e)
     {
         if (sender is not RadioButton { IsChecked: true } rb)
             return;
 
-        // Guard against the controls not being created yet during initial load.
         if (ScenariosView is null || DepotView is null || SettingsView is null)
             return;
 
@@ -80,9 +68,6 @@ public partial class MainWindow : Window
         SettingsView.IsVisible = page == "settings";
     }
 
-    // One entry per file in lang/. The entries are language names, which are not
-    // translated, so this runs once - never from OnLanguageChanged, where it
-    // would clear the combo from inside its own SelectionChanged and throw.
     private void PopulateLangCombo()
     {
         LangCombo.Items.Clear();
@@ -94,8 +79,6 @@ public partial class MainWindow : Window
         SelectActiveLanguage();
     }
 
-    // Points the combo at the loaded language; a no-op when it already shows it,
-    // which is the case for a pick made here.
     private void SelectActiveLanguage()
     {
         var item = LangCombo.Items.OfType<ComboBoxItem>()
@@ -112,18 +95,12 @@ public partial class MainWindow : Window
         if ((LangCombo.SelectedItem as ComboBoxItem)?.Tag is not string code)
             return;
 
-        // Filling the combo in selects the language that is already loaded, which
-        // lands here as well - comparing against the loaded one is what tells the
-        // two apart, and it keeps the handler idempotent.
         if (string.Equals(code, App.Loc.CurrentLangCode, StringComparison.OrdinalIgnoreCase))
             return;
 
         App.ApplyLanguage(code);
     }
 
-    // Captions built in code (train stats, panel headers, combo items) are read
-    // from App.Loc once, so they have to be built again. Runs for a pick made
-    // here or in the settings tab, hence hanging off Loc rather off the combo.
     private void OnLanguageChanged()
     {
         SelectActiveLanguage();
@@ -204,8 +181,6 @@ public partial class MainWindow : Window
         }
     }
 
-    // Pascal actStartUpdate: Start needs a scenery and a trainset. A consist with
-    // nobody aboard still starts, after the confirmation in StartButton_OnClick.
     private void UpdateStartButton()
     {
         if (startButton is null) return;
@@ -225,8 +200,7 @@ public partial class MainWindow : Window
             startButton.IsEnabled = false;
             return;
         }
-        // No driver and no passenger: still startable, but say so on the button
-        // and ask before launching.
+
         bool staffed = HasStartableVehicle(trainset);
         startButton.Content = staffed ? App.Loc["Start"] : App.Loc["StartNoStaff"];
         ToolTip.SetTip(startButton, staffed ? null : App.Loc["StartNoStaffConfirm"]);
@@ -249,8 +223,6 @@ public partial class MainWindow : Window
         return trainset.Vehicles.Any(CanStart);
     }
 
-    // ── START: export the (possibly depot-modified) scenery and launch the sim.
-    // Global on the main window, like the original Starter's bottom START button.
     private async void StartButton_OnClick(object? sender, RoutedEventArgs e)
     {
         var scenery = AppState.Instance.CurrentScenery;
@@ -260,8 +232,6 @@ public partial class MainWindow : Window
         if (trainset is null)
             return;
 
-        // Launching a consist with no driver and no passenger is legal (a scenery
-        // can be watched from the outside), so confirm instead of blocking it.
         if (!HasStartableVehicle(trainset) &&
             !await MessageBox.Show(this, App.Loc["StartNoStaffConfirm"],
                                    App.Loc["StartNoStaffTitle"], MessageBoxButtons.YesNo))
@@ -277,7 +247,6 @@ public partial class MainWindow : Window
             };
         }
 
-        // Pascal UniqueVehicleName / UniqueVehiclesName before writing $scn.
         string? vehicle = TrainsetDisplay.UniquifyForLaunch(
             trainset, scenery, AppState.Instance.StartingVehicleName);
         if (string.IsNullOrEmpty(vehicle))
@@ -286,11 +255,8 @@ public partial class MainWindow : Window
 
         LoadingScreen.Prepare(trainset.Logo, Path.GetFileNameWithoutExtension(scenery.Path));
 
-        // Always inject the Weather-tab values (incl. start-time override), like the
-        // Pascal starter's ChangeConfig on every launch — not only after an edit.
         scenery.WeatherDirty = true;
 
-        // write scenery/$<name>.scn with the replaced trainsets
         string dir = Path.GetDirectoryName(scenery.Path) ?? "scenery";
         string exportName = "$" + Path.GetFileName(scenery.Path);
         string exportPath = Path.Combine(dir, exportName);
@@ -300,16 +266,11 @@ public partial class MainWindow : Window
         }
         catch
         {
-            return; // couldn't write the scenery file
+            return;
         }
 
-        // make sure the latest settings are on disk before the sim reads them
         SettingsModel.Instance.CaptureAndSave();
 
-        // launch the game: -s $<name>.scn -v <vehicle>. Keep the handle so we can
-        // watch for the simulator exiting. UseShellExecute = false runs the binary
-        // directly with its arguments, which works the same on Windows and Linux
-        // (the executable is resolved to eu07.exe / eu07 via ResolveExecutable).
         Process? sim;
         try
         {
@@ -324,29 +285,23 @@ public partial class MainWindow : Window
         }
         catch
         {
-            return; // executable not found / not configured yet
+            return;
         }
 
-        // honour the "close starter automatically" preference
         if (SettingsModel.Instance.AutoCloseStarter)
         {
             Close();
             return;
         }
 
-        // Otherwise keep the starter running but hidden while the sim is in the
-        // foreground, and bring it back once the simulator process exits.
         Hide();
 
-        // reduce ram usage while the sim runs
         GC.Collect();
         GC.WaitForPendingFinalizers();
 
         WatchSimulator(sim);
     }
 
-    // Pascal: RunInfo.Vehicle := Train.Vehicles[SelVehicle].Name after actStartUpdate
-    // requires headdriver/reardriver/passenger on that car.
     private static string? ResolveStartVehicle(Trainset? trainset)
     {
         if (trainset is null || trainset.Vehicles.Count == 0)
@@ -368,9 +323,6 @@ public partial class MainWindow : Window
                ?? trainset.Vehicles.FirstOrDefault()?.Name;
     }
 
-    // Waits (off the UI thread) for the simulator to exit, then restores the
-    // starter window. Uses the launch handle when available, otherwise locates the
-    // process by name, and never leaves the UI hidden if it cannot be tracked.
     private void WatchSimulator(Process? sim)
     {
         if (sim is null)
@@ -381,7 +333,7 @@ public partial class MainWindow : Window
 
         if (sim is null)
         {
-            // no handle to wait on - restore immediately rather than hide forever
+
             Dispatcher.UIThread.Post(RestoreFromSimulator);
             return;
         }
@@ -389,7 +341,7 @@ public partial class MainWindow : Window
         var watcher = new Thread(() =>
         {
             try { sim.WaitForExit(); }
-            catch { /* already exited / access denied */ }
+            catch {  }
             Dispatcher.UIThread.Post(RestoreFromSimulator);
         })
         {
@@ -399,7 +351,6 @@ public partial class MainWindow : Window
         watcher.Start();
     }
 
-    // Pascal CheckSettingsFile on AppActivate (skip the first few seconds).
     private async void CheckExternalSettings()
     {
         if ((DateTime.UtcNow - _openedUtc).TotalSeconds < 3)
@@ -421,7 +372,6 @@ public partial class MainWindow : Window
             SettingsModel.Instance.TouchConfigAge();
     }
 
-    // Brings the starter back to the foreground after the simulator closes.
     private void RestoreFromSimulator()
     {
         Show();

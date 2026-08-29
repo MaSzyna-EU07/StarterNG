@@ -16,7 +16,6 @@ public partial class TextureBaseWindow : Window
     private readonly VehicleDatabase _db = GameData.Instance.Vehicles;
     private readonly List<Row> _all = new();
 
-    /// <summary>Texture chosen by double-click (null if the window was just closed).</summary>
     public VehicleTexture? Picked { get; private set; }
 
     public TextureBaseWindow()

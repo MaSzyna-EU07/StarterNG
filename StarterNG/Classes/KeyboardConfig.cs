@@ -5,60 +5,33 @@ using System.Text;
 
 namespace StarterNG.Classes;
 
-/// <summary>
-/// A single keyboard command binding parsed from <c>eu07_input-keyboard.ini</c>.
-/// A binding is a simulator command name, an optional pair of modifier flags
-/// (<c>shift</c> / <c>ctrl</c>, either or both) and the key it is mapped to.
-/// <c>none</c> (or an empty key) means the command is intentionally unbound.
-/// </summary>
 public sealed class KeyBinding
 {
-    /// <summary>Simulator command token, e.g. <c>mastercontrollerincrease</c>.</summary>
     public string Command = string.Empty;
 
-    /// <summary>True when the binding requires the Shift modifier.</summary>
     public bool Shift;
 
-    /// <summary>True when the binding requires the Ctrl modifier.</summary>
     public bool Ctrl;
 
-    /// <summary>The key token (e.g. <c>q</c>, <c>num_+</c>) or <c>none</c> when unbound.</summary>
     public string Key = "none";
 
-    /// <summary>Human description taken from the line's trailing comment (no <c>//</c>).</summary>
     public string Description = string.Empty;
 
-    /// <summary>Index into the backing line list, so the original line can be rewritten in place.</summary>
     internal int LineIndex = -1;
 
-    /// <summary>True when the command is mapped to an actual key.</summary>
     public bool IsAssigned =>
         !string.IsNullOrEmpty(Key) &&
         !Key.Equals("none", StringComparison.OrdinalIgnoreCase);
 }
 
-/// <summary>
-/// Reader/writer for the simulator's keyboard layout file,
-/// <c>eu07_input-keyboard.ini</c>, which lives next to <c>eu07.ini</c>
-/// (<c>%APPDATA%\MaSzyna\</c> on Windows, <c>~/.config/MaSzyna/</c> elsewhere).
-///
-/// <para>The file is a flat list of <c>command [shift] [ctrl] key // comment</c>
-/// lines. Modifiers are the literal tokens <c>shift</c> and <c>ctrl</c> appearing
-/// in any order between the command and the key; the last value token is the key.
-/// Blank lines, pure comments and any lines the launcher does not recognise are
-/// preserved verbatim on save - only the binding lines the user actually edits
-/// are rewritten.</para>
-/// </summary>
 public sealed class KeyboardConfig
 {
     public static KeyboardConfig Instance { get; } = new();
 
     private readonly List<string> _lines = new();
 
-    /// <summary>All recognised bindings, in file order.</summary>
     public List<KeyBinding> Bindings { get; private set; } = new();
 
-    /// <summary>True when a binding has been changed since the last load/save.</summary>
     public bool Dirty { get; set; }
 
     private string _savePath = string.Empty;
@@ -67,7 +40,7 @@ public sealed class KeyboardConfig
 
     private static Encoding ResolveEncoding()
     {
-        // Comments use Polish diacritics in Windows-1250, like eu07.ini; preserve them.
+
         try
         {
             Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
@@ -79,7 +52,6 @@ public sealed class KeyboardConfig
         }
     }
 
-    /// <summary>Per-user keyboard config path for the current OS (next to eu07.ini).</summary>
     public static string UserConfigPath()
     {
         if (OperatingSystem.IsWindows())
@@ -103,15 +75,12 @@ public sealed class KeyboardConfig
         return Path.Combine(AppContext.BaseDirectory, "eu07_input-keyboard.ini");
     }
 
-    /// <summary>Default file shipped in the simulator's working directory.</summary>
     private static string WorkingDirDefaultPath() =>
         Path.Combine(Directory.GetCurrentDirectory(), "eu07_input-keyboard.ini");
 
-    /// <summary>Fallback template bundled with the launcher (startercfg/).</summary>
     private static string BundledDefaultPath() =>
         Path.Combine(AppContext.BaseDirectory, "startercfg", "eu07_input-keyboard.ini");
 
-    /// <summary>Loads the per-user file, falling back to the working-dir or bundled default.</summary>
     public void Load()
     {
         _savePath = UserConfigPath();
@@ -120,7 +89,6 @@ public sealed class KeyboardConfig
         Dirty = false;
     }
 
-    /// <summary>Reloads the shipped defaults, discarding the user's current edits.</summary>
     public void LoadDefaults()
     {
         if (string.IsNullOrEmpty(_savePath))
@@ -151,7 +119,6 @@ public sealed class KeyboardConfig
         return paths.Length > 0 ? paths[^1] : string.Empty;
     }
 
-    /// <summary>Parses raw file text into <see cref="Bindings"/>, keeping every line verbatim.</summary>
     public void Parse(string text)
     {
         _lines.Clear();
@@ -170,10 +137,6 @@ public sealed class KeyboardConfig
         Bindings = bindings;
     }
 
-    /// <summary>
-    /// Parses a single line into a binding. Returns false for blank lines, pure
-    /// comments and anything without a command token.
-    /// </summary>
     private static bool TryParseBinding(string raw, int lineIndex, out KeyBinding binding)
     {
         binding = new KeyBinding { LineIndex = lineIndex };
@@ -181,7 +144,6 @@ public sealed class KeyboardConfig
         string body = raw;
         string description = string.Empty;
 
-        // Split off a trailing "// comment".
         int commentAt = body.IndexOf("//", StringComparison.Ordinal);
         if (commentAt >= 0)
         {
@@ -191,7 +153,7 @@ public sealed class KeyboardConfig
 
         body = body.Trim();
         if (body.Length == 0)
-            return false; // blank or pure-comment line
+            return false;
 
         var tokens = body.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries);
         if (tokens.Length == 0)
@@ -200,7 +162,6 @@ public sealed class KeyboardConfig
         binding.Command = tokens[0];
         binding.Description = description;
 
-        // Everything after the command is modifiers + (at most) one key.
         bool shift = false, ctrl = false;
         string key = "none";
         for (int i = 1; i < tokens.Length; i++)
@@ -208,7 +169,7 @@ public sealed class KeyboardConfig
             string t = tokens[i];
             if (t.Equals("shift", StringComparison.OrdinalIgnoreCase)) shift = true;
             else if (t.Equals("ctrl", StringComparison.OrdinalIgnoreCase)) ctrl = true;
-            else key = t; // last non-modifier token wins as the key
+            else key = t;
         }
 
         binding.Shift = shift;
@@ -217,7 +178,6 @@ public sealed class KeyboardConfig
         return true;
     }
 
-    /// <summary>Rewrites each binding's line, then serialises the file to text.</summary>
     public string ToText()
     {
         foreach (var b in Bindings)
@@ -229,7 +189,6 @@ public sealed class KeyboardConfig
         return string.Join(Environment.NewLine, _lines);
     }
 
-    /// <summary>Formats one binding as <c>command [shift] [ctrl] key // comment</c>.</summary>
     private static string FormatLine(KeyBinding b)
     {
         var sb = new StringBuilder();
@@ -243,7 +202,6 @@ public sealed class KeyboardConfig
         return sb.ToString();
     }
 
-    /// <summary>Writes the bindings back to the per-user keyboard file.</summary>
     public void Save()
     {
         if (string.IsNullOrEmpty(_savePath))
@@ -259,7 +217,7 @@ public sealed class KeyboardConfig
         }
         catch
         {
-            // Could not write (permissions / path). Leave values in memory.
+
         }
     }
 }

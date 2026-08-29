@@ -11,18 +11,9 @@ using StarterNG.Classes;
 
 namespace StarterNG.Views;
 
-/// <summary>
-/// Right-click menu shared by the consist lists (the "Vehicles" list in Scenarios
-/// and the "Map consists" list in the depot). Offers: save to warehouse, load from
-/// warehouse (each entry deletable via an "✕"), copy/paste via the clipboard, and -
-/// when <c>removeAll</c> is supplied - clearing the consist (Shift+Delete).
-/// </summary>
 public static class ConsistContextMenu
 {
-    /// <param name="owner">Control the menu/flyouts anchor to (for clipboard + popups).</param>
-    /// <param name="getTarget">Supplies the trainset to act on when the menu opens.</param>
-    /// <param name="applyVehicles">Replaces the target's vehicles and refreshes the view.</param>
-    /// <param name="removeAll">When non-null, adds a "remove all vehicles" entry.</param>
+
     public static ContextMenu Build(
         Control owner,
         Func<Trainset?> getTarget,
@@ -30,7 +21,7 @@ public static class ConsistContextMenu
         Action? removeAll = null)
     {
         var menu = new ContextMenu();
-        // Rebuild the entries each time it opens so the warehouse list stays fresh.
+
         menu.Opening += (_, _) => Populate(menu, owner, getTarget, applyVehicles, removeAll);
         return menu;
     }
@@ -42,12 +33,10 @@ public static class ConsistContextMenu
         var target = getTarget();
         bool hasVehicles = target is { Vehicles.Count: > 0 };
 
-        // ── Save current consist to the warehouse ──────────────────────────────
         var save = new MenuItem { Header = App.Loc["PresetSave"], IsEnabled = hasVehicles };
         save.Click += (_, _) => ShowSaveFlyout(owner, target);
         menu.Items.Add(save);
 
-        // ── Load from the warehouse (submenu; each entry deletable) ────────────
         var load = new MenuItem { Header = App.Loc["PresetLoad"] };
         var presets = PresetStore.All();
         if (presets.Count == 0)
@@ -82,7 +71,6 @@ public static class ConsistContextMenu
 
         menu.Items.Add(new Separator());
 
-        // ── Clipboard (full trainset text) ─────────────────────────────────────
         var copy = new MenuItem { Header = App.Loc["ConsistCopy"], IsEnabled = hasVehicles };
         copy.Click += async (_, _) =>
         {
@@ -103,7 +91,6 @@ public static class ConsistContextMenu
         };
         menu.Items.Add(paste);
 
-        // ── Remove all vehicles (depot only) ───────────────────────────────────
         if (removeAll != null)
         {
             menu.Items.Add(new Separator());
@@ -118,8 +105,6 @@ public static class ConsistContextMenu
         }
     }
 
-    // A warehouse entry: the name loads the preset on click, the trailing "✕"
-    // deletes it from the warehouse.
     private static MenuItem BuildPresetItem(ContextMenu menu, TrainsetPreset preset,
         Action<List<Dynamic>> applyVehicles)
     {
@@ -134,9 +119,9 @@ public static class ConsistContextMenu
         ToolTip.SetTip(del, App.Loc["PresetDelete"]);
         del.Click += (_, e) =>
         {
-            e.Handled = true;          // don't let the click also load the preset
+            e.Handled = true;
             PresetStore.Delete(preset.Name);
-            menu.Close();              // reopen to see the updated warehouse
+            menu.Close();
         };
 
         var label = new TextBlock { Text = preset.Name, VerticalAlignment = VerticalAlignment.Center };
@@ -156,7 +141,6 @@ public static class ConsistContextMenu
         return item;
     }
 
-    // Small popup to name the preset before saving it to the warehouse.
     private static void ShowSaveFlyout(Control owner, Trainset? target)
     {
         if (target is null || target.Vehicles.Count == 0)

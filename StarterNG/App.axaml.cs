@@ -15,18 +15,15 @@ namespace StarterNG;
 
 public partial class App : Application
 {
-    
+
     public static LocalizationService Loc { get; } = new();
-    
+
     public override void Initialize()
     {
         AvaloniaXamlLoader.Load(this);
 
-        // Load the persisted configuration up front so the saved language wins;
-        // fall back to the system culture only when the file has no lang entry.
         Settings.Instance.Load();
 
-        // Key bindings live in eu07_input-keyboard.ini next to eu07.ini.
         KeyboardConfig.Instance.Load();
 
         CultureInfo ci = CultureInfo.InstalledUICulture ;
@@ -43,17 +40,9 @@ public partial class App : Application
         ApplyLanguage(langName);
     }
 
-    /// <summary>
-    /// Swaps the active language by loading the matching XML file from the
-    /// <c>lang/</c> folder next to the executable (see <see cref="LocalizationService"/>).
-    /// The translations are no longer compiled into the assembly, so they can be
-    /// edited or added without rebuilding the launcher. Accepts either a display
-    /// name ("English", "Polski") or a short code ("en", "pl").
-    /// </summary>
     public static void ApplyLanguage(string langNameOrCode)
     {
-        // Loc.Load resolves the file and returns the canonical display name,
-        // which we mirror back into the settings so the stored value stays valid.
+
         var resolvedName = Loc.Load(langNameOrCode);
         Settings.Instance.Language = resolvedName;
     }
@@ -62,11 +51,9 @@ public partial class App : Application
     {
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
-            // Code page 1250 is needed to parse scenery files (done during load).
+
             Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
 
-            // Persist settings when the launcher is closing. Key bindings are only
-            // rewritten when actually edited, so an untouched file keeps its layout.
             desktop.ShutdownRequested += (_, _) =>
             {
                 Settings.Instance.CaptureAndSave();
@@ -84,7 +71,7 @@ public partial class App : Application
                 {
                     Dispatcher.UIThread.Post(() =>
                     {
-                        // Show splash only if loading takes more than 300ms
+
                         if (sw.ElapsedMilliseconds > 300 && splash == null)
                         {
                             splash = new SplashWindow();

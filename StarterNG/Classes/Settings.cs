@@ -9,163 +9,126 @@ namespace StarterNG.Classes;
 
 public enum BatteryDefault { Default = 0, AlwaysOff = 1, AlwaysOn = 2 }
 
-/// <summary>
-/// Application settings backing the Settings view, persisted to the simulator's
-/// <c>eu07.ini</c>.
-///
-/// <para><b>Where it loads/saves.</b> The active file lives next to the
-/// simulator's own config: <c>%APPDATA%\MaSzyna\eu07.ini</c> on Windows or
-/// <c>~/.config/MaSzyna/eu07.ini</c> elsewhere. If that file does not exist yet,
-/// defaults are read from an <c>eu07.ini</c> in the launcher's working directory
-/// (the same fallback the simulator uses). Saving always writes to the per-user
-/// path.</para>
-///
-/// <para><b>Unknown keys are kept.</b> The whole file is round-tripped through
-/// <see cref="ConfigFile"/>; only the keys the UI actually edits are rewritten,
-/// so any extra settings the launcher does not model survive a save.</para>
-///
-/// <para>Some mappings are best-effort where the wiki does not document an exact
-/// key; those are marked with NOTE and can be adjusted against the running exe.</para>
-/// </summary>
 public sealed class Settings
 {
     public static Settings Instance { get; } = new();
 
-    /// <summary>
-    /// Pulls the current values out of the Settings view into this instance.
-    /// The view assigns this when it is constructed; null if the view was never
-    /// opened (in which case Save just re-writes the loaded values).
-    /// </summary>
     public Action? CaptureFromUi { get; set; }
 
-    /// <summary>True if the loaded config explicitly contained a <c>lang</c> entry.</summary>
     public bool LanguageWasSet { get; private set; }
 
-    // ── General ───────────────────────────────────────────────────────────
-    public string Language = "English";          // lang  (pl/en)
-    public bool Fullscreen;                       // fullscreen
-    public bool PauseWhenInactive = true;         // inactivepause
-    public bool PauseOnStart;                     // pause
-    public int CursorSensitivity = 2;             // |mousescale x|
-    public bool InvertMouseHorizontal;            // mousescale x < 0
-    public bool InvertMouseVertical;              // mousescale y < 0
+    public string Language = "English";
+    public bool Fullscreen;
+    public bool PauseWhenInactive = true;
+    public bool PauseOnStart;
+    public int CursorSensitivity = 2;
+    public bool InvertMouseHorizontal;
+    public bool InvertMouseVertical;
 
-    // ── Communication ─────────────────────────────────────────────────────
-    public bool IgnoreGamepad;                    // input.gamepad (inverted)
-    public int FeedbackMode = 1;                   // feedbackmode (0-5)
-    public int FeedbackPort = 888;                // feedbackport
-    public bool UartEnabled;                      // uart presence
-    public string UartPort = "";                  // uart
-    public string UartTune = "";                  // uarttune
-    public bool UartDebug;                        // uartdebug
-    public bool UartMain, UartScnd, UartTrain, UartLocal, UartRadioVolume, UartRadioChannel; // uartfeature tokens
+    public bool IgnoreGamepad;
+    public int FeedbackMode = 1;
+    public int FeedbackPort = 888;
+    public bool UartEnabled;
+    public string UartPort = "";
+    public string UartTune = "";
+    public bool UartDebug;
+    public bool UartMain, UartScnd, UartTrain, UartLocal, UartRadioVolume, UartRadioChannel;
 
-    // ── Other ─────────────────────────────────────────────────────────────
-    public bool SelectExeAutomatically = true;    // starter.exe.auto  (launcher-only)
-    public string ExecutablePath = "eu07.exe";    // starter.exe.path  (launcher-only)
-    public bool DebugMode;                         // debugmode
-    public bool VirtualShunting = true;            // ai.trainman
-    public bool LogMissingVehicleFiles;            // starter.logmissingvehicles → bledy.txt dump
+    public bool SelectExeAutomatically = true;
+    public string ExecutablePath = "eu07.exe";
+    public bool DebugMode;
+    public bool VirtualShunting = true;
+    public bool LogMissingVehicleFiles;
 
-    // ── Graphics ──────────────────────────────────────────────────────────
-    public int RenderEngine;                       // gfxrenderer (index, see RenderEngines)
-    public int Width = 1280;                       // width
-    public int Height = 720;                       // height
-    public int BufferScalePercent = 100;           // starter.bufferscale → gfx.framebuffer.fidelity
-    public int MaxTextureSize = 4096;              // maxtexturesize
-    public int MaxCabTextureSize = 4096;           // maxcabtexturesize
-    public int TextureFiltering = 8;               // anisotropicfiltering (1/2/4/8/16)
-    public int Multisampling = 2;                  // multisampling (0-3)
-    public int DynamicLights = 7;                  // dynamiclights (0-7)
-    public double DrawRangeFactor = 3.0;           // gfx.drawrange.factor.max
-    public bool VSync;                              // vsync
-    public bool Smoke = true;                      // gfx.smoke
-    public int SmokeFidelity = 1;                  // gfx.smoke.fidelity (1-4)
-    public bool ChromaticAberration = true;        // gfx.postfx.chromaticaberration.enabled
-    public bool MotionBlur = true;                 // gfx.postfx.motionblur.enabled
-    public bool ExtraEffects = true;               // gfx.extraeffects
-    public bool EnvMap = true;                      // gfx.envmap.enabled
-    public bool UseVbo = true;                     // usevbo
-    public bool RenderShadows = true;              // shadows + gfx.shadowmap.enabled
-    public int ReflectionsFramerate = 60;          // gfx.reflections.framerate
-    public int ShadowMapResolution = 2048;         // shadowtune[0]
-    public int ShadowProjectionRange = 250;        // shadowtune[1]
-    public int CabShadowsRange;                    // gfx.shadows.cab.range
-    public int ShadowRankCutoff = 3;               // gfx.shadow.rank.cutoff (NOTE)
-    public int ReflectionsFidelity;                // gfx.reflections.fidelity (0-2)
-    public int FieldOfView = 45;                   // fieldofview (15-75) NOTE: 'fovSlider' in XAML
-    public bool PythonScreens = true;              // python.enabled
-    public bool PythonThreadedUpload = true;       // python.threadedupload
-    public bool FpsLimitEnabled;                   // fpslimit (presence)
-    public int FpsLimit = 30;                      // fpslimit (1-100)
-    public double ShadowAngleLimit = 0.2;          // gfx.shadow.angle.min (0.2-1.0)
-    public bool FullscreenWindowed;                // fullscreenwindowed
-    public bool RenderAngleVulkan;                 // gfx.angleplatform ("vulkan")
+    public int RenderEngine;
+    public int Width = 1280;
+    public int Height = 720;
+    public int BufferScalePercent = 100;
+    public int MaxTextureSize = 4096;
+    public int MaxCabTextureSize = 4096;
+    public int TextureFiltering = 8;
+    public int Multisampling = 2;
+    public int DynamicLights = 7;
+    public double DrawRangeFactor = 3.0;
+    public bool VSync;
+    public bool Smoke = true;
+    public int SmokeFidelity = 1;
+    public bool ChromaticAberration = true;
+    public bool MotionBlur = true;
+    public bool ExtraEffects = true;
+    public bool EnvMap = true;
+    public bool UseVbo = true;
+    public bool RenderShadows = true;
+    public int ReflectionsFramerate = 60;
+    public int ShadowMapResolution = 2048;
+    public int ShadowProjectionRange = 250;
+    public int CabShadowsRange;
+    public int ShadowRankCutoff = 3;
+    public int ReflectionsFidelity;
+    public int FieldOfView = 45;
+    public bool PythonScreens = true;
+    public bool PythonThreadedUpload = true;
+    public bool FpsLimitEnabled;
+    public int FpsLimit = 30;
+    public double ShadowAngleLimit = 0.2;
+    public bool FullscreenWindowed;
+    public bool RenderAngleVulkan;
 
-    // ── Physics ───────────────────────────────────────────────────────────
-    public int SplineFidelity = 1;                 // splinefidelity (1-4)
-    public bool FullPhysics = true;                // fullphysics
-    public bool EnableTraction = true;             // enabletraction (pantograph can break)
-    public bool LiveTraction = true;               // livetraction
-    public bool PhysicsLog;                        // physicslog (speedometer tapes)
-    public bool DebugLog = true;                   // debuglog (3 / 0)
-    public bool MultipleLogs;                      // multiplelogs
-    public bool DisplaySimulation = true;          // gfx.skiprendering (inverted)
-    public bool CrashDamage = true;                // crashdamage
-    public double Friction = 1.0;                  // friction (0.1-3.0)
-    public double BrakeStep = 1.0;                 // brakestep (0.4-3.0)
-    public double BrakeSpeed = 3.0;                // brakespeed (0.4-3.0)
+    public int SplineFidelity = 1;
+    public bool FullPhysics = true;
+    public bool EnableTraction = true;
+    public bool LiveTraction = true;
+    public bool PhysicsLog;
+    public bool DebugLog = true;
+    public bool MultipleLogs;
+    public bool DisplaySimulation = true;
+    public bool CrashDamage = true;
+    public double Friction = 1.0;
+    public double BrakeStep = 1.0;
+    public double BrakeSpeed = 3.0;
 
-    // ── Sound ─────────────────────────────────────────────────────────────
-    public bool SoundEnabled = true;               // soundenabled
-    public int Volume = 50;                         // sound.volume          (0-2 → 0-100)
-    public int RadioVolume = 75;                    // sound.volume.radio    (0-1 → 0-100)
-    public int VehiclesVolume = 100;                // sound.volume.vehicle
-    public int PositionalVolume = 100;              // sound.volume.positional
-    public int AmbientVolume = 100;                 // sound.volume.ambient
+    public bool SoundEnabled = true;
+    public int Volume = 50;
+    public int RadioVolume = 75;
+    public int VehiclesVolume = 100;
+    public int PositionalVolume = 100;
+    public int AmbientVolume = 100;
 
-    // ── Advanced ──────────────────────────────────────────────────────────
-    public bool CompressTextures = true;           // compresstex
-    public bool ScaleSpeculars = true;              // scalespeculars
-    public bool UseGLES;                            // gfx.usegles
-    public bool ShaderGamma;                        // gfx.shadergamma
-    public bool ScreenMipmaps = true;               // python.mipmaps
-    public bool ExtendedModelConversion;            // convertmodels ("143"/"0")
-    public bool GfxResourceMove;                    // gfx.resource.move
-    public bool GfxResourceSweep = true;             // gfx.resource.sweep
-    public int TrainPhysicsThreads;                 // async.trainThreads
-    public bool IgnoreIrrelevantTrains;             // starter.ignoreirrelevant (launcher-only)
+    public bool CompressTextures = true;
+    public bool ScaleSpeculars = true;
+    public bool UseGLES;
+    public bool ShaderGamma;
+    public bool ScreenMipmaps = true;
+    public bool ExtendedModelConversion;
+    public bool GfxResourceMove;
+    public bool GfxResourceSweep = true;
+    public int TrainPhysicsThreads;
+    public bool IgnoreIrrelevantTrains;
 
-    // ── Starter (launcher-only, stored under starter.* keys) ───────────────
-    public bool AutoCloseStarter;                  // starter.autoclose
-    public bool LargeThumbnails;                   // starter.largethumbnails
-    public bool AutoExpandSceneryTree;             // starter.expandtree
-    public BatteryDefault BatteryDefault = BatteryDefault.Default; // starter.batterydefault (launcher-only)
+    public bool AutoCloseStarter;
+    public bool LargeThumbnails;
+    public bool AutoExpandSceneryTree;
+    public BatteryDefault BatteryDefault = BatteryDefault.Default;
 
-    // List filters (launcher-only). Default on.
-    public bool ShowAiVehicles = true;             // starter.show.ai (show //$o "-" consists)
-    public bool DrivableOnly = true;               // starter.drivableonly (hide //$decor consists)
-    public bool ShowArchivalSceneries = true;      // starter.show.archival
-    public bool HideArchivalVehicles = true;       // starter.hide.archivalvehicles
-    /// <summary>Last selected scenery file name (without path), restored on next launch.</summary>
-    public string LastScenery = "";                // starter.last.scenery
+    public bool ShowAiVehicles = true;
+    public bool DrivableOnly = true;
+    public bool ShowArchivalSceneries = true;
+    public bool HideArchivalVehicles = true;
 
-    /// <summary>gfxrenderer tokens in the order shown by the render-engine combo.</summary>
+    public string LastScenery = "";
+
     public static readonly string[] RenderEngines =
         { "full", "legacy", "simpleshader", "simple", "off", "experimental" };
 
-    /// <summary>Anisotropic-filtering steps for the texture-quality slider (1-5).</summary>
     public static readonly int[] AnisotropySteps = { 1, 2, 4, 8, 16 };
 
-    // Tokens of mousescale / shadowtune that the UI does not edit but must keep.
     private double _mouseScaleYMagnitude = 0.2;
-    private string[] _shadowTuneExtra = { "400", "300" }; // tokens [2], [3]
+    private string[] _shadowTuneExtra = { "400", "300" };
 
     private ConfigFile _config = new();
     private string _savePath = string.Empty;
     private DateTime _configAgeUtc = DateTime.MinValue;
 
-    /// <summary>Resolves the per-user eu07.ini path for the current OS.</summary>
     public static string UserConfigPath()
     {
         if (OperatingSystem.IsWindows())
@@ -186,24 +149,16 @@ public sealed class Settings
             if (!string.IsNullOrEmpty(home))
                 return Path.Combine(home, ".config", "MaSzyna", "eu07.ini");
         }
-        // Last resort: alongside the launcher.
+
         return Path.Combine(AppContext.BaseDirectory, "eu07.ini");
     }
 
-    /// <summary>Default config shipped in the launcher's working directory.</summary>
     private static string DefaultConfigPath() =>
         Path.Combine(Directory.GetCurrentDirectory(), "eu07.ini");
 
-    /// <summary>Directory holding the per-user eu07.ini, for locating launcher-only data alongside it.</summary>
     public static string UserConfigDirectory() =>
         Path.GetDirectoryName(UserConfigPath()) ?? AppContext.BaseDirectory;
 
-    /// <summary>
-    /// The simulator executable to launch. With auto-selection on, the working
-    /// directory is scanned for an <c>eu07*</c> binary - <c>eu07</c> on Linux/macOS,
-    /// <c>eu07.exe</c> on Windows - so the same procedure works on every OS. With it
-    /// off, the explicitly chosen path is used.
-    /// </summary>
     public string ResolveExecutable()
     {
         if (!SelectExeAutomatically && !string.IsNullOrWhiteSpace(ExecutablePath))
@@ -219,23 +174,18 @@ public sealed class Settings
                     continue;
                 string file = Path.GetFileName(path);
                 if (string.Equals(file, canonical, StringComparison.OrdinalIgnoreCase))
-                    return path; // exact canonical name wins
+                    return path;
                 if (best == null || file.Length < Path.GetFileName(best).Length)
-                    best = path; // otherwise prefer the shortest eu07* name
+                    best = path;
             }
             if (best != null)
                 return best;
         }
-        catch { /* fall through to the canonical name */ }
+        catch {  }
 
         return canonical;
     }
 
-    /// <summary>
-    /// Scans <paramref name="directory"/> (defaults to the working directory) for
-    /// plausible <c>eu07*</c> launcher binaries, newest first, for populating the
-    /// manual-selection dropdown. Does not affect <see cref="ResolveExecutable"/>.
-    /// </summary>
     public static List<string> ListCandidateExecutables(string? directory = null)
     {
         directory ??= Directory.GetCurrentDirectory();
@@ -250,8 +200,6 @@ public sealed class Settings
         catch { return new List<string>(); }
     }
 
-    // Filters the eu07* matches down to plausible launcher binaries, skipping data
-    // and config files (eu07.ini, eu07.log, libraries, …).
     private static bool IsExecutableCandidate(string path)
     {
         string ext = Path.GetExtension(path).ToLowerInvariant();
@@ -260,9 +208,7 @@ public sealed class Settings
             return false;
         if (OperatingSystem.IsWindows())
             return ext == ".exe";
-        // Linux / macOS: no extension (eu07), a known binary suffix, or .exe
-        // (some builds - notably this project's own build-macos.sh - ship the
-        // macOS binary under the historical "eu07.exe" name).
+
         return ext.Length == 0 || ext is ".exe" or ".x86_64" or ".run" or ".appimage";
     }
 
@@ -270,7 +216,7 @@ public sealed class Settings
 
     private static Encoding ResolveEncoding()
     {
-        // eu07.ini comments use Polish diacritics in Windows-1250; preserve them.
+
         try
         {
             Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
@@ -282,7 +228,6 @@ public sealed class Settings
         }
     }
 
-    /// <summary>Loads settings from the per-user file, or the working-dir default.</summary>
     public void Load()
     {
         _savePath = UserConfigPath();
@@ -290,14 +235,12 @@ public sealed class Settings
         LoadFrom(source);
     }
 
-    /// <summary>Captures the latest UI values (if the view is open) and saves.</summary>
     public void CaptureAndSave()
     {
         CaptureFromUi?.Invoke();
         Save();
     }
 
-    /// <summary>Loads settings from an arbitrary path without changing where <see cref="Save"/> writes.</summary>
     public void LoadFrom(string path)
     {
         try
@@ -315,7 +258,6 @@ public sealed class Settings
         TouchConfigAge();
     }
 
-    /// <summary>Persists settings to the per-user eu07.ini, keeping unknown keys.</summary>
     public void Save()
     {
         if (string.IsNullOrEmpty(_savePath))
@@ -324,7 +266,6 @@ public sealed class Settings
         SaveTo(_savePath);
     }
 
-    /// <summary>Writes settings to an arbitrary path without changing where <see cref="Save"/> writes.</summary>
     public void SaveTo(string path)
     {
         WriteToConfig();
@@ -341,7 +282,7 @@ public sealed class Settings
         }
         catch
         {
-            // Could not write (permissions / path). Leave values in memory.
+
         }
     }
 
@@ -360,7 +301,6 @@ public sealed class Settings
         }
     }
 
-    /// <summary>Pascal CheckSettingsFile: true when eu07.ini is newer than last load/save.</summary>
     public bool IsConfigNewerOnDisk()
     {
         string path = string.IsNullOrEmpty(_savePath) ? UserConfigPath() : _savePath;
@@ -376,7 +316,6 @@ public sealed class Settings
         }
     }
 
-    // Map BufferScalePercent → gfx.framebuffer.fidelity like Pascal's 720/1080/1440/Custom.
     private void ApplyFramebufferFidelity()
     {
         int fidelity = BufferScalePercent switch
@@ -392,10 +331,9 @@ public sealed class Settings
             _config.Remove("gfx.framebuffer.fidelity");
     }
 
-    /// <summary>Copy the Reinhard GLSL into shaders/tonemapping.glsl when present.</summary>
     public void ApplyHdrShader()
     {
-        // Only meaningful for full / legacy / experimental renderers (Pascal).
+
         if (RenderEngine is not (0 or 1 or 5))
             return;
 
@@ -408,7 +346,7 @@ public sealed class Settings
             Directory.CreateDirectory(destDir);
             File.Copy(src, Path.Combine(destDir, "tonemapping.glsl"), overwrite: true);
         }
-        catch { /* missing shaders dir / permissions */ }
+        catch {  }
     }
 
     private static string? FindBundled(string fileName)
@@ -426,7 +364,6 @@ public sealed class Settings
         return null;
     }
 
-    /// <summary>Pascal chLogExt on exit: dump missing vehicle assets to starter/bledy.txt.</summary>
     public void DumpMissingVehicleLog()
     {
         if (!LogMissingVehicleFiles) return;
@@ -441,12 +378,10 @@ public sealed class Settings
         catch { }
     }
 
-    // ── config → fields ───────────────────────────────────────────────────
     private void ReadFromConfig()
     {
         var c = _config;
 
-        // General
         LanguageWasSet = c.Has("lang");
         Language = c.GetString("lang", "en").ToLowerInvariant() == "pl" ? "Polski" : "English";
         Fullscreen = c.GetBool("fullscreen", false);
@@ -465,7 +400,6 @@ public sealed class Settings
             _mouseScaleYMagnitude = Math.Abs(my);
         }
 
-        // Communication
         IgnoreGamepad = !c.GetBool("input.gamepad", true);
         FeedbackMode = Clamp(c.GetInt("feedbackmode", 1), 0, 5);
         FeedbackPort = c.GetInt("feedbackport", 888);
@@ -486,14 +420,12 @@ public sealed class Settings
             UartRadioVolume = UartRadioChannel = false;
         }
 
-        // Other
         SelectExeAutomatically = c.GetBool("starter.exe.auto", true);
         ExecutablePath = c.GetString("starter.exe.path", "eu07.exe");
         DebugMode = c.GetBool("debugmode", false);
         VirtualShunting = c.GetBool("ai.trainman", true);
         LogMissingVehicleFiles = c.GetBool("starter.logmissingvehicles", false);
 
-        // Graphics
         RenderEngine = IndexOf(RenderEngines, c.GetString("gfxrenderer", "full"), 0);
         Width = c.GetInt("width", 1280);
         Height = c.GetInt("height", 720);
@@ -532,7 +464,6 @@ public sealed class Settings
         FullscreenWindowed = c.GetBool("fullscreenwindowed", false);
         RenderAngleVulkan = string.Equals(c.GetString("gfx.angleplatform", ""), "vulkan", StringComparison.OrdinalIgnoreCase);
 
-        // Physics
         SplineFidelity = Clamp(c.GetInt("splinefidelity", 1), 1, 4);
         FullPhysics = c.GetBool("fullphysics", true);
         EnableTraction = c.GetBool("enabletraction", true);
@@ -546,7 +477,6 @@ public sealed class Settings
         BrakeStep = c.GetDouble("brakestep", 1.0);
         BrakeSpeed = c.GetDouble("brakespeed", 3.0);
 
-        // Sound
         SoundEnabled = c.GetBool("soundenabled", true);
         Volume = Clamp((int)Math.Round(c.GetDouble("sound.volume", 1.0) * 50), 1, 100);
         RadioVolume = Clamp((int)Math.Round(c.GetDouble("sound.volume.radio", 0.75) * 100), 1, 100);
@@ -554,7 +484,6 @@ public sealed class Settings
         PositionalVolume = Clamp((int)Math.Round(c.GetDouble("sound.volume.positional", 1.0) * 100), 1, 100);
         AmbientVolume = Clamp((int)Math.Round(c.GetDouble("sound.volume.ambient", 1.0) * 100), 1, 100);
 
-        // Advanced
         CompressTextures = c.GetBool("compresstex", true);
         ScaleSpeculars = c.GetBool("scalespeculars", true);
         UseGLES = c.GetBool("gfx.usegles", false);
@@ -566,7 +495,6 @@ public sealed class Settings
         TrainPhysicsThreads = Clamp(c.GetInt("async.trainThreads", 0), 0, Environment.ProcessorCount);
         IgnoreIrrelevantTrains = c.GetBool("starter.ignoreirrelevant", false);
 
-        // Starter
         AutoCloseStarter = c.GetBool("starter.autoclose", false);
         LargeThumbnails = c.GetBool("starter.largethumbnails", false);
         AutoExpandSceneryTree = c.GetBool("starter.expandtree", false);
@@ -578,12 +506,10 @@ public sealed class Settings
         LastScenery = c.GetString("starter.last.scenery", "");
     }
 
-    // ── fields → config ───────────────────────────────────────────────────
     private void WriteToConfig()
     {
         var c = _config;
 
-        // General
         c.Set("lang", Language == "Polski" ? "pl" : "en");
         c.SetBool("fullscreen", Fullscreen);
         c.SetBool("inactivepause", PauseWhenInactive);
@@ -595,7 +521,6 @@ public sealed class Settings
             $"{mx.ToString("0.###", CultureInfo.InvariantCulture)} " +
             $"{my.ToString("0.###", CultureInfo.InvariantCulture)}");
 
-        // Communication
         c.SetBool("input.gamepad", !IgnoreGamepad);
         c.SetInt("feedbackmode", FeedbackMode);
         c.SetInt("feedbackport", FeedbackPort);
@@ -611,14 +536,12 @@ public sealed class Settings
         if (UartRadioChannel) sb.Append("radiochannel|");
         c.Set("uartfeature", sb.ToString());
 
-        // Other
         c.SetBool("starter.exe.auto", SelectExeAutomatically);
         c.Set("starter.exe.path", ExecutablePath);
         c.SetBool("debugmode", DebugMode);
         c.SetBool("ai.trainman", VirtualShunting);
         c.SetBool("starter.logmissingvehicles", LogMissingVehicleFiles);
 
-        // Graphics
         c.Set("gfxrenderer", RenderEngines[Clamp(RenderEngine, 0, RenderEngines.Length - 1)]);
         c.SetInt("width", Width);
         c.SetInt("height", Height);
@@ -654,7 +577,6 @@ public sealed class Settings
         c.SetBool("fullscreenwindowed", FullscreenWindowed);
         if (RenderAngleVulkan) c.Set("gfx.angleplatform", "vulkan"); else c.Remove("gfx.angleplatform");
 
-        // Physics
         c.SetInt("splinefidelity", SplineFidelity);
         c.SetBool("fullphysics", FullPhysics);
         c.SetBool("enabletraction", EnableTraction);
@@ -668,7 +590,6 @@ public sealed class Settings
         c.SetDouble("brakestep", BrakeStep);
         c.SetDouble("brakespeed", BrakeSpeed);
 
-        // Sound
         c.SetBool("soundenabled", SoundEnabled);
         c.SetDouble("sound.volume", Volume / 50.0);
         c.SetDouble("sound.volume.radio", RadioVolume / 100.0);
@@ -676,7 +597,6 @@ public sealed class Settings
         c.SetDouble("sound.volume.positional", PositionalVolume / 100.0);
         c.SetDouble("sound.volume.ambient", AmbientVolume / 100.0);
 
-        // Advanced
         c.SetBool("compresstex", CompressTextures);
         c.SetBool("scalespeculars", ScaleSpeculars);
         c.SetBool("gfx.usegles", UseGLES);
@@ -688,7 +608,6 @@ public sealed class Settings
         c.SetInt("async.trainThreads", TrainPhysicsThreads);
         c.SetBool("starter.ignoreirrelevant", IgnoreIrrelevantTrains);
 
-        // Starter
         c.SetBool("starter.autoclose", AutoCloseStarter);
         c.SetBool("starter.largethumbnails", LargeThumbnails);
         c.SetBool("starter.expandtree", AutoExpandSceneryTree);
@@ -703,7 +622,6 @@ public sealed class Settings
             c.Remove("starter.last.scenery");
     }
 
-    // ── small helpers ──────────────────────────────────────────────────────
     private static int Clamp(int v, int lo, int hi) => v < lo ? lo : (v > hi ? hi : v);
 
     private static int ParseInt(string s, int fallback) =>

@@ -13,14 +13,8 @@ public enum LoadPhase
     Done
 }
 
-/// <summary>A single progress update emitted while the game data loads.</summary>
 public readonly record struct LoadStatus(double Fraction, LoadPhase Phase, string? Detail);
 
-/// <summary>
-/// Loads and holds the data shared across the launcher (vehicle database and
-/// parsed sceneries) so it is parsed once, at startup, behind the splash —
-/// instead of inside each view's constructor.
-/// </summary>
 public sealed class GameData
 {
     public static GameData Instance { get; } = new();
@@ -30,10 +24,6 @@ public sealed class GameData
 
     public bool Loaded { get; private set; }
 
-    /// <summary>
-    /// Parses the vehicle database and all sceneries, reporting progress.
-    /// Runs synchronously; call it from a background thread. Never throws.
-    /// </summary>
     public void Load(IProgress<LoadStatus>? progress = null,
                      string vehiclesDir = "databases/vehicles/",
                      string sceneryDir = "scenery/",
@@ -47,27 +37,21 @@ public sealed class GameData
         int total = Math.Max(1, vehicleFiles.Count + scnFiles.Count);
         int done = 0;
 
-        // Phase 1 - vehicle database
         Vehicles.BeginLoad();
         foreach (string file in vehicleFiles)
         {
             progress?.Report(new LoadStatus((double)done / total, LoadPhase.Vehicles,
                 Path.GetFileName(file)));
             try { Vehicles.LoadFile(file); }
-            catch { /* skip malformed file */ }
+            catch {  }
             done++;
         }
         Vehicles.EndLoad();
 
-        // Preload the miniature .bmp index now (behind the splash) so the depot's
-        // first thumbnail render doesn't scan textures/mini/ on the UI thread.
         VehicleDatabase.PreloadMiniIndex(miniDir);
 
-        // Likewise index every .fiz under dynamic/ once, so the consist's physics
-        // (length / mass / couplings) resolve without a UI-thread directory scan.
         Physics.PreloadIndex();
 
-        // Phase 2 - sceneries (parallelized)
         var sceneryLock = new object();
         var doneCount = done;
         Parallel.ForEach(scnFiles, new ParallelOptions { MaxDegreeOfParallelism = Environment.ProcessorCount },
@@ -84,7 +68,7 @@ public sealed class GameData
                             Path.GetFileName(file)));
                     }
                 }
-                catch { /* skip unreadable scenery */ }
+                catch {  }
             });
         done = doneCount;
 
@@ -92,7 +76,6 @@ public sealed class GameData
         Loaded = true;
     }
 
-    /// <summary>Re-reads scenery/*.scn (Pascal actReloadScenarios).</summary>
     public void ReloadSceneries(string sceneryDir = "scenery/")
     {
         Sceneries.Clear();
@@ -107,7 +90,7 @@ public sealed class GameData
                     lock (sceneryLock)
                         Sceneries.Add(scenery);
                 }
-                catch { /* skip */ }
+                catch {  }
             });
     }
 

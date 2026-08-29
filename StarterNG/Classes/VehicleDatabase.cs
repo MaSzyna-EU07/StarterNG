@@ -8,12 +8,6 @@ using System.Text.Json.Serialization.Metadata;
 
 namespace StarterNG.Classes;
 
-// =====================================================================
-//  Vehicle JSON database (databases/vehicles/*.json)
-//  Format documented in vehicleEntryDoc.md (schema_version 1).
-// =====================================================================
-
-/// <summary>Root object of a single vehicle JSON file.</summary>
 public class VehicleEntry
 {
     [JsonPropertyName("uuid")] public string? Uuid { get; set; }
@@ -24,13 +18,11 @@ public class VehicleEntry
     [JsonPropertyName("unknown")] public List<string> Unknown { get; set; } = new();
 }
 
-/// <summary>Merged database root (databases/vehicles/vehicles.json).</summary>
 public class VehicleEntryCollection
 {
     [JsonPropertyName("vehicles")] public List<VehicleEntry> Vehicles { get; set; } = new();
 }
 
-/// <summary>Legacy header / vehicle category group.</summary>
 public class VehicleGroup
 {
     [JsonPropertyName("id")] public string Id { get; set; } = "";
@@ -40,7 +32,6 @@ public class VehicleGroup
     [JsonPropertyName("implicit")] public bool Implicit { get; set; }
 }
 
-/// <summary>A single .mat skin entry.</summary>
 public class VehicleTexture
 {
     [JsonPropertyName("uuid")] public string? Uuid { get; set; }
@@ -54,24 +45,15 @@ public class VehicleTexture
     [JsonPropertyName("aliases")] public List<VehicleAlias> Aliases { get; set; } = new();
     [JsonPropertyName("meta")] public VehicleMeta? Meta { get; set; }
 
-    /// <summary>Full skin path = directory + skinfile.</summary>
     [JsonIgnore] public string FullPath => Directory + Skinfile;
 
-    // ── cached lookups, populated once after load (VehicleDatabase.BuildTextureIndex) ──
-    // These mirror the depot's ClassOf / CategoryOf so the search/filter hot path
-    // never recomputes them (no per-keystroke dictionary lookups over every texture).
-
-    /// <summary>Group's "mini" (or this texture's mini_ref) — the vehicle class. Never null.</summary>
     [JsonIgnore] public string ResolvedClass { get; internal set; } = "";
 
-    /// <summary>Group's "category" letter, or null when the group is unknown.</summary>
     [JsonIgnore] public string? ResolvedCategory { get; internal set; }
 
-    /// <summary>True when the texture's group is marked archival (<c>archived</c> in JSON).</summary>
     [JsonIgnore] public bool ResolvedArchived { get; internal set; }
 }
 
-/// <summary>Alternate mapping from a malformed multi-= legacy line.</summary>
 public class VehicleAlias
 {
     [JsonPropertyName("model")] public string? Model { get; set; }
@@ -80,7 +62,6 @@ public class VehicleAlias
     [JsonPropertyName("texture_mini")] public string? TextureMini { get; set; }
 }
 
-/// <summary>Parsed metadata from the legacy // comment section.</summary>
 public class VehicleMeta
 {
     [JsonPropertyName("raw")] public string? Raw { get; set; }
@@ -95,29 +76,18 @@ public class VehicleMeta
     [JsonPropertyName("extra")] public List<string> Extra { get; set; } = new();
 }
 
-/// <summary>
-/// Aggregated, in-memory view over every vehicle JSON file found in
-/// databases/vehicles/. Provides lookup helpers for the depot UI.
-/// </summary>
 public class VehicleDatabase
 {
     public List<VehicleTexture> Textures { get; } = new();
     public Dictionary<string, VehicleGroup> GroupsById { get; } = new();
     public List<VehicleSet> Sets { get; } = new();
 
-    /// <summary>Texture-uuid -> automatic-consist set that contains it.</summary>
     public Dictionary<string, VehicleSet> SetByTextureUuid { get; } = new();
 
-    /// <summary>Texture-uuid -> texture (includes wrecks, so set refs resolve).</summary>
     public Dictionary<string, VehicleTexture> TextureByUuid { get; } = new();
 
-    /// <summary>skinfile (without extension, lower-case) -> texture.</summary>
     public Dictionary<string, VehicleTexture> TextureBySkin { get; } = new();
 
-    // System.Text.Json options matching the previous Newtonsoft leniency: property
-    // names matched case-insensitively, // and /* */ comments skipped, and trailing
-    // commas allowed. Unknown members are ignored by default. The source-generated
-    // VehicleJsonContext resolver keeps deserialization AOT/trim-safe (no reflection).
     private static readonly JsonSerializerOptions JsonOpts = new()
     {
         PropertyNameCaseInsensitive = true,
@@ -126,11 +96,6 @@ public class VehicleDatabase
         TypeInfoResolver = VehicleJsonContext.Default,
     };
 
-    /// <summary>
-    /// Loads the database in one call. When a merged vehicles.json is present
-    /// it is used, otherwise every per-vehicle *.json file is read.
-    /// Never throws: unreadable files are skipped.
-    /// </summary>
     public void Load(string directory = "databases/vehicles/")
     {
         BeginLoad();
@@ -139,7 +104,6 @@ public class VehicleDatabase
         EndLoad();
     }
 
-    /// <summary>Resets the aggregate before an incremental load.</summary>
     public void BeginLoad()
     {
         Textures.Clear();
@@ -150,17 +114,12 @@ public class VehicleDatabase
         TextureBySkin.Clear();
     }
 
-    /// <summary>Finalises an incremental load (builds lookup indexes).</summary>
     public void EndLoad()
     {
         BuildSetIndex();
         BuildTextureIndex();
     }
 
-    /// <summary>
-    /// Files that make up the database: the merged vehicles.json if present,
-    /// otherwise every per-vehicle *.json. Used to drive load progress.
-    /// </summary>
     public static List<string> EnumerateFiles(string directory = "databases/vehicles/")
     {
         if (!Directory.Exists(directory))
@@ -173,7 +132,6 @@ public class VehicleDatabase
         return Directory.GetFiles(directory, "*.json").ToList();
     }
 
-    /// <summary>Ingests a single database file (merged or per-vehicle).</summary>
     public void LoadFile(string file)
     {
         if (string.Equals(Path.GetFileName(file), "vehicles.json", StringComparison.OrdinalIgnoreCase))
@@ -195,7 +153,7 @@ public class VehicleDatabase
         }
         catch
         {
-            // ignore malformed merged database
+
         }
     }
 
@@ -211,7 +169,7 @@ public class VehicleDatabase
         }
         catch
         {
-            // ignore malformed single-vehicle file
+
         }
     }
 
@@ -225,13 +183,12 @@ public class VehicleDatabase
 
         foreach (var texture in entry.Textures)
         {
-            // index every texture (wrecks too) so set / skin references resolve
+
             if (!string.IsNullOrEmpty(texture.Uuid))
                 TextureByUuid[texture.Uuid!] = texture;
             if (!string.IsNullOrEmpty(texture.Skinfile))
                 TextureBySkin.TryAdd(Path.GetFileNameWithoutExtension(texture.Skinfile).ToLowerInvariant(), texture);
 
-            // skip wrecks from the standard browser list
             if (texture.Wreck) continue;
             Textures.Add(texture);
         }
@@ -239,10 +196,6 @@ public class VehicleDatabase
         Sets.AddRange(entry.Sets);
     }
 
-    /// <summary>
-    /// If the texture belongs to an automatic-consist set, returns all of that
-    /// set's textures in their defined order; otherwise null.
-    /// </summary>
     public List<VehicleTexture>? ResolveSet(VehicleTexture texture)
     {
         if (string.IsNullOrEmpty(texture.Uuid)) return null;
@@ -271,9 +224,6 @@ public class VehicleDatabase
         }
     }
 
-    // Resolves each texture's class (group mini / mini_ref) and category letter
-    // once, after all groups are loaded, so the depot reads cached fields instead
-    // of doing a GroupsById lookup per texture on every search keystroke.
     private void BuildTextureIndex()
     {
         foreach (var t in Textures)
@@ -288,9 +238,6 @@ public class VehicleDatabase
 
             string? category = g?.Category;
 
-            // A "*" category is a wildcard: the actual category is the first letter
-            // of the mini (upper-cased, like the original Starter's UpCase(mini[1])
-            // wagon-typing), e.g. a "Bdhpumn" mini -> category "B".
             if (category == "*")
             {
                 string source = !string.IsNullOrEmpty(mini) ? mini : (t.TextureMini ?? "");
@@ -304,10 +251,6 @@ public class VehicleDatabase
         }
     }
 
-    /// <summary>
-    /// True when the texture is a non-leading member of an auto-consist set
-    /// (subsequent multi-unit cars that the depot browser should hide).
-    /// </summary>
     public bool IsSetFollower(VehicleTexture texture)
     {
         if (string.IsNullOrEmpty(texture.Uuid)) return false;
@@ -320,10 +263,6 @@ public class VehicleDatabase
                !string.Equals(lead, texture.Uuid, StringComparison.OrdinalIgnoreCase);
     }
 
-    /// <summary>
-    /// Miniature name for a texture: the texture_mini property, but if no .bmp
-    /// for it exists, falls back to the mini of the group it belongs to.
-    /// </summary>
     public string? ResolveMiniName(VehicleTexture texture)
     {
         if (!string.IsNullOrEmpty(texture.TextureMini) && MiniPath(texture.TextureMini) != null)
@@ -336,7 +275,6 @@ public class VehicleDatabase
         return texture.TextureMini;
     }
 
-    /// <summary>Resolved mini for a skin file (matched case-insensitively), or null.</summary>
     public string? MiniForSkin(string? skinFile)
     {
         if (string.IsNullOrEmpty(skinFile)) return null;
@@ -344,7 +282,6 @@ public class VehicleDatabase
         return TextureBySkin.TryGetValue(key, out var tex) ? ResolveMiniName(tex) : null;
     }
 
-    /// <summary>The texture for a skin file (matched case-insensitively), or null.</summary>
     public VehicleTexture? TextureForSkin(string? skinFile)
     {
         if (string.IsNullOrEmpty(skinFile)) return null;
@@ -352,7 +289,6 @@ public class VehicleDatabase
         return TextureBySkin.TryGetValue(key, out var tex) ? tex : null;
     }
 
-    /// <summary>Lines for starter/bledy.txt (Pascal chLogExt / missing assets).</summary>
     public List<string> CollectMissingAssetLines()
     {
         var lines = new List<string>();
@@ -377,7 +313,6 @@ public class VehicleDatabase
         return lines;
     }
 
-    /// <summary>Header label for the group a texture belongs to.</summary>
     public string GroupHeader(string? groupId)
     {
         if (!string.IsNullOrEmpty(groupId) && GroupsById.TryGetValue(groupId, out var grp))
@@ -388,21 +323,11 @@ public class VehicleDatabase
         return groupId ?? "";
     }
 
-    // Case-insensitive index of mini .bmp files (built once).
     private static Dictionary<string, string>? _miniIndex;
 
-    /// <summary>
-    /// Builds the miniature .bmp index up front (called from the startup load,
-    /// behind the splash) so the first thumbnail render never stalls the UI
-    /// thread scanning textures/mini/. No-op if it was already built.
-    /// </summary>
     public static void PreloadMiniIndex(string miniDir = "textures/mini/") =>
         _miniIndex ??= BuildMiniIndex(miniDir);
 
-    /// <summary>
-    /// Resolves a miniature .bmp path under textures/mini/ case-insensitively,
-    /// or null if missing. The directory is indexed once and reused.
-    /// </summary>
     public static string? MiniPath(string? miniName, string miniDir = "textures/mini/")
     {
         if (string.IsNullOrEmpty(miniName)) return null;
@@ -423,7 +348,6 @@ public class VehicleDatabase
     }
 }
 
-/// <summary>Automatic consist definition (legacy ^x grouping).</summary>
 public class VehicleSet
 {
     [JsonPropertyName("uuid")] public string? Uuid { get; set; }
@@ -432,9 +356,6 @@ public class VehicleSet
     [JsonPropertyName("texture_refs")] public List<string> TextureRefs { get; set; } = new();
 }
 
-// Source-generated JSON metadata — makes deserialization AOT/trim-safe by avoiding
-// runtime reflection over the model types. Nested types (VehicleGroup, VehicleTexture,
-// VehicleSet, VehicleAlias, VehicleMeta) are pulled in automatically by the generator.
 [JsonSerializable(typeof(VehicleEntry))]
 [JsonSerializable(typeof(VehicleEntryCollection))]
 internal partial class VehicleJsonContext : JsonSerializerContext

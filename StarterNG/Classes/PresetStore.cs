@@ -17,30 +17,18 @@ public enum PresetSort
     Track
 }
 
-/// <summary>One saved consist in the user's vehicle warehouse.</summary>
 public sealed class TrainsetPreset
 {
-    /// <summary>Display name shown in the "load from warehouse" menu.</summary>
     public string Name { get; set; } = "";
 
-    /// <summary>Complete "trainset … endtrainset" scenery entry (self-contained).</summary>
     public string Entry { get; set; } = "";
 }
 
-/// <summary>Root object persisted to userpresets.json.</summary>
 public sealed class PresetCollection
 {
     public List<TrainsetPreset> Presets { get; set; } = new();
 }
 
-/// <summary>
-/// The user's vehicle/consist "warehouse": named trainset presets persisted as JSON.
-/// Stored under the per-user config directory so it survives reinstalls:
-///   Windows: %APPDATA%\MaSzyna\starter\userpresets.json
-///   macOS:   ~/Library/Application Support/MaSzyna/starter/userpresets.json
-///   Linux:   ~/.config/MaSzyna/starter/userpresets.json
-/// All operations are best-effort and never throw.
-/// </summary>
 public static class PresetStore
 {
     private static string ResolvePath()
@@ -63,11 +51,8 @@ public static class PresetStore
 
     public static string FilePath { get; } = ResolvePath();
 
-    /// <summary>Pascal miSortByVehicleName / miSortByTrackName for the warehouse menu.</summary>
     public static PresetSort SortMode { get; set; } = PresetSort.Name;
 
-    // Source-generated metadata keeps (de)serialisation AOT/trim-safe, matching the
-    // approach used for the vehicle database.
     private static readonly JsonSerializerOptions Options = new()
     {
         WriteIndented = true,
@@ -77,7 +62,6 @@ public static class PresetStore
     private static JsonTypeInfo<PresetCollection> TypeInfo =>
         (JsonTypeInfo<PresetCollection>)Options.GetTypeInfo(typeof(PresetCollection));
 
-    /// <summary>All saved presets, sorted per <see cref="SortMode"/>.</summary>
     public static IReadOnlyList<TrainsetPreset> All()
     {
         var list = Load().Presets.ToList();
@@ -88,10 +72,6 @@ public static class PresetStore
         return list;
     }
 
-    /// <summary>
-    /// Saves (or overwrites, by name) a consist preset. No-op on a blank name or
-    /// empty entry.
-    /// </summary>
     public static void Save(string? name, string? entry)
     {
         name = name?.Trim() ?? "";
@@ -105,7 +85,6 @@ public static class PresetStore
         Persist(col);
     }
 
-    /// <summary>Removes a preset by name (case-insensitive).</summary>
     public static void Delete(string name)
     {
         var col = Load();
@@ -113,10 +92,6 @@ public static class PresetStore
             Persist(col);
     }
 
-    /// <summary>
-    /// Import Pascal <c>starter/magazyn.ini</c> (or legacy starter.ini / RAINSTED.INI)
-    /// into the JSON warehouse. Returns how many consists were added.
-    /// </summary>
     public static int ImportMagazyn(string? path = null)
     {
         path ??= FindMagazynPath();
@@ -197,7 +172,7 @@ public static class PresetStore
         }
         catch
         {
-            // unreadable / malformed - start from an empty warehouse
+
         }
         return new PresetCollection();
     }
@@ -211,24 +186,15 @@ public static class PresetStore
         }
         catch
         {
-            // best-effort: a failed save just means the warehouse isn't updated
+
         }
     }
 }
 
-/// <summary>
-/// Helpers to convert a consist to/from its canonical scenery text - the full
-/// "trainset … endtrainset" block, exactly what is placed on the clipboard.
-/// </summary>
 public static class ConsistText
 {
-    /// <summary>The complete scenery entry for a trainset (incl. endtrainset).</summary>
     public static string Serialize(Trainset trainset) => trainset.ToSceneryEntry();
 
-    /// <summary>
-    /// Parses the vehicles out of a complete trainset entry. Returns null when the
-    /// text holds no usable node::dynamic vehicles.
-    /// </summary>
     public static List<Dynamic>? VehiclesFrom(string? text)
     {
         if (string.IsNullOrWhiteSpace(text))
@@ -245,7 +211,6 @@ public static class ConsistText
     }
 }
 
-// Source-generated JSON metadata (AOT/trim-safe; no runtime reflection).
 [JsonSerializable(typeof(PresetCollection))]
 [JsonSerializable(typeof(TrainsetPreset))]
 internal partial class PresetJsonContext : JsonSerializerContext

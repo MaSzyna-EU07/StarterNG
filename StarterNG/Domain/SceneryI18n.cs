@@ -6,10 +6,6 @@ using StarterNG.Classes;
 
 namespace StarterNG.Domain;
 
-/// <summary>
-/// Pascal <c>TI18n</c> / <c>TrToken</c>: scenery strings starting with <c>@</c>
-/// resolve against <c>scenery/i18n/{id}_{lang}.json</c>.
-/// </summary>
 public static class SceneryI18n
 {
     private static readonly Dictionary<string, string> Map =
@@ -17,7 +13,6 @@ public static class SceneryI18n
 
     public static void Clear() => Map.Clear();
 
-    /// <param name="langCode">Short UI language code (pl/en/cz/hu/ru).</param>
     public static void LoadFor(Scenery scenery, string langCode = "en")
     {
         Map.Clear();
@@ -26,13 +21,11 @@ public static class SceneryI18n
         string lang = NormalizeLang(langCode);
         string i18nDir = Path.Combine(scnDir, "i18n");
 
-        // Fallback first (en), then active language overlays — same as Pascal.
         TryLoad(Path.Combine(i18nDir, $"{id}_en.json"));
         if (!string.Equals(lang, "en", StringComparison.OrdinalIgnoreCase))
             TryLoad(Path.Combine(i18nDir, $"{id}_{lang}.json"));
     }
 
-    /// <summary>Translate <c>@token</c> / <c>@nested.key</c>; plain text passes through.</summary>
     public static string T(string? text)
     {
         if (string.IsNullOrWhiteSpace(text)) return text ?? "";
@@ -51,7 +44,7 @@ public static class SceneryI18n
             if (doc.RootElement.ValueKind == JsonValueKind.Object)
                 Flatten("", doc.RootElement);
         }
-        catch { /* ignore bad i18n files */ }
+        catch {  }
     }
 
     private static void Flatten(string prefix, JsonElement obj)

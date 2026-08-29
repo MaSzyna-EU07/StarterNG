@@ -6,11 +6,6 @@ using StarterNG.Classes;
 
 namespace StarterNG.Domain;
 
-/// <summary>
-/// Skin shuffle for the depot consist — same idea as Pascal <c>TTexRandomizer</c>:
-/// pick another texture of a similar mini/class (expanded by <c>starter/reguly.txt</c>),
-/// optionally clamped by operator and revision year.
-/// </summary>
 public sealed class TexRandomizer
 {
     private readonly VehicleDatabase _db;
@@ -60,13 +55,10 @@ public sealed class TexRandomizer
         }
         catch
         {
-            // bad rules file — keep going with an empty stock
+
         }
     }
 
-    /// <summary>
-    /// Reassigns skins on <paramref name="consist"/> in place. Returns how many units changed.
-    /// </summary>
     public int Apply(IList<ConsistItem> consist, Func<VehicleTexture, Dynamic> makeCar)
     {
         int changed = 0;
@@ -82,7 +74,6 @@ public sealed class TexRandomizer
             string? mini = ResolveFilterMini(item, i, consist, current);
             if (string.IsNullOrEmpty(mini)) continue;
 
-            // Pascal skips units that have a revision filter on but no parseable year.
             int? revYear = null;
             if (RevisionTolerance > 0)
             {
@@ -92,7 +83,7 @@ public sealed class TexRandomizer
 
             string? owner = null;
             string? cat = current?.ResolvedCategory;
-            // Keep operator match for non-EMU / non-railbus (Pascal skips EZT/SZYNOBUS).
+
             if (current != null && cat is not ("z" or "a"))
                 owner = current.Meta?.Operator;
 
@@ -134,7 +125,6 @@ public sealed class TexRandomizer
             return string.IsNullOrEmpty(mini) ? null : mini;
         }
 
-        // No texture in DB — borrow from a neighbour like Pascal does for loose dynamics.
         if (index > 0)
         {
             var prev = _db.TextureForSkin(consist[index - 1].Cars[0].SkinFile);
@@ -208,20 +198,16 @@ public sealed class TexRandomizer
             result.Add(t);
         }
 
-        // Always keep the current skin as a possible "no change" so Count < 2 means
-        // there is nothing else to pick from.
         if (current != null && !result.Contains(current))
             result.Add(current);
 
         return result;
     }
 
-    /// <summary>Pulls a 4-digit year from dates like <c>12.05.2018</c> or <c>2018-05-12</c>.</summary>
     public static int? ParseRevisionYear(string? revision)
     {
         if (string.IsNullOrWhiteSpace(revision)) return null;
 
-        // Pascal: Copy(Revision, 7, 4) on dd.mm.yyyy
         if (revision.Length >= 10 && revision[2] == '.' && revision[5] == '.' &&
             int.TryParse(revision.AsSpan(6, 4), out int yDot) && yDot is >= 1900 and <= 2100)
             return yDot;

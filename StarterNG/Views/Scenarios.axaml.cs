@@ -22,26 +22,20 @@ public partial class Scenarios : UserControl
 {
     public List<Scenery> Sceneries;
 
-    // scenery whose weather the form is currently editing
     private Scenery? _currentScenery;
-    // suppresses weather change handlers while the form is being populated
+
     private bool _loadingWeather;
-    // "Today" season: the day field only previews the current day-of-year; the
-    // stored Day stays 0 so the scenery keeps using the live date.
+
     private bool _todaySeason;
 
-    // suppresses the list-filter handlers while their state is restored at startup
     private bool _loadingFilters;
 
     public Scenarios()
     {
         InitializeComponent();
 
-        // Sceneries are parsed once at startup (behind the splash).
         Sceneries = GameData.Instance.Sceneries;
 
-        // Restore the persisted list filters before building the tree/list. Guarded
-        // so assigning IsChecked here doesn't run the rebuild handlers prematurely.
         _loadingFilters = true;
         showAiCheck.IsChecked = StarterNG.Classes.Settings.Instance.ShowAiVehicles;
         drivableOnlyCheck.IsChecked = StarterNG.Classes.Settings.Instance.DrivableOnly;
@@ -51,9 +45,6 @@ public partial class Scenarios : UserControl
         BuildSceneryTree();
         RestoreLastScenery();
 
-        // refresh the consist preview when the view is shown again (e.g. after
-        // editing the consist in the depot). Switching tabs only toggles IsVisible
-        // (the view stays in the tree), so listen for that too.
         AttachedToVisualTree += (_, _) => OnReentered();
         PropertyChanged += (_, e) =>
         {
@@ -62,20 +53,12 @@ public partial class Scenarios : UserControl
         };
     }
 
-    // Called whenever this view is shown again (tab switch / re-attach). Edits made
-    // in the depot mutate the same Trainset objects, so refresh both the consist
-    // preview and the vehicle-list captions that depend on them.
     private void OnReentered()
     {
         RefreshVehicleLabels();
         RefreshSelectedConsist();
     }
 
-    // (Re)builds the scenery tree, honouring the "show archival" switch. Archival
-    // sceneries (those declaring //$a) are skipped when the switch is off; group
-    // folders that end up empty are omitted. The Tag keeps each node's original
-    // scenery index, so the vehicles list stays aligned. Top-level nodes and group
-    // children are sorted alphabetically.
     private void BuildSceneryTree()
     {
         sceneryList.Items.Clear();
@@ -136,8 +119,6 @@ public partial class Scenarios : UserControl
             sceneryList.Items.Add(item);
     }
 
-    // Restores the scenery selected last session (starter.last.scenery).
-    // Like Pascal ScenariosList: fall back to the first leaf when nothing matches.
     private void RestoreLastScenery()
     {
         string last = StarterNG.Classes.Settings.Instance.LastScenery;
@@ -208,7 +189,7 @@ public partial class Scenarios : UserControl
 
     private void PersistLastScenery(Scenery scenery)
     {
-        // Pascal InitSCN stores the tree node text (//$n or file name).
+
         string name = scenery.DisplayName;
         if (string.Equals(StarterNG.Classes.Settings.Instance.LastScenery, name, StringComparison.OrdinalIgnoreCase))
             return;
@@ -228,10 +209,6 @@ public partial class Scenarios : UserControl
             TextWrapping = Avalonia.Media.TextWrapping.NoWrap
         };
 
-    // Fills the Vehicles list for a scenery, honouring the two filters:
-    //  - "AI vehicles" off hides consists whose //$o description starts with '-';
-    //  - "Drivable only" on hides decoration consists (the //$decor flag).
-    // Empty trainsets stay visible (label shows track), matching the Pascal starter.
     private void PopulateVehicleList(Scenery scn)
     {
         vehicleList.Items.Clear();
@@ -251,7 +228,7 @@ public partial class Scenarios : UserControl
                 Content = TrainsetListContent(trainset),
                 Tag = i
             };
-            // right-click: save/load to the warehouse + clipboard copy/paste
+
             listItem.ContextMenu = ConsistContextMenu.Build(
                 listItem,
                 () => trainset,
@@ -263,13 +240,10 @@ public partial class Scenarios : UserControl
             vehicleList.SelectedIndex = 0;
     }
 
-    // A computer-driven consist marks its //$o description with a leading '-'.
     private static bool IsAiTrainset(Trainset trainset) =>
         !string.IsNullOrEmpty(trainset.Description) &&
         trainset.Description.TrimStart().StartsWith("-", StringComparison.Ordinal);
 
-    // AI/player vehicle filter toggled: persist the choice and rebuild the list
-    // for the currently selected scenery.
     private void VehicleFilter_OnChanged(object? sender, RoutedEventArgs e)
     {
         if (_loadingFilters) return;
@@ -282,7 +256,6 @@ public partial class Scenarios : UserControl
             PopulateVehicleList(Sceneries[tag]);
     }
 
-    // Archival-scenery switch toggled: persist the choice and rebuild the tree.
     private void ArchivalSwitch_OnChanged(object? sender, RoutedEventArgs e)
     {
         if (_loadingFilters) return;
@@ -294,8 +267,6 @@ public partial class Scenarios : UserControl
         RestoreLastScenery();
     }
 
-    // Replaces a consist's vehicles (from a loaded warehouse preset or a pasted
-    // clipboard consist) and refreshes the row caption / consist preview.
     private void ApplyConsist(ListBoxItem item, Trainset trainset, List<Dynamic> vehicles)
     {
         trainset.Vehicles = vehicles;
@@ -304,9 +275,6 @@ public partial class Scenarios : UserControl
             ShowConsist(trainset);
     }
 
-    // Rebuilds the caption of each entry in the Vehicles list from its trainset's
-    // current vehicles, so a consist edited in the depot is reflected here too.
-    // Selection and order are preserved (only the text is updated).
     private void RefreshVehicleLabels()
     {
         if (sceneryList.SelectedItem is not TreeViewItem { Tag: int tag } || tag >= Sceneries.Count)
@@ -327,11 +295,11 @@ public partial class Scenarios : UserControl
         {
             foreach (TreeViewItem? toCollapse in sceneryList.Items)
             {
-                if (toCollapse != null) 
+                if (toCollapse != null)
                     toCollapse.IsExpanded = false;
             }
 
-            if (item != null) 
+            if (item != null)
                 item.IsExpanded = true;
             if (item is { Items.Count: > 0 })
                 sceneryList.SelectedItem = item.Items[0];
@@ -339,20 +307,16 @@ public partial class Scenarios : UserControl
         }
         Scenery selectedScn = Sceneries[tag];
 
-        // scenery-level info (distinct from the per-consist scenario description)
         ShowSceneryInfo(selectedScn);
         ShowWeather(selectedScn);
         PersistLastScenery(selectedScn);
 
-        // no consist chosen yet for this scenery
         missionDescription.Text = "";
         timetableContent.Text = App.Loc["NoTimetable"];
 
-        // add the (filtered) trainsets to the Vehicles list
         PopulateVehicleList(selectedScn);
     }
 
-    // Shows the selected scenery's description (//$d) and 1:1 image (//$i).
     private void ShowSceneryInfo(Scenery scenery)
     {
         SceneryI18n.LoadFor(scenery, App.Loc.CurrentLangCode);
@@ -471,10 +435,9 @@ public partial class Scenarios : UserControl
         {
             Process.Start(new ProcessStartInfo(full) { UseShellExecute = true });
         }
-        catch { /* no handler */ }
+        catch {  }
     }
 
-    /// <summary>Rebuild tree labels after UI / scenery i18n language change.</summary>
     public void RebuildAfterLanguageChange()
     {
         string? selected = AppState.Instance.CurrentScenery?.Path;
@@ -487,7 +450,7 @@ public partial class Scenarios : UserControl
         }
         if (AppState.Instance.CurrentScenery != null)
             ShowSceneryInfo(AppState.Instance.CurrentScenery);
-        RefreshSelectedConsist();   // stats labels (length / mass / track)
+        RefreshSelectedConsist();
     }
 
     private async void ReloadSceneries_OnClick(object? sender, RoutedEventArgs e)
@@ -528,19 +491,17 @@ public partial class Scenarios : UserControl
 
     private void VehicleList_OnSelectionChanged(object? sender, SelectionChangedEventArgs e)
     {
-        // get selected scenery
+
         var tItem = sceneryList.SelectedItem as TreeViewItem;
         if (tItem?.Tag is not int tTag)
             return;
         Scenery selectedScn = Sceneries[tTag];
 
-        // get selected trainset
         ListBoxItem? vItem = vehicleList.SelectedItem as ListBoxItem;
         if (vItem?.Tag is not int vTag)
             return;
         Trainset selectedTrainset = selectedScn.Trainsets[vTag];
 
-        // share the selection so the depot edits this consist in place
         AppState.Instance.CurrentScenery = selectedScn;
         AppState.Instance.CurrentTrainset = selectedTrainset;
         AppState.Instance.StartingVehicleName = TrainsetDisplay.DefaultStartingVehicle(selectedTrainset);
@@ -549,9 +510,6 @@ public partial class Scenarios : UserControl
         ShowTimetable(selectedScn, selectedTrainset);
     }
 
-    // Loads the scenery's weather into the editable form (Weather tab). Editing a
-    // control writes the value back onto the scenery and marks it dirty, so the
-    // change is injected into the exported .scn's config block on launch.
     private void ShowWeather(Scenery scenery)
     {
         _currentScenery = scenery;
@@ -565,7 +523,7 @@ public partial class Scenarios : UserControl
             weatherFog.Value = System.Math.Clamp(scenery.FogEnd, 0, 10000);
             SelectByTag(weatherSeason, scenery.Day.ToString());
             SelectByTag(weatherOvercast, scenery.Overcast.ToString(CultureInfo.InvariantCulture));
-            // Day 0 maps to the "Today" season entry: preview the live day-of-year.
+
             ApplyTodayPreview(scenery.Day == 0);
             UpdateWeatherLabels();
         }
@@ -575,7 +533,6 @@ public partial class Scenarios : UserControl
         }
     }
 
-    // Reads the form back into the current scenery and flags it for export rewrite.
     private void CaptureWeather()
     {
         if (_loadingWeather || _currentScenery is null)
@@ -584,8 +541,7 @@ public partial class Scenarios : UserControl
         var scn = _currentScenery;
         if (weatherTime.SelectedTime is { } t)
             scn.ScenarioTimeOverride = $"{t.Hours:D2}:{t.Minutes:D2}";
-        // In "Today" mode the day field is only a preview, so keep the stored day
-        // at 0 (the scenery then follows the live date).
+
         scn.Day = _todaySeason ? 0 : (int)(weatherDay.Value ?? 0);
         scn.Temperature = weatherTemp.Value;
         scn.FogEnd = (int)weatherFog.Value;
@@ -614,18 +570,14 @@ public partial class Scenarios : UserControl
         combo.SelectedItem = null;
     }
 
-    // --- weather form event handlers ---
     private void WeatherTime_OnChanged(object? sender, TimePickerSelectedValueChangedEventArgs e) => CaptureWeather();
 
-    // "Current time" button: drop the live wall-clock time into the picker (the
-    // SelectedTimeChanged handler then captures it onto the scenery).
     private void WeatherTimeNow_OnClick(object? sender, RoutedEventArgs e)
     {
         var now = DateTime.Now;
         weatherTime.SelectedTime = new TimeSpan(now.Hour, now.Minute, 0);
     }
 
-    // Pascal actRestoreWeather — reload weather fields from the SCN snapshot.
     private void WeatherRestore_OnClick(object? sender, RoutedEventArgs e)
     {
         if (_currentScenery is null) return;
@@ -633,8 +585,6 @@ public partial class Scenarios : UserControl
         ShowWeather(_currentScenery);
     }
 
-    // Parses a stored "hh:mm" string into a TimeSpan, or null when it is missing
-    // or malformed (so the picker simply shows no selection).
     private static TimeSpan? ParseTime(string? text)
     {
         if (string.IsNullOrWhiteSpace(text))
@@ -647,8 +597,6 @@ public partial class Scenarios : UserControl
         return null;
     }
 
-    // Toggles "Today" preview: the day field shows the live day-of-year (read-only)
-    // and CaptureWeather keeps the stored Day at 0; any other season re-enables it.
     private void ApplyTodayPreview(bool today)
     {
         _todaySeason = today;
@@ -668,7 +616,6 @@ public partial class Scenarios : UserControl
 
     private void WeatherDay_OnChanged(object? sender, NumericUpDownValueChangedEventArgs e) => CaptureWeather();
 
-    // Picking a season presets the day-of-year, then captures the form.
     private void WeatherSeason_OnChanged(object? sender, SelectionChangedEventArgs e)
     {
         if (_loadingWeather)
@@ -676,7 +623,7 @@ public partial class Scenarios : UserControl
         if ((weatherSeason.SelectedItem as ComboBoxItem)?.Tag is string tag &&
             int.TryParse(tag, out int day))
         {
-            if (day == 0) // "Today" - preview the live day-of-year, keep stored day at 0
+            if (day == 0)
             {
                 ApplyTodayPreview(true);
             }
@@ -691,9 +638,6 @@ public partial class Scenarios : UserControl
         CaptureWeather();
     }
 
-    // Reads and shows the timetable file referenced by the trainset (its first
-    // "trainset" token is the timetable name). Shows a note when none is set or
-    // the file cannot be found.
     private void ShowTimetable(Scenery scenery, Trainset trainset)
     {
         string? path = ResolveTimetablePath(scenery, trainset.Name);
@@ -713,15 +657,14 @@ public partial class Scenarios : UserControl
         }
     }
 
-    // Probes the usual locations for a timetable file named after the trainset.
     private static string? ResolveTimetablePath(Scenery scenery, string? name)
     {
         if (string.IsNullOrWhiteSpace(name) ||
             name.Equals("none", System.StringComparison.OrdinalIgnoreCase))
             return null;
 
-        string scnDir = Path.GetDirectoryName(scenery.Path) ?? ".";   // scenery/
-        string root = Path.GetDirectoryName(scnDir) ?? ".";           // MaSzyna root
+        string scnDir = Path.GetDirectoryName(scenery.Path) ?? ".";
+        string root = Path.GetDirectoryName(scnDir) ?? ".";
 
         var candidates = new[]
         {
@@ -734,8 +677,6 @@ public partial class Scenarios : UserControl
         return candidates.FirstOrDefault(File.Exists);
     }
 
-    // Renders the consist preview for a trainset (re-reads its current vehicles
-    // so depot edits are reflected).
     private void ShowConsist(Trainset trainset)
     {
         consistStack.Children.Clear();
@@ -743,11 +684,11 @@ public partial class Scenarios : UserControl
         var db = GameData.Instance.Vehicles;
         foreach (var train in trainset.Vehicles)
         {
-            // thumbnail name comes from the matching texture's texture_mini
+
             string miniName = db.MiniForSkin(train.SkinFile) ?? train.SkinFile;
             string? path = VehicleDatabase.MiniPath(miniName);
             if (path is null)
-                continue; // fallback: no mini
+                continue;
 
             int thumbH = StarterNG.Classes.Settings.Instance.LargeThumbnails ? 64 : 32;
             consistStack.Children.Add(new Image
@@ -783,8 +724,6 @@ public partial class Scenarios : UserControl
             car => db.TextureForSkin(car.SkinFile)?.ResolvedCategory);
     }
 
-    // When returning to this view, refresh the preview of the selected consist
-    // in case it was modified in the depot.
     private void RefreshSelectedConsist()
     {
         if (AppState.Instance.CurrentTrainset is { } trainset)

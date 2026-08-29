@@ -12,7 +12,7 @@ public enum MessageBoxButtons
 
 public static class MessageBox
 {
-    /// <summary>Simple Yes/No dialog. Returns true for Yes.</summary>
+
     public static async Task<bool> Show(Window owner, string message, string title, MessageBoxButtons _)
     {
         var win = new Window
