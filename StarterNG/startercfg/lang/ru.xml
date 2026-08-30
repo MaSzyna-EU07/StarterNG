@@ -90,7 +90,7 @@
     <String key="Vehicle">Единица</String>
     <String key="Crew">с бригадой</String>
     <String key="Reversed">развёрнут</String>
-    <String key="NoVehicles">В databases/vehicles/ подвижной состав не найден.</String>
+    <String key="NoVehicles">В dynamic/**/textures.txt подвижной состав не найден.</String>
     <String key="ConsistEmpty">Добавьте единицы из базы слева или загрузите готовый состав из файла сценерии.</String>
     <String key="TipMoveLeft">Сдвинуть влево</String>
     <String key="TipMoveRight">Сдвинуть вправо</String>

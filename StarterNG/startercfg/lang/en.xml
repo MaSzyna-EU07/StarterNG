@@ -90,7 +90,7 @@
     <String key="Vehicle">Vehicle</String>
     <String key="Crew">with crew</String>
     <String key="Reversed">reversed</String>
-    <String key="NoVehicles">No vehicles found in databases/vehicles/.</String>
+    <String key="NoVehicles">No vehicles found in dynamic/**/textures.txt.</String>
     <String key="ConsistEmpty">Add vehicles from the database on the left, or load an existing consist from a scenery file.</String>
     <String key="TipMoveLeft">Move left</String>
     <String key="TipMoveRight">Move right</String>

@@ -90,7 +90,7 @@
     <String key="Vehicle">Jármű</String>
     <String key="Crew">személyzettel</String>
     <String key="Reversed">megfordítva</String>
-    <String key="NoVehicles">A databases/vehicles/ mappában nem található jármű.</String>
+    <String key="NoVehicles">A dynamic/**/textures.txt fájlokban nem található jármű.</String>
     <String key="ConsistEmpty">Adjon hozzá járműveket a bal oldali adatbázisból, vagy töltsön be meglévő szerelvényt egy pályafájlból.</String>
     <String key="TipMoveLeft">Mozgatás balra</String>
     <String key="TipMoveRight">Mozgatás jobbra</String>

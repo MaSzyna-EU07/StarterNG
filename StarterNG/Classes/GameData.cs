@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace StarterNG.Classes;
@@ -25,43 +26,25 @@ public sealed class GameData
     public bool Loaded { get; private set; }
 
     public void Load(IProgress<LoadStatus>? progress = null,
-                     string vehiclesDir = "databases/vehicles/",
                      string sceneryDir = "scenery/",
-                     string miniDir = "textures/mini/")
+                     string miniDir = "textures/mini/",
+                     string dynamicRoot = "dynamic")
     {
         if (Loaded)
             return;
 
-        var vehicleFiles = VehicleDatabase.EnumerateFiles(vehiclesDir);
         var scnFiles = EnumerateScenery(sceneryDir);
-        int total = Math.Max(1, vehicleFiles.Count + scnFiles.Count);
+        int total = Math.Max(1, scnFiles.Count);
         int done = 0;
 
-        Vehicles.BeginLoad();
-        foreach (string file in vehicleFiles)
-        {
-            progress?.Report(new LoadStatus((double)done / total, LoadPhase.Vehicles,
-                Path.GetFileName(file)));
-            try { Vehicles.LoadFile(file); }
-            catch {  }
-            done++;
-        }
-        try
-        {
-            int legacy = Vehicles.ImportLegacy();
-            if (legacy > 0)
-                Infrastructure.Diagnostics.Log($"textures.txt: wczytano {legacy} tekstur");
-        }
-        catch (Exception ex)
-        {
-            Infrastructure.Diagnostics.Log("textures.txt import", ex);
-        }
+        progress?.Report(new LoadStatus(0, LoadPhase.Vehicles, "textures.txt"));
+        int vehicles = Vehicles.LoadFromTexturesTxt(dynamicRoot);
+        if (vehicles == 0)
+            Infrastructure.Diagnostics.Log($"{dynamicRoot}: brak plikow textures.txt");
 
-        Vehicles.EndLoad();
-
-        VehicleDatabase.PreloadMiniIndex(miniDir);
-
-        Physics.PreloadIndex();
+        Parallel.Invoke(
+            () => VehicleDatabase.PreloadMiniIndex(miniDir),
+            () => Physics.PreloadIndex());
 
         var sceneryLock = new object();
         var doneCount = done;
@@ -79,7 +62,10 @@ public sealed class GameData
                             Path.GetFileName(file)));
                     }
                 }
-                catch {  }
+                catch (Exception ex)
+                {
+                    StarterNG.Infrastructure.Diagnostics.Log($"scenery/{Path.GetFileName(file)}", ex);
+                }
             });
         done = doneCount;
 
@@ -101,7 +87,10 @@ public sealed class GameData
                     lock (sceneryLock)
                         Sceneries.Add(scenery);
                 }
-                catch {  }
+                catch (Exception ex)
+                {
+                    StarterNG.Infrastructure.Diagnostics.Log($"scenery/{Path.GetFileName(file)}", ex);
+                }
             });
     }
 

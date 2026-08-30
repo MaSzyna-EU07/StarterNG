@@ -2,78 +2,68 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Text.Json;
-using System.Text.Json.Serialization;
-using System.Text.Json.Serialization.Metadata;
+using System.Threading.Tasks;
 
 namespace StarterNG.Classes;
 
 public class VehicleEntry
 {
-    [JsonPropertyName("uuid")] public string? Uuid { get; set; }
-    [JsonPropertyName("schema_version")] public int SchemaVersion { get; set; }
-    [JsonPropertyName("groups")] public List<VehicleGroup> Groups { get; set; } = new();
-    [JsonPropertyName("textures")] public List<VehicleTexture> Textures { get; set; } = new();
-    [JsonPropertyName("sets")] public List<VehicleSet> Sets { get; set; } = new();
-    [JsonPropertyName("unknown")] public List<string> Unknown { get; set; } = new();
-}
-
-public class VehicleEntryCollection
-{
-    [JsonPropertyName("vehicles")] public List<VehicleEntry> Vehicles { get; set; } = new();
+    public string? Uuid { get; set; }
+    public List<VehicleGroup> Groups { get; set; } = new();
+    public List<VehicleTexture> Textures { get; set; } = new();
+    public List<VehicleSet> Sets { get; set; } = new();
 }
 
 public class VehicleGroup
 {
-    [JsonPropertyName("id")] public string Id { get; set; } = "";
-    [JsonPropertyName("category")] public string? Category { get; set; }
-    [JsonPropertyName("mini")] public string? Mini { get; set; }
-    [JsonPropertyName("archived")] public bool Archived { get; set; }
-    [JsonPropertyName("implicit")] public bool Implicit { get; set; }
+    public string Id { get; set; } = "";
+    public string? Category { get; set; }
+    public string? Mini { get; set; }
+    public bool Archived { get; set; }
 }
 
 public class VehicleTexture
 {
-    [JsonPropertyName("uuid")] public string? Uuid { get; set; }
-    [JsonPropertyName("directory")] public string Directory { get; set; } = "";
-    [JsonPropertyName("skinfile")] public string Skinfile { get; set; } = "";
-    [JsonPropertyName("model")] public string? Model { get; set; }
-    [JsonPropertyName("group")] public string? Group { get; set; }
-    [JsonPropertyName("mini_ref")] public string? MiniRef { get; set; }
-    [JsonPropertyName("texture_mini")] public string? TextureMini { get; set; }
-    [JsonPropertyName("wreck")] public bool Wreck { get; set; }
-    [JsonPropertyName("aliases")] public List<VehicleAlias> Aliases { get; set; } = new();
-    [JsonPropertyName("meta")] public VehicleMeta? Meta { get; set; }
+    public string? Uuid { get; set; }
+    public string Directory { get; set; } = "";
+    public string Skinfile { get; set; } = "";
+    public string? Model { get; set; }
+    public string? Group { get; set; }
+    public string? MiniRef { get; set; }
+    public string? TextureMini { get; set; }
+    public bool Wreck { get; set; }
+    public List<VehicleAlias> Aliases { get; set; } = new();
+    public VehicleMeta? Meta { get; set; }
 
-    [JsonIgnore] public string FullPath => Directory + Skinfile;
+    public string FullPath => Directory + Skinfile;
 
-    [JsonIgnore] public string ResolvedClass { get; internal set; } = "";
+    public string ResolvedClass { get; internal set; } = "";
 
-    [JsonIgnore] public string? ResolvedCategory { get; internal set; }
+    public string? ResolvedCategory { get; internal set; }
 
-    [JsonIgnore] public bool ResolvedArchived { get; internal set; }
+    public bool ResolvedArchived { get; internal set; }
 }
 
 public class VehicleAlias
 {
-    [JsonPropertyName("model")] public string? Model { get; set; }
-    [JsonPropertyName("group")] public string? Group { get; set; }
-    [JsonPropertyName("mini_ref")] public string? MiniRef { get; set; }
-    [JsonPropertyName("texture_mini")] public string? TextureMini { get; set; }
+    public string? Model { get; set; }
+    public string? Group { get; set; }
+    public string? MiniRef { get; set; }
+    public string? TextureMini { get; set; }
 }
 
 public class VehicleMeta
 {
-    [JsonPropertyName("raw")] public string? Raw { get; set; }
-    [JsonPropertyName("version")] public string? Version { get; set; }
-    [JsonPropertyName("vehicle")] public string? Vehicle { get; set; }
-    [JsonPropertyName("operator")] public string? Operator { get; set; }
-    [JsonPropertyName("depot")] public string? Depot { get; set; }
-    [JsonPropertyName("revision_date")] public string? RevisionDate { get; set; }
-    [JsonPropertyName("revision_place")] public string? RevisionPlace { get; set; }
-    [JsonPropertyName("texture_author")] public string? TextureAuthor { get; set; }
-    [JsonPropertyName("photo_author")] public string? PhotoAuthor { get; set; }
-    [JsonPropertyName("extra")] public List<string> Extra { get; set; } = new();
+    public string? Raw { get; set; }
+    public string? Version { get; set; }
+    public string? Vehicle { get; set; }
+    public string? Operator { get; set; }
+    public string? Depot { get; set; }
+    public string? RevisionDate { get; set; }
+    public string? RevisionPlace { get; set; }
+    public string? TextureAuthor { get; set; }
+    public string? PhotoAuthor { get; set; }
+    public List<string> Extra { get; set; } = new();
 }
 
 public class VehicleDatabase
@@ -88,20 +78,22 @@ public class VehicleDatabase
 
     public Dictionary<string, VehicleTexture> TextureBySkin { get; } = new();
 
-    private static readonly JsonSerializerOptions JsonOpts = new()
-    {
-        PropertyNameCaseInsensitive = true,
-        ReadCommentHandling = JsonCommentHandling.Skip,
-        AllowTrailingCommas = true,
-        TypeInfoResolver = VehicleJsonContext.Default,
-    };
-
-    public void Load(string directory = "databases/vehicles/")
+    public int LoadFromTexturesTxt(string dynamicRoot = "dynamic")
     {
         BeginLoad();
-        foreach (string file in EnumerateFiles(directory))
-            LoadFile(file);
+
+        int count = 0;
+        foreach (string file in TexturesTxt.EnumerateFiles(dynamicRoot))
+        {
+            var entry = TexturesTxt.Parse(file, dynamicRoot);
+            if (entry is null) continue;
+
+            count += entry.Textures.Count;
+            Ingest(entry);
+        }
+
         EndLoad();
+        return count;
     }
 
     public void BeginLoad()
@@ -118,79 +110,6 @@ public class VehicleDatabase
     {
         BuildSetIndex();
         BuildTextureIndex();
-    }
-
-    public static List<string> EnumerateFiles(string directory = "databases/vehicles/")
-    {
-        if (!Directory.Exists(directory))
-            return new List<string>();
-
-        string merged = Path.Combine(directory, "vehicles.json");
-        if (File.Exists(merged))
-            return new List<string> { merged };
-
-        return Directory.GetFiles(directory, "*.json").ToList();
-    }
-
-    public void LoadFile(string file)
-    {
-        if (string.Equals(Path.GetFileName(file), "vehicles.json", StringComparison.OrdinalIgnoreCase))
-            LoadMerged(file);
-        else
-            LoadEntryFile(file);
-    }
-
-    private void LoadMerged(string file)
-    {
-        try
-        {
-            var collection = JsonSerializer.Deserialize(
-                File.ReadAllText(file),
-                (JsonTypeInfo<VehicleEntryCollection>)JsonOpts.GetTypeInfo(typeof(VehicleEntryCollection)));
-            if (collection?.Vehicles is null) return;
-            foreach (var entry in collection.Vehicles)
-                Ingest(entry);
-        }
-        catch
-        {
-
-        }
-    }
-
-    private void LoadEntryFile(string file)
-    {
-        try
-        {
-            var entry = JsonSerializer.Deserialize(
-                File.ReadAllText(file),
-                (JsonTypeInfo<VehicleEntry>)JsonOpts.GetTypeInfo(typeof(VehicleEntry)));
-            if (entry is not null)
-                Ingest(entry);
-        }
-        catch
-        {
-
-        }
-    }
-
-    public int ImportLegacy(string dynamicRoot = "dynamic")
-    {
-        int added = 0;
-        foreach (string file in LegacyTextureDatabase.EnumerateFiles(dynamicRoot))
-        {
-            var entry = LegacyTextureDatabase.Parse(file, dynamicRoot);
-            if (entry is null) continue;
-
-            entry.Textures.RemoveAll(t =>
-                TextureBySkin.ContainsKey(
-                    Path.GetFileNameWithoutExtension(t.Skinfile).ToLowerInvariant()));
-
-            if (entry.Textures.Count == 0) continue;
-
-            added += entry.Textures.Count;
-            Ingest(entry);
-        }
-        return added;
     }
 
     private void Ingest(VehicleEntry entry)
@@ -386,14 +305,8 @@ public class VehicleDatabase
 
 public class VehicleSet
 {
-    [JsonPropertyName("uuid")] public string? Uuid { get; set; }
-    [JsonPropertyName("mode")] public string? Mode { get; set; }
-    [JsonPropertyName("count")] public int Count { get; set; }
-    [JsonPropertyName("texture_refs")] public List<string> TextureRefs { get; set; } = new();
-}
-
-[JsonSerializable(typeof(VehicleEntry))]
-[JsonSerializable(typeof(VehicleEntryCollection))]
-internal partial class VehicleJsonContext : JsonSerializerContext
-{
+    public string? Uuid { get; set; }
+    public string? Mode { get; set; }
+    public int Count { get; set; }
+    public List<string> TextureRefs { get; set; } = new();
 }

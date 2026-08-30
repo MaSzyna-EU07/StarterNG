@@ -5,7 +5,7 @@ using System.Text;
 
 namespace StarterNG.Classes;
 
-public static class LegacyTextureDatabase
+public static class TexturesTxt
 {
     public static List<string> EnumerateFiles(string dynamicRoot = "dynamic")
     {
@@ -139,8 +139,7 @@ public static class LegacyTextureDatabase
                 Id = groupId,
                 Category = categorySign,
                 Mini = first.Mini,
-                Archived = archived,
-                Implicit = true
+                Archived = archived
             });
 
         var texture = new VehicleTexture
@@ -148,6 +147,8 @@ public static class LegacyTextureDatabase
             Uuid = $"legacy:{dir}{skin}",
             Directory = dir,
             Skinfile = skin,
+            Wreck = skin.Contains("wreck", StringComparison.OrdinalIgnoreCase) ||
+                    skin.Contains("wrak", StringComparison.OrdinalIgnoreCase),
             Model = first.Model,
             Group = groupId,
             MiniRef = first.Mini,

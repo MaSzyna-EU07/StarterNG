@@ -90,7 +90,7 @@
     <String key="Vehicle">Vozidlo</String>
     <String key="Crew">s osádkou</String>
     <String key="Reversed">otočeno</String>
-    <String key="NoVehicles">Ve složce databases/vehicles/ nebyla nalezena žádná vozidla.</String>
+    <String key="NoVehicles">Ve složce dynamic/**/textures.txt nebyla nalezena žádná vozidla.</String>
     <String key="ConsistEmpty">Přidejte vozidla z databáze vlevo nebo načtěte existující soupravu ze souboru scenérie.</String>
     <String key="TipMoveLeft">Posunout doleva</String>
     <String key="TipMoveRight">Posunout doprava</String>
