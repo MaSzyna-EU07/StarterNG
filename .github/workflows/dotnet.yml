@@ -127,11 +127,16 @@ jobs:
       RELEASE_NAME: ${{ github.ref_name == 'main' && 'Latest build' || 'Staging build' }}
 
     steps:
+      # v8, not v7: the packages are uploaded with archive: false, and only v8
+      # can pull those non-zipped artifacts back down. skip-decompress keeps the
+      # Windows .zip a file - unpacked, its contents would end up in the release
+      # instead of the package.
       - name: Collect the packages
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           path: dist
           merge-multiple: true
+          skip-decompress: true
 
       # Recreated rather than edited, so the tag follows its branch and no asset
       # from an older build is left behind.
@@ -144,7 +149,9 @@ jobs:
           ls -l dist
 
           gh release delete "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --yes --cleanup-tag || true
-          gh release create "$RELEASE_TAG" dist/* \
+          gh release create "$RELEASE_TAG" \
+            dist/StarterNG-windows-x64.zip \
+            dist/StarterNG-linux-x64.tar.gz \
             --repo "$GITHUB_REPOSITORY" \
             --target "$GITHUB_SHA" \
             --prerelease \
