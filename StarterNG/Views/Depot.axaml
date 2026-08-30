@@ -7,162 +7,177 @@
              x:CompileBindings="True"
              mc:Ignorable="d" d:DesignWidth="1000" d:DesignHeight="700"
              x:Class="StarterNG.Views.Depot">
-    <Grid Margin="0" ColumnSpacing="8" RowSpacing="8">
+    <Grid Margin="0" ColumnSpacing="3" RowSpacing="3">
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="340" />
+            <ColumnDefinition Width="270" MinWidth="220" />
             <ColumnDefinition />
         </Grid.ColumnDefinitions>
         <Grid.RowDefinitions>
-            <!-- Consists list and the brakes/loads editor share the upper area,
-                 the editor taking a bit more of it. -->
-            <RowDefinition Height="*" />
-            <RowDefinition Height="1.25*" MinHeight="250" />
-            <RowDefinition Height="190" />
+            <RowDefinition Height="*" MinHeight="230" />
+            <RowDefinition Height="275" MinHeight="260" />
+            <RowDefinition Height="175" MinHeight="165" />
         </Grid.RowDefinitions>
 
-        <!-- Vehicle database browser (left, rows 0-1) -->
-        <Border Grid.RowSpan="2" Background="{StaticResource CarbonPanelBg}"
+        <Border Grid.Column="0" Grid.Row="0" Background="{StaticResource CarbonPanelBg}"
                 BorderBrush="{StaticResource CarbonBorderLight}" BorderThickness="1"
                 CornerRadius="2" Padding="8">
-            <DockPanel LastChildFill="True">
-                <DockPanel DockPanel.Dock="Top" Margin="0,0,0,6" LastChildFill="True">
+            <Grid RowDefinitions="Auto,Auto,*,Auto,Auto">
+                <DockPanel Grid.Row="0" Margin="0,0,0,6" LastChildFill="True">
                     <CheckBox Name="hideArchivalCheck" DockPanel.Dock="Right" FontSize="11"
                               VerticalAlignment="Center" Margin="8,0,0,0"
                               Content="{Binding [HideArchivalVehicles], Source={x:Static starterNg:App.Loc}}"
                               IsCheckedChanged="HideArchivalCheck_OnChanged" />
                     <TextBox Name="searchBox" VerticalAlignment="Center"
-                             Watermark="{Binding [Search], Source={x:Static starterNg:App.Loc}}"
+                             PlaceholderText="{Binding [Search], Source={x:Static starterNg:App.Loc}}"
                              TextChanged="SearchBox_OnTextChanged" />
                 </DockPanel>
-                <Grid DockPanel.Dock="Top" RowDefinitions="Auto,Auto" RowSpacing="6" Margin="0,0,0,6">
-                    <ComboBox Name="categoryCombo" Grid.Row="0" HorizontalAlignment="Stretch"
-                              PlaceholderText="{Binding [Category], Source={x:Static starterNg:App.Loc}}"
-                              PointerWheelChanged="Combo_OnPointerWheel"
-                              SelectionChanged="CategoryCombo_OnSelectionChanged" />
+                <Grid Grid.Row="1" RowDefinitions="Auto,Auto" RowSpacing="6" Margin="0,0,0,6">
+                    <DockPanel Grid.Row="0" LastChildFill="True">
+                        <Button Name="textureBaseButton" DockPanel.Dock="Right" Classes="Flat"
+                                Width="30" Margin="4,0,0,0" Cursor="Hand" Content="&#x1F50D;"
+                                HorizontalContentAlignment="Center"
+                                Click="TextureBaseButton_OnClick"
+                                ToolTip.Tip="{Binding [OpenTextureBase], Source={x:Static starterNg:App.Loc}}" />
+                        <ComboBox Name="categoryCombo" HorizontalAlignment="Stretch"
+                                  PlaceholderText="{Binding [Category], Source={x:Static starterNg:App.Loc}}"
+                                  PointerWheelChanged="Combo_OnPointerWheel"
+                                  SelectionChanged="CategoryCombo_OnSelectionChanged" />
+                    </DockPanel>
                     <ComboBox Name="classCombo" Grid.Row="1" HorizontalAlignment="Stretch"
                               PlaceholderText="{Binding [Class], Source={x:Static starterNg:App.Loc}}"
                               PointerWheelChanged="Combo_OnPointerWheel"
                               SelectionChanged="ClassCombo_OnSelectionChanged" />
                 </Grid>
 
-                <!-- The arrow stays enabled with nothing selected - adding a whole
-                     category needs no highlighted entry. -->
-                <DockPanel DockPanel.Dock="Bottom" Margin="0,8,0,0">
-                    <Button Name="addMoreButton" DockPanel.Dock="Right" Classes="Flat Accent"
-                            Width="28" Margin="4,0,0,0" Cursor="Hand" Content="&#x25BE;"
-                            HorizontalContentAlignment="Center"
-                            ToolTip.Tip="{Binding [AddAllCategory], Source={x:Static starterNg:App.Loc}}">
-                        <Button.Flyout>
-                            <MenuFlyout Placement="TopEdgeAlignedRight">
-                                <MenuItem Click="AddAllCategoryButton_OnClick"
-                                          Header="{Binding [AddAllCategory], Source={x:Static starterNg:App.Loc}}"
-                                          ToolTip.Tip="{Binding [TipAddAllCategory], Source={x:Static starterNg:App.Loc}}" />
-                                <MenuItem Click="AddUniqueMmdButton_OnClick"
-                                          Header="{Binding [AddUniqueMmd], Source={x:Static starterNg:App.Loc}}"
-                                          ToolTip.Tip="{Binding [TipAddUniqueMmd], Source={x:Static starterNg:App.Loc}}" />
-                                <Separator />
-                                <MenuItem Click="TextureBaseButton_OnClick"
-                                          Header="{Binding [OpenTextureBase], Source={x:Static starterNg:App.Loc}}" />
-                            </MenuFlyout>
-                        </Button.Flyout>
-                    </Button>
-                    <Button Name="addVehicleButton" Classes="Flat Accent"
-                            HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
-                            IsEnabled="False" Cursor="Hand"
-                            Click="AddVehicleButton_OnClick"
-                            Content="{Binding [AddVehicle], Source={x:Static starterNg:App.Loc}}" />
-                </DockPanel>
-                <Grid Name="browserDetails" DockPanel.Dock="Bottom" ColumnDefinitions="130,*"
-                      ColumnSpacing="6" Margin="0,6,0,0" IsVisible="False">
-                    <Border Name="miniPreviewPanel" Grid.Column="0" Height="66"
-                            VerticalAlignment="Top"
-                            Background="{StaticResource CarbonInputBg}"
-                            BorderBrush="{StaticResource CarbonBorderLight}" BorderThickness="1"
-                            CornerRadius="2" Cursor="Hand"
-                            PointerPressed="MiniPreview_OnPointerPressed">
-                        <Image Name="miniPreview" Stretch="Uniform" Margin="6" />
-                    </Border>
-                    <StackPanel Name="textureInfoPanel" Grid.Column="1" Spacing="1"
-                                VerticalAlignment="Center" />
-                </Grid>
+                <Border Name="miniPreviewPanel" Grid.Row="3" Height="66"
+                        Margin="0,6,0,0"
+                        Background="{StaticResource CarbonInputBg}"
+                        BorderBrush="{StaticResource CarbonBorderLight}" BorderThickness="1"
+                        CornerRadius="2" Cursor="Hand"
+                        PointerPressed="MiniPreview_OnPointerPressed">
+                    <Image Name="miniPreview" Stretch="Uniform" Margin="6" />
+                </Border>
 
-                <!-- Flat list of vehicle entries (plain text, no expanders).
-                     Selecting one shows its mini and enables Add; double-click
-                     replaces the selected consist vehicle. -->
-                <ListBox Name="vehicleListBox" Classes="Compact" MinHeight="120"
+                <Button Name="addVehicleButton" Grid.Row="4" Classes="Flat Accent"
+                        Margin="0,8,0,0" Cursor="Hand" IsEnabled="False"
+                        HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
+                        Click="AddVehicleButton_OnClick"
+                        Content="{Binding [AddVehicle], Source={x:Static starterNg:App.Loc}}" />
+
+                <ListBox Name="vehicleListBox" Grid.Row="2" Classes="Compact"
                          SelectionChanged="VehicleListBox_OnSelectionChanged"
                          DoubleTapped="VehicleListBox_OnDoubleTapped"
                          PointerPressed="VehicleListBox_OnPointerPressed" />
-            </DockPanel>
+            </Grid>
         </Border>
 
-        <!-- Consists present on the scenery selected in the Scenarios tab.
-             Selecting one loads it into the editor below; the header carries the
-             scenery name (see PopulateSceneryConsists). -->
         <HeaderedContentControl Name="mapConsistsPanel" Grid.Column="1" Grid.Row="0"
                                 Theme="{StaticResource GroupBox}">
-            <DockPanel LastChildFill="True">
-                <ListBox Name="sceneryConsistList" Classes="Compact"
-                         SelectionChanged="SceneryConsistList_OnSelectionChanged"
-                         KeyDown="SceneryConsistList_OnKeyDown" />
-            </DockPanel>
+            <TabControl>
+                <TabItem Header="{Binding [SceneryConsists], Source={x:Static starterNg:App.Loc}}">
+                    <DockPanel LastChildFill="True">
+                        <Button Name="addToWarehouseButton" DockPanel.Dock="Bottom" Classes="Flat"
+                                Margin="0,6,0,0" HorizontalAlignment="Stretch" Cursor="Hand"
+                                HorizontalContentAlignment="Center"
+                                Click="AddToWarehouseButton_OnClick"
+                                Content="{Binding [AddToWarehouse], Source={x:Static starterNg:App.Loc}}" />
+                        <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal" Spacing="16"
+                                    Margin="2,6,0,0">
+                            <CheckBox Name="depotDrivableOnlyCheck" FontSize="11"
+                                      IsCheckedChanged="ConsistFilter_OnChanged"
+                                      Content="{Binding [ShowDrivableOnly], Source={x:Static starterNg:App.Loc}}" />
+                            <CheckBox Name="depotShowAiCheck" FontSize="11"
+                                      IsCheckedChanged="ConsistFilter_OnChanged"
+                                      Content="{Binding [ShowAiVehicles], Source={x:Static starterNg:App.Loc}}" />
+                        </StackPanel>
+                        <ListBox Name="sceneryConsistList" Classes="Compact"
+                                 SelectionChanged="SceneryConsistList_OnSelectionChanged"
+                                 KeyDown="SceneryConsistList_OnKeyDown" />
+                    </DockPanel>
+                </TabItem>
+                <TabItem Header="{Binding [WarehouseConsists], Source={x:Static starterNg:App.Loc}}">
+                    <DockPanel LastChildFill="True">
+                        <Button Name="removeFromWarehouseButton" DockPanel.Dock="Bottom" Classes="Flat"
+                                Margin="0,6,0,0" HorizontalAlignment="Stretch" Cursor="Hand"
+                                HorizontalContentAlignment="Center"
+                                Click="RemoveFromWarehouseButton_OnClick"
+                                Content="{Binding [RemoveFromWarehouse], Source={x:Static starterNg:App.Loc}}" />
+                        <ListBox Name="warehouseList" Classes="Compact"
+                                 DoubleTapped="WarehouseList_OnDoubleTapped" />
+                    </DockPanel>
+                </TabItem>
+            </TabControl>
         </HeaderedContentControl>
 
-        <!-- Brakes / Loads editor (middle-right). Header carries the vehicle
-             name (see UpdateDetails). -->
-        <HeaderedContentControl Name="selectedVehiclePanel" Grid.Column="1" Grid.Row="1"
+        <HeaderedContentControl Name="selectedVehiclePanel" Grid.Row="1" Grid.ColumnSpan="2"
                                 Theme="{StaticResource GroupBox}">
-            <DockPanel LastChildFill="True">
-                <TabControl>
-                    <TabItem Header="{Binding [Brakes], Source={x:Static starterNg:App.Loc}}">
+            <Grid ColumnDefinitions="290*,3,380*,3,280*">
+                <TabControl Grid.Column="0">
+                    <TabItem Header="{Binding [GeneralInfo], Source={x:Static starterNg:App.Loc}}">
+                        <DockPanel LastChildFill="True" Margin="4">
+                            <Button Name="removeVehicleButton" DockPanel.Dock="Bottom" Classes="Flat"
+                                    Margin="0,6,0,0" HorizontalAlignment="Stretch" Cursor="Hand"
+                                    HorizontalContentAlignment="Center"
+                                    Click="RemoveVehicleButton_OnClick"
+                                    Content="{Binding [RemoveVehicle], Source={x:Static starterNg:App.Loc}}" />
+                            <ScrollViewer VerticalScrollBarVisibility="Auto">
+                                <StackPanel Name="generalPanel" Spacing="6" />
+                            </ScrollViewer>
+                        </DockPanel>
+                    </TabItem>
+                    <TabItem Header="{Binding [AboutTexture], Source={x:Static starterNg:App.Loc}}">
                         <ScrollViewer VerticalScrollBarVisibility="Auto">
-                            <StackPanel Name="brakesPanel" Margin="4" Spacing="8" />
+                            <StackPanel Name="consistTexturePanel" Margin="4" Spacing="6" />
                         </ScrollViewer>
                     </TabItem>
-                    <TabItem Header="{Binding [Loads], Source={x:Static starterNg:App.Loc}}">
+                </TabControl>
+
+                <TabControl Grid.Column="2">
+                    <TabItem Header="{Binding [Configuration], Source={x:Static starterNg:App.Loc}}">
                         <ScrollViewer VerticalScrollBarVisibility="Auto">
-                            <StackPanel Name="loadsPanel" Margin="4" Spacing="8" />
+                            <StackPanel Name="loadsPanel" Margin="4" Spacing="6" />
+                        </ScrollViewer>
+                    </TabItem>
+                    <TabItem Header="{Binding [Brakes], Source={x:Static starterNg:App.Loc}}">
+                        <ScrollViewer VerticalScrollBarVisibility="Auto">
+                            <StackPanel Name="brakesPanel" Margin="4" Spacing="6" />
+                        </ScrollViewer>
+                    </TabItem>
+                </TabControl>
+
+                <TabControl Grid.Column="4">
+                    <TabItem Header="{Binding [Coupling], Source={x:Static starterNg:App.Loc}}">
+                        <ScrollViewer VerticalScrollBarVisibility="Auto">
+                            <StackPanel Name="couplerPanel" Margin="4" Spacing="6" />
                         </ScrollViewer>
                     </TabItem>
                     <TabItem Header="{Binding [Damage], Source={x:Static starterNg:App.Loc}}">
                         <ScrollViewer VerticalScrollBarVisibility="Auto">
-                            <StackPanel Name="damagePanel" Margin="4" Spacing="8" />
+                            <StackPanel Name="damagePanel" Margin="4" Spacing="6" />
                         </ScrollViewer>
                     </TabItem>
                 </TabControl>
-            </DockPanel>
+            </Grid>
         </HeaderedContentControl>
 
-        <!-- Consist (full-width bottom, horizontally scrollable) -->
         <HeaderedContentControl Grid.Row="2" Grid.ColumnSpan="2" Theme="{StaticResource GroupBox}"
                                 Header="{Binding [Consist], Source={x:Static starterNg:App.Loc}}">
             <DockPanel LastChildFill="True">
-                <!-- Train totals + randomize tools -->
                 <DockPanel DockPanel.Dock="Top" Margin="0,0,0,6">
-                    <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="4">
-                        <Button Name="randomTexturesButton" Classes="Basic" FontSize="11"
-                                Padding="8,2" Cursor="Hand" Click="RandomTexturesButton_OnClick"
-                                Content="{Binding [RandomizeTextures], Source={x:Static starterNg:App.Loc}}"
-                                ToolTip.Tip="{Binding [TipRandomizeTextures], Source={x:Static starterNg:App.Loc}}" />
-                        <Button Name="randomOrderButton" Classes="Basic" FontSize="11"
-                                Padding="8,2" Cursor="Hand" Click="RandomOrderButton_OnClick"
-                                Content="{Binding [RandomizeOrder], Source={x:Static starterNg:App.Loc}}"
-                                ToolTip.Tip="{Binding [TipRandomizeOrder], Source={x:Static starterNg:App.Loc}}" />
-                        <Button Name="randomOrientButton" Classes="Basic" FontSize="11"
-                                Padding="8,2" Cursor="Hand" Click="RandomOrientButton_OnClick"
-                                Content="{Binding [RandomizeOrientation], Source={x:Static starterNg:App.Loc}}"
-                                ToolTip.Tip="{Binding [TipRandomizeOrientation], Source={x:Static starterNg:App.Loc}}" />
-                    </StackPanel>
-                    <TextBlock Name="trainStats" FontSize="12" Opacity="0.85"
-                               TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+                    <StackPanel Name="trainStats" Orientation="Horizontal"
+                                VerticalAlignment="Center" />
                 </DockPanel>
                 <Panel Name="consistDropTarget">
                     <TextBlock Name="emptyHint" VerticalAlignment="Center" HorizontalAlignment="Center"
                                TextWrapping="Wrap" MaxWidth="520" Opacity="0.6" TextAlignment="Center"
                                Text="{Binding [ConsistEmpty], Source={x:Static starterNg:App.Loc}}" />
-                    <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
-                        <StackPanel Name="consistStack" Orientation="Horizontal"
-                                    VerticalAlignment="Center" Spacing="0" />
+                    <ScrollViewer Name="consistScroll"
+                                  HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
+                        <Panel>
+                            <StackPanel Name="consistStack" Orientation="Horizontal"
+                                        VerticalAlignment="Center" Spacing="0" />
+                            <Canvas Name="consistOverlay" IsHitTestVisible="False" />
+                        </Panel>
                     </ScrollViewer>
                 </Panel>
             </DockPanel>

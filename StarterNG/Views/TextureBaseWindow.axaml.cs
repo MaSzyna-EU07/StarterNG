@@ -28,19 +28,63 @@ public partial class TextureBaseWindow : Window
             _all.Add(new Row(t, _db));
         }
 
-        foreach (var box in new Control[] { fName, fOp, fMini, fAuthor, fStation, fPhoto })
+        foreach (var box in new Control[] { fName, fOp, fMini, fAuthor, fStation, fPhoto, fModel })
         {
             if (box is TextBox tb)
                 tb.TextChanged += (_, _) => Refresh();
         }
-        foreach (var box in new Control[] { fNameOn, fOpOn, fMiniOn, fAuthorOn, fStationOn, fPhotoOn })
+        foreach (var box in new Control[] { fNameOn, fOpOn, fMiniOn, fAuthorOn, fStationOn, fPhotoOn,
+                                            fModelOn, fRevFromOn, fRevToOn })
         {
             if (box is CheckBox cb)
                 cb.IsCheckedChanged += (_, _) => Refresh();
         }
 
+        fRevFrom.TextChanged += (_, _) => Refresh();
+        fRevTo.TextChanged += (_, _) => Refresh();
+
+        BuildTypeList();
+        typeList.SelectionChanged += (_, _) => { BuildModelList(); Refresh(); };
+        modelList.SelectionChanged += (_, _) => Refresh();
+
         textureList.ContextRequested += TextureList_OnContextRequested;
         Refresh();
+    }
+
+    private sealed record ModelRow(string No, string Klasa, string Sciezka);
+
+    private void BuildModelList()
+    {
+        modelList.ItemsSource = null;
+
+        string? cat = (typeList.SelectedItem as ListBoxItem)?.Tag as string;
+        var rows = _all
+            .Where(r => cat == null || string.Equals(r.Category, cat, StringComparison.OrdinalIgnoreCase))
+            .Where(r => r.Mini.Length > 0)
+            .GroupBy(r => r.Mini, StringComparer.OrdinalIgnoreCase)
+            .OrderBy(g => g.Key, StringComparer.OrdinalIgnoreCase)
+            .Select((g, i) => new ModelRow($"{i + 1}.", g.Key, g.First().Directory))
+            .ToList();
+
+        modelList.ItemsSource = rows;
+    }
+
+    private static DateTime? ParseDate(string? text) =>
+        DateTime.TryParse(text, System.Globalization.CultureInfo.InvariantCulture,
+            System.Globalization.DateTimeStyles.None, out var d) ? d : null;
+
+    private void BuildTypeList()
+    {
+        typeList.Items.Add(new ListBoxItem { Content = App.Loc["CatAll"], Tag = null });
+
+        foreach (string cat in _all.Select(r => r.Category)
+                     .Where(c => c.Length > 0)
+                     .Distinct(StringComparer.OrdinalIgnoreCase)
+                     .OrderBy(c => c, StringComparer.OrdinalIgnoreCase))
+            typeList.Items.Add(new ListBoxItem { Content = cat, Tag = cat });
+
+        typeList.SelectedIndex = 0;
+        BuildModelList();
     }
 
     private void Refresh()
@@ -53,6 +97,18 @@ public partial class TextureBaseWindow : Window
         q = Filter(q, fAuthorOn, fAuthor, r => r.Author);
         q = Filter(q, fStationOn, fStation, r => r.Station);
         q = Filter(q, fPhotoOn, fPhoto, r => r.Photo);
+        q = Filter(q, fModelOn, fModel, r => r.Model);
+
+        if ((typeList.SelectedItem as ListBoxItem)?.Tag is string cat)
+            q = q.Where(r => string.Equals(r.Category, cat, StringComparison.OrdinalIgnoreCase));
+
+        if (modelList.SelectedItem is ModelRow mr)
+            q = q.Where(r => string.Equals(r.Mini, mr.Klasa, StringComparison.OrdinalIgnoreCase));
+
+        if (fRevFromOn.IsChecked == true && ParseDate(fRevFrom.Text) is { } from)
+            q = q.Where(r => r.RevisionDate is { } d && d >= from);
+        if (fRevToOn.IsChecked == true && ParseDate(fRevTo.Text) is { } to)
+            q = q.Where(r => r.RevisionDate is { } d && d <= to);
 
         var list = q
             .OrderBy(r => r.Mini, StringComparer.OrdinalIgnoreCase)
@@ -98,12 +154,23 @@ public partial class TextureBaseWindow : Window
         {
             string dir = Path.Combine(Directory.GetCurrentDirectory(), "dynamic",
                 row.Texture.Directory.Replace('/', Path.DirectorySeparatorChar).TrimEnd('\\', '/'));
-            if (!Directory.Exists(dir)) return;
+            if (!Directory.Exists(dir))
+                dir = Path.Combine(Directory.GetCurrentDirectory(), row.Texture.Directory);
+            if (!Directory.Exists(dir))
+            {
+                StarterNG.Infrastructure.Diagnostics.ReportOnUiThread(
+                    string.Format(App.Loc["FaultFileNotFound"], dir));
+                return;
+            }
             try
             {
                 Process.Start(new ProcessStartInfo(dir) { UseShellExecute = true });
             }
-            catch { }
+            catch (Exception ex)
+            {
+                StarterNG.Infrastructure.Diagnostics.ReportOnUiThread(
+                    $"{dir}{Environment.NewLine}{Environment.NewLine}{App.Loc["FaultDetail"]} {ex.Message}");
+            }
         };
         menu.Items.Add(open);
         menu.Open(textureList);
@@ -120,6 +187,10 @@ public partial class TextureBaseWindow : Window
         public string Author { get; }
         public string Station { get; }
         public string Photo { get; }
+        public string Model { get; }
+        public string Category { get; }
+        public string Directory { get; }
+        public DateTime? RevisionDate { get; }
 
         public Row(VehicleTexture t, VehicleDatabase db)
         {
@@ -131,6 +202,11 @@ public partial class TextureBaseWindow : Window
             Author = t.Meta?.TextureAuthor ?? "";
             Station = t.Meta?.Depot ?? "";
             Photo = t.Meta?.PhotoAuthor ?? "";
+            Model = t.Model ?? "";
+            Category = t.ResolvedCategory ?? "";
+            Directory = t.Directory ?? "";
+            RevisionDate = DateTime.TryParse(Revision, System.Globalization.CultureInfo.InvariantCulture,
+                System.Globalization.DateTimeStyles.None, out var rev) ? rev : null;
         }
     }
 }

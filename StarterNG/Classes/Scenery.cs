@@ -49,7 +49,11 @@ public class Scenery
     public double Temperature = 15;
     public int FogStart = 10;
     public int FogEnd = 2000;
+
+    public const int FogMin = 10;
+    public const int FogMax = 10000;
     public double Overcast = 0;
+    public bool OvercastRandom;
 
     public bool HasWeather;
 
@@ -61,6 +65,7 @@ public class Scenery
     private double _origTemperature = 15;
     private int _origFogEnd = 2000;
     private double _origOvercast;
+    private bool _origOvercastRandom;
 
     private readonly string _template;
 
@@ -68,8 +73,6 @@ public class Scenery
     {
         get
         {
-            if (!string.IsNullOrWhiteSpace(Name))
-                return SceneryI18n.T(Name);
             return System.IO.Path.GetFileNameWithoutExtension(Path);
         }
     }
@@ -149,7 +152,7 @@ public class Scenery
                         RangeMin = float.Parse(m.Groups[2].Value, inv),
                         Name = name,
                         DataFolder = m.Groups[4].Value,
-                        SkinFile = m.Groups[5].Value,
+                        SkinFile = Dynamic.StripSkinExtension(m.Groups[5].Value),
                         MmdFile = m.Groups[6].Value,
                         PathName = m.Groups[7].Value,
                         Offset = float.Parse(m.Groups[8].Value, inv),
@@ -356,8 +359,8 @@ public class Scenery
                 int.TryParse(nums[3], out int fogStart) &&
                 int.TryParse(nums[4], out int fogEnd))
             {
-                FogStart = Math.Clamp(fogStart, 10, 2500);
-                fogEnd = Math.Clamp(fogEnd, FogStart, 2500);
+                FogStart = Math.Clamp(fogStart, FogMin, FogMax);
+                fogEnd = Math.Clamp(fogEnd, FogStart, FogMax);
                 FogEnd = fogEnd > FogStart
                     ? Random.Shared.Next(FogStart, fogEnd + 1)
                     : fogEnd;
@@ -378,7 +381,16 @@ public class Scenery
         _origTemperature = Temperature;
         _origFogEnd = FogEnd;
         _origOvercast = Overcast;
+        _origOvercastRandom = OvercastRandom;
     }
+
+    public bool WeatherChanged =>
+        Day != _origDay ||
+        ScenarioTimeOverride != _origOverride ||
+        Math.Abs(Temperature - _origTemperature) > 0.001 ||
+        FogEnd != _origFogEnd ||
+        OvercastRandom != _origOvercastRandom ||
+        (!OvercastRandom && Math.Abs(Overcast - _origOvercast) > 0.001);
 
     public void RestoreWeather()
     {
@@ -388,8 +400,14 @@ public class Scenery
         Temperature = _origTemperature;
         FogEnd = _origFogEnd;
         Overcast = _origOvercast;
+        OvercastRandom = _origOvercastRandom;
         WeatherDirty = true;
     }
+
+    private static readonly double[] OvercastPresets = { -1.5, 0, 0.3, 0.7, 1, 1.1, 1.5 };
+
+    private double EffectiveOvercast() =>
+        OvercastRandom ? OvercastPresets[Random.Shared.Next(OvercastPresets.Length)] : Overcast;
 
     private string RewriteWeather(string text)
     {
@@ -397,6 +415,9 @@ public class Scenery
         {
 
             string s = text;
+
+            string carried = CarriedConfigLines(s);
+
             s = Regex.Replace(s, @"(?is)\bconfig\b.*?\bendconfig\b", " ");
             s = Regex.Replace(s, @"(?is)\btime\b\s+\d[^\r\n]*?\bendtime\b", " ");
             s = Regex.Replace(s, @"(?is)\batmo\b.*?\bendatmo\b", " ");
@@ -410,10 +431,11 @@ public class Scenery
                 "config\r\n" +
                 $"movelight {Day}\r\n" +
                 $"scenario.weather.temperature {Temperature.ToString(inv)}\r\n" +
-                $"scenario.time.override {ScenarioTimeOverride}\r\n" +
+                $"scenario.time.override {DelphiHourMinute(ScenarioTimeOverride)}\r\n" +
+                carried +
                 "endconfig\r\n" +
-                $"atmo 0 0 0 {FogEnd} {FogEnd} 0 0 0 {Overcast.ToString(inv)} endatmo\r\n" +
-                $"time {Time} 0 0 endtime\r\n";
+                $"atmo 0 0 0 {FogEnd} {FogEnd} 0 0 0 {EffectiveOvercast().ToString(inv)} endatmo\r\n" +
+                $"time {DelphiHourMinute(Time)} 0 0 endtime\r\n";
 
             return config + s;
         }
@@ -421,6 +443,36 @@ public class Scenery
         {
             return text;
         }
+    }
+
+    private static string DelphiHourMinute(string hhmm)
+    {
+        int colon = hhmm.IndexOf(':');
+        if (colon <= 0) return hhmm;
+        return hhmm[..colon].TrimStart('0') is { Length: > 0 } h
+            ? h + hhmm[colon..]
+            : "0" + hhmm[colon..];
+    }
+
+    private static readonly Regex ManagedConfigLine = new(
+        @"^\s*(movelight|scenario\.weather\.temperature|scenario\.time\.override)\b",
+        RegexOptions.IgnoreCase | RegexOptions.Compiled);
+
+    private static string CarriedConfigLines(string text)
+    {
+        var block = Regex.Match(text, @"(?is)\bconfig\b(.*?)\bendconfig\b");
+        if (!block.Success)
+            return "";
+
+        var sb = new StringBuilder();
+        foreach (string raw in block.Groups[1].Value.Split('\n'))
+        {
+            string line = raw.TrimEnd('\r').Trim();
+            if (line.Length == 0 || ManagedConfigLine.IsMatch(line))
+                continue;
+            sb.Append(line).Append("\r\n");
+        }
+        return sb.ToString();
     }
 
     private static string MatchAllDirectives(string content, string letter)

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -173,6 +173,26 @@ public class VehicleDatabase
         }
     }
 
+    public int ImportLegacy(string dynamicRoot = "dynamic")
+    {
+        int added = 0;
+        foreach (string file in LegacyTextureDatabase.EnumerateFiles(dynamicRoot))
+        {
+            var entry = LegacyTextureDatabase.Parse(file, dynamicRoot);
+            if (entry is null) continue;
+
+            entry.Textures.RemoveAll(t =>
+                TextureBySkin.ContainsKey(
+                    Path.GetFileNameWithoutExtension(t.Skinfile).ToLowerInvariant()));
+
+            if (entry.Textures.Count == 0) continue;
+
+            added += entry.Textures.Count;
+            Ingest(entry);
+        }
+        return added;
+    }
+
     private void Ingest(VehicleEntry entry)
     {
         foreach (var group in entry.Groups)
@@ -265,7 +285,7 @@ public class VehicleDatabase
 
     public string? ResolveMiniName(VehicleTexture texture)
     {
-        if (!string.IsNullOrEmpty(texture.TextureMini) && MiniPath(texture.TextureMini) != null)
+        if (HasMini(texture.TextureMini))
             return texture.TextureMini;
 
         if (texture.Group != null && GroupsById.TryGetValue(texture.Group, out var grp)
@@ -330,10 +350,26 @@ public class VehicleDatabase
 
     public static string? MiniPath(string? miniName, string miniDir = "textures/mini/")
     {
-        if (string.IsNullOrEmpty(miniName)) return null;
-
         var index = _miniIndex ??= BuildMiniIndex(miniDir);
-        return index.TryGetValue(miniName!.ToLowerInvariant(), out var path) ? path : null;
+
+        if (!string.IsNullOrEmpty(miniName) &&
+            index.TryGetValue(miniName!.ToLowerInvariant(), out var path))
+            return path;
+
+        return FallbackMiniPath(miniDir);
+    }
+
+    public static bool HasMini(string? miniName, string miniDir = "textures/mini/")
+    {
+        if (string.IsNullOrEmpty(miniName)) return false;
+        var index = _miniIndex ??= BuildMiniIndex(miniDir);
+        return index.ContainsKey(miniName!.ToLowerInvariant());
+    }
+
+    public static string? FallbackMiniPath(string miniDir = "textures/mini/")
+    {
+        var index = _miniIndex ??= BuildMiniIndex(miniDir);
+        return index.TryGetValue("other", out var other) ? other : null;
     }
 
     private static Dictionary<string, string> BuildMiniIndex(string miniDir)

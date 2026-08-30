@@ -33,6 +33,8 @@
     <String key="Time">Čas</String>
     <String key="CurrentTime">Nyní</String>
     <String key="Day">Den v roce</String>
+    <String key="Date">Datum</String>
+    <String key="DayOfYear">den {0}</String>
     <String key="Sky">Obloha</String>
     <String key="Fog">Mlha / viditelnost</String>
     <String key="Season">Roční období</String>
@@ -44,6 +46,7 @@
     <String key="SeasonSummer">Léto</String>
     <String key="SeasonAutumn">Podzim</String>
     <String key="SeasonWinter">Zima</String>
+    <String key="OvercastRandom">Náhodné</String>
     <String key="OvercastClear">Jasno</String>
     <String key="OvercastFair">Skoro jasno</String>
     <String key="OvercastLight">Slabá oblačnost</String>
@@ -51,7 +54,8 @@
     <String key="OvercastHeavy">Silná oblačnost</String>
     <String key="OvercastCloudy">Zataženo</String>
     <String key="OvercastStorm">Bouřka</String>
-    <String key="WeatherHint">Změny počasí se při spuštění zapíší do scenérie.</String>
+    <String key="WeatherDateTime">Datum a čas</String>
+    <String key="WeatherConditions">Povětrnostní podmínky</String>
     <String key="Consist">Souprava</String>
     <String key="Start">Start</String>
     <String key="StartNoScenery">Vyberte scenérii</String>
@@ -148,40 +152,39 @@
     <String key="Coupling">Spřáhlo</String>
     <String key="MapConsists">Soupravy ve scenérii</String>
     <String key="NoSceneryConsists">Vyberte scenérii na kartě Scénáře.</String>
-    <String key="BrakeMode">Režim brzdy</String>
-    <String key="BrakeLoad">Nastavení zatížení</String>
-    <String key="BrakeSwitch">Přepínač brzdy</String>
+    <String key="BrakeMode">Nastavení brzdiče</String>
+    <String key="BrakeLoad">Přispůsobení</String>
+    <String key="BrakeSwitch">Brzdič</String>
     <String key="None">—</String>
 
     <!-- Coupling mask bits -->
-    <String key="CplMechanical">Mechanické</String>
-    <String key="CplBrake">Pneumatické 5 atm (brzdy)</String>
-    <String key="CplControl">Vícečlenné řízení</String>
+    <String key="CplMechanical">Mechanicky</String>
+    <String key="CplBrake">Brzda</String>
+    <String key="CplControl">Ukrojení</String>
     <String key="CplHighVoltage">Vysoké napětí</String>
-    <String key="CplGangway">Průchod mezi vozidly</String>
-    <String key="CplAuxPneumatic">Pomocné pneumatické 8 atm</String>
+    <String key="CplGangway">Přechod</String>
+    <String key="CplAuxPneumatic">Vzduch 8atm</String>
     <String key="CplHeating">Topení</String>
-    <String key="CplWorkshop">Dílenské spřáhlo (zámek rozpojení)</String>
+    <String key="CplWorkshop">Blokáda</String>
 
     <!-- Brake modes -->
-    <String key="BrakeFreight">Nákladní (G)</String>
-    <String key="BrakePassenger">Osobní (P)</String>
-    <String key="BrakeExpress">Rychlík (R)</String>
-    <String key="BrakeExpressMg">Rychlík + magnetická kolejnicová (R+Mg)</String>
-    <String key="BrakeNoAir">Start bez vzduchu (Q)</String>
-    <String key="BrakeOff">Brzdy odpojeny (O)</String>
-    <String key="BrakeAuto">Automaticky (A)</String>
+    <String key="BrakeActingNone">Není nastaven</String>
+    <String key="BrakeFreight">G - nákladní režim</String>
+    <String key="BrakePassenger">P - osobní režim</String>
+    <String key="BrakeExpress">R - rychlíkový režim</String>
+    <String key="BrakeExpressMg">R + magn. kolejová brzda</String>
+    <String key="BrakeNoAir">Q - bez vzduchu</String>
 
     <!-- Load adaptation -->
-    <String key="LoadEmpty">Prázdný (T)</String>
-    <String key="LoadMedium">Ložený I — střední (H)</String>
-    <String key="LoadFull">Ložený II (F)</String>
-    <String key="LoadAuto">Automaticky (A)</String>
+    <String key="LoadNeutral">N - neutralní nastavení</String>
+    <String key="LoadEmpty">T - prázdný</String>
+    <String key="LoadMedium">H - naložen I</String>
+    <String key="LoadFull">F - naložen II</String>
 
     <!-- Brake switch -->
-    <String key="SwitchOff">Vypnuto (0)</String>
-    <String key="SwitchOff10">Vypnuto s pravděpodobností 10 % (1)</String>
-    <String key="SwitchOn">Zapnuto (A)</String>
+    <String key="SwitchNormal">N - brzdič zabržděný</String>
+    <String key="SwitchOff">0 - odbržděný, odpuštěný</String>
+    <String key="SwitchOff10">1 - odbržděný, odp. z 10% pravd.</String>
 
     <!-- Damage (wheel parameters) -->
     <String key="Damage">Poškození</String>
@@ -192,6 +195,9 @@
     <String key="LoadType">Druh nákladu</String>
     <String key="LoadCount">Množství</String>
     <String key="LoadHint">Pro naložení vozidla zadejte množství větší než 0.</String>
+    <String key="LoadNotLoadable">Toto vozidlo nepřijímá žádný náklad.</String>
+    <String key="LoadPantState">Zvednutý pantograf na startu</String>
+    <String key="LoadPantStateHint">Množství určuje pantograf: 1 — A, 2 — B, 3 — oba.</String>
     <String key="WagonNumber">Číslo vozu</String>
     <String key="LoadCopyPrev">Kopírovat náklad z předchozího vozidla</String>
     <String key="LoadMax">Maximální možný náklad</String>
@@ -242,6 +248,10 @@
     <String key="ComingSoon">Možnosti úprav budou brzy k dispozici.</String>
     <String key="Split">Rozdělit</String>
     <String key="TipSplit">Rozdělit jednotku na jednotlivé vozy</String>
+    <String key="AppliesToUnit">Společné pro celou jednotku</String>
+    <String key="CouplingUnitRear">Spřáhlo na konci jednotky</String>
+    <String key="Join">Spojit</String>
+    <String key="TipJoin">Spojit toto vozidlo s následujícím do jedné jednotky</String>
     <String key="AddVehicle">Přidat</String>
     <String key="TipAddVehicle">Přidat toto vozidlo do soupravy</String>
     <String key="TipAddUnit">Přidat celou jednotku do soupravy</String>
@@ -320,10 +330,28 @@
     <String key="MaxTexCabResolution">Maximální rozlišení textur kabiny:</String>
     <String key="TexFilteringQuality">Kvalita filtrování textur:</String>
     <String key="Multisampling">Multisampling:</String>
+    <String key="QualityVeryLow">Velmi nízká</String>
+    <String key="QualityLow">Nízká</String>
+    <String key="QualityNormal">Normální</String>
+    <String key="QualityHigh">Vysoká</String>
+    <String key="QualityVeryHigh">Velmi vysoká</String>
+    <String key="MsaaNone">Žádné</String>
+    <String key="QualityModerate">Mírná</String>
+    <String key="QualityStandard">Standartní</String>
+    <String key="RangeVeryLow">Velmi nízký</String>
+    <String key="RangeLow">Nízký</String>
+    <String key="RangeNormal">Normální</String>
+    <String key="RangeModerate">Mírný</String>
+    <String key="RangeStandard">Standartní</String>
+    <String key="RangeHigh">Vysoká</String>
+    <String key="RangeVeryHigh">Velmi vysoká</String>
+    <String key="RangeDisabled">Vypnuté</String>
     <String key="DynamicLights">Dynamické zdroje světla:</String>
     <String key="RenderRange">Dohlednost vykreslování:</String>
     <String key="FpsLimitEnable">Omezit snímkovou frekvenci</String>
     <String key="ShadowAngleLimit">Omezení délky stínů</String>
+    <String key="ShadowLimitNone">Bez omezení</String>
+    <String key="ShadowLimitShort">Zkrácené</String>
     <String key="FullscreenWindowed">Automatické rozlišení (celá obrazovka bez okrajů)</String>
     <String key="RenderAngleVulkan">Použít renderer ANGLE Vulkan</String>
     <String key="VSync">VSync</String>
@@ -427,4 +455,100 @@
     <String key="Save">Uložit</String>
     <String key="Reset">Obnovit</String>
     <String key="SettingsSaved">Nastavení uloženo</String>
+
+    <!-- Errors / diagnostics -->
+    <String key="FaultTitle">Chyba</String>
+    <String key="FaultDetail">Podrobnosti chyby:</String>
+    <String key="FaultFileNotFound">Soubor nenalezen: {0}</String>
+    <String key="FaultLoadData">Nepodařilo se načíst data simulátoru.</String>
+    <String key="FaultBadInstall">Instalace simulátoru může být neúplná.</String>
+    <String key="FaultNoDir">Chybí složka {0}</String>
+    <String key="FaultNoWeights">Chybí informace o hmotnostech nákladu.</String>
+    <String key="FaultNoScenery">Nebyly nalezeny žádné scénáře.</String>
+    <String key="FaultNoVehicles">Nebyla nalezena žádná vozidla.</String>
+    <String key="FaultNoPhysics">Nebyla nalezena data vozového parku.</String>
+    <String key="FaultNoExe">Spustitelný soubor simulátoru nebyl nalezen.</String>
+
+    <!-- About -->
+    <String key="AboutTitle">O programu</String>
+    <String key="AboutForSimulator">pro simulátor MaSzyna</String>
+    <String key="AboutChangelog">Seznam změn:</String>
+    <String key="AboutNoChangelog">Soubor se seznamem změn nebyl nalezen.</String>
+    <String key="About">O programu</String>
+    <String key="Close">Zavřít</String>
+    <String key="SettingsPath">Nastavení načteno z:</String>
+
+    <!-- Vehicle info -->
+    <String key="GeneralInfo">Obecné</String>
+    <String key="Model">Model</String>
+    <String key="VMax">VMax</String>
+    <String key="Texture">Textura</String>
+
+    <!-- Scenery tab -->
+    <String key="SceneryConsists">Soupravy na scenérii</String>
+    <String key="SceneryFaults">Chyby ve scénáři:</String>
+
+    <!-- Warehouse / vehicle panels -->
+    <String key="WarehouseConsists">Soupravy ve skladu</String>
+    <String key="AddToWarehouse">Přidat do skladu</String>
+    <String key="RemoveFromWarehouse">Odebrat ze skladu</String>
+    <String key="WarehouseApply">Nahradit soupravou ze skladu</String>
+    <String key="WarehouseImportNothing">Nebyly nalezeny žádné soupravy k importu.</String>
+    <String key="AboutTexture">O textuře</String>
+    <String key="NoTextureInfo">Žádné informace o textuře.</String>
+
+    <!-- Vehicle configuration / coupler -->
+    <String key="Configuration">Konfigurace</String>
+    <String key="RemoveVehicle">Odebrat vozidlo</String>
+    <String key="AutoCoupler">Auto</String>
+    <String key="TipAutoCoupler">Zvolit spřáhla automaticky pro celou soupravu</String>
+    <String key="CouplingLastVehicle">Spřáhlo na konci soupravy — za ním není vozidlo.</String>
+    <String key="ChangeName">Přejmenovat...</String>
+    <String key="LoadCopyToAll">Použít tento náklad na všechna následující vozidla, která ho přijmou</String>
+    <String key="WarehouseAppend">Připojit soupravu ze skladu</String>
+    <String key="WarehouseImportFile">Přidat soupravy ze souboru...</String>
+    <String key="StartWithoutSaving">Spustit bez uložení nastavení</String>
+    <String key="StartFreeFly">Spustit bez vozidla</String>
+    <String key="VolumePaused">Hlasitost při pauze:</String>
+    <String key="DebugLogVisible">Zobrazovat průběh simulace</String>
+    <String key="PyScreenPriority">Frekvence obnovení doplňkových obrazovek:</String>
+    <String key="PyPriorityNormal">Standardní</String>
+    <String key="PyPriorityLower">Nízká</String>
+    <String key="PyPriorityLowest">Velmi nízká</String>
+    <String key="PyPriorityIdle">Žádná</String>
+    <String key="PyPriorityOff">Vypnutá</String>
+
+    <String key="MassBrutto">Hrubá hmotnost</String>
+    <String key="VisibilityGood">Dobrá</String>
+    <String key="VisibilityBad">Špatná</String>
+    <String key="SoundPhysics">Zvuk | Fyzika</String>
+    <String key="DriverHead">Strojvedoucí (kabina A)</String>
+    <String key="DriverRear">Strojvedoucí (kabina B)</String>
+    <String key="DriverPassenger">Cestující</String>
+    <String key="DriverNobody">Nikdo</String>
+    <String key="RemoveAllTrains">Odebrat všechny soupravy ze scenérie</String>
+    <String key="RemoveAllTrainsConfirm">Odebrat vozidla ze všech souprav na této scenérii?</String>
+    <String key="TexWorks">Revize:</String>
+    <String key="RevisionFrom">Revize od:</String>
+    <String key="RevisionTo">Revize do:</String>
+    <String key="CrewLabel">Obsazení:</String>
+    <String key="RuleAdd">Přidat do pravidla</String>
+    <String key="RuleNew">— nové pravidlo —</String>
+    <String key="RuleRemove">Odebrat z pravidla</String>
+    <String key="CatAll">Vše</String>
+    <String key="GfxColResolution">Rozlišení a textury</String>
+    <String key="GfxColRendering">Vykreslování</String>
+    <String key="GfxColShadows">Stíny</String>
+    <String key="GfxColReflections">Odrazy a pohled</String>
+    <String key="GfxColScripts">Python skripty</String>
+    <String key="UartHint">Název portu / neměnit / frekvence odesílání dat</String>
+    <String key="UartFeature">UARTfeature:</String>
+    <String key="UartSaveClose">Uložit a zavřít</String>
+    <String key="PickCategoryFirst">Nejprve vyberte kategorii nebo třídu vozidel.</String>
+    <String key="HideArchivalSceneries">Skrýt archivní scénáře</String>
+    <String key="Tools">Nástroje</String>
+    <String key="AdvancedSettings">Pokročilá nastavení</String>
+    <String key="AdvLogPage">Deník událostí</String>
+    <String key="AdvClearLog">Vymazat log</String>
+    <String key="ConsistSchedule">Sestava</String>
 </Language>

@@ -33,6 +33,8 @@
     <String key="Time">Time</String>
     <String key="CurrentTime">Now</String>
     <String key="Day">Day of year</String>
+    <String key="Date">Date</String>
+    <String key="DayOfYear">day {0}</String>
     <String key="Sky">Sky</String>
     <String key="Fog">Fog / visibility</String>
     <String key="Season">Season</String>
@@ -44,6 +46,7 @@
     <String key="SeasonSummer">Summer</String>
     <String key="SeasonAutumn">Autumn</String>
     <String key="SeasonWinter">Winter</String>
+    <String key="OvercastRandom">Random</String>
     <String key="OvercastClear">Clear</String>
     <String key="OvercastFair">Fair</String>
     <String key="OvercastLight">Light clouds</String>
@@ -51,7 +54,8 @@
     <String key="OvercastHeavy">Heavy clouds</String>
     <String key="OvercastCloudy">Cloudy</String>
     <String key="OvercastStorm">Storm</String>
-    <String key="WeatherHint">Weather changes are written to the scenery on launch.</String>
+    <String key="WeatherDateTime">Date and time</String>
+    <String key="WeatherConditions">Conditions</String>
     <String key="Consist">Consist</String>
     <String key="Start">Start</String>
     <String key="StartNoScenery">Select a scenery</String>
@@ -148,40 +152,39 @@
     <String key="Coupling">Coupling</String>
     <String key="MapConsists">Consists on the scenery</String>
     <String key="NoSceneryConsists">Select a scenery in the Scenarios tab.</String>
-    <String key="BrakeMode">Brake mode</String>
-    <String key="BrakeLoad">Load setting</String>
+    <String key="BrakeMode">Brake setting</String>
+    <String key="BrakeLoad">Brake adjustment</String>
     <String key="BrakeSwitch">Brake switch</String>
     <String key="None">—</String>
 
     <!-- Coupling mask bits -->
     <String key="CplMechanical">Mechanical</String>
-    <String key="CplBrake">Pneumatic 5 atm (brakes)</String>
-    <String key="CplControl">Multiple-unit control</String>
+    <String key="CplBrake">Brake</String>
+    <String key="CplControl">Connector</String>
     <String key="CplHighVoltage">High voltage</String>
-    <String key="CplGangway">Gangway between vehicles</String>
-    <String key="CplAuxPneumatic">Auxiliary pneumatic 8 atm</String>
+    <String key="CplGangway">Passage</String>
+    <String key="CplAuxPneumatic">Air 8atm</String>
     <String key="CplHeating">Heating</String>
-    <String key="CplWorkshop">Workshop coupling (uncouple lock)</String>
+    <String key="CplWorkshop">Lock</String>
 
     <!-- Brake modes -->
-    <String key="BrakeFreight">Freight (G)</String>
-    <String key="BrakePassenger">Passenger (P)</String>
-    <String key="BrakeExpress">Express (R)</String>
-    <String key="BrakeExpressMg">Express + magnetic rail (R+Mg)</String>
-    <String key="BrakeNoAir">Start without air (Q)</String>
-    <String key="BrakeOff">Brakes disconnected (O)</String>
-    <String key="BrakeAuto">Automatic (A)</String>
+    <String key="BrakeActingNone">None</String>
+    <String key="BrakeFreight">G - Cargo</String>
+    <String key="BrakePassenger">P - Passenger</String>
+    <String key="BrakeExpress">R - Rapid</String>
+    <String key="BrakeExpressMg">R + magn. rail brake</String>
+    <String key="BrakeNoAir">Q - without air</String>
 
     <!-- Load adaptation -->
-    <String key="LoadEmpty">Empty (T)</String>
-    <String key="LoadMedium">Loaded I — medium (H)</String>
-    <String key="LoadFull">Loaded II (F)</String>
-    <String key="LoadAuto">Automatic (A)</String>
+    <String key="LoadNeutral">N - neutral</String>
+    <String key="LoadEmpty">T - empty</String>
+    <String key="LoadMedium">H - loaded I</String>
+    <String key="LoadFull">F - loaded II</String>
 
     <!-- Brake switch -->
-    <String key="SwitchOff">Off (0)</String>
-    <String key="SwitchOff10">Off with 10% chance (1)</String>
-    <String key="SwitchOn">On (A)</String>
+    <String key="SwitchNormal">N - On</String>
+    <String key="SwitchOff">0 - Off, slack</String>
+    <String key="SwitchOff10">1 - Off, slack (10% chance)</String>
 
     <!-- Damage (wheel parameters) -->
     <String key="Damage">Damage</String>
@@ -192,6 +195,9 @@
     <String key="LoadType">Load type</String>
     <String key="LoadCount">Amount</String>
     <String key="LoadHint">Set an amount above 0 to load the vehicle.</String>
+    <String key="LoadNotLoadable">This vehicle accepts no load.</String>
+    <String key="LoadPantState">Pantograph raised at start</String>
+    <String key="LoadPantStateHint">The amount selects the pantograph: 1 — A, 2 — B, 3 — both.</String>
     <String key="WagonNumber">Wagon number</String>
     <String key="LoadCopyPrev">Copy load from previous vehicle</String>
     <String key="LoadMax">Maximum possible load</String>
@@ -206,7 +212,7 @@
     <String key="VehicleCount">Vehicles</String>
     <String key="Track">Track</String>
     <String key="EmptyTrainset">No vehicles. (Track: {0})</String>
-    <String key="HideArchivalVehicles">Hide archival vehicles</String>
+    <String key="HideArchivalVehicles">Hide archived vehicles</String>
     <String key="RemoveSelectedVehicle">Remove vehicle</String>
     <String key="RandomizeTextures">Randomize textures</String>
     <String key="TipRandomizeTextures">Pick similar textures by class / rules</String>
@@ -242,6 +248,10 @@
     <String key="ComingSoon">Editing options coming soon.</String>
     <String key="Split">Split</String>
     <String key="TipSplit">Split the unit into individual cars</String>
+    <String key="AppliesToUnit">Shared by the whole unit</String>
+    <String key="CouplingUnitRear">Coupler at the rear of the unit</String>
+    <String key="Join">Join</String>
+    <String key="TipJoin">Couple this vehicle with the next one into a single unit</String>
     <String key="AddVehicle">Add</String>
     <String key="TipAddVehicle">Add this vehicle to the consist</String>
     <String key="TipAddUnit">Add the whole unit to the consist</String>
@@ -320,10 +330,28 @@
     <String key="MaxTexCabResolution">Maximum cabin texture resolution:</String>
     <String key="TexFilteringQuality">Texture filtering quality:</String>
     <String key="Multisampling">Multisampling:</String>
+    <String key="QualityVeryLow">Very low</String>
+    <String key="QualityLow">Low</String>
+    <String key="QualityNormal">Normal</String>
+    <String key="QualityHigh">High</String>
+    <String key="QualityVeryHigh">Very high</String>
+    <String key="MsaaNone">None</String>
+    <String key="QualityModerate">Moderate</String>
+    <String key="QualityStandard">Standard</String>
+    <String key="RangeVeryLow">Very low</String>
+    <String key="RangeLow">Low</String>
+    <String key="RangeNormal">Normal</String>
+    <String key="RangeModerate">Moderate</String>
+    <String key="RangeStandard">Standard</String>
+    <String key="RangeHigh">High</String>
+    <String key="RangeVeryHigh">Very high</String>
+    <String key="RangeDisabled">Disabled</String>
     <String key="DynamicLights">Dynamic light sources:</String>
     <String key="RenderRange">Rendering range:</String>
     <String key="FpsLimitEnable">Limit frame rate</String>
     <String key="ShadowAngleLimit">Shadow length limit</String>
+    <String key="ShadowLimitNone">No limit</String>
+    <String key="ShadowLimitShort">Shortened</String>
     <String key="FullscreenWindowed">Automatic resolution (borderless fullscreen)</String>
     <String key="RenderAngleVulkan">Use ANGLE Vulkan renderer</String>
     <String key="VSync">VSync</String>
@@ -427,4 +455,100 @@
     <String key="Save">Save</String>
     <String key="Reset">Reset</String>
     <String key="SettingsSaved">Settings saved</String>
+
+    <!-- Errors / diagnostics -->
+    <String key="FaultTitle">Error</String>
+    <String key="FaultDetail">Error details:</String>
+    <String key="FaultFileNotFound">File not found: {0}</String>
+    <String key="FaultLoadData">Failed to load simulator data.</String>
+    <String key="FaultBadInstall">The simulator installation may be incomplete.</String>
+    <String key="FaultNoDir">Missing folder {0}</String>
+    <String key="FaultNoWeights">No load weight information.</String>
+    <String key="FaultNoScenery">No scenarios found.</String>
+    <String key="FaultNoVehicles">No vehicles found.</String>
+    <String key="FaultNoPhysics">No rolling stock data found.</String>
+    <String key="FaultNoExe">Simulator executable not found.</String>
+
+    <!-- About -->
+    <String key="AboutTitle">About</String>
+    <String key="AboutForSimulator">for the MaSzyna simulator</String>
+    <String key="AboutChangelog">Changelog:</String>
+    <String key="AboutNoChangelog">No changelog file found.</String>
+    <String key="About">About</String>
+    <String key="Close">Close</String>
+    <String key="SettingsPath">Settings loaded from:</String>
+
+    <!-- Vehicle info -->
+    <String key="GeneralInfo">General</String>
+    <String key="Model">Model</String>
+    <String key="VMax">VMax</String>
+    <String key="Texture">Texture</String>
+
+    <!-- Scenery tab -->
+    <String key="SceneryConsists">Consists on the scenery</String>
+    <String key="SceneryFaults">Scenario faults:</String>
+
+    <!-- Warehouse / vehicle panels -->
+    <String key="WarehouseConsists">Consists in the warehouse</String>
+    <String key="AddToWarehouse">Add to warehouse</String>
+    <String key="RemoveFromWarehouse">Remove from warehouse</String>
+    <String key="WarehouseApply">Replace with warehouse consist</String>
+    <String key="WarehouseImportNothing">No consists found to import.</String>
+    <String key="AboutTexture">About texture</String>
+    <String key="NoTextureInfo">No texture information.</String>
+
+    <!-- Vehicle configuration / coupler -->
+    <String key="Configuration">Configuration</String>
+    <String key="RemoveVehicle">Remove vehicle</String>
+    <String key="AutoCoupler">Auto</String>
+    <String key="TipAutoCoupler">Pick couplings automatically for the whole consist</String>
+    <String key="CouplingLastVehicle">Rear coupler of the train — no vehicle behind it.</String>
+    <String key="ChangeName">Rename...</String>
+    <String key="LoadCopyToAll">Apply this load to every following vehicle that accepts it</String>
+    <String key="WarehouseAppend">Append warehouse consist</String>
+    <String key="WarehouseImportFile">Add consists from file...</String>
+    <String key="StartWithoutSaving">Start without saving settings</String>
+    <String key="StartFreeFly">Start with no vehicle</String>
+    <String key="VolumePaused">Volume while paused:</String>
+    <String key="DebugLogVisible">Show simulation log on screen</String>
+    <String key="PyScreenPriority">Extra screen refresh rate:</String>
+    <String key="PyPriorityNormal">Standard</String>
+    <String key="PyPriorityLower">Low</String>
+    <String key="PyPriorityLowest">Very low</String>
+    <String key="PyPriorityIdle">None</String>
+    <String key="PyPriorityOff">Disabled</String>
+
+    <String key="MassBrutto">Gross mass</String>
+    <String key="VisibilityGood">Good</String>
+    <String key="VisibilityBad">Poor</String>
+    <String key="SoundPhysics">Sound | Physics</String>
+    <String key="DriverHead">Driver (cab A)</String>
+    <String key="DriverRear">Driver (cab B)</String>
+    <String key="DriverPassenger">Passenger</String>
+    <String key="DriverNobody">Nobody</String>
+    <String key="RemoveAllTrains">Remove all consists from the scenery</String>
+    <String key="RemoveAllTrainsConfirm">Remove the vehicles from every consist on this scenery?</String>
+    <String key="TexWorks">Overhaul:</String>
+    <String key="RevisionFrom">Overhaul from:</String>
+    <String key="RevisionTo">Overhaul to:</String>
+    <String key="CrewLabel">Crew:</String>
+    <String key="RuleAdd">Add to rule</String>
+    <String key="RuleNew">— new rule —</String>
+    <String key="RuleRemove">Remove from rule</String>
+    <String key="CatAll">All</String>
+    <String key="GfxColResolution">Resolution and textures</String>
+    <String key="GfxColRendering">Rendering</String>
+    <String key="GfxColShadows">Shadows</String>
+    <String key="GfxColReflections">Reflections and view</String>
+    <String key="GfxColScripts">Python scripts</String>
+    <String key="UartHint">Port name / leave alone / data send rate</String>
+    <String key="UartFeature">UARTfeature:</String>
+    <String key="UartSaveClose">Save and close</String>
+    <String key="PickCategoryFirst">Pick a vehicle category or class first.</String>
+    <String key="HideArchivalSceneries">Hide archived scenarios</String>
+    <String key="Tools">Tools</String>
+    <String key="AdvancedSettings">Advanced settings</String>
+    <String key="AdvLogPage">Event log</String>
+    <String key="AdvClearLog">Clear log</String>
+    <String key="ConsistSchedule">Composition</String>
 </Language>

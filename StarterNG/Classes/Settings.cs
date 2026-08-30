@@ -95,6 +95,11 @@ public sealed class Settings
     public int VehiclesVolume = 100;
     public int PositionalVolume = 100;
     public int AmbientVolume = 100;
+    public int VolumePaused = 100;
+    public bool SkipPipeline;
+    public string PyScreenPriority = "normal";
+    public bool DebugLogVisible;
+    private int _debugLogExtraBits;
 
     public bool CompressTextures = true;
     public bool ScaleSpeculars = true;
@@ -129,6 +134,10 @@ public sealed class Settings
     private ConfigFile _config = new();
     private string _savePath = string.Empty;
     private DateTime _configAgeUtc = DateTime.MinValue;
+
+    public string LoadedFrom { get; private set; } = string.Empty;
+
+    public string SavePath => _savePath;
 
     public static string UserConfigPath()
     {
@@ -289,6 +298,7 @@ public sealed class Settings
     {
         _savePath = UserConfigPath();
         string source = File.Exists(_savePath) ? _savePath : DefaultConfigPath();
+        LoadedFrom = source;
         LoadFrom(source);
     }
 
@@ -394,11 +404,12 @@ public sealed class Settings
         {
             var lines = GameData.Instance.Vehicles.CollectMissingAssetLines();
             if (lines.Count == 0) return;
-            string dir = Path.Combine(Directory.GetCurrentDirectory(), "starter");
-            Directory.CreateDirectory(dir);
-            File.WriteAllLines(Path.Combine(dir, "bledy.txt"), lines);
+            Infrastructure.Diagnostics.Log(lines);
         }
-        catch { }
+        catch (Exception ex)
+        {
+            Infrastructure.Diagnostics.Log("Missing vehicle log", ex);
+        }
     }
 
     private void ReadFromConfig()
@@ -492,7 +503,10 @@ public sealed class Settings
         EnableTraction = c.GetBool("enabletraction", true);
         LiveTraction = c.GetBool("livetraction", true);
         PhysicsLog = c.GetBool("physicslog", false);
-        DebugLog = c.GetInt("debuglog", 3) != 0;
+        int debugLog = c.GetInt("debuglog", 3);
+        DebugLog = (debugLog & 1) != 0;
+        DebugLogVisible = (debugLog & 2) != 0;
+        _debugLogExtraBits = debugLog & ~3;
         MultipleLogs = c.GetBool("multiplelogs", false);
         DisplaySimulation = !c.GetBool("gfx.skiprendering", false);
         CrashDamage = c.GetBool("crashdamage", true);
@@ -506,6 +520,9 @@ public sealed class Settings
         VehiclesVolume = Clamp((int)Math.Round(c.GetDouble("sound.volume.vehicle", 1.0) * 100), 1, 100);
         PositionalVolume = Clamp((int)Math.Round(c.GetDouble("sound.volume.positional", 1.0) * 100), 1, 100);
         AmbientVolume = Clamp((int)Math.Round(c.GetDouble("sound.volume.ambient", 1.0) * 100), 1, 100);
+        VolumePaused = Clamp((int)Math.Round(c.GetDouble("sound.volume.paused", 1.0) * 100), 0, 100);
+        SkipPipeline = c.GetBool("gfx.skippipeline", false);
+        PyScreenPriority = c.GetString("pyscreenrendererpriority", "normal");
 
         CompressTextures = c.GetBool("compresstex", true);
         ScaleSpeculars = c.GetBool("scalespeculars", true);
@@ -613,7 +630,8 @@ public sealed class Settings
         c.SetBool("enabletraction", EnableTraction);
         c.SetBool("livetraction", LiveTraction);
         c.SetBool("physicslog", PhysicsLog);
-        c.SetInt("debuglog", DebugLog ? 3 : 0);
+        c.SetInt("debuglog",
+            (DebugLog ? 1 : 0) | (DebugLogVisible ? 2 : 0) | _debugLogExtraBits);
         c.SetBool("multiplelogs", MultipleLogs);
         c.SetBool("gfx.skiprendering", !DisplaySimulation);
         c.SetBool("crashdamage", CrashDamage);
@@ -627,6 +645,9 @@ public sealed class Settings
         c.SetDouble("sound.volume.vehicle", VehiclesVolume / 100.0);
         c.SetDouble("sound.volume.positional", PositionalVolume / 100.0);
         c.SetDouble("sound.volume.ambient", AmbientVolume / 100.0);
+        c.SetDouble("sound.volume.paused", VolumePaused / 100.0);
+        c.SetBool("gfx.skippipeline", SkipPipeline);
+        c.Set("pyscreenrendererpriority", PyScreenPriority);
 
         c.SetBool("compresstex", CompressTextures);
         c.SetBool("scalespeculars", ScaleSpeculars);

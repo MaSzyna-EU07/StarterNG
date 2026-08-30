@@ -130,7 +130,10 @@ public static class PresetStore
                 added++;
             }
         }
-        catch { }
+        catch (Exception ex)
+        {
+            Infrastructure.Diagnostics.Log($"Import {path}", ex);
+        }
         return added;
     }
 

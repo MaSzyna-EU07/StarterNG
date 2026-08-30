@@ -10,36 +10,21 @@
     xmlns:starterNg="clr-namespace:StarterNG"
     Title="Starter MaSzyna"
     Icon="/Assets/starter.ico"
-    Width="1200" Height="768" MinWidth="1200" MinHeight="666"
+    Width="1010" Height="920" MinWidth="1010" MinHeight="920"
     WindowStartupLocation="CenterScreen">
-    <!-- The client area is extended over the title bar in code-behind (the
-         ExtendClientArea* hints), so the logo + nav sit on the top bar while the
-         standard minimise / maximise / close buttons stay in the top-right corner.
-         Extending the client area also makes Avalonia 12 add an extra full-screen caption
-         button; it is hidden in App.axaml via its WindowDecorationProperties.ElementRole. -->
 
     <DockPanel LastChildFill="True">
 
-        <!-- ── Top bar: logo, navigation and the right cluster in one row.
-             On Windows the OS caption buttons are drawn over the top of the
-             extended client area, so TopBar is padded down to clear them
-             (see the constructor); the free strip drags the window. -->
         <Border x:Name="TopBar" DockPanel.Dock="Top"
                 Background="{StaticResource CarbonPanelBg}"
                 BorderBrush="{StaticResource CarbonBorderLight}"
                 BorderThickness="0,0,0,1"
                 PointerPressed="TitleBar_OnPointerPressed">
-            <Grid RowDefinitions="48">
+            <Grid RowDefinitions="50">
 
-                <!-- Logo + navigation (left) and the right cluster (right) -->
-                <Grid ColumnDefinitions="Auto,Auto,*,Auto" Background="Transparent">
+                <Grid ColumnDefinitions="Auto,*,Auto" Background="Transparent">
 
-                    <!-- Logo -->
-                    <Image Grid.Column="0" Source="/Assets/Logo/maszyna_white.png"
-                           Height="34" Margin="14,0,18,0" VerticalAlignment="Center" />
-
-                    <!-- Page tabs -->
-                    <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Stretch">
+                    <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Stretch">
                         <RadioButton x:Name="NavScenarios" GroupName="nav" Theme="{StaticResource NavTab}"
                                      Tag="scenarios" IsChecked="True"
                                      IsCheckedChanged="Nav_OnCheckedChanged"
@@ -64,22 +49,18 @@
                                 HorizontalContentAlignment="Center" />
                     </StackPanel>
 
-                    <!-- Right cluster: version, language, social links. -->
-                    <StackPanel Grid.Column="3" Orientation="Horizontal"
-                                VerticalAlignment="Center" Margin="0,0,8,0" Spacing="4">
-                        <StackPanel Orientation="Vertical" VerticalAlignment="Center" Margin="0,0,8,0">
+                    <StackPanel Grid.Column="2" Orientation="Horizontal"
+                                VerticalAlignment="Center" Margin="0,0,3,0" Spacing="0">
+                        <StackPanel Orientation="Vertical" VerticalAlignment="Center" Margin="0,0,6,0">
                             <Label Content="{Binding [Version], Source={x:Static starterNg:App.Loc}}"
                                    FontSize="10" Foreground="{StaticResource CarbonFgDim}" Padding="0" />
                             <Label Content="{x:Static starterNg:AppInfo.Version}"
                                    FontSize="10" Foreground="{StaticResource CarbonFg}" Padding="0" />
                         </StackPanel>
 
-                        <ComboBox x:Name="LangCombo" Width="110" VerticalAlignment="Center"
+                        <ComboBox x:Name="LangCombo" Width="88" VerticalAlignment="Center"
                                   SelectionChanged="LangCombo_OnSelectionChanged" />
 
-                        <Button Classes="Basic" Cursor="Hand" Tag="http://eu07.pl/" Click="linkClick">
-                            <materialIcons:MaterialIcon Kind="Web" />
-                        </Button>
                         <Button Classes="Basic" Cursor="Hand" Tag="https://discord.gg/eu07" Click="linkClick">
                             <PathIcon Data="{StaticResource DiscordLogo}" Height="12" />
                         </Button>
@@ -92,18 +73,22 @@
                         <Button Classes="Basic" Cursor="Hand" Tag="http://github.com/MaSzyna-EU07/" Click="linkClick">
                             <materialIcons:MaterialIcon Kind="Github" />
                         </Button>
+
+                        <Button Classes="Basic" Cursor="Hand" Tag="http://eu07.pl/" Click="linkClick"
+                                Padding="6,0" Margin="4,0,0,0"
+                                ToolTip.Tip="eu07.pl">
+                            <Image Source="/Assets/Logo/maszyna_white.png" Height="26" />
+                        </Button>
                     </StackPanel>
                 </Grid>
             </Grid>
         </Border>
 
-        <!-- ── Full-width START button (bottom) ─────────────────────────────── -->
-        <Button Name="startButton" DockPanel.Dock="Bottom" Classes="Start" Height="44" Margin="6"
+        <Button Name="startButton" DockPanel.Dock="Bottom" Classes="Start" Height="42" Margin="3"
                 Click="StartButton_OnClick"
                 Content="{Binding [Start], Source={x:Static starterNg:App.Loc}}" />
 
-        <!-- ── Page host (one view visible at a time, like the original PageControl) -->
-        <Panel Margin="6,6,6,0">
+        <Panel Margin="3,3,3,0">
             <views:Scenarios x:Name="ScenariosView" />
             <views:Depot x:Name="DepotView" IsVisible="False" />
             <views:Settings x:Name="SettingsView" IsVisible="False" />

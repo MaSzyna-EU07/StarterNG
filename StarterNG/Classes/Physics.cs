@@ -24,6 +24,8 @@ public sealed class Physics
 
     public static void PreloadIndex(string dynamicRoot = "dynamic") => FizIndex(dynamicRoot);
 
+    public static int IndexedCount => _fizIndex?.Count ?? 0;
+
     private static Dictionary<string, string> FizIndex(string dynamicRoot)
     {
         if (_fizIndex != null)

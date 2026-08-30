@@ -33,6 +33,8 @@
     <String key="Time">Godzina</String>
     <String key="CurrentTime">Czas aktualny</String>
     <String key="Day">Dzień roku</String>
+    <String key="Date">Data</String>
+    <String key="DayOfYear">dzień {0}</String>
     <String key="Sky">Niebo</String>
     <String key="Fog">Mgła / widoczność</String>
     <String key="Season">Pora roku</String>
@@ -44,6 +46,7 @@
     <String key="SeasonSummer">Lato</String>
     <String key="SeasonAutumn">Jesień</String>
     <String key="SeasonWinter">Zima</String>
+    <String key="OvercastRandom">Losowe</String>
     <String key="OvercastClear">Bezchmurnie</String>
     <String key="OvercastFair">Pogodnie</String>
     <String key="OvercastLight">Lekkie zachmurzenie</String>
@@ -51,7 +54,8 @@
     <String key="OvercastHeavy">Duże zachmurzenie</String>
     <String key="OvercastCloudy">Pochmurno</String>
     <String key="OvercastStorm">Burza</String>
-    <String key="WeatherHint">Zmiany pogody zostaną zapisane do scenerii przy uruchomieniu.</String>
+    <String key="WeatherDateTime">Data i godzina</String>
+    <String key="WeatherConditions">Warunki atmosferyczne</String>
     <String key="Consist">Zestawienie</String>
     <String key="Start">Uruchom</String>
     <String key="StartNoScenery">Wybierz scenerię</String>
@@ -148,40 +152,39 @@
     <String key="Coupling">Sprzęg</String>
     <String key="MapConsists">Składy na scenerii</String>
     <String key="NoSceneryConsists">Wybierz scenerię w zakładce Scenariusze.</String>
-    <String key="BrakeMode">Tryb hamulca</String>
-    <String key="BrakeLoad">Nastawa ładunkowa</String>
-    <String key="BrakeSwitch">Włącznik hamulca</String>
+    <String key="BrakeMode">Nastawa</String>
+    <String key="BrakeLoad">Dostosowanie</String>
+    <String key="BrakeSwitch">Wyłącznik</String>
     <String key="None">—</String>
 
     <!-- Bity maski sprzęgu -->
-    <String key="CplMechanical">Mechaniczny</String>
-    <String key="CplBrake">Pneumatyczny 5 atm (hamulce)</String>
-    <String key="CplControl">Ukrotnienie (sterowanie wielokrotne)</String>
+    <String key="CplMechanical">Mechanicznie</String>
+    <String key="CplBrake">Hamulec</String>
+    <String key="CplControl">Ukrotnienie</String>
     <String key="CplHighVoltage">Wysokie napięcie</String>
-    <String key="CplGangway">Przejście między pojazdami</String>
-    <String key="CplAuxPneumatic">Pneumatyczny pomocniczy 8 atm</String>
+    <String key="CplGangway">Przejście</String>
+    <String key="CplAuxPneumatic">Powietrze 8atm</String>
     <String key="CplHeating">Ogrzewanie</String>
-    <String key="CplWorkshop">Sprzęg warsztatowy (blokada rozłączania)</String>
+    <String key="CplWorkshop">Blokada</String>
 
     <!-- Tryby nastawy hamulca -->
-    <String key="BrakeFreight">Towarowa (G)</String>
-    <String key="BrakePassenger">Osobowa (P)</String>
-    <String key="BrakeExpress">Pospieszna (R)</String>
-    <String key="BrakeExpressMg">Pospieszna + szynowy magnetyczny (R+Mg)</String>
-    <String key="BrakeNoAir">Start bez powietrza (Q)</String>
-    <String key="BrakeOff">Odłączone hamulce (O)</String>
-    <String key="BrakeAuto">Wybór automatyczny (A)</String>
+    <String key="BrakeActingNone">Brak</String>
+    <String key="BrakeFreight">G - nastawa towarowa</String>
+    <String key="BrakePassenger">P - nastawa pasażerska</String>
+    <String key="BrakeExpress">R - nastawa pospieszna</String>
+    <String key="BrakeExpressMg">R + magn. ham. szynowy</String>
+    <String key="BrakeNoAir">Q - bez powietrza</String>
 
-    <!-- Nastawa ładunkowa -->
-    <String key="LoadEmpty">Próżny (T)</String>
-    <String key="LoadMedium">Ładowny I — średni (H)</String>
-    <String key="LoadFull">Ładowny II (F)</String>
-    <String key="LoadAuto">Wybór automatyczny (A)</String>
+    <!-- Dostosowanie do ładunku -->
+    <String key="LoadNeutral">N - nastawienie neutralne</String>
+    <String key="LoadEmpty">T - próżny</String>
+    <String key="LoadMedium">H - ładowny I</String>
+    <String key="LoadFull">F - ładowny II</String>
 
-    <!-- Włącznik hamulca -->
-    <String key="SwitchOff">Wyłączony (0)</String>
-    <String key="SwitchOff10">Wyłączony z prawd. 10% (1)</String>
-    <String key="SwitchOn">Włączony (A)</String>
+    <!-- Wyłącznik hamulca -->
+    <String key="SwitchNormal">N - hamulec włączony</String>
+    <String key="SwitchOff">0 - wyłączony, odluźniony</String>
+    <String key="SwitchOff10">1 - wył., odl. z 10% szansą</String>
 
     <!-- Uszkodzenia (parametry kół) -->
     <String key="Damage">Uszkodzenia</String>
@@ -192,6 +195,9 @@
     <String key="LoadType">Rodzaj ładunku</String>
     <String key="LoadCount">Ilość</String>
     <String key="LoadHint">Ustaw ilość większą od 0, aby załadować pojazd.</String>
+    <String key="LoadNotLoadable">Ten pojazd nie przyjmuje ładunku.</String>
+    <String key="LoadPantState">Pantograf podniesiony na starcie</String>
+    <String key="LoadPantStateHint">Ilość wybiera pantograf: 1 — A, 2 — B, 3 — oba.</String>
     <String key="WagonNumber">Numer wagonu</String>
     <String key="LoadCopyPrev">Kopiuj ładunek z poprzedniego pojazdu</String>
     <String key="LoadMax">Maksymalny możliwy ładunek</String>
@@ -206,7 +212,7 @@
     <String key="VehicleCount">Pojazdy</String>
     <String key="Track">Tor</String>
     <String key="EmptyTrainset">Wpis bez pojazdów. (Tor: {0})</String>
-    <String key="HideArchivalVehicles">Ukryj pojazdy archiwalne</String>
+    <String key="HideArchivalVehicles">Ukryj archiwalne pojazdy</String>
     <String key="RemoveSelectedVehicle">Usuń pojazd</String>
     <String key="RandomizeTextures">Losuj tekstury</String>
     <String key="TipRandomizeTextures">Dobierz podobne tekstury według klasy / reguł</String>
@@ -242,6 +248,10 @@
     <String key="ComingSoon">Opcje edycji wkrótce.</String>
     <String key="Split">Rozdziel</String>
     <String key="TipSplit">Rozdziel zespół na pojedyncze człony</String>
+    <String key="AppliesToUnit">Ustawienie wspólne dla całego zespołu</String>
+    <String key="CouplingUnitRear">Sprzęg na końcu zespołu</String>
+    <String key="Join">Złącz</String>
+    <String key="TipJoin">Połącz ten pojazd z następnym w jeden zespół</String>
     <String key="AddVehicle">Dodaj</String>
     <String key="TipAddVehicle">Dodaj ten pojazd do składu</String>
     <String key="TipAddUnit">Dodaj cały zespół do składu</String>
@@ -320,10 +330,28 @@
     <String key="MaxTexCabResolution">Maksymalna rozdzielczość tekstur kabiny:</String>
     <String key="TexFilteringQuality">Jakość filtrowania tekstur:</String>
     <String key="Multisampling">Multisampling:</String>
+    <String key="QualityVeryLow">Bardzo niska</String>
+    <String key="QualityLow">Niska</String>
+    <String key="QualityNormal">Normalna</String>
+    <String key="QualityHigh">Wysoka</String>
+    <String key="QualityVeryHigh">Bardzo wysoka</String>
+    <String key="MsaaNone">Brak</String>
+    <String key="QualityModerate">Umiarkowana</String>
+    <String key="QualityStandard">Standardowa</String>
+    <String key="RangeVeryLow">Bardzo niski</String>
+    <String key="RangeLow">Niski</String>
+    <String key="RangeNormal">Normalny</String>
+    <String key="RangeModerate">Umiarkowany</String>
+    <String key="RangeStandard">Standardowy</String>
+    <String key="RangeHigh">Wysoki</String>
+    <String key="RangeVeryHigh">Bardzo wysoki</String>
+    <String key="RangeDisabled">Wyłączone</String>
     <String key="DynamicLights">Dynamiczne źródła światła:</String>
     <String key="RenderRange">Zasięg renderowania:</String>
     <String key="FpsLimitEnable">Ogranicz liczbę klatek na sekundę</String>
     <String key="ShadowAngleLimit">Limit długości cienia</String>
+    <String key="ShadowLimitNone">Bez ograniczeń</String>
+    <String key="ShadowLimitShort">Skrócone</String>
     <String key="FullscreenWindowed">Automatyczna rozdzielczość (pełny ekran bez obramowania)</String>
     <String key="RenderAngleVulkan">Użyj renderera ANGLE Vulkan</String>
     <String key="VSync">VSync</String>
@@ -427,4 +455,100 @@
     <String key="Save">Zapisz</String>
     <String key="Reset">Przywróć</String>
     <String key="SettingsSaved">Zapisano ustawienia</String>
+
+    <!-- Errors / diagnostics -->
+    <String key="FaultTitle">Błąd</String>
+    <String key="FaultDetail">Szczegóły błędu:</String>
+    <String key="FaultFileNotFound">Nie znaleziono pliku: {0}</String>
+    <String key="FaultLoadData">Błąd wczytywania danych symulatora.</String>
+    <String key="FaultBadInstall">Możliwa błędna instalacja symulatora.</String>
+    <String key="FaultNoDir">Brak katalogu {0}</String>
+    <String key="FaultNoWeights">Brak informacji o wagach ładunków.</String>
+    <String key="FaultNoScenery">Nie znaleziono scenariuszy.</String>
+    <String key="FaultNoVehicles">Nie znaleziono pojazdów.</String>
+    <String key="FaultNoPhysics">Nie znaleziono danych taboru.</String>
+    <String key="FaultNoExe">Nie znaleziono pliku wykonywalnego symulatora.</String>
+
+    <!-- About -->
+    <String key="AboutTitle">O programie</String>
+    <String key="AboutForSimulator">dla symulatora MaSzyna</String>
+    <String key="AboutChangelog">Lista zmian:</String>
+    <String key="AboutNoChangelog">Brak pliku z listą zmian.</String>
+    <String key="About">O programie</String>
+    <String key="Close">Zamknij</String>
+    <String key="SettingsPath">Lokalizacja wczytanych ustawień:</String>
+
+    <!-- Vehicle info -->
+    <String key="GeneralInfo">Ogólne</String>
+    <String key="Model">Model</String>
+    <String key="VMax">VMax</String>
+    <String key="Texture">Tekstura</String>
+
+    <!-- Scenery tab -->
+    <String key="SceneryConsists">Składy na scenerii</String>
+    <String key="SceneryFaults">Błędy w scenariuszu:</String>
+
+    <!-- Warehouse / vehicle panels -->
+    <String key="WarehouseConsists">Składy w magazynie</String>
+    <String key="AddToWarehouse">Dodaj do magazynu</String>
+    <String key="RemoveFromWarehouse">Usuń z magazynu</String>
+    <String key="WarehouseApply">Zastąp składem z magazynu</String>
+    <String key="WarehouseImportNothing">Nie znaleziono składów do zaimportowania.</String>
+    <String key="AboutTexture">O teksturze</String>
+    <String key="NoTextureInfo">Brak informacji o teksturze.</String>
+
+    <!-- Vehicle configuration / coupler -->
+    <String key="Configuration">Konfiguracja</String>
+    <String key="RemoveVehicle">Usuń pojazd</String>
+    <String key="AutoCoupler">Auto</String>
+    <String key="TipAutoCoupler">Dobierz sprzęgi automatycznie dla całego składu</String>
+    <String key="CouplingLastVehicle">Sprzęg na końcu składu — nie ma za nim pojazdu.</String>
+    <String key="ChangeName">Zmień nazwę...</String>
+    <String key="LoadCopyToAll">Dodaj ten ładunek do wszystkich możliwych następnych pojazdów</String>
+    <String key="WarehouseAppend">Dołącz skład z magazynu</String>
+    <String key="WarehouseImportFile">Dodaj składy z pliku...</String>
+    <String key="StartWithoutSaving">Uruchom bez zapisu ustawień</String>
+    <String key="StartFreeFly">Uruchom bez pojazdu</String>
+    <String key="VolumePaused">Głośność podczas pauzy:</String>
+    <String key="DebugLogVisible">Wyświetlaj przebieg symulacji</String>
+    <String key="PyScreenPriority">Częstotliwość odświeżania ekranów dodatkowych:</String>
+    <String key="PyPriorityNormal">Standardowa</String>
+    <String key="PyPriorityLower">Niska</String>
+    <String key="PyPriorityLowest">Bardzo niska</String>
+    <String key="PyPriorityIdle">Brak</String>
+    <String key="PyPriorityOff">Wyłączona</String>
+
+    <String key="MassBrutto">Masa brutto</String>
+    <String key="VisibilityGood">Dobra</String>
+    <String key="VisibilityBad">Zła</String>
+    <String key="SoundPhysics">Dźwięk | Fizyka</String>
+    <String key="DriverHead">Maszynista (kabina A)</String>
+    <String key="DriverRear">Maszynista (kabina B)</String>
+    <String key="DriverPassenger">Pasażer</String>
+    <String key="DriverNobody">Nikt</String>
+    <String key="RemoveAllTrains">Usuń wszystkie składy ze scenerii</String>
+    <String key="RemoveAllTrainsConfirm">Usunąć pojazdy ze wszystkich składów na tej scenerii?</String>
+    <String key="TexWorks">Rewizja:</String>
+    <String key="RevisionFrom">Rewizja od:</String>
+    <String key="RevisionTo">Rewizja do:</String>
+    <String key="CrewLabel">Obsada:</String>
+    <String key="RuleAdd">Dodaj do reguły</String>
+    <String key="RuleNew">— nowa reguła —</String>
+    <String key="RuleRemove">Usuń z reguły</String>
+    <String key="CatAll">Wszystkie</String>
+    <String key="GfxColResolution">Rozdzielczość i tekstury</String>
+    <String key="GfxColRendering">Renderowanie</String>
+    <String key="GfxColShadows">Cienie</String>
+    <String key="GfxColReflections">Odbicia i widok</String>
+    <String key="GfxColScripts">Skrypty Python</String>
+    <String key="UartHint">Nazwa portu / nie zmieniać / częstotliwość wysyłania danych</String>
+    <String key="UartFeature">UARTfeature:</String>
+    <String key="UartSaveClose">Zapisz i zamknij</String>
+    <String key="PickCategoryFirst">Najpierw wybierz kategorię lub klasę pojazdów.</String>
+    <String key="HideArchivalSceneries">Ukryj scenariusze archiwalne</String>
+    <String key="Tools">Narzędzia</String>
+    <String key="AdvancedSettings">Ustawienia zaawansowane</String>
+    <String key="AdvLogPage">Dziennik zdarzeń</String>
+    <String key="AdvClearLog">Wyczyść log</String>
+    <String key="ConsistSchedule">Zestawienie</String>
 </Language>

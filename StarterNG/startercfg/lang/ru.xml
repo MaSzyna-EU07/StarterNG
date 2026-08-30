@@ -33,6 +33,8 @@
     <String key="Time">Время</String>
     <String key="CurrentTime">Сейчас</String>
     <String key="Day">День года</String>
+    <String key="Date">Дата</String>
+    <String key="DayOfYear">день {0}</String>
     <String key="Sky">Небо</String>
     <String key="Fog">Туман / видимость</String>
     <String key="Season">Время года</String>
@@ -44,6 +46,7 @@
     <String key="SeasonSummer">Лето</String>
     <String key="SeasonAutumn">Осень</String>
     <String key="SeasonWinter">Зима</String>
+    <String key="OvercastRandom">Случайно</String>
     <String key="OvercastClear">Ясно</String>
     <String key="OvercastFair">Малооблачно</String>
     <String key="OvercastLight">Лёгкая облачность</String>
@@ -51,7 +54,8 @@
     <String key="OvercastHeavy">Сильная облачность</String>
     <String key="OvercastCloudy">Пасмурно</String>
     <String key="OvercastStorm">Гроза</String>
-    <String key="WeatherHint">Изменения погоды записываются в сценерию при запуске.</String>
+    <String key="WeatherDateTime">Дата и время</String>
+    <String key="WeatherConditions">Погодные условия</String>
     <String key="Consist">Состав</String>
     <String key="Start">Пуск</String>
     <String key="StartNoScenery">Выберите сценерию</String>
@@ -148,40 +152,39 @@
     <String key="Coupling">Сцепка</String>
     <String key="MapConsists">Составы на сценерии</String>
     <String key="NoSceneryConsists">Выберите сценерию на вкладке Сценарии.</String>
-    <String key="BrakeMode">Режим торможения</String>
-    <String key="BrakeLoad">Режим загрузки</String>
-    <String key="BrakeSwitch">Переключатель тормоза</String>
+    <String key="BrakeMode">Установка тормоза</String>
+    <String key="BrakeLoad">Регулировка тормоза</String>
+    <String key="BrakeSwitch">Выключатель тормоза</String>
     <String key="None">—</String>
 
     <!-- Coupling mask bits -->
     <String key="CplMechanical">Механическая</String>
-    <String key="CplBrake">Пневматическая 5 атм (тормоза)</String>
-    <String key="CplControl">Управление по системе многих единиц</String>
+    <String key="CplBrake">Тормоз</String>
+    <String key="CplControl">Управление</String>
     <String key="CplHighVoltage">Высокое напряжение</String>
-    <String key="CplGangway">Переход между единицами</String>
-    <String key="CplAuxPneumatic">Вспомогательная пневматическая 8 атм</String>
+    <String key="CplGangway">Переход</String>
+    <String key="CplAuxPneumatic">Воздух 8атм</String>
     <String key="CplHeating">Отопление</String>
-    <String key="CplWorkshop">Депотская сцепка (блокировка расцепления)</String>
+    <String key="CplWorkshop">Блокировка</String>
 
     <!-- Brake modes -->
-    <String key="BrakeFreight">Грузовой (G)</String>
-    <String key="BrakePassenger">Пассажирский (P)</String>
-    <String key="BrakeExpress">Скорый (R)</String>
-    <String key="BrakeExpressMg">Скорый + магниторельсовый (R+Mg)</String>
-    <String key="BrakeNoAir">Пуск без воздуха (Q)</String>
-    <String key="BrakeOff">Тормоза отключены (O)</String>
-    <String key="BrakeAuto">Автоматически (A)</String>
+    <String key="BrakeActingNone">Нет</String>
+    <String key="BrakeFreight">G - грузовой режим</String>
+    <String key="BrakePassenger">P - пассажирский режим</String>
+    <String key="BrakeExpress">R - скорый режим</String>
+    <String key="BrakeExpressMg">R + магниторельсовый тормоз</String>
+    <String key="BrakeNoAir">Q - без воздуха</String>
 
     <!-- Load adaptation -->
-    <String key="LoadEmpty">Порожний (T)</String>
-    <String key="LoadMedium">Гружёный I — средний (H)</String>
-    <String key="LoadFull">Гружёный II (F)</String>
-    <String key="LoadAuto">Автоматически (A)</String>
+    <String key="LoadNeutral">N - нейтральное положение</String>
+    <String key="LoadEmpty">T - порожний</String>
+    <String key="LoadMedium">H - гружёный I</String>
+    <String key="LoadFull">F - гружёный II</String>
 
     <!-- Brake switch -->
-    <String key="SwitchOff">Выкл. (0)</String>
-    <String key="SwitchOff10">Выкл. с вероятностью 10 % (1)</String>
-    <String key="SwitchOn">Вкл. (A)</String>
+    <String key="SwitchNormal">N - тормоз включён</String>
+    <String key="SwitchOff">0 - выключен, отпущен</String>
+    <String key="SwitchOff10">1 - выключен, отпущен (10%)</String>
 
     <!-- Damage (wheel parameters) -->
     <String key="Damage">Повреждения</String>
@@ -192,6 +195,9 @@
     <String key="LoadType">Вид груза</String>
     <String key="LoadCount">Количество</String>
     <String key="LoadHint">Задайте количество больше 0, чтобы загрузить единицу.</String>
+    <String key="LoadNotLoadable">Эта единица не принимает груз.</String>
+    <String key="LoadPantState">Поднятый пантограф на старте</String>
+    <String key="LoadPantStateHint">Количество выбирает пантограф: 1 — A, 2 — B, 3 — оба.</String>
     <String key="WagonNumber">Номер вагона</String>
     <String key="LoadCopyPrev">Копировать груз с предыдущей единицы</String>
     <String key="LoadMax">Максимально возможный груз</String>
@@ -206,7 +212,7 @@
     <String key="VehicleCount">Единиц</String>
     <String key="Track">Путь</String>
     <String key="EmptyTrainset">Нет единиц. (Путь: {0})</String>
-    <String key="HideArchivalVehicles">Скрыть архивные единицы</String>
+    <String key="HideArchivalVehicles">Скрыть архивный транспорт</String>
     <String key="RemoveSelectedVehicle">Убрать единицу</String>
     <String key="RandomizeTextures">Случайные текстуры</String>
     <String key="TipRandomizeTextures">Подобрать похожие текстуры по классу / правилам</String>
@@ -242,6 +248,10 @@
     <String key="ComingSoon">Параметры редактирования появятся позже.</String>
     <String key="Split">Разделить</String>
     <String key="TipSplit">Разделить сцеп на отдельные вагоны</String>
+    <String key="AppliesToUnit">Общее для всего состава</String>
+    <String key="CouplingUnitRear">Сцепка в конце состава</String>
+    <String key="Join">Соединить</String>
+    <String key="TipJoin">Соединить этот вагон со следующим в один состав</String>
     <String key="AddVehicle">Добавить</String>
     <String key="TipAddVehicle">Добавить эту единицу в состав</String>
     <String key="TipAddUnit">Добавить весь сцеп в состав</String>
@@ -320,10 +330,28 @@
     <String key="MaxTexCabResolution">Максимальное разрешение текстур кабины:</String>
     <String key="TexFilteringQuality">Качество фильтрации текстур:</String>
     <String key="Multisampling">Multisampling:</String>
+    <String key="QualityVeryLow">Очень низкое</String>
+    <String key="QualityLow">Низкое</String>
+    <String key="QualityNormal">Нормальное</String>
+    <String key="QualityHigh">Высокое</String>
+    <String key="QualityVeryHigh">Очень высокое</String>
+    <String key="MsaaNone">Нет</String>
+    <String key="QualityModerate">Умеренное</String>
+    <String key="QualityStandard">Стандартное</String>
+    <String key="RangeVeryLow">Очень низкий</String>
+    <String key="RangeLow">Низкий</String>
+    <String key="RangeNormal">Нормальный</String>
+    <String key="RangeModerate">Умеренный</String>
+    <String key="RangeStandard">Стандартный</String>
+    <String key="RangeHigh">Высокий</String>
+    <String key="RangeVeryHigh">Очень высокий</String>
+    <String key="RangeDisabled">Отключено</String>
     <String key="DynamicLights">Динамические источники света:</String>
     <String key="RenderRange">Дальность отрисовки:</String>
     <String key="FpsLimitEnable">Ограничить частоту кадров</String>
     <String key="ShadowAngleLimit">Ограничение длины теней</String>
+    <String key="ShadowLimitNone">Без ограничений</String>
+    <String key="ShadowLimitShort">Укороченные</String>
     <String key="FullscreenWindowed">Автоматическое разрешение (полный экран без рамки)</String>
     <String key="RenderAngleVulkan">Использовать рендерер ANGLE Vulkan</String>
     <String key="VSync">VSync</String>
@@ -427,4 +455,100 @@
     <String key="Save">Сохранить</String>
     <String key="Reset">Сбросить</String>
     <String key="SettingsSaved">Настройки сохранены</String>
+
+    <!-- Errors / diagnostics -->
+    <String key="FaultTitle">Ошибка</String>
+    <String key="FaultDetail">Подробности ошибки:</String>
+    <String key="FaultFileNotFound">Файл не найден: {0}</String>
+    <String key="FaultLoadData">Не удалось загрузить данные симулятора.</String>
+    <String key="FaultBadInstall">Возможно, симулятор установлен некорректно.</String>
+    <String key="FaultNoDir">Отсутствует папка {0}</String>
+    <String key="FaultNoWeights">Нет данных о массе грузов.</String>
+    <String key="FaultNoScenery">Сценарии не найдены.</String>
+    <String key="FaultNoVehicles">Транспортные средства не найдены.</String>
+    <String key="FaultNoPhysics">Данные подвижного состава не найдены.</String>
+    <String key="FaultNoExe">Исполняемый файл симулятора не найден.</String>
+
+    <!-- About -->
+    <String key="AboutTitle">О программе</String>
+    <String key="AboutForSimulator">для симулятора MaSzyna</String>
+    <String key="AboutChangelog">Список изменений:</String>
+    <String key="AboutNoChangelog">Файл со списком изменений не найден.</String>
+    <String key="About">О программе</String>
+    <String key="Close">Закрыть</String>
+    <String key="SettingsPath">Настройки загружены из:</String>
+
+    <!-- Vehicle info -->
+    <String key="GeneralInfo">Общие</String>
+    <String key="Model">Модель</String>
+    <String key="VMax">VMax</String>
+    <String key="Texture">Текстура</String>
+
+    <!-- Scenery tab -->
+    <String key="SceneryConsists">Составы на сценерии</String>
+    <String key="SceneryFaults">Ошибки в сценарии:</String>
+
+    <!-- Warehouse / vehicle panels -->
+    <String key="WarehouseConsists">Составы на складе</String>
+    <String key="AddToWarehouse">Добавить на склад</String>
+    <String key="RemoveFromWarehouse">Удалить со склада</String>
+    <String key="WarehouseApply">Заменить составом со склада</String>
+    <String key="WarehouseImportNothing">Составы для импорта не найдены.</String>
+    <String key="AboutTexture">О текстуре</String>
+    <String key="NoTextureInfo">Нет информации о текстуре.</String>
+
+    <!-- Vehicle configuration / coupler -->
+    <String key="Configuration">Конфигурация</String>
+    <String key="RemoveVehicle">Удалить транспорт</String>
+    <String key="AutoCoupler">Авто</String>
+    <String key="TipAutoCoupler">Подобрать сцепки автоматически для всего состава</String>
+    <String key="CouplingLastVehicle">Сцепка в конце состава — за ней нет вагона.</String>
+    <String key="ChangeName">Переименовать...</String>
+    <String key="LoadCopyToAll">Применить этот груз ко всем следующим подходящим транспортам</String>
+    <String key="WarehouseAppend">Присоединить состав со склада</String>
+    <String key="WarehouseImportFile">Добавить составы из файла...</String>
+    <String key="StartWithoutSaving">Запустить без сохранения настроек</String>
+    <String key="StartFreeFly">Запустить без транспорта</String>
+    <String key="VolumePaused">Громкость на паузе:</String>
+    <String key="DebugLogVisible">Показывать ход симуляции</String>
+    <String key="PyScreenPriority">Частота обновления дополнительных экранов:</String>
+    <String key="PyPriorityNormal">Стандартная</String>
+    <String key="PyPriorityLower">Низкая</String>
+    <String key="PyPriorityLowest">Очень низкая</String>
+    <String key="PyPriorityIdle">Нет</String>
+    <String key="PyPriorityOff">Отключена</String>
+
+    <String key="MassBrutto">Масса брутто</String>
+    <String key="VisibilityGood">Хорошая</String>
+    <String key="VisibilityBad">Плохая</String>
+    <String key="SoundPhysics">Звук | Физика</String>
+    <String key="DriverHead">Машинист (кабина A)</String>
+    <String key="DriverRear">Машинист (кабина B)</String>
+    <String key="DriverPassenger">Пассажир</String>
+    <String key="DriverNobody">Никто</String>
+    <String key="RemoveAllTrains">Удалить все составы со сценерии</String>
+    <String key="RemoveAllTrainsConfirm">Удалить транспорт из всех составов на этой сценерии?</String>
+    <String key="TexWorks">Ревизия:</String>
+    <String key="RevisionFrom">Ревизия с:</String>
+    <String key="RevisionTo">Ревизия по:</String>
+    <String key="CrewLabel">Экипаж:</String>
+    <String key="RuleAdd">Добавить в правило</String>
+    <String key="RuleNew">— новое правило —</String>
+    <String key="RuleRemove">Удалить из правила</String>
+    <String key="CatAll">Все</String>
+    <String key="GfxColResolution">Разрешение и текстуры</String>
+    <String key="GfxColRendering">Рендеринг</String>
+    <String key="GfxColShadows">Тени</String>
+    <String key="GfxColReflections">Отражения и вид</String>
+    <String key="GfxColScripts">Скрипты Python</String>
+    <String key="UartHint">Имя порта / не менять / частота отправки данных</String>
+    <String key="UartFeature">UARTfeature:</String>
+    <String key="UartSaveClose">Сохранить и закрыть</String>
+    <String key="PickCategoryFirst">Сначала выберите категорию или класс транспорта.</String>
+    <String key="HideArchivalSceneries">Скрыть архивные сценарии</String>
+    <String key="Tools">Инструменты</String>
+    <String key="AdvancedSettings">Расширенные настройки</String>
+    <String key="AdvLogPage">Журнал событий</String>
+    <String key="AdvClearLog">Очистить журнал</String>
+    <String key="ConsistSchedule">Состав</String>
 </Language>

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
@@ -107,7 +107,7 @@ public class Trainset
                 nodeDynamic.Name = tokens[++i];
                 i++;
                 nodeDynamic.DataFolder = tokens[++i];
-                nodeDynamic.SkinFile = tokens[++i];
+                nodeDynamic.SkinFile = Dynamic.StripSkinExtension(tokens[++i]);
                 nodeDynamic.MmdFile = tokens[++i];
                 nodeDynamic.Offset = float.Parse(tokens[++i], CultureInfo.InvariantCulture);
 
@@ -158,30 +158,7 @@ public class Trainset
 
         string entry = sb.ToString();
         foreach (Dynamic vehicle in Vehicles)
-        {
-            string driverType = "";
-            switch (vehicle.DriverType)
-            {
-                case eDriverType.Headdriver:
-                    driverType = "headdriver";
-                    break;
-                case eDriverType.Reardriver:
-                    driverType = "reardriver";
-                    break;
-                case eDriverType.Passenger:
-                    driverType = "passenger";
-                    break;
-                default:
-                    driverType = "nobody";
-                    break;
-            }
-
-            entry +=
-                $"node {vehicle.RangeMax} {vehicle.RangeMin} {vehicle.Name} dynamic " +
-                $"{vehicle.DataFolder} {vehicle.SkinFile} {vehicle.MmdFile} " +
-                $"{vehicle.Offset.ToString(CultureInfo.InvariantCulture)} " +
-                $"{driverType} {vehicle.Coupling}{vehicle.WriteTrailing()} enddynamic\n";
-        }
+            entry += vehicle.ToTrainsetNode();
 
         return entry;
     }
@@ -207,7 +184,11 @@ public class Dynamic
         set => Coupling.Flags = value;
     }
 
-    public string? MaxLoad;
+    public const string PantState = "pantstate";
+
+    public const int PantStateMax = 3;
+
+    public int MaxLoad = -1;
 
     public bool HasVelocity;
 
@@ -217,25 +198,24 @@ public class Dynamic
 
     public string? LoadType;
 
-    public List<string> Destinations = new();
-
     public string? MiniName;
 
     public bool Flipped;
+
+    public static bool IsPantStateType(string? type) =>
+        string.Equals(type, PantState, StringComparison.OrdinalIgnoreCase);
+
+    public bool IsPantState => IsPantStateType(LoadType);
 
     internal void ReadTrailing(List<string> t)
     {
         int p = 0;
 
-        if (p < t.Count && (t[p][0] == 'L' || t[p][0] == 'l')
-            && t[p].Length > 1 && char.IsDigit(t[p][1]))
-            MaxLoad = t[p++];
-
-        if (p < t.Count && float.TryParse(t[p], NumberStyles.Float,
-                CultureInfo.InvariantCulture, out float v))
+        if (p < t.Count && t[p].Length > 0 && t[p][0] == 'L')
         {
-            Velocity = v;
-            HasVelocity = true;
+            if (int.TryParse(t[p].AsSpan(1), NumberStyles.Integer,
+                    CultureInfo.InvariantCulture, out int ml))
+                MaxLoad = ml;
             p++;
         }
 
@@ -244,29 +224,30 @@ public class Dynamic
         {
             LoadCount = lc;
             p++;
-            if (lc > 0 && p < t.Count)
+            if (p < t.Count && (lc > 0 || IsPantStateType(t[p])))
                 LoadType = t[p++];
         }
 
-        while (p < t.Count)
-            Destinations.Add(t[p++]);
+    }
+
+    internal static string StripSkinExtension(string token)
+    {
+        int dot = token.LastIndexOf('.');
+        return dot > 0 ? token[..dot] : token;
     }
 
     internal string WriteTrailing()
     {
         var sb = new StringBuilder();
-        if (MaxLoad != null)
-            sb.Append(' ').Append(MaxLoad);
-        if (HasVelocity)
-            sb.Append(' ').Append(Velocity.ToString(CultureInfo.InvariantCulture));
-        if (LoadCount > 0)
-        {
-            sb.Append(' ').Append(LoadCount.ToString(CultureInfo.InvariantCulture));
-            if (!string.IsNullOrEmpty(LoadType))
-                sb.Append(' ').Append(LoadType);
-        }
-        foreach (string d in Destinations)
-            sb.Append(' ').Append(d);
+        if (MaxLoad >= 0)
+            sb.Append(" L").Append(MaxLoad.ToString(CultureInfo.InvariantCulture));
+
+        bool loaded = !string.IsNullOrEmpty(LoadType);
+        sb.Append(' ').Append((loaded ? LoadCount : 0).ToString(CultureInfo.InvariantCulture));
+
+        if (loaded && (LoadCount > 0 || IsPantState))
+            sb.Append(' ').Append(LoadType);
+
         return sb.ToString();
     }
 
@@ -287,10 +268,26 @@ public class Dynamic
         Velocity = Velocity,
         LoadCount = LoadCount,
         LoadType = LoadType,
-        Destinations = new List<string>(Destinations),
         MiniName = MiniName,
         Flipped = Flipped
     };
+
+    public string ToTrainsetNode()
+    {
+        string driver = DriverType switch
+        {
+            eDriverType.Headdriver => "headdriver",
+            eDriverType.Reardriver => "reardriver",
+            eDriverType.Passenger  => "passenger",
+            _                      => "nobody"
+        };
+
+        return
+            $"node {RangeMax} {RangeMin} {Name} dynamic " +
+            $"{DataFolder} {SkinFile} {MmdFile} " +
+            $"{Offset.ToString(CultureInfo.InvariantCulture)} " +
+            $"{driver} {Coupling}{WriteTrailing()} enddynamic\n";
+    }
 
     public string ToLooseNode()
     {
@@ -374,7 +371,7 @@ public sealed class Coupling
     public void SetBrake(BrakeSetting? brake)
     {
         Parameters.RemoveAll(p => p.StartsWith("B", StringComparison.Ordinal));
-        if (brake != null)
+        if (brake is { IsEmpty: false })
             Parameters.Insert(0, brake.ToParameter());
     }
 
@@ -417,34 +414,39 @@ public sealed class Coupling
 
 public sealed class BrakeSetting
 {
-    public static readonly string[] Modes = { "R+Mg", "G", "P", "R", "Q", "O", "A" };
+    public static readonly string[] Modes = { "G", "P", "R", "M", "Q" };
 
-    public string Mode = "P";
+    public static readonly string[] Loads = { "T", "H", "F" };
+
+    public static readonly string[] Switches = { "0", "1" };
+
+    public string? Mode;
 
     public string? Load;
 
     public string? Switch;
 
+    public bool IsEmpty => Mode is null;
+
     public static BrakeSetting? FromParameter(string? param)
     {
-        if (string.IsNullOrEmpty(param) || param![0] != 'B' || param.Length < 2)
+        if (string.IsNullOrEmpty(param) || char.ToUpperInvariant(param![0]) != 'B')
             return null;
 
-        string body = param.Substring(1);
-        string? mode = Modes.FirstOrDefault(m => body.StartsWith(m, StringComparison.Ordinal));
-        if (mode is null)
-            return null;
+        string body = param.Substring(1).ToUpperInvariant();
+        var b = new BrakeSetting
+        {
+            Mode = First(body, "M", "G", "P", "R", "Q"),
+            Load = First(body, Loads),
+            Switch = First(body, Switches)
+        };
+        return b.Mode is null && b.Load is null && b.Switch is null ? null : b;
 
-        var b = new BrakeSetting { Mode = mode };
-        int p = mode.Length;
-        if (p < body.Length && "THFA".IndexOf(body[p]) >= 0)
-            b.Load = body[p++].ToString();
-        if (p < body.Length && "01A".IndexOf(body[p]) >= 0)
-            b.Switch = body[p].ToString();
-        return b;
+        static string? First(string body, params string[] codes) =>
+            Array.Find(codes, c => body.Contains(c, StringComparison.Ordinal));
     }
 
-    public string ToParameter() => "B" + Mode + (Load ?? "") + (Switch ?? "");
+    public string ToParameter() => "B" + Mode + Switch + Load;
 }
 
 public sealed class WheelSettings

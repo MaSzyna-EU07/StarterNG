@@ -40,9 +40,24 @@ public partial class MainWindow : Window
         PopulateLangCombo();
         App.Loc.LanguageChanged += OnLanguageChanged;
 
+        startButton.AddHandler(PointerReleasedEvent, StartButton_OnRightClick,
+                               RoutingStrategies.Tunnel);
+
+        ScenariosView.RandomizeTexturesRequested += async scenery =>
+        {
+            await DepotView.RandomizeSceneryTrainsetsAsync(scenery);
+            ScenariosView.RefreshConsistView();
+        };
+
+        NavSettings.AddHandler(PointerReleasedEvent, NavSettings_OnRightClick,
+                               RoutingStrategies.Tunnel);
+
+        ApplyInitialNav();
+
         AppState.Instance.Changed += UpdateStartButton;
         Opened += (_, _) =>
         {
+
             _openedUtc = DateTime.UtcNow;
             UpdateStartButton();
         };
@@ -55,6 +70,25 @@ public partial class MainWindow : Window
             BeginMoveDrag(e);
     }
 
+    private void NavSettings_OnRightClick(object? sender, PointerReleasedEventArgs e)
+    {
+        if (e.InitialPressMouseButton != MouseButton.Right)
+            return;
+
+        var win = new Views.AdvancedSettingsWindow();
+        win.ToolRequested += tool =>
+        {
+            switch (tool)
+            {
+                case "category": DepotView.ToolAddAllCategory(); break;
+                case "mmd": DepotView.ToolAddUniqueMmd(); break;
+                case "removeall": DepotView.ToolRemoveAllTrains(); break;
+            }
+        };
+        win.ShowDialog(this);
+        e.Handled = true;
+    }
+
     private void Nav_OnCheckedChanged(object? sender, RoutedEventArgs e)
     {
         if (sender is not RadioButton { IsChecked: true } rb)
@@ -63,10 +97,26 @@ public partial class MainWindow : Window
         if (ScenariosView is null || DepotView is null || SettingsView is null)
             return;
 
-        string page = rb.Tag as string ?? "scenarios";
+        ShowPage(rb.Tag as string);
+    }
+
+    private void ShowPage(string? page)
+    {
+        page ??= "scenarios";
         ScenariosView.IsVisible = page == "scenarios";
         DepotView.IsVisible = page == "depot";
         SettingsView.IsVisible = page == "settings";
+    }
+
+    private void ApplyInitialNav()
+    {
+        foreach (var rb in new[] { NavScenarios, NavDepot, NavSettings })
+            if (rb.IsChecked == true)
+            {
+                ShowPage(rb.Tag as string);
+                return;
+            }
+        ShowPage("scenarios");
     }
 
     private void PopulateLangCombo()
@@ -163,22 +213,35 @@ public partial class MainWindow : Window
             {
                 target = Path.GetFullPath(pathOrUrl);
                 if (!File.Exists(target) && !Directory.Exists(target))
+                {
+                    Diagnostics.ReportOnUiThread(string.Format(App.Loc["FaultFileNotFound"], target));
                     return;
+                }
             }
             Process.Start(new ProcessStartInfo(target) { UseShellExecute = true });
         }
-        catch { }
+        catch (Exception ex)
+        {
+            Diagnostics.Log($"Open {pathOrUrl}", ex);
+        }
     }
 
-    private void openLastLogClick(object? sender, RoutedEventArgs e)
+    private async void openLastLogClick(object? sender, RoutedEventArgs e)
     {
-        string logPath = "log.txt";
-        if (File.Exists(logPath))
+        string logPath = Path.GetFullPath("log.txt");
+        if (!File.Exists(logPath))
         {
-            Process.Start(new ProcessStartInfo(logPath)
-            {
-                UseShellExecute = true
-            });
+            await Diagnostics.ReportAsync(string.Format(App.Loc["FaultFileNotFound"], logPath));
+            return;
+        }
+
+        try
+        {
+            Process.Start(new ProcessStartInfo(logPath) { UseShellExecute = true });
+        }
+        catch (Exception ex)
+        {
+            await Diagnostics.ReportAsync(logPath, ex);
         }
     }
 
@@ -236,7 +299,28 @@ public partial class MainWindow : Window
             App.Loc["ExeLaunchFailed"], MessageBoxButtons.Ok);
     }
 
-    private async void StartButton_OnClick(object? sender, RoutedEventArgs e)
+    private async void StartButton_OnClick(object? sender, RoutedEventArgs e) =>
+        await LaunchAsync(saveSettings: true, freeFly: false);
+
+    private void StartButton_OnRightClick(object? sender, PointerReleasedEventArgs e)
+    {
+        if (e.InitialPressMouseButton != MouseButton.Right)
+            return;
+
+        var menu = new ContextMenu();
+
+        var noSave = new MenuItem { Header = App.Loc["StartWithoutSaving"] };
+        noSave.Click += async (_, _) => await LaunchAsync(saveSettings: false, freeFly: false);
+        menu.Items.Add(noSave);
+
+        var freeFly = new MenuItem { Header = App.Loc["StartFreeFly"] };
+        freeFly.Click += async (_, _) => await LaunchAsync(saveSettings: true, freeFly: true);
+        menu.Items.Add(freeFly);
+
+        menu.Open(startButton);
+    }
+
+    private async Task LaunchAsync(bool saveSettings, bool freeFly)
     {
         var scenery = AppState.Instance.CurrentScenery;
         if (scenery is null)
@@ -245,7 +329,7 @@ public partial class MainWindow : Window
         if (trainset is null)
             return;
 
-        if (!HasStartableVehicle(trainset) &&
+        if (!freeFly && !HasStartableVehicle(trainset) &&
             !await MessageBox.Show(this, App.Loc["StartNoStaffConfirm"],
                                    App.Loc["StartNoStaffTitle"], MessageBoxButtons.YesNo))
             return;
@@ -277,12 +361,14 @@ public partial class MainWindow : Window
         {
             File.WriteAllText(exportPath, scenery.BuildExportContent(SettingsModel.Instance.IgnoreIrrelevantTrains), Encoding.GetEncoding(1250));
         }
-        catch
+        catch (Exception ex)
         {
+            await Diagnostics.ReportAsync($"{exportPath}", ex, App.Loc["FaultTitle"]);
             return;
         }
 
-        SettingsModel.Instance.CaptureAndSave();
+        if (saveSettings)
+            SettingsModel.Instance.CaptureAndSave();
 
         string exe = Path.GetFullPath(SettingsModel.Instance.ResolveExecutable(out var exeProblem));
         if (exeProblem != ExeProblem.None)
@@ -297,7 +383,7 @@ public partial class MainWindow : Window
             sim = Process.Start(new ProcessStartInfo
             {
                 FileName = exe,
-                Arguments = $"-s {exportName} -v {vehicle}",
+                Arguments = freeFly ? $"-s {exportName}" : $"-s {exportName} -v {vehicle}",
                 WorkingDirectory = Path.GetDirectoryName(exe) ?? Directory.GetCurrentDirectory(),
                 UseShellExecute = false
             });
@@ -314,8 +400,6 @@ public partial class MainWindow : Window
             Close();
             return;
         }
-
-        Hide();
 
         GC.Collect();
         GC.WaitForPendingFinalizers();
@@ -395,8 +479,9 @@ public partial class MainWindow : Window
 
     private void RestoreFromSimulator()
     {
-        Show();
-        WindowState = WindowState.Normal;
-        Activate();
+        if (!IsVisible)
+            Show();
+        if (WindowState == WindowState.Minimized)
+            WindowState = WindowState.Normal;
     }
 }

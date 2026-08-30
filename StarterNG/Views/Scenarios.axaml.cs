@@ -8,7 +8,9 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Avalonia;
+using Avalonia.Animation;
 using Avalonia.Controls;
+using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Layout;
 using Avalonia.Markup.Xaml;
@@ -37,9 +39,7 @@ public partial class Scenarios : UserControl
         Sceneries = GameData.Instance.Sceneries;
 
         _loadingFilters = true;
-        showAiCheck.IsChecked = StarterNG.Classes.Settings.Instance.ShowAiVehicles;
-        drivableOnlyCheck.IsChecked = StarterNG.Classes.Settings.Instance.DrivableOnly;
-        archivalSwitch.IsChecked = StarterNG.Classes.Settings.Instance.ShowArchivalSceneries;
+        archivalSwitch.IsChecked = !StarterNG.Classes.Settings.Instance.ShowArchivalSceneries;
         _loadingFilters = false;
 
         BuildSceneryTree();
@@ -63,7 +63,7 @@ public partial class Scenarios : UserControl
     {
         sceneryList.Items.Clear();
 
-        bool showArchival = archivalSwitch.IsChecked ?? true;
+        bool showArchival = archivalSwitch.IsChecked != true;
         var groupNodes = new Dictionary<string, TreeViewItem>();
         var topLevel = new List<TreeViewItem>();
 
@@ -213,15 +213,15 @@ public partial class Scenarios : UserControl
     {
         vehicleList.Items.Clear();
 
-        bool showAi = showAiCheck.IsChecked ?? true;
-        bool drivableOnly = drivableOnlyCheck.IsChecked ?? true;
+        bool showAi = StarterNG.Classes.Settings.Instance.ShowAiVehicles;
+        bool drivableOnly = StarterNG.Classes.Settings.Instance.DrivableOnly;
 
         for (int i = 0; i < scn.Trainsets.Count; i++)
         {
             var trainset = scn.Trainsets[i];
 
             if (IsAiTrainset(trainset) && !showAi) continue;
-            if (trainset.Decor && drivableOnly) continue;
+            if (drivableOnly && !UData.StaffedTrain(trainset)) continue;
 
             var listItem = new ListBoxItem
             {
@@ -244,23 +244,11 @@ public partial class Scenarios : UserControl
         !string.IsNullOrEmpty(trainset.Description) &&
         trainset.Description.TrimStart().StartsWith("-", StringComparison.Ordinal);
 
-    private void VehicleFilter_OnChanged(object? sender, RoutedEventArgs e)
-    {
-        if (_loadingFilters) return;
-
-        StarterNG.Classes.Settings.Instance.ShowAiVehicles = showAiCheck.IsChecked ?? true;
-        StarterNG.Classes.Settings.Instance.DrivableOnly = drivableOnlyCheck.IsChecked ?? true;
-        StarterNG.Classes.Settings.Instance.Save();
-
-        if (sceneryList.SelectedItem is TreeViewItem { Tag: int tag } && tag < Sceneries.Count)
-            PopulateVehicleList(Sceneries[tag]);
-    }
-
     private void ArchivalSwitch_OnChanged(object? sender, RoutedEventArgs e)
     {
         if (_loadingFilters) return;
 
-        StarterNG.Classes.Settings.Instance.ShowArchivalSceneries = archivalSwitch.IsChecked ?? true;
+        StarterNG.Classes.Settings.Instance.ShowArchivalSceneries = archivalSwitch.IsChecked != true;
         StarterNG.Classes.Settings.Instance.Save();
 
         BuildSceneryTree();
@@ -329,9 +317,10 @@ public partial class Scenarios : UserControl
             {
                 sceneryImage.Source = new Bitmap(imagePath);
             }
-            catch
+            catch (Exception ex)
             {
                 sceneryImage.Source = null;
+                StarterNG.Infrastructure.Diagnostics.Log($"Scenery image {imagePath}", ex);
             }
         }
         else
@@ -340,7 +329,6 @@ public partial class Scenarios : UserControl
         }
 
         PopulateAttachments(scenery);
-        PopulateIncludes(scenery);
         PopulateFaults(scenery);
     }
 
@@ -368,8 +356,8 @@ public partial class Scenarios : UserControl
                 lines.Add($"# unknown loose texture: {v.Name} ({v.SkinFile})");
         }
 
-        faultListBox.Text = string.Join(Environment.NewLine, lines);
-        infoTab.IsVisible = lines.Count > 0 || scenery.Includes.Any(i => i.Kind != 2);
+        if (lines.Count > 0)
+            StarterNG.Infrastructure.Diagnostics.Log(lines);
     }
 
     private void PopulateAttachments(Scenery scenery)
@@ -389,38 +377,6 @@ public partial class Scenarios : UserControl
             ToolTip.SetTip(btn, att.FilePath);
             btn.Click += (_, _) => OpenAttachment(att.FilePath);
             attachmentsPanel.Children.Add(btn);
-        }
-    }
-
-    private void PopulateIncludes(Scenery scenery)
-    {
-        includesPanel.Children.Clear();
-        var opts = scenery.Includes.Where(i => i.Kind != 2).ToList();
-        if (opts.Count == 0) return;
-
-        includesPanel.Children.Add(new TextBlock
-        {
-            Text = App.Loc["OptionalIncludes"],
-            FontWeight = Avalonia.Media.FontWeight.Bold,
-            FontSize = 12,
-            Margin = new Thickness(0, 0, 0, 2)
-        });
-
-        foreach (var inc in opts)
-        {
-            var check = new CheckBox
-            {
-                Content = $"{inc.Desc} ({inc.FilePath})",
-                IsChecked = inc.Selected,
-                FontSize = 11,
-                Tag = inc
-            };
-            check.IsCheckedChanged += (_, _) =>
-            {
-                if (check.Tag is SceneryInclude s)
-                    s.Selected = check.IsChecked == true;
-            };
-            includesPanel.Children.Add(check);
         }
     }
 
@@ -453,9 +409,12 @@ public partial class Scenarios : UserControl
         RefreshSelectedConsist();
     }
 
+    private bool _reloading;
+
     private async void ReloadSceneries_OnClick(object? sender, RoutedEventArgs e)
     {
-        reloadButton.IsEnabled = false;
+        if (_reloading) return;
+        _reloading = true;
         try
         {
             string? selected = AppState.Instance.CurrentScenery?.Path;
@@ -471,8 +430,72 @@ public partial class Scenarios : UserControl
         }
         finally
         {
-            reloadButton.IsEnabled = true;
+            _reloading = false;
         }
+    }
+
+    public event Action<Scenery>? RandomizeTexturesRequested;
+
+    private void RandomTexturesButton_OnClick(object? sender, RoutedEventArgs e)
+    {
+        if (AppState.Instance.CurrentScenery is { } scenery)
+            RandomizeTexturesRequested?.Invoke(scenery);
+    }
+
+    public void RefreshConsistView()
+    {
+        RefreshVehicleLabels();
+        if (AppState.Instance.CurrentTrainset is { } trainset)
+            ShowConsist(trainset);
+    }
+
+    private static readonly Avalonia.Media.IBrush SelectedVehicleBrush =
+        new Avalonia.Media.SolidColorBrush(Avalonia.Media.Color.Parse("#41C400"));
+
+    private static readonly Avalonia.Media.IBrush MissingMiniBrush =
+        new Avalonia.Media.SolidColorBrush(Avalonia.Media.Color.Parse("#22808080"));
+
+    private static Control MissingMiniBox(string? label, int height) => new Border
+    {
+        Height = height,
+        Width = height * 2,
+        Background = MissingMiniBrush,
+        CornerRadius = new Avalonia.CornerRadius(4),
+        Child = new TextBlock
+        {
+            Text = label,
+            FontSize = 10,
+            TextWrapping = Avalonia.Media.TextWrapping.Wrap,
+            HorizontalAlignment = HorizontalAlignment.Center,
+            VerticalAlignment = VerticalAlignment.Center,
+            TextAlignment = Avalonia.Media.TextAlignment.Center
+        }
+    };
+
+    private readonly Dictionary<string, Bitmap?> _miniCache = new();
+
+    private Bitmap? LoadMini(string? name, int height)
+    {
+        string key = $"{name}@{height}";
+        if (_miniCache.TryGetValue(key, out var cached))
+            return cached;
+
+        Bitmap? bmp = null;
+        string? path = VehicleDatabase.MiniPath(name);
+        if (path != null)
+        {
+            try
+            {
+                using var fs = File.OpenRead(path);
+                bmp = Bitmap.DecodeToHeight(fs, height);
+            }
+            catch (Exception ex)
+            {
+                StarterNG.Infrastructure.Diagnostics.Log($"Mini {path}", ex);
+            }
+        }
+        _miniCache[key] = bmp;
+        return bmp;
     }
 
     private void OpenSceneryDir_OnClick(object? sender, RoutedEventArgs e)
@@ -481,12 +504,20 @@ public partial class Scenarios : UserControl
         string dir = scn != null
             ? (Path.GetDirectoryName(Path.GetFullPath(scn.Path)) ?? "scenery")
             : Path.GetFullPath("scenery");
-        if (!Directory.Exists(dir)) return;
+        if (!Directory.Exists(dir))
+        {
+            StarterNG.Infrastructure.Diagnostics.ReportOnUiThread(string.Format(App.Loc["FaultFileNotFound"], dir));
+            return;
+        }
         try
         {
             Process.Start(new ProcessStartInfo(dir) { UseShellExecute = true });
         }
-        catch { }
+        catch (Exception ex)
+        {
+            StarterNG.Infrastructure.Diagnostics.ReportOnUiThread(
+                $"{dir}{Environment.NewLine}{Environment.NewLine}{App.Loc["FaultDetail"]} {ex.Message}");
+        }
     }
 
     private void VehicleList_OnSelectionChanged(object? sender, SelectionChangedEventArgs e)
@@ -518,11 +549,13 @@ public partial class Scenarios : UserControl
         {
             weatherForm.IsEnabled = true;
             weatherTime.SelectedTime = ParseTime(scenery.ScenarioTimeOverride);
-            weatherDay.Value = scenery.Day;
+            weatherDate.SelectedDate = DateOfDayOfYear(scenery.Day);
             weatherTemp.Value = scenery.Temperature;
-            weatherFog.Value = System.Math.Clamp(scenery.FogEnd, 0, 10000);
-            SelectByTag(weatherSeason, scenery.Day.ToString());
-            SelectByTag(weatherOvercast, scenery.Overcast.ToString(CultureInfo.InvariantCulture));
+            weatherFog.Value = SliderFromFog(scenery.FogEnd);
+            SelectByTag(weatherSeason, scenery.Day.ToString(), excludeFromNearest: "0");
+            SelectByTag(weatherOvercast, scenery.OvercastRandom
+                ? RandomTag
+                : scenery.Overcast.ToString(CultureInfo.InvariantCulture));
 
             ApplyTodayPreview(scenery.Day == 0);
             UpdateWeatherLabels();
@@ -542,12 +575,16 @@ public partial class Scenarios : UserControl
         if (weatherTime.SelectedTime is { } t)
             scn.ScenarioTimeOverride = $"{t.Hours:D2}:{t.Minutes:D2}";
 
-        scn.Day = _todaySeason ? 0 : (int)(weatherDay.Value ?? 0);
+        scn.Day = _todaySeason ? 0 : SelectedDayOfYear();
         scn.Temperature = weatherTemp.Value;
-        scn.FogEnd = (int)weatherFog.Value;
-        if ((weatherOvercast.SelectedItem as ComboBoxItem)?.Tag is string ov &&
-            double.TryParse(ov, System.Globalization.NumberStyles.Float, CultureInfo.InvariantCulture, out double oc))
-            scn.Overcast = oc;
+        scn.FogEnd = FogFromSlider(weatherFog.Value);
+        if ((weatherOvercast.SelectedItem as ComboBoxItem)?.Tag is string ov)
+        {
+            scn.OvercastRandom = ov == RandomTag;
+            if (!scn.OvercastRandom &&
+                double.TryParse(ov, NumberStyles.Float, CultureInfo.InvariantCulture, out double oc))
+                scn.Overcast = oc;
+        }
 
         scn.WeatherDirty = true;
         UpdateWeatherLabels();
@@ -556,18 +593,85 @@ public partial class Scenarios : UserControl
     private void UpdateWeatherLabels()
     {
         weatherTempLabel.Text = $"{(int)weatherTemp.Value} °C";
-        weatherFogLabel.Text = $"{(int)weatherFog.Value} m";
+        weatherFogLabel.Text = FormatFog(FogFromSlider(weatherFog.Value));
+        weatherDayDate.Text = string.Format(LanguageCulture, App.Loc["DayOfYear"], SelectedDayOfYear());
+
+        weatherRestore.IsEnabled = _currentScenery?.WeatherChanged ?? false;
     }
 
-    private static void SelectByTag(ComboBox combo, string tag)
+    private static int FogFromSlider(double position)
     {
+        double metres = Scenery.FogMin *
+                        System.Math.Pow((double)Scenery.FogMax / Scenery.FogMin, position / 1000.0);
+        int step = metres < 100 ? 5 : metres < 1000 ? 10 : 100;
+        return System.Math.Clamp((int)(System.Math.Round(metres / step) * step),
+                                 Scenery.FogMin, Scenery.FogMax);
+    }
+
+    private static double SliderFromFog(int metres)
+    {
+        double clamped = System.Math.Clamp(metres, Scenery.FogMin, Scenery.FogMax);
+        return 1000.0 * System.Math.Log(clamped / Scenery.FogMin) /
+               System.Math.Log((double)Scenery.FogMax / Scenery.FogMin);
+    }
+
+    private static string FormatFog(int metres) =>
+        metres < 1000
+            ? $"{metres} m"
+            : string.Format(LanguageCulture, "{0:0.#} km", metres / 1000.0);
+
+    private static CultureInfo LanguageCulture
+    {
+        get
+        {
+            string code = App.Loc.CurrentLangCode;
+            if (code is "en" or "")
+                return CultureInfo.InvariantCulture;
+            try
+            {
+                return CultureInfo.GetCultureInfo(code == "cz" ? "cs" : code);
+            }
+            catch (CultureNotFoundException)
+            {
+                return CultureInfo.InvariantCulture;
+            }
+        }
+    }
+
+    private const string RandomTag = "random";
+
+    private static void SelectByTag(ComboBox combo, string tag, string? excludeFromNearest = null)
+    {
+        ComboBoxItem? first = null;
+        ComboBoxItem? nearest = null;
+        double bestDistance = double.MaxValue;
+        bool haveValue = double.TryParse(tag, NumberStyles.Float, CultureInfo.InvariantCulture,
+                                         out double value);
+
         foreach (var obj in combo.Items)
-            if (obj is ComboBoxItem item && (item.Tag as string) == tag)
+        {
+            if (obj is not ComboBoxItem item)
+                continue;
+            first ??= item;
+            if ((item.Tag as string) == tag)
             {
                 combo.SelectedItem = item;
                 return;
             }
-        combo.SelectedItem = null;
+            if (haveValue && item.Tag is string itemTag && itemTag != excludeFromNearest &&
+                double.TryParse(itemTag, NumberStyles.Float, CultureInfo.InvariantCulture,
+                                out double itemValue))
+            {
+                double distance = System.Math.Abs(itemValue - value);
+                if (distance < bestDistance)
+                {
+                    bestDistance = distance;
+                    nearest = item;
+                }
+            }
+        }
+
+        combo.SelectedItem = nearest ?? first;
     }
 
     private void WeatherTime_OnChanged(object? sender, TimePickerSelectedValueChangedEventArgs e) => CaptureWeather();
@@ -600,12 +704,11 @@ public partial class Scenarios : UserControl
     private void ApplyTodayPreview(bool today)
     {
         _todaySeason = today;
-        weatherDay.IsEnabled = !today;
         if (today)
         {
             bool prev = _loadingWeather;
             _loadingWeather = true;
-            weatherDay.Value = DateTime.Now.DayOfYear;
+            weatherDate.SelectedDate = DateOfDayOfYear(0);
             _loadingWeather = prev;
         }
     }
@@ -614,7 +717,28 @@ public partial class Scenarios : UserControl
 
     private void Weather_OnSliderChanged(object? sender, Avalonia.Controls.Primitives.RangeBaseValueChangedEventArgs e) => CaptureWeather();
 
-    private void WeatherDay_OnChanged(object? sender, NumericUpDownValueChangedEventArgs e) => CaptureWeather();
+    private void WeatherDate_OnChanged(object? sender, DatePickerSelectedValueChangedEventArgs e)
+    {
+        if (!_loadingWeather)
+        {
+            _todaySeason = false;
+            _loadingWeather = true;
+            SelectByTag(weatherSeason, SelectedDayOfYear().ToString(), excludeFromNearest: "0");
+            _loadingWeather = false;
+        }
+        CaptureWeather();
+    }
+
+    private static DateTimeOffset DateOfDayOfYear(int day)
+    {
+        int year = DateTime.Now.Year;
+        int last = DateTime.IsLeapYear(year) ? 366 : 365;
+        int d = System.Math.Clamp(day <= 0 ? DateTime.Now.DayOfYear : day, 1, last);
+        return new DateTimeOffset(new DateTime(year, 1, 1).AddDays(d - 1));
+    }
+
+    private int SelectedDayOfYear() =>
+        weatherDate.SelectedDate is { } date ? date.DayOfYear : DateTime.Now.DayOfYear;
 
     private void WeatherSeason_OnChanged(object? sender, SelectionChangedEventArgs e)
     {
@@ -631,7 +755,7 @@ public partial class Scenarios : UserControl
             {
                 ApplyTodayPreview(false);
                 _loadingWeather = true;
-                weatherDay.Value = day;
+                weatherDate.SelectedDate = DateOfDayOfYear(day);
                 _loadingWeather = false;
             }
         }
@@ -644,17 +768,31 @@ public partial class Scenarios : UserControl
         if (path is null)
         {
             timetableContent.Text = App.Loc["NoTimetable"];
+            UpdateTimetableTab(false);
             return;
         }
 
         try
         {
             timetableContent.Text = File.ReadAllText(path, Encoding.GetEncoding(1250));
+            UpdateTimetableTab(true);
         }
         catch
         {
             timetableContent.Text = App.Loc["NoTimetable"];
+            UpdateTimetableTab(false);
         }
+    }
+
+    private void UpdateTimetableTab(bool hasTimetable)
+    {
+        bool usable = hasTimetable || attachmentsPanel.Children.Count > 0;
+
+        timetableTab.IsEnabled = usable;
+        ToolTip.SetTip(timetableTab, usable ? null : App.Loc["NoTimetable"]);
+
+        if (!usable && timetableTab.IsSelected && timetableTab.Parent is TabControl tabs)
+            tabs.SelectedIndex = 0;
     }
 
     private static string? ResolveTimetablePath(Scenery scenery, string? name)
@@ -677,27 +815,127 @@ public partial class Scenarios : UserControl
         return candidates.FirstOrDefault(File.Exists);
     }
 
+    private const double ConsistDragThreshold = 6;
+
+    private Trainset? _stripTrainset;
+    private int _pressIndex = -1;
+    private Point _pressPoint;
+    private bool _dragging;
+    private bool _stripWired;
+
+    private int _dragBlockStart = -1;
+    private int _dragBlockLength;
+    private double _dragBlockWidth = 32;
+    private double _grabOffset;
+    private Control? _carried;
+
+    private readonly List<int> _reducedToVehicle = new();
+    private readonly List<int> _unitStarts = new();
+
+    private readonly Infrastructure.DropGap _dropGap = new();
+    private readonly Infrastructure.DropIndexTracker _dropTracker = new();
+    private readonly Infrastructure.EdgeScroller _edgeScroller = new();
+
     private void ShowConsist(Trainset trainset)
     {
         consistStack.Children.Clear();
+        _stripTrainset = trainset;
+        _dropGap.Forget();
+
+        if (!_stripWired)
+        {
+            _stripWired = true;
+            consistStack.PointerMoved += Strip_OnPointerMoved;
+            consistStack.PointerReleased += Strip_OnPointerReleased;
+            consistStack.PointerCaptureLost += (_, _) => CancelConsistDrag();
+        }
+
+        ContextMenu VehicleMenu(Dynamic vehicle) => ConsistContextMenu.Build(
+            consistStack,
+            () => trainset,
+            vehicles =>
+            {
+                trainset.Vehicles = vehicles;
+                RefreshVehicleLabels();
+                ShowConsist(trainset);
+                UpdateTrainStats(trainset);
+            },
+            removeAll: null,
+            getVehicle: () => vehicle,
+            removeVehicle: v =>
+            {
+                int gap = trainset.Vehicles.IndexOf(v);
+                trainset.Vehicles.Remove(v);
+
+                bool wasPicked = !string.IsNullOrEmpty(v.Name) &&
+                    string.Equals(v.Name, AppState.Instance.StartingVehicleName,
+                                  StringComparison.OrdinalIgnoreCase);
+                if (wasPicked && trainset.Vehicles.Count > 0)
+                {
+                    int next = Math.Clamp(gap, 0, trainset.Vehicles.Count - 1);
+                    AppState.Instance.StartingVehicleName = trainset.Vehicles[next].Name;
+                    AppState.Instance.NotifyChanged();
+                }
+
+                RefreshVehicleLabels();
+                ShowConsist(trainset);
+                UpdateTrainStats(trainset);
+            });
 
         var db = GameData.Instance.Vehicles;
         foreach (var train in trainset.Vehicles)
         {
 
             string miniName = db.MiniForSkin(train.SkinFile) ?? train.SkinFile;
-            string? path = VehicleDatabase.MiniPath(miniName);
-            if (path is null)
-                continue;
-
+            if (!VehicleDatabase.HasMini(miniName) && VehicleDatabase.HasMini(train.SkinFile))
+                miniName = train.SkinFile;
             int thumbH = StarterNG.Classes.Settings.Instance.LargeThumbnails ? 64 : 32;
-            consistStack.Children.Add(new Image
+
+            var bmp = LoadMini(miniName, thumbH);
+            Control visual = bmp is not null
+                ? new Image
+                {
+                    Source = bmp,
+                    Height = thumbH,
+                    Stretch = Avalonia.Media.Stretch.Uniform,
+                    Margin = new Thickness(0)
+                }
+                : MissingMiniBox(train.SkinFile, thumbH);
+
+            bool selected = !string.IsNullOrEmpty(train.Name) &&
+                string.Equals(train.Name, AppState.Instance.StartingVehicleName,
+                              StringComparison.OrdinalIgnoreCase);
+
+            var slot = new Border
             {
-                Source = new Bitmap(path),
-                Height = thumbH,
-                Stretch = Avalonia.Media.Stretch.Uniform,
-                Margin = new Thickness(0)
-            });
+                Transitions = new Transitions
+                {
+                    new DoubleTransition
+                    {
+                        Property = OpacityProperty,
+                        Duration = TimeSpan.FromMilliseconds(120)
+                    }
+                },
+                Child = visual,
+                Padding = new Thickness(0),
+                BorderThickness = new Thickness(0, 2),
+                BorderBrush = selected ? SelectedVehicleBrush : Avalonia.Media.Brushes.Transparent,
+                Cursor = new Avalonia.Input.Cursor(Avalonia.Input.StandardCursorType.Hand),
+                ContextMenu = VehicleMenu(train)
+            };
+            ToolTip.SetTip(slot, train.Name);
+
+            int slotIndex = consistStack.Children.Count;
+
+            slot.PointerPressed += (_, ev) =>
+            {
+                if (!ev.GetCurrentPoint(slot).Properties.IsLeftButtonPressed) return;
+                _pressIndex = slotIndex;
+                _pressPoint = ev.GetPosition(consistStack);
+                _dragging = false;
+            };
+
+            consistStack.Children.Add(slot);
         }
         string desc = trainset.Description ?? "";
         if (desc.TrimStart().StartsWith('-'))
@@ -706,22 +944,256 @@ public partial class Scenarios : UserControl
         UpdateTrainStats(trainset);
     }
 
+    private void Strip_OnPointerMoved(object? sender, PointerEventArgs e)
+    {
+        var point = e.GetPosition(consistStack);
+
+        if (!_dragging)
+        {
+            if (_pressIndex < 0 || !e.GetCurrentPoint(consistStack).Properties.IsLeftButtonPressed)
+                return;
+
+            var delta = point - _pressPoint;
+            if (Math.Abs(delta.X) < ConsistDragThreshold && Math.Abs(delta.Y) < ConsistDragThreshold)
+                return;
+
+            BeginConsistDrag(e);
+            if (!_dragging) return;
+        }
+
+        Canvas.SetLeft(_carried!, point.X - _grabOffset);
+
+        double pointerX = e.GetPosition(consistScroll).X;
+        if (_dropTracker.Update(pointerX + consistScroll.Offset.X))
+        {
+            int reduced = ReducedTarget();
+            _dropGap.Show(consistStack,
+                          reduced < _reducedToVehicle.Count
+                              ? _reducedToVehicle[reduced]
+                              : consistStack.Children.Count,
+                          _dragBlockWidth);
+        }
+
+        _edgeScroller.Update(consistScroll, pointerX);
+    }
+
+    private void Strip_OnPointerReleased(object? sender, PointerReleasedEventArgs e)
+    {
+        if (!_dragging)
+        {
+            int index = _pressIndex;
+            _pressIndex = -1;
+
+            if (e.InitialPressMouseButton != MouseButton.Left ||
+                index < 0 || _stripTrainset is not { } clicked ||
+                index >= clicked.Vehicles.Count)
+                return;
+
+            AppState.Instance.StartingVehicleName = clicked.Vehicles[index].Name;
+            AppState.Instance.NotifyChanged();
+            ShowConsist(clicked);
+            return;
+        }
+
+        int target = _dropTracker.Index >= 0 ? ReducedTarget() : -1;
+        int start = _dragBlockStart;
+        int length = _dragBlockLength;
+        var trainset = _stripTrainset;
+
+        EndConsistDrag();
+
+        if (trainset != null && start >= 0 && target >= 0)
+            MoveConsistBlock(trainset, start, length, target);
+    }
+
+    private void BeginConsistDrag(PointerEventArgs e)
+    {
+        if (_stripTrainset is not { } trainset || _pressIndex < 0 ||
+            _pressIndex >= trainset.Vehicles.Count)
+            return;
+
+        _dragBlockStart = SetStart(trainset.Vehicles, _pressIndex);
+        _dragBlockLength = SetLength(trainset.Vehicles, _dragBlockStart);
+        if (_dragBlockStart + _dragBlockLength > consistStack.Children.Count)
+            return;
+
+        var first = consistStack.Children[_dragBlockStart];
+        var blockBounds = first.Bounds;
+        _dragBlockWidth = 0;
+        for (int i = _dragBlockStart; i < _dragBlockStart + _dragBlockLength; i++)
+            _dragBlockWidth += consistStack.Children[i].Bounds.Width;
+        _dragBlockWidth = Math.Max(_dragBlockWidth, 16);
+        _grabOffset = Math.Clamp(_pressPoint.X - blockBounds.Left, 0, _dragBlockWidth);
+
+        CaptureDropTargets(trainset);
+
+        _carried = BuildCarriedVisual(blockBounds.Height);
+        Canvas.SetTop(_carried, blockBounds.Top);
+        Canvas.SetLeft(_carried, blockBounds.Left);
+        consistOverlay.Children.Add(_carried);
+
+        for (int i = _dragBlockStart; i < _dragBlockStart + _dragBlockLength; i++)
+            consistStack.Children[i].IsVisible = false;
+
+        _dragging = true;
+        e.Pointer.Capture(consistStack);
+    }
+
+    private void CaptureDropTargets(Trainset trainset)
+    {
+        var vehicles = trainset.Vehicles;
+
+        _reducedToVehicle.Clear();
+        for (int i = 0; i < vehicles.Count && i < consistStack.Children.Count; i++)
+            if (i < _dragBlockStart || i >= _dragBlockStart + _dragBlockLength)
+                _reducedToVehicle.Add(i);
+
+        _unitStarts.Clear();
+        var midpoints = new List<double>();
+
+        int r = 0;
+        while (r < _reducedToVehicle.Count)
+        {
+            int length = 1;
+            while (r + length < _reducedToVehicle.Count &&
+                   _reducedToVehicle[r + length] == _reducedToVehicle[r + length - 1] + 1 &&
+                   HoldsNext(vehicles[_reducedToVehicle[r + length - 1]]))
+                length++;
+
+            double left = ChildEdge(_reducedToVehicle[r], right: false);
+            double right = ChildEdge(_reducedToVehicle[r + length - 1], right: true);
+            midpoints.Add((left + right) / 2);
+            _unitStarts.Add(r);
+            r += length;
+        }
+
+        _dropTracker.Capture(midpoints);
+    }
+
+    private double ChildEdge(int childIndex, bool right)
+    {
+        var bounds = consistStack.Children[childIndex].Bounds;
+        double edge = right ? bounds.Right : bounds.Left;
+        return childIndex > _dragBlockStart ? edge - _dragBlockWidth : edge;
+    }
+
+    private int ReducedTarget()
+    {
+        int unit = _dropTracker.Index;
+        if (unit < 0) return -1;
+        return unit < _unitStarts.Count ? _unitStarts[unit] : _reducedToVehicle.Count;
+    }
+
+    private Control BuildCarriedVisual(double height)
+    {
+        var panel = new StackPanel { Orientation = Avalonia.Layout.Orientation.Horizontal };
+
+        for (int i = _dragBlockStart; i < _dragBlockStart + _dragBlockLength; i++)
+        {
+            var source = consistStack.Children[i];
+            Control copy = source is Border { Child: Image image }
+                ? new Image { Source = image.Source, Height = image.Height, Stretch = image.Stretch }
+                : new Border
+                {
+                    Width = source.Bounds.Width,
+                    Height = source.Bounds.Height,
+                    Background = MissingMiniBrush
+                };
+            panel.Children.Add(copy);
+        }
+
+        return new Border
+        {
+            Child = panel,
+            Height = height,
+            Opacity = 0.85,
+            BorderThickness = new Thickness(0, 2),
+            BorderBrush = SelectedVehicleBrush
+        };
+    }
+
+    private void CancelConsistDrag()
+    {
+        if (!_dragging) return;
+        EndConsistDrag();
+    }
+
+    private void EndConsistDrag()
+    {
+        for (int i = _dragBlockStart; i >= 0 && i < _dragBlockStart + _dragBlockLength; i++)
+            if (i < consistStack.Children.Count)
+                consistStack.Children[i].IsVisible = true;
+
+        if (_carried != null)
+            consistOverlay.Children.Remove(_carried);
+        _carried = null;
+
+        _dropTracker.Reset();
+        _edgeScroller.Stop();
+        _dropGap.Hide(consistStack);
+
+        _dragBlockStart = -1;
+        _dragBlockLength = 0;
+        _pressIndex = -1;
+        _dragging = false;
+    }
+
+    private void MoveConsistBlock(Trainset trainset, int start, int length, int target)
+    {
+        var vehicles = trainset.Vehicles;
+        if (start < 0 || length <= 0 || start + length > vehicles.Count)
+            return;
+
+        var block = vehicles.GetRange(start, length);
+        vehicles.RemoveRange(start, length);
+
+        target = Math.Clamp(target, 0, vehicles.Count);
+        if (target == start)
+        {
+            vehicles.InsertRange(start, block);
+            return;
+        }
+
+        vehicles.InsertRange(target, block);
+
+        RefreshVehicleLabels();
+        ShowConsist(trainset);
+        UpdateTrainStats(trainset);
+    }
+
+    private static bool HoldsNext(Dynamic car) =>
+        car.Coupling.Has(Coupling.WorkshopLock) || car.Coupling.Locked;
+
+    private static int SetStart(List<Dynamic> vehicles, int index)
+    {
+        while (index > 0 && HoldsNext(vehicles[index - 1]))
+            index--;
+        return index;
+    }
+
+    private static int SetLength(List<Dynamic> vehicles, int start)
+    {
+        int length = 1;
+        while (start + length < vehicles.Count && HoldsNext(vehicles[start + length - 1]))
+            length++;
+        return length;
+    }
+
     private void UpdateTrainStats(Trainset? trainset)
     {
         if (trainset is null)
         {
-            trainStats.Text = "";
+            trainStats.Children.Clear();
             return;
         }
 
         var db = GameData.Instance.Vehicles;
-        trainStats.Text = TrainsetDisplay.FormatStats(
+        StarterNG.Infrastructure.StatsBar.Fill(trainStats, TrainsetDisplay.StatsFields(
             trainset,
             car => Physics.For(car.DataFolder, db.TextureForSkin(car.SkinFile)?.Model)
                    ?? Physics.For(car.DataFolder, car.MmdFile)
                    ?? Physics.For(car.DataFolder, car.SkinFile),
-            App.Loc["Length"], App.Loc["Mass"], App.Loc["VehicleCount"], App.Loc["Track"],
-            car => db.TextureForSkin(car.SkinFile)?.ResolvedCategory);
+            car => db.TextureForSkin(car.SkinFile)?.ResolvedCategory));
     }
 
     private void RefreshSelectedConsist()

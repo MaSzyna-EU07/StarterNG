@@ -19,7 +19,6 @@ public static class TrainsetDisplay
         if (IsEmpty(trainset))
             return null;
 
-        var db = GameData.Instance.Vehicles;
         var sb = new StringBuilder();
         string? prevKey = null;
         int run = 0;
@@ -36,22 +35,16 @@ public static class TrainsetDisplay
         for (int i = 0; i < trainset.Vehicles.Count; i++)
         {
             var v = trainset.Vehicles[i];
-            var tex = db.TextureForSkin(v.SkinFile);
-            string cat = tex?.ResolvedCategory ?? "";
-            bool powered = cat is "e" or "s" or "p" or "z" or "a";
 
-            if (i == 0 && powered)
+            if (i == 0 && IsPowered(v))
             {
-                string head = !string.IsNullOrWhiteSpace(v.Name) ? v.Name! :
-                    (!string.IsNullOrEmpty(tex?.ResolvedClass) ? tex!.ResolvedClass : BaseSkin(v));
-                sb.Append(head);
+                sb.Append(VehicleLabel(v, head: true));
                 prevKey = null;
                 run = 0;
                 continue;
             }
 
-            string key = !string.IsNullOrEmpty(tex?.ResolvedClass) ? tex!.ResolvedClass
-                : (!string.IsNullOrWhiteSpace(v.Name) ? v.Name! : BaseSkin(v));
+            string key = VehicleLabel(v);
 
             if (string.Equals(key, prevKey, StringComparison.OrdinalIgnoreCase))
             {
@@ -69,6 +62,18 @@ public static class TrainsetDisplay
             !string.IsNullOrWhiteSpace(v.Name) ? v.Name! : BaseSkin(v)));
     }
 
+    public static string VehicleLabel(Dynamic v, bool head = false)
+    {
+        var tex = GameData.Instance.Vehicles.TextureForSkin(v.SkinFile);
+        string? cls = string.IsNullOrEmpty(tex?.ResolvedClass) ? null : tex!.ResolvedClass;
+        string? name = string.IsNullOrWhiteSpace(v.Name) ? null : v.Name;
+        return (head ? name ?? cls : cls ?? name) ?? BaseSkin(v);
+    }
+
+    public static bool IsPowered(Dynamic v) =>
+        GameData.Instance.Vehicles.TextureForSkin(v.SkinFile)?.ResolvedCategory
+            is "e" or "s" or "p" or "z" or "a";
+
     private static string BaseSkin(Dynamic v) =>
         string.IsNullOrWhiteSpace(v.SkinFile) ? "?" :
         System.IO.Path.GetFileNameWithoutExtension(v.SkinFile);
@@ -85,6 +90,33 @@ public static class TrainsetDisplay
         var staffed = trainset.Vehicles.FirstOrDefault(v =>
             v.DriverType is eDriverType.Headdriver or eDriverType.Reardriver or eDriverType.Passenger);
         return staffed?.Name ?? trainset.Vehicles[0].Name;
+    }
+
+    public static List<(string Label, string Value)> StatsFields(
+        Trainset? trainset, Func<Dynamic, Physics?> physicsFor,
+        Func<Dynamic, string?>? categoryOf = null,
+        Func<string?, int>? loadWeightKg = null)
+    {
+        var fields = new List<(string, string)>();
+        if (trainset is null)
+            return fields;
+
+        var (lengthM, massKg, loadKg) = RecalcParams(trainset, physicsFor, categoryOf, loadWeightKg, allVehicles: false);
+        if (massKg < 200_000)
+            (lengthM, massKg, loadKg) = RecalcParams(trainset, physicsFor, categoryOf, loadWeightKg, allVehicles: true);
+
+        var inv = CultureInfo.InvariantCulture;
+
+        string track = trainset.Track ?? "";
+        if (trainset.Velocity > 0)
+            track = $"{track} ({trainset.Velocity.ToString("0.#", inv)} km/h)";
+
+        fields.Add(($"{App.Loc["Mass"]} [t]:", (massKg / 1000.0).ToString("0.#", inv)));
+        fields.Add(($"{App.Loc["MassBrutto"]} [t]:", ((massKg + loadKg) / 1000.0).ToString("0.#", inv)));
+        fields.Add(($"{App.Loc["Length"]} [m]:", lengthM.ToString("0.#", inv)));
+        fields.Add(($"{App.Loc["VehicleCount"]}:", trainset.Vehicles.Count.ToString(inv)));
+        fields.Add(($"{App.Loc["Track"]}:", track));
+        return fields;
     }
 
     public static string FormatStats(Trainset? trainset, Func<Dynamic, Physics?> physicsFor,
@@ -154,7 +186,7 @@ public static class TrainsetDisplay
     private static bool LoadAccepted(Physics? p, string loadType)
     {
         if (p == null || string.IsNullOrWhiteSpace(p.LoadAccepted))
-            return true;
+            return false;
         return p.LoadAccepted.Contains(loadType, StringComparison.OrdinalIgnoreCase);
     }
 
@@ -180,20 +212,12 @@ public static class TrainsetDisplay
         if (mu)
         {
             foreach (var v in trainset.Vehicles)
-            {
-                if (!string.IsNullOrEmpty(v.Name))
-                    used.Remove(v.Name!);
-                v.Name = EnsureUnique(PreferredBaseName(v), used);
-            }
+                Rename(v, used);
             return target?.Name;
         }
 
         if (target != null)
-        {
-            if (!string.IsNullOrEmpty(target.Name))
-                used.Remove(target.Name!);
-            target.Name = EnsureUnique(PreferredBaseName(target), used);
-        }
+            Rename(target, used);
         return target?.Name;
     }
 
@@ -251,4 +275,21 @@ public static class TrainsetDisplay
 
     private static string SanitizeName(string name) =>
         string.IsNullOrWhiteSpace(name) ? "vehicle" : name.Replace(' ', '_');
+
+    public static (string Base, string Suffix) SplitWagonNumber(string? name)
+    {
+        string n = name ?? "";
+        int hash = n.LastIndexOf('#');
+        if (hash >= 0 && hash + 1 < n.Length && n[(hash + 1)..].All(char.IsDigit))
+            return (n[..hash], n[hash..]);
+        return (n, "");
+    }
+
+    private static void Rename(Dynamic v, HashSet<string> used)
+    {
+        var (_, number) = SplitWagonNumber(v.Name);
+        if (!string.IsNullOrEmpty(v.Name))
+            used.Remove(v.Name!);
+        v.Name = EnsureUnique(PreferredBaseName(v), used) + number;
+    }
 }

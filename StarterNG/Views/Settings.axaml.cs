@@ -26,18 +26,22 @@ public partial class Settings : UserControl
     {
         InitializeComponent();
 
-        TrainPhysicsThreadsSlider.Maximum = Environment.ProcessorCount;
+        SettingsPathText.Text = StarterNG.Classes.Settings.Instance.LoadedFrom;
+        ToolTip.SetTip(SettingsPathText, StarterNG.Classes.Settings.Instance.LoadedFrom);
 
         this.AttachedToVisualTree += (_, _) =>
         {
             TextureResolutionSlider_OnValueChanged(null, null);
             CabTextureResolutionSlider_OnValueChanged(null, null);
             shaderResolutionSlider_OnValueChanged(null, null);
+            UpdateQualityCaptions();
         };
 
         FillLanguageCombo();
 
         App.Loc.LanguageChanged += SelectActiveLanguage;
+        App.Loc.LanguageChanged += UpdateQualityCaptions;
+        App.Loc.LanguageChanged += () => shaderResolutionSlider_OnValueChanged(null, null);
 
         FeedbackCb.SelectionChanged += FeedbackCb_OnSelectionChanged;
         FpsLimitEnableCb.IsCheckedChanged += (_, _) => FpsLimitSlider.IsEnabled = IsChecked(FpsLimitEnableCb);
@@ -50,6 +54,15 @@ public partial class Settings : UserControl
         KeyboardConfig.Instance.Load();
         BuildControlsTab();
         AddHandler(KeyDownEvent, OnControlsKeyDown, RoutingStrategies.Tunnel);
+    }
+
+    private static int IndexOfTag(ComboBox cb, string? tag)
+    {
+        for (int i = 0; i < cb.Items.Count; i++)
+            if (cb.Items[i] is ComboBoxItem item &&
+                string.Equals(item.Tag as string, tag, StringComparison.OrdinalIgnoreCase))
+                return i;
+        return -1;
     }
 
     private static int FindComboIndexByContent(ComboBox cb, string content)
@@ -146,16 +159,6 @@ public partial class Settings : UserControl
             GamepadIgnoreCb.IsChecked = s.IgnoreGamepad;
             FeedbackCb.SelectedIndex = s.FeedbackMode;
             FeedbackPortNud.Value = (decimal)s.FeedbackPort;
-            UartEnableCb.IsChecked = s.UartEnabled;
-            UartPortTb.Text = s.UartPort;
-            UartTuneTb.Text = s.UartTune;
-            UartDebugCb.IsChecked = s.UartDebug;
-            UartMainCb.IsChecked = s.UartMain;
-            UartScndCb.IsChecked = s.UartScnd;
-            UartTrainCb.IsChecked = s.UartTrain;
-            UartLocalCb.IsChecked = s.UartLocal;
-            UartRadioVolumeCb.IsChecked = s.UartRadioVolume;
-            UartRadioChannelCb.IsChecked = s.UartRadioChannel;
             UpdateFeedbackDetailVisibility();
 
             if (s.SelectExeAutomatically)
@@ -229,28 +232,22 @@ public partial class Settings : UserControl
             VehiclesVolumeSlider.Value = s.VehiclesVolume;
             PositionalVolumeSlider.Value = s.PositionalVolume;
             AmbientVolumeSlider.Value = s.AmbientVolume;
-
-            CompressTexturesCb.IsChecked = s.CompressTextures;
-            ScaleSpecularsCb.IsChecked = s.ScaleSpeculars;
-            UseGLESCb.IsChecked = s.UseGLES;
-            ShaderGammaCb.IsChecked = s.ShaderGamma;
-            ScreenMipmapsCb.IsChecked = s.ScreenMipmaps;
-            ExtendedModelConversionCb.IsChecked = s.ExtendedModelConversion;
-            GfxResourceMoveCb.IsChecked = s.GfxResourceMove;
-            GfxResourceSweepCb.IsChecked = s.GfxResourceSweep;
-            TrainPhysicsThreadsSlider.Value = s.TrainPhysicsThreads;
-            IgnoreIrrelevantTrainsCb.IsChecked = s.IgnoreIrrelevantTrains;
+            VolumePausedSlider.Value = s.VolumePaused;
+            SkipPipelineCb.IsChecked = s.SkipPipeline;
+            DebugLogVisibleCb.IsChecked = s.DebugLogVisible;
+            PyScreenPriorityCb.SelectedIndex = Math.Max(0, IndexOfTag(PyScreenPriorityCb, s.PyScreenPriority));
 
             AutoCloseStarterCb.IsChecked = s.AutoCloseStarter;
             LargeThumbnailsCb.IsChecked = s.LargeThumbnails;
             AutoExpandTreeCb.IsChecked = s.AutoExpandSceneryTree;
-            HideArchivalVehiclesCb.IsChecked = s.HideArchivalVehicles;
             BatteryDefaultCb.SelectedIndex = (int)s.BatteryDefault;
         }
         finally
         {
             _loading = false;
         }
+
+        UpdateQualityCaptions();
     }
 
     private void ReadFromUi()
@@ -269,16 +266,6 @@ public partial class Settings : UserControl
         s.IgnoreGamepad = IsChecked(GamepadIgnoreCb);
         s.FeedbackMode = Math.Max(0, FeedbackCb.SelectedIndex);
         s.FeedbackPort = (int)(FeedbackPortNud.Value ?? 888);
-        s.UartEnabled = IsChecked(UartEnableCb);
-        s.UartPort = UartPortTb.Text ?? "";
-        s.UartTune = UartTuneTb.Text ?? "";
-        s.UartDebug = IsChecked(UartDebugCb);
-        s.UartMain = IsChecked(UartMainCb);
-        s.UartScnd = IsChecked(UartScndCb);
-        s.UartTrain = IsChecked(UartTrainCb);
-        s.UartLocal = IsChecked(UartLocalCb);
-        s.UartRadioVolume = IsChecked(UartRadioVolumeCb);
-        s.UartRadioChannel = IsChecked(UartRadioChannelCb);
 
         s.SelectExeAutomatically = SelectExeCb.SelectedIndex == 0;
         s.ExecutablePath = s.SelectExeAutomatically ? "eu07.exe"
@@ -340,23 +327,27 @@ public partial class Settings : UserControl
         s.VehiclesVolume = (int)VehiclesVolumeSlider.Value;
         s.PositionalVolume = (int)PositionalVolumeSlider.Value;
         s.AmbientVolume = (int)AmbientVolumeSlider.Value;
-
-        s.CompressTextures = IsChecked(CompressTexturesCb);
-        s.ScaleSpeculars = IsChecked(ScaleSpecularsCb);
-        s.UseGLES = IsChecked(UseGLESCb);
-        s.ShaderGamma = IsChecked(ShaderGammaCb);
-        s.ScreenMipmaps = IsChecked(ScreenMipmapsCb);
-        s.ExtendedModelConversion = IsChecked(ExtendedModelConversionCb);
-        s.GfxResourceMove = IsChecked(GfxResourceMoveCb);
-        s.GfxResourceSweep = IsChecked(GfxResourceSweepCb);
-        s.TrainPhysicsThreads = (int)TrainPhysicsThreadsSlider.Value;
-        s.IgnoreIrrelevantTrains = IsChecked(IgnoreIrrelevantTrainsCb);
+        s.VolumePaused = (int)VolumePausedSlider.Value;
+        s.SkipPipeline = IsChecked(SkipPipelineCb);
+        s.DebugLogVisible = IsChecked(DebugLogVisibleCb);
+        s.PyScreenPriority = (PyScreenPriorityCb.SelectedItem as ComboBoxItem)?.Tag as string ?? "normal";
 
         s.AutoCloseStarter = IsChecked(AutoCloseStarterCb);
         s.LargeThumbnails = IsChecked(LargeThumbnailsCb);
         s.AutoExpandSceneryTree = IsChecked(AutoExpandTreeCb);
-        s.HideArchivalVehicles = IsChecked(HideArchivalVehiclesCb);
         s.BatteryDefault = (BatteryDefault)Math.Max(0, BatteryDefaultCb.SelectedIndex);
+    }
+
+    private void ComButton_OnClick(object? sender, RoutedEventArgs e)
+    {
+        if (TopLevel.GetTopLevel(this) is Window owner)
+            new UartWindow().ShowDialog(owner);
+    }
+
+    private void AboutButton_OnClick(object? sender, RoutedEventArgs e)
+    {
+        if (TopLevel.GetTopLevel(this) is Window owner)
+            AboutWindow.Create().ShowDialog(owner);
     }
 
     private void SaveButton_OnClick(object? sender, RoutedEventArgs e)
@@ -436,6 +427,7 @@ public partial class Settings : UserControl
 
         int resolution = 1 << (int)shaderResolutionSlider.Value;
         shaderResolution.Text = $"{resolution} px";
+        ToolTip.SetTip(shaderResolutionSlider, ShadowMapWord(resolution));
     }
 
     private void FillLanguageCombo()
@@ -475,7 +467,7 @@ public partial class Settings : UserControl
     private void UpdateFeedbackDetailVisibility()
     {
         FeedbackPortRow.IsVisible = FeedbackCb.SelectedIndex == 3;
-        UartExpander.IsVisible = FeedbackCb.SelectedIndex == 5;
+        ComButton.IsVisible = FeedbackCb.SelectedIndex == 5;
     }
 
     private static bool IsChecked(CheckBox cb) => cb.IsChecked == true;
@@ -535,7 +527,7 @@ public partial class Settings : UserControl
             VerticalAlignment = VerticalAlignment.Center,
             Foreground = FgDimBrush
         });
-        _controlsSearch = new TextBox { Width = 240, Watermark = App.Loc["Search"] };
+        _controlsSearch = new TextBox { Width = 240, PlaceholderText = App.Loc["Search"] };
         _controlsSearch.TextChanged += (_, _) => RebuildBindingList();
         topBar.Children.Add(_controlsSearch);
 
@@ -1068,4 +1060,103 @@ public partial class Settings : UserControl
 
     private static string Capitalize(string s) =>
         string.IsNullOrEmpty(s) ? s : char.ToUpperInvariant(s[0]) + s.Substring(1);
+
+    private static string[] QualityWords => new[]
+    {
+        App.Loc["QualityVeryLow"], App.Loc["QualityLow"], App.Loc["QualityNormal"],
+        App.Loc["QualityHigh"], App.Loc["QualityVeryHigh"]
+    };
+
+    private void QualitySlider_OnValueChanged(object? sender, RangeBaseValueChangedEventArgs e)
+        => UpdateQualityCaptions();
+
+    private void UpdateQualityCaptions()
+    {
+        var q = QualityWords;
+
+        if (texFilteringValue != null)
+            texFilteringValue.Text = q[Clamp((int)TexFilteringSlider.Value, 1, 5) - 1];
+
+        string[] four = { q[0], q[1], q[3], q[4] };
+        if (trackCurvesValue != null)
+            trackCurvesValue.Text = four[Clamp((int)TrackCurvesSlider.Value, 1, 4) - 1];
+        if (smokeParticlesValue != null)
+            smokeParticlesValue.Text = four[Clamp((int)SmokeParticlesSlider.Value, 1, 4) - 1];
+
+        string[] msaa = { App.Loc["MsaaNone"], "x2", "x4", "x8" };
+        if (multisamplingValue != null)
+            multisamplingValue.Text = msaa[Clamp((int)MultisamplingSlider.Value, 1, 4) - 1];
+
+        string[] range = { App.Loc["RangeNormal"], App.Loc["RangeHigh"], App.Loc["RangeVeryHigh"] };
+        if (renderRangeValue != null)
+            renderRangeValue.Text = range[Clamp((int)RenderRangeSlider.Value, 1, 3) - 1];
+
+        if (cursorSensitivityValue != null)
+            cursorSensitivityValue.Text = (int)CursorSensitivitySlider.Value switch
+            {
+                <= 1 => q[1],
+                2 => App.Loc["QualityStandard"],
+                3 => q[3],
+                _ => q[4]
+            };
+
+        if (shaderRangeValue != null)
+        {
+            int metres = (int)shaderRange.Value;
+            shaderRangeValue.Text = $"{metres} m";
+            ToolTip.SetTip(shaderRange, ShadowRangeWord(metres));
+        }
+
+        if (cabShadowRangeValue != null)
+        {
+            int metres = (int)cabShaderSourceRange.Value;
+            cabShadowRangeValue.Text = metres <= 0 ? App.Loc["RangeDisabled"] : $"{metres} m";
+            ToolTip.SetTip(cabShaderSourceRange, CabShadowRangeWord(metres));
+        }
+
+        if (reflectionsFramerateValue != null)
+        {
+            int fps = (int)reflectionsFramerate.Value;
+            string word = ReflectionsRefreshWord(fps);
+            reflectionsFramerateValue.Text = $"{fps} FPS";
+            ToolTip.SetTip(reflectionsFramerate, word.Length == 0 ? null : word);
+        }
+    }
+
+    private static string ShadowMapWord(int pixels) => pixels switch
+    {
+        <= 512 => App.Loc["QualityVeryLow"],
+        <= 1024 => App.Loc["QualityLow"],
+        <= 2048 => App.Loc["QualityModerate"],
+        <= 4096 => App.Loc["QualityHigh"],
+        _ => App.Loc["QualityVeryHigh"]
+    };
+
+    private static string ShadowRangeWord(int metres) => metres switch
+    {
+        <= 25 => App.Loc["RangeVeryLow"],
+        <= 50 => App.Loc["RangeLow"],
+        <= 150 => App.Loc["RangeModerate"],
+        <= 250 => App.Loc["RangeHigh"],
+        _ => App.Loc["RangeVeryHigh"]
+    };
+
+    private static string CabShadowRangeWord(int metres) => metres switch
+    {
+        <= 10 => App.Loc["RangeVeryLow"],
+        <= 20 => App.Loc["RangeLow"],
+        <= 30 => App.Loc["RangeStandard"],
+        <= 50 => App.Loc["RangeHigh"],
+        _ => App.Loc["RangeVeryHigh"]
+    };
+
+    private static string ReflectionsRefreshWord(int fps) => fps switch
+    {
+        <= 5 => App.Loc["QualityVeryLow"],
+        <= 10 => App.Loc["QualityLow"],
+        <= 25 => App.Loc["QualityHigh"],
+        <= 60 => App.Loc["QualityVeryHigh"],
+        _ => string.Empty
+    };
+
 }

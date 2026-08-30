@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -46,6 +46,17 @@ public sealed class GameData
             catch {  }
             done++;
         }
+        try
+        {
+            int legacy = Vehicles.ImportLegacy();
+            if (legacy > 0)
+                Infrastructure.Diagnostics.Log($"textures.txt: wczytano {legacy} tekstur");
+        }
+        catch (Exception ex)
+        {
+            Infrastructure.Diagnostics.Log("textures.txt import", ex);
+        }
+
         Vehicles.EndLoad();
 
         VehicleDatabase.PreloadMiniIndex(miniDir);

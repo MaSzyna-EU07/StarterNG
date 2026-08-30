@@ -1,5 +1,6 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -26,9 +27,26 @@ public partial class Depot : UserControl
     private readonly List<Scenery> _sceneries = GameData.Instance.Sceneries;
 
     private readonly List<ConsistItem> _consist = new();
+
+    private Dynamic? _selectedCar;
+    private Dynamic? _pressedCar;
+    private readonly List<(Border Frame, ConsistItem Item, Dynamic Car)> _memberChrome = new();
+    private readonly List<(Button Badge, ConsistItem Item)> _driverChrome = new();
     private ConsistItem? _selected;
 
     private Trainset? _editingTrainset;
+
+    private readonly Infrastructure.DropGap _dropGap = new();
+    private readonly Infrastructure.EdgeScroller _edgeScroller = new();
+    private double _dragCardWidth = 64;
+
+    private readonly Infrastructure.DropIndexTracker _dropTracker = new();
+
+    private int _pressCardIndex = -1;
+    private Point _pressPoint;
+    private bool _cardDragging;
+    private double _grabOffset;
+    private Control? _carried;
 
     private readonly Dictionary<string, Bitmap?> _miniCache = new();
     private int ConsistThumbHeight =>
@@ -152,12 +170,18 @@ public partial class Depot : UserControl
             InitClassComboTemplates();
             PopulateCategoryCombo();
             PopulateSceneryConsists();
+            PopulateWarehouse();
             RebuildConsist();
         }, DispatcherPriority.Background);
+
+        consistStack.PointerMoved += Strip_OnPointerMoved;
+        consistStack.PointerReleased += Strip_OnPointerReleased;
+        consistStack.PointerCaptureLost += (_, _) => EndCardDrag();
 
         DragDrop.SetAllowDrop(consistDropTarget, true);
         consistDropTarget.AddHandler(DragDrop.DragOverEvent, Consist_OnDragOver);
         consistDropTarget.AddHandler(DragDrop.DropEvent, Consist_OnDrop);
+        consistDropTarget.AddHandler(DragDrop.DragLeaveEvent, (_, _) => CloseDropGap());
 
         vehicleListBox.AddHandler(InputElement.PointerMovedEvent, PendingDrag_OnPointerMoved, handledEventsToo: true);
         vehicleListBox.AddHandler(InputElement.PointerReleasedEvent, PendingDrag_OnPointerReleased, handledEventsToo: true);
@@ -168,7 +192,10 @@ public partial class Depot : UserControl
         PropertyChanged += (_, e) =>
         {
             if (e.Property == IsVisibleProperty && IsVisible)
+            {
                 SyncFromSelection();
+                PopulateWarehouse();
+            }
         };
     }
 
@@ -208,6 +235,24 @@ public partial class Depot : UserControl
         int i = 0;
         while (i < cars.Count)
         {
+            if (HoldsNext(cars[i]))
+            {
+                var locked = new List<Dynamic> { cars[i] };
+                int j = i;
+                while (j < cars.Count - 1 && HoldsNext(cars[j]))
+                    locked.Add(cars[++j]);
+
+                _consist.Add(new ConsistItem
+                {
+                    Cars = locked,
+                    Grouped = true,
+                    Flipped = locked[0].Offset < 0,
+                    Driver = UnitDriver(locked)
+                });
+                i = j + 1;
+                continue;
+            }
+
             VehicleSet? set = null;
             if (_db.TextureForSkin(cars[i].SkinFile)?.Uuid is { } uuid)
                 _db.SetByTextureUuid.TryGetValue(uuid, out set);
@@ -215,14 +260,13 @@ public partial class Depot : UserControl
             if (set?.TextureRefs is { Count: > 1 })
             {
                 var members = new HashSet<string>(set.TextureRefs.Where(r => !string.IsNullOrEmpty(r)));
-                var seen = new HashSet<string>();
                 var group = new List<Dynamic>();
 
                 int j = i;
-                while (j < cars.Count)
+                while (j < cars.Count && group.Count < set.TextureRefs.Count)
                 {
                     if (_db.TextureForSkin(cars[j].SkinFile)?.Uuid is { } u
-                        && members.Contains(u) && seen.Add(u))
+                        && members.Contains(u))
                         group.Add(cars[j++]);
                     else
                         break;
@@ -234,7 +278,7 @@ public partial class Depot : UserControl
                     {
                         Cars = group,
                         Grouped = true,
-
+                        Flipped = group[0].Offset < 0,
                         Driver = UnitDriver(group)
                     });
                     i = j;
@@ -256,6 +300,7 @@ public partial class Depot : UserControl
                     {
                         Cars = group,
                         Grouped = true,
+                        Flipped = group[0].Offset < 0,
                         Driver = UnitDriver(group)
                     });
                     i = j;
@@ -267,6 +312,7 @@ public partial class Depot : UserControl
             {
                 Cars = new List<Dynamic> { cars[i] },
                 Grouped = false,
+                Flipped = cars[i].Offset < 0,
                 Driver = cars[i].DriverType
             });
             i++;
@@ -285,8 +331,12 @@ public partial class Depot : UserControl
 
     private void SyncStartingVehicle()
     {
-        if (_selected?.Cars.Count > 0)
-            AppState.Instance.StartingVehicleName = _selected.Cars[0].Name;
+        if (_selected is not { Cars.Count: > 0 } item)
+            return;
+
+        var driven = item.Cars.FirstOrDefault(c =>
+            c.DriverType is eDriverType.Headdriver or eDriverType.Reardriver);
+        AppState.Instance.StartingVehicleName = (driven ?? item.Cars[0]).Name;
     }
 
     private static string StripCarSuffix(string name)
@@ -313,15 +363,17 @@ public partial class Depot : UserControl
 
     private void PopulateCategoryCombo()
     {
+        int keep = categoryCombo.SelectedIndex;
 
         _suppress = true;
         categoryCombo.Items.Clear();
         foreach (var (locKey, match) in CategoryDefs)
             categoryCombo.Items.Add(new ComboBoxItem { Content = App.Loc[locKey], Tag = match });
-        categoryCombo.SelectedIndex = -1;
+        categoryCombo.SelectedIndex = keep >= 0 && keep < categoryCombo.Items.Count ? keep : -1;
         _suppress = false;
 
-        _categoryFilter = null;
+        _categoryFilter = categoryCombo.SelectedItem is ComboBoxItem { Tag: Func<string?, bool> f }
+            ? f : null;
         RebuildClassCombo();
     }
 
@@ -468,7 +520,6 @@ public partial class Depot : UserControl
         _browserSelected = null;
         miniPreview.Source = null;
         addVehicleButton.IsEnabled = false;
-        browserDetails.IsVisible = false;
 
         vehicleListBox.Items.Clear();
 
@@ -510,8 +561,6 @@ public partial class Depot : UserControl
             _browserSelected = texture;
             miniPreview.Source = GetMiniBitmap(_db.ResolveMiniName(texture), MiniPreviewHeight);
             addVehicleButton.IsEnabled = true;
-            ShowTextureInfo(texture);
-            browserDetails.IsVisible = true;
             SyncCombosTo(texture);
         }
         else
@@ -519,8 +568,6 @@ public partial class Depot : UserControl
             _browserSelected = null;
             miniPreview.Source = null;
             addVehicleButton.IsEnabled = false;
-            textureInfoPanel.Children.Clear();
-            browserDetails.IsVisible = false;
         }
     }
 
@@ -532,7 +579,7 @@ public partial class Depot : UserControl
         {
             var top = TopLevel.GetTopLevel(this);
             if (top?.Clipboard != null)
-                await top.Clipboard.SetTextAsync(BrowserLabel(texture, _db.ResolveSet(texture)));
+                await top.Clipboard.SetTextAsync(BrowserName(texture));
         };
         menu.Items.Add(copy);
 
@@ -543,7 +590,12 @@ public partial class Depot : UserControl
                 texture.Directory.Replace('/', Path.DirectorySeparatorChar).TrimEnd('\\', '/'));
             if (!Directory.Exists(dir))
                 dir = Path.Combine(Directory.GetCurrentDirectory(), texture.Directory);
-            if (!Directory.Exists(dir)) return;
+            if (!Directory.Exists(dir))
+            {
+                StarterNG.Infrastructure.Diagnostics.ReportOnUiThread(
+                    string.Format(App.Loc["FaultFileNotFound"], dir));
+                return;
+            }
             try
             {
                 System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(dir)
@@ -551,15 +603,25 @@ public partial class Depot : UserControl
                     UseShellExecute = true
                 });
             }
-            catch { }
+            catch (Exception ex)
+            {
+                StarterNG.Infrastructure.Diagnostics.ReportOnUiThread(
+                    $"{dir}{Environment.NewLine}{Environment.NewLine}{App.Loc["FaultDetail"]} {ex.Message}");
+            }
         };
         menu.Items.Add(open);
+
+        menu.Items.Add(new Separator());
+        var baseItem = new MenuItem { Header = App.Loc["OpenTextureBase"] };
+        baseItem.Click += (_, _) => TextureBaseButton_OnClick(null, null!);
+        menu.Items.Add(baseItem);
+
         return menu;
     }
 
-    private void ShowTextureInfo(VehicleTexture texture)
+    private void ShowTextureInfo(VehicleTexture texture, StackPanel target)
     {
-        textureInfoPanel.Children.Clear();
+        target.Children.Clear();
 
         var full = new List<string>();
         void Row(string label, string? value)
@@ -567,7 +629,7 @@ public partial class Depot : UserControl
             if (string.IsNullOrWhiteSpace(value)) return;
             string line = $"{label}: {value}";
             full.Add(line);
-            textureInfoPanel.Children.Add(new TextBlock
+            target.Children.Add(new TextBlock
             {
                 Text = line,
                 FontSize = 10,
@@ -583,10 +645,11 @@ public partial class Depot : UserControl
             Row(App.Loc["TexOperator"], meta.Operator);
             Row(App.Loc["TexStation"], meta.Depot);
             Row(App.Loc["TexRevision"], meta.RevisionDate);
+            Row(App.Loc["TexWorks"], meta.RevisionPlace);
             Row(App.Loc["TexAuthor"], meta.TextureAuthor);
             Row(App.Loc["TexPhoto"], meta.PhotoAuthor);
         }
-        ToolTip.SetTip(textureInfoPanel, string.Join("\n", full));
+        ToolTip.SetTip(target, string.Join("\n", full));
     }
 
     private void VehicleListBox_OnDoubleTapped(object? sender, Avalonia.Input.TappedEventArgs e)
@@ -601,32 +664,88 @@ public partial class Depot : UserControl
             AddTexture(_browserSelected);
     }
 
-    private void AddAllCategoryButton_OnClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    public void ToolAddAllCategory() => AddAllCategoryButton_OnClick(null, null!);
+    public void ToolAddUniqueMmd() => AddUniqueMmdButton_OnClick(null, null!);
+    public void ToolRemoveAllTrains() => RemoveAllTrainsButton_OnClick(null, null!);
+
+    private async void AddAllCategoryButton_OnClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
     {
-        foreach (var t in CurrentBrowserTextures())
+        var all = CurrentBrowserTextures();
+        if (all.Count == 0)
+        {
+            await StarterNG.Infrastructure.Diagnostics.ReportAsync(App.Loc["PickCategoryFirst"]);
+            return;
+        }
+
+        foreach (var t in all)
             InsertTextureAt(t, _consist.Count);
     }
 
-    private void AddUniqueMmdButton_OnClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    private async void AddUniqueMmdButton_OnClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
     {
-        var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        foreach (var t in CurrentBrowserTextures())
+        var all = CurrentBrowserTextures();
+        if (all.Count == 0)
         {
-            string key = string.IsNullOrEmpty(t.Model) ? t.Skinfile : t.Model!;
-            if (!seen.Add(key)) continue;
-            InsertTextureAt(t, _consist.Count);
+            await StarterNG.Infrastructure.Diagnostics.ReportAsync(App.Loc["PickCategoryFirst"]);
+            return;
         }
+
+        var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var t in all)
+        {
+            foreach (string model in ModelsOf(t))
+            {
+                if (!seen.Add(model)) continue;
+                InsertTextureAt(t, _consist.Count);
+
+                var added = _consist[^1];
+                foreach (var car in added.Cars)
+                    car.MmdFile = model;
+            }
+        }
+    }
+
+    private static IEnumerable<string> ModelsOf(VehicleTexture t)
+    {
+        string first = string.IsNullOrEmpty(t.Model) ? t.Skinfile : t.Model!;
+        if (!string.IsNullOrEmpty(first))
+            yield return first;
+
+        foreach (var alias in t.Aliases)
+            if (!string.IsNullOrEmpty(alias.Model))
+                yield return alias.Model!;
+    }
+
+    private async void RemoveAllTrainsButton_OnClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    {
+        if (_listScenery is null || TopLevel.GetTopLevel(this) is not Window owner)
+            return;
+
+        if (!await MessageBox.Show(owner, App.Loc["RemoveAllTrainsConfirm"],
+                                   App.Loc["RemoveAllTrains"], MessageBoxButtons.YesNo))
+            return;
+
+        foreach (var ts in _listScenery.Trainsets)
+            ts.Vehicles = new List<Dynamic>();
+
+        if (_editingTrainset != null)
+            LoadTrainset(_editingTrainset);
+        PopulateSceneryConsists();
+        RebuildConsist();
     }
 
     private List<VehicleTexture> CurrentBrowserTextures()
     {
-        var list = new List<VehicleTexture>();
-        foreach (var obj in vehicleListBox.Items)
-        {
-            if (obj is ListBoxItem { Tag: VehicleTexture t, IsEnabled: true })
-                list.Add(t);
-        }
-        return list;
+        string search = searchBox.Text?.Trim() ?? "";
+        bool hasSearch = search.Length > 0;
+
+        if (_categoryFilter == null && _classFilter == null && !hasSearch)
+            return new List<VehicleTexture>();
+
+        return _db.Textures
+            .Where(t => PassesFilters(t, search, hasSearch))
+            .OrderBy(t => t.TextureMini ?? t.Skinfile, StringComparer.OrdinalIgnoreCase)
+            .ToList();
     }
 
     private bool PassesFilters(VehicleTexture t, string search, bool hasSearch)
@@ -687,15 +806,17 @@ public partial class Depot : UserControl
         RebuildConsist();
     }
 
-    private string BrowserLabel(VehicleTexture texture, IReadOnlyList<VehicleTexture>? set)
+    private static string BrowserName(VehicleTexture texture)
     {
-
-        string name;
         if (!string.IsNullOrEmpty(texture.TextureMini) &&
             !string.Equals(texture.TextureMini, texture.ResolvedClass, StringComparison.OrdinalIgnoreCase))
-            name = texture.TextureMini!;
-        else
-            name = Base(texture.Skinfile);
+            return texture.TextureMini!;
+        return Base(texture.Skinfile);
+    }
+
+    private string BrowserLabel(VehicleTexture texture, IReadOnlyList<VehicleTexture>? set)
+    {
+        string name = BrowserName(texture);
 
         if (!string.IsNullOrEmpty(texture.Meta?.Operator))
             name += $"  ·  {texture.Meta!.Operator}";
@@ -742,6 +863,9 @@ public partial class Depot : UserControl
         var lead = item.Cars.FirstOrDefault();
         if (lead is null) return;
 
+        foreach (var car in item.Cars)
+            car.DriverType = eDriverType.Nobody;
+
         var tex = _db.TextureForSkin(lead.SkinFile);
         string? cat = tex != null ? CategoryOf(tex) : null;
         if (!IsPoweredCategory(cat))
@@ -750,7 +874,10 @@ public partial class Depot : UserControl
         bool staffed = _consist.Any(i =>
             i.Driver is eDriverType.Headdriver or eDriverType.Reardriver);
         if (position == 0 || !staffed)
+        {
             item.Driver = eDriverType.Headdriver;
+            lead.DriverType = eDriverType.Headdriver;
+        }
     }
 
     private static bool IsPoweredCategory(string? c) =>
@@ -769,6 +896,9 @@ public partial class Depot : UserControl
         _suppress = true;
         sceneryConsistList.Items.Clear();
 
+        depotShowAiCheck.IsChecked = StarterNG.Classes.Settings.Instance.ShowAiVehicles;
+        depotDrivableOnlyCheck.IsChecked = StarterNG.Classes.Settings.Instance.DrivableOnly;
+
         _listScenery = AppState.Instance.CurrentScenery ?? _sceneries.FirstOrDefault();
         mapConsistsPanel.Header = _listScenery != null
             ? $"{App.Loc["MapConsists"]}: {Path.GetFileNameWithoutExtension(_listScenery.Path)}"
@@ -782,7 +912,7 @@ public partial class Depot : UserControl
             foreach (var trainset in _listScenery.Trainsets)
             {
                 if (IsAiTrainset(trainset) && !showAi) continue;
-                if (trainset.Decor && drivableOnly) continue;
+                if (drivableOnly && !UData.StaffedTrain(trainset)) continue;
 
                 var entry = new ListBoxItem
                 {
@@ -795,7 +925,9 @@ public partial class Depot : UserControl
                     entry,
                     () => ts,
                     vehicles => ApplyConsist(ts, vehicles),
-                    () => RemoveAllVehicles(ts));
+                    () => RemoveAllVehicles(ts),
+                    randomOrder: ToolRandomOrder,
+                    randomTurn: ToolRandomOrientation);
                 sceneryConsistList.Items.Add(entry);
 
                 if (ReferenceEquals(trainset, AppState.Instance.CurrentTrainset))
@@ -839,6 +971,219 @@ public partial class Depot : UserControl
         AppState.Instance.CurrentTrainset = target;
         LoadTrainset(target);
         PopulateSceneryConsists();
+    }
+
+    private void PopulateWarehouse()
+    {
+        string? current = (warehouseList.SelectedItem as ListBoxItem)?.Tag as string;
+        warehouseList.Items.Clear();
+
+        foreach (var preset in PresetStore.All())
+        {
+            var entry = new ListBoxItem
+            {
+                Tag = preset.Name,
+                Content = new TextBlock
+                {
+                    Text = preset.Name,
+                    TextTrimming = TextTrimming.CharacterEllipsis
+                }
+            };
+            warehouseList.Items.Add(entry);
+            if (current is not null && string.Equals(current, preset.Name, StringComparison.Ordinal))
+                warehouseList.SelectedItem = entry;
+        }
+
+        warehouseList.ContextMenu ??= BuildWarehouseMenu();
+        removeFromWarehouseButton.IsEnabled = warehouseList.Items.Count > 0;
+    }
+
+    private string? SelectedPresetName() =>
+        (warehouseList.SelectedItem as ListBoxItem)?.Tag as string;
+
+    private ContextMenu BuildWarehouseMenu()
+    {
+        var menu = new ContextMenu();
+        menu.Opening += (_, _) =>
+        {
+            menu.Items.Clear();
+            bool hasPreset = SelectedPresetName() != null;
+            bool hasTarget = _editingTrainset != null;
+
+            void Add(string key, Action run, bool enabled = true)
+            {
+                var mi = new MenuItem { Header = App.Loc[key], IsEnabled = enabled };
+                mi.Click += (_, _) => run();
+                menu.Items.Add(mi);
+            }
+
+            Add("WarehouseApply", ApplySelectedPreset, hasPreset && hasTarget);
+            Add("WarehouseAppend", () => AppendWarehouseButton_OnClick(null, null!), hasPreset && hasTarget);
+            Add("ChangeName", () => RenameWarehouseButton_OnClick(null, null!), hasPreset);
+
+            menu.Items.Add(new Separator());
+            Add("PresetImportMagazyn", () => ImportMagazynButton_OnClick(null, null!));
+            Add("WarehouseImportFile", () => ImportFileButton_OnClick(null, null!));
+
+            menu.Items.Add(new Separator());
+            var sort = new MenuItem { Header = App.Loc["PresetSort"] };
+            var byName = new MenuItem
+            {
+                Header = (PresetStore.SortMode == PresetSort.Name ? "\u25CF " : "\u25CB ") + App.Loc["PresetSortName"]
+            };
+            byName.Click += (_, _) => { PresetStore.SortMode = PresetSort.Name; PopulateWarehouse(); };
+            var byTrack = new MenuItem
+            {
+                Header = (PresetStore.SortMode == PresetSort.Track ? "\u25CF " : "\u25CB ") + App.Loc["PresetSortTrack"]
+            };
+            byTrack.Click += (_, _) => { PresetStore.SortMode = PresetSort.Track; PopulateWarehouse(); };
+            sort.Items.Add(byName);
+            sort.Items.Add(byTrack);
+            menu.Items.Add(sort);
+        };
+        return menu;
+    }
+
+    private async void AddToWarehouseButton_OnClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    {
+        if (_editingTrainset is not { } trainset)
+            return;
+
+        string name = trainset.Name;
+        if (string.IsNullOrWhiteSpace(name))
+            name = App.Loc["PresetEmpty"];
+
+        try
+        {
+            PresetStore.Save(name, ConsistText.Serialize(trainset));
+        }
+        catch (Exception ex)
+        {
+            await StarterNG.Infrastructure.Diagnostics.ReportAsync(PresetStore.FilePath, ex);
+            return;
+        }
+        PopulateWarehouse();
+    }
+
+    private void WarehouseList_OnDoubleTapped(object? sender, Avalonia.Input.TappedEventArgs e) =>
+        ApplySelectedPreset();
+
+    private void ApplySelectedPreset()
+    {
+        if (SelectedPresetName() is not { } name || _editingTrainset is not { } target)
+            return;
+
+        var preset = PresetStore.All().FirstOrDefault(p =>
+            string.Equals(p.Name, name, StringComparison.Ordinal));
+        if (preset is null)
+            return;
+
+        var vehicles = ConsistText.VehiclesFrom(preset.Entry);
+        if (vehicles != null)
+            ApplyConsist(target, vehicles);
+    }
+
+    private void RenameWarehouseButton_OnClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    {
+        if (SelectedPresetName() is not { } name)
+            return;
+
+        var preset = PresetStore.All().FirstOrDefault(p =>
+            string.Equals(p.Name, name, StringComparison.Ordinal));
+        if (preset is null)
+            return;
+
+        var nameBox = new TextBox { Text = name, MinWidth = 240 };
+        var ok = new Button { Content = App.Loc["Ok"], Cursor = _hand };
+        ok.Classes.Add("Accent");
+
+        var panel = new StackPanel { Spacing = 6, Margin = new Thickness(8) };
+        panel.Children.Add(new TextBlock
+        {
+            Text = App.Loc["PresetNamePrompt"],
+            FontWeight = FontWeight.Bold,
+            FontSize = 12
+        });
+        panel.Children.Add(nameBox);
+        panel.Children.Add(ok);
+
+        var flyout = new Flyout { Content = panel };
+        ok.Click += (_, _) =>
+        {
+            string? fresh = nameBox.Text?.Trim();
+            if (!string.IsNullOrEmpty(fresh) && !string.Equals(fresh, name, StringComparison.Ordinal))
+            {
+                PresetStore.Save(fresh, preset.Entry);
+                PresetStore.Delete(name);
+                PopulateWarehouse();
+            }
+            flyout.Hide();
+        };
+        flyout.ShowAt(warehouseList);
+        nameBox.Focus();
+    }
+
+    private void AppendWarehouseButton_OnClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    {
+        if (SelectedPresetName() is not { } name || _editingTrainset is not { } target)
+            return;
+
+        var preset = PresetStore.All().FirstOrDefault(p =>
+            string.Equals(p.Name, name, StringComparison.Ordinal));
+        var vehicles = ConsistText.VehiclesFrom(preset?.Entry);
+        if (vehicles is null || vehicles.Count == 0)
+            return;
+
+        var merged = new List<Dynamic>(target.Vehicles);
+        merged.AddRange(vehicles);
+        ApplyConsist(target, merged);
+    }
+
+    private async void ImportFileButton_OnClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    {
+        if (TopLevel.GetTopLevel(this) is not { } top)
+            return;
+
+        var picked = await top.StorageProvider.OpenFilePickerAsync(
+            new Avalonia.Platform.Storage.FilePickerOpenOptions
+            {
+                Title = App.Loc["WarehouseImportFile"],
+                AllowMultiple = false
+            });
+
+        string? path = picked.FirstOrDefault()?.Path.LocalPath;
+        if (string.IsNullOrEmpty(path))
+            return;
+
+        int added = PresetStore.ImportMagazyn(path);
+        PopulateWarehouse();
+        if (added == 0)
+            await StarterNG.Infrastructure.Diagnostics.ReportAsync(App.Loc["WarehouseImportNothing"]);
+    }
+
+    private async void RemoveFromWarehouseButton_OnClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    {
+        if (SelectedPresetName() is not { } name)
+            return;
+
+        try
+        {
+            PresetStore.Delete(name);
+        }
+        catch (Exception ex)
+        {
+            await StarterNG.Infrastructure.Diagnostics.ReportAsync(PresetStore.FilePath, ex);
+            return;
+        }
+        PopulateWarehouse();
+    }
+
+    private async void ImportMagazynButton_OnClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    {
+        int added = PresetStore.ImportMagazyn();
+        PopulateWarehouse();
+        if (added == 0)
+            await StarterNG.Infrastructure.Diagnostics.ReportAsync(App.Loc["WarehouseImportNothing"]);
     }
 
     private void RemoveAllVehicles(Trainset target)
@@ -957,26 +1302,56 @@ public partial class Depot : UserControl
 
     private void RemoveItem(ConsistItem item)
     {
+        int gap = _consist.IndexOf(item);
         _consist.Remove(item);
-        if (ReferenceEquals(_selected, item)) _selected = null;
+
+        if (ReferenceEquals(_selected, item))
+            _selected = _consist.Count == 0
+                ? null
+                : _consist[Math.Clamp(gap, 0, _consist.Count - 1)];
+
         RebuildConsist();
     }
 
     private void FlipItem(ConsistItem item)
     {
-        item.Flipped = !item.Flipped;
+        int index = _consist.IndexOf(item);
+        if (index < 0) return;
+
+        int first = index;
+        while (first > 0 && HoldsTail(_consist[first - 1]))
+            first--;
+
+        int last = index;
+        while (last + 1 < _consist.Count && HoldsTail(_consist[last]))
+            last++;
+
+        for (int k = first; k <= last; k++)
+        {
+            var card = _consist[k];
+            card.Flipped = !card.Flipped;
+            foreach (var car in card.Cars)
+                car.Offset = car.Offset >= 0 ? -1f : 0f;
+        }
+
+        if (last > first)
+            _consist.Reverse(first, last - first + 1);
+
+        AutoConnectAll();
         RebuildConsist();
     }
 
     private void CycleDriver(ConsistItem item)
     {
-        item.Driver = item.Driver switch
+        var car = ActiveCar(item);
+        car.DriverType = car.DriverType switch
         {
             eDriverType.Nobody => eDriverType.Headdriver,
             eDriverType.Headdriver => eDriverType.Reardriver,
             eDriverType.Reardriver => eDriverType.Passenger,
             _ => eDriverType.Nobody
         };
+        item.Driver = UnitDriver(item.Cars);
         if (ReferenceEquals(_selected, item))
             SyncStartingVehicle();
         RebuildConsist();
@@ -988,24 +1363,137 @@ public partial class Depot : UserControl
         int i = _consist.IndexOf(item);
         if (i < 0) return;
 
+        var order = item.Flipped
+            ? Enumerable.Reverse(item.Cars).ToList()
+            : item.Cars;
+
         _consist.RemoveAt(i);
-        for (int c = 0; c < item.Cars.Count; c++)
+        for (int c = 0; c < order.Count; c++)
         {
             _consist.Insert(i + c, new ConsistItem
             {
-                Cars = new List<Dynamic> { item.Cars[c] },
+                Cars = new List<Dynamic> { order[c] },
                 Grouped = false,
                 Flipped = item.Flipped,
-                Driver = c == 0 ? item.Driver : eDriverType.Nobody
+                Driver = order[c].DriverType
             });
         }
         _selected = _consist[i];
         RebuildConsist();
     }
 
+    private static bool HoldsNext(Dynamic car) =>
+        car.Coupling.Has(Coupling.WorkshopLock) || car.Coupling.Locked;
+
+    private void JoinItem(ConsistItem item)
+    {
+        int index = _consist.IndexOf(item);
+        if (index < 0) return;
+
+        int first = index;
+        while (first > 0 && HoldsTail(_consist[first - 1]))
+            first--;
+
+        int last = index;
+
+        bool inUnit = first < index || HoldsTail(_consist[index]);
+        if (!inUnit && last + 1 < _consist.Count)
+        {
+            var card = _consist[last];
+            if (card.Cars.Count > 0)
+                TailCar(card).Coupling.Set(Coupling.WorkshopLock, true);
+            last++;
+        }
+
+        while (last + 1 < _consist.Count && HoldsTail(_consist[last]))
+            last++;
+
+        if (last == first) return;
+
+        var cars = new List<Dynamic>();
+        var driver = eDriverType.Nobody;
+        for (int k = first; k <= last; k++)
+        {
+            cars.AddRange(_consist[k].Cars);
+            if (driver == eDriverType.Nobody)
+                driver = _consist[k].Driver;
+        }
+
+        bool flipped = _consist[first].Flipped;
+        if (flipped)
+            cars.Reverse();
+
+        var joined = new ConsistItem
+        {
+            Cars = cars,
+            Grouped = true,
+            Flipped = flipped,
+            Driver = driver
+        };
+
+        _consist.RemoveRange(first, last - first + 1);
+        _consist.Insert(first, joined);
+        _selected = joined;
+
+        AutoConnectAll();
+        RebuildConsist();
+    }
+
+    private Dynamic ActiveCar(ConsistItem item) =>
+        _selectedCar != null && item.Cars.Contains(_selectedCar) ? _selectedCar : item.Cars[0];
+
+    private IEnumerable<Dynamic> UnitTargets(ConsistItem item) => item.Cars;
+
+    private IEnumerable<Dynamic> MemberTargets(ConsistItem item) =>
+        item.Cars.Count == 1 ? item.Cars : new[] { ActiveCar(item) };
+
+    private static Dynamic TailCar(ConsistItem item) =>
+        item.Flipped ? item.Cars[0] : item.Cars[^1];
+
+    private static Dynamic HeadCar(ConsistItem item) =>
+        item.Flipped ? item.Cars[^1] : item.Cars[0];
+
+    private static bool HoldsTail(ConsistItem item) =>
+        item.Cars.Count > 0 && HoldsNext(TailCar(item));
+
+    private bool CanFormUnit(ConsistItem left, ConsistItem right)
+    {
+        if (left.Cars.Count == 0 || right.Cars.Count == 0)
+            return false;
+
+        var tail = TailCar(left);
+        var head = HeadCar(right);
+
+        var lp = PhysicsFor(tail);
+        var rp = PhysicsFor(head);
+        int leftMax = lp == null ? 3 : (left.Flipped ? lp.AllowedFlagA : lp.AllowedFlagB);
+        int rightMax = rp == null ? 3 : (right.Flipped ? rp.AllowedFlagB : rp.AllowedFlagA);
+
+        return (leftMax & rightMax & Coupling.WorkshopLock) != 0 || SameSet(tail, head);
+    }
+
+    private bool SameSet(Dynamic a, Dynamic b)
+    {
+        if (IsUnitCar(a) && IsUnitCar(b) && UnitKey(a) == UnitKey(b))
+            return true;
+
+        string? ua = _db.TextureForSkin(a.SkinFile)?.Uuid;
+        string? ub = _db.TextureForSkin(b.SkinFile)?.Uuid;
+        if (string.IsNullOrEmpty(ua) || string.IsNullOrEmpty(ub))
+            return false;
+
+        return _db.SetByTextureUuid.TryGetValue(ua!, out var sa) &&
+               _db.SetByTextureUuid.TryGetValue(ub!, out var sb) &&
+               ReferenceEquals(sa, sb) && sa.TextureRefs.Count > 1;
+    }
+
     private void RebuildConsist()
     {
         consistStack.Children.Clear();
+        _memberChrome.Clear();
+        _driverChrome.Clear();
+        _dropGap.Forget();
+        _dropTracker.Reset();
         for (int i = 0; i < _consist.Count; i++)
         {
             var item = _consist[i];
@@ -1032,11 +1520,8 @@ public partial class Depot : UserControl
         foreach (var item in _consist)
         {
             var cars = item.Flipped ? item.Cars.AsEnumerable().Reverse().ToList() : item.Cars;
-            for (int k = 0; k < cars.Count; k++)
-            {
-                cars[k].DriverType = k == 0 ? item.Driver : eDriverType.Nobody;
-                flat.Add(cars[k]);
-            }
+            foreach (var car in cars)
+                flat.Add(car);
         }
         _editingTrainset.Vehicles = flat;
         RefreshConsistListLabels();
@@ -1086,16 +1571,15 @@ public partial class Depot : UserControl
     {
         if (_editingTrainset is null)
         {
-            trainStats.Text = "";
+            trainStats.Children.Clear();
             return;
         }
 
-        trainStats.Text = TrainsetDisplay.FormatStats(
+        StarterNG.Infrastructure.StatsBar.Fill(trainStats, TrainsetDisplay.StatsFields(
             _editingTrainset,
             PhysicsFor,
-            App.Loc["Length"], App.Loc["Mass"], App.Loc["VehicleCount"], App.Loc["Track"],
             car => _db.TextureForSkin(car.SkinFile) is { } t ? CategoryOf(t) : null,
-            LoadWeight);
+            LoadWeight));
     }
 
     private Control BuildCard(ConsistItem item, int index)
@@ -1111,7 +1595,9 @@ public partial class Depot : UserControl
         var cars = item.Flipped ? item.Cars.AsEnumerable().Reverse() : item.Cars;
         foreach (var car in cars)
         {
-            var bmp = GetMiniBitmap(car.MiniName, ConsistThumbHeight) ?? GetMiniBitmap(car.SkinFile, ConsistThumbHeight);
+            var bmp = GetMiniBitmap(car.MiniName, ConsistThumbHeight, strict: true)
+                      ?? GetMiniBitmap(car.SkinFile, ConsistThumbHeight, strict: true)
+                      ?? GetMiniBitmap(car.MiniName, ConsistThumbHeight);
             if (bmp != null)
             {
                 var img = new Image { Source = bmp, Height = ConsistThumbHeight, Stretch = Stretch.Uniform };
@@ -1120,11 +1606,12 @@ public partial class Depot : UserControl
                     img.RenderTransform = new ScaleTransform(-1, 1);
                     img.RenderTransformOrigin = RelativePoint.Center;
                 }
-                minis.Children.Add(img);
+
+                minis.Children.Add(MemberFrame(img, item, car, CardCaption(item, car, index)));
             }
             else
             {
-                minis.Children.Add(new Border
+                minis.Children.Add(MemberFrame(new Border
                 {
                     Height = ConsistThumbHeight, Width = 90, Background = Placeholder,
                     CornerRadius = new CornerRadius(4),
@@ -1135,18 +1622,19 @@ public partial class Depot : UserControl
                         VerticalAlignment = VerticalAlignment.Center,
                         TextAlignment = TextAlignment.Center
                     }
-                });
+                }, item, car, CardCaption(item, car, index)));
             }
         }
 
         var nameBlock = new TextBlock
         {
-            Text = item.Grouped ? UnitLabel(item) : item.Cars[0].Name,
+            Text = item.Grouped && item.Cars.Count > 1 ? UnitLabel(item) : string.Empty,
             FontSize = 11,
             MaxWidth = Math.Max(120, item.Cars.Count * 96),
             TextWrapping = TextWrapping.Wrap,
             TextAlignment = TextAlignment.Center,
-            HorizontalAlignment = HorizontalAlignment.Center
+            HorizontalAlignment = HorizontalAlignment.Center,
+            IsVisible = item.Grouped && item.Cars.Count > 1
         };
 
         var controls = new StackPanel
@@ -1160,6 +1648,13 @@ public partial class Depot : UserControl
         controls.Children.Add(SmallButton("⇄", App.Loc["TipFlip"], () => FlipItem(item)));
         controls.Children.Add(SmallButton("▶", App.Loc["TipMoveRight"], () => MoveRight(item)));
 
+        if (item.Grouped && item.Cars.Count > 1)
+            controls.Children.Add(SmallButton("⧉", App.Loc["TipSplit"], () => SplitItem(item)));
+        else if ((index + 1 < _consist.Count &&
+                  (HoldsTail(item) || CanFormUnit(item, _consist[index + 1]))) ||
+                 (index > 0 && HoldsTail(_consist[index - 1])))
+            controls.Children.Add(SmallButton("⛓", App.Loc["TipJoin"], () => JoinItem(item)));
+
         var remove = SmallButton("✕", App.Loc["RemoveSelectedVehicle"], () => RemoveItem(item));
         remove.Foreground = new SolidColorBrush(Color.Parse("#E05252"));
         remove.FontWeight = FontWeight.Bold;
@@ -1169,22 +1664,6 @@ public partial class Depot : UserControl
         inner.Children.Add(minis);
         inner.Children.Add(nameBlock);
         inner.Children.Add(controls);
-
-        if (item.Grouped && item.Cars.Count > 1)
-        {
-            var split = new Button
-            {
-                Content = App.Loc["Split"],
-                FontSize = 11,
-                Padding = new Thickness(6, 2),
-                HorizontalAlignment = HorizontalAlignment.Center,
-                Cursor = _hand
-            };
-            split.Classes.Add("Basic");
-            ToolTip.SetTip(split, App.Loc["TipSplit"]);
-            split.Click += (_, _) => SplitItem(item);
-            inner.Children.Add(split);
-        }
 
         var card = new Border
         {
@@ -1208,24 +1687,74 @@ public partial class Depot : UserControl
                 return;
 
             _selected = item;
+            _selectedCar = _pressedCar ?? item.Cars[0];
+            _pressedCar = null;
             SyncStartingVehicle();
             RefreshCardSelectionChrome();
             UpdateDetails();
 
-            ArmConsistDrag(e, card, index, item);
+            _pressCardIndex = index;
+            _pressPoint = e.GetPosition(consistStack);
+            _cardDragging = false;
         };
-        card.AddHandler(InputElement.PointerMovedEvent, PendingDrag_OnPointerMoved, handledEventsToo: true);
-        card.AddHandler(InputElement.PointerReleasedEvent, PendingDrag_OnPointerReleased, handledEventsToo: true);
-        DragDrop.SetAllowDrop(card, true);
-        card.AddHandler(DragDrop.DragOverEvent, Consist_OnDragOver);
-        card.AddHandler(DragDrop.DropEvent, (s, e) => ConsistCard_OnDrop(e, index, card));
-
         card.ContextMenu = BuildCardMenu(card, item);
         return card;
     }
 
+    private string CardCaption(ConsistItem item, Dynamic car, int index) =>
+        TrainsetDisplay.VehicleLabel(car,
+            head: index == 0 && ReferenceEquals(car, HeadCar(item)) && TrainsetDisplay.IsPowered(car));
+
+    private Control MemberFrame(Control visual, ConsistItem item, Dynamic car, string caption)
+    {
+        var stack = new StackPanel { Spacing = 2 };
+        stack.Children.Add(visual);
+        stack.Children.Add(new TextBlock
+        {
+            Text = caption,
+            FontSize = 10,
+            MaxWidth = 96,
+            TextWrapping = TextWrapping.Wrap,
+            TextAlignment = TextAlignment.Center,
+            HorizontalAlignment = HorizontalAlignment.Center
+        });
+
+        var frame = new Border
+        {
+            Child = stack,
+            Padding = new Thickness(1),
+            BorderThickness = new Thickness(0, 2),
+            BorderBrush = Brushes.Transparent,
+            Cursor = _hand
+        };
+
+        if (!string.IsNullOrWhiteSpace(car.Name) && car.Name != caption)
+            ToolTip.SetTip(frame, car.Name);
+
+        var picked = car;
+        frame.PointerPressed += (_, _) => _pressedCar = picked;
+        _memberChrome.Add((frame, item, car));
+        return frame;
+    }
+
+    private void RefreshMemberChrome()
+    {
+        foreach (var (badge, item) in _driverChrome)
+            PaintDriverButton(badge, item);
+
+        foreach (var (frame, item, car) in _memberChrome)
+        {
+            bool lit = item.Cars.Count > 1 &&
+                       ReferenceEquals(item, _selected) &&
+                       ReferenceEquals(car, ActiveCar(item));
+            frame.BorderBrush = lit ? CardBorderSel : Brushes.Transparent;
+        }
+    }
+
     private void RefreshCardSelectionChrome()
     {
+        RefreshMemberChrome();
+
         foreach (var child in consistStack.Children)
         {
             if (child is not Border { Tag: ConsistItem ci } border)
@@ -1374,25 +1903,26 @@ public partial class Depot : UserControl
 
     private Control BuildCouplingBox(ConsistItem item)
     {
-        var d = item.Cars[^1];
+        var d = TailCar(item);
         int unitIdx = _consist.IndexOf(item);
 
         var panel = new StackPanel { Spacing = 2 };
 
         var copy = new Button
         {
-            Content = App.Loc["CopyCoupler"],
-            FontSize = 11,
+            Content = "\u00AB",
+            FontSize = 13,
             Padding = new Thickness(6, 1),
             Margin = new Thickness(12, 0, 0, 0),
             IsEnabled = unitIdx > 0,
             Cursor = _hand
         };
         copy.Classes.Add("Flat");
+        ToolTip.SetTip(copy, App.Loc["CopyCoupler"]);
         copy.Click += (_, _) =>
         {
             if (unitIdx <= 0) return;
-            d.Coupling.Flags = _consist[unitIdx - 1].Cars[^1].Coupling.Flags;
+            d.Coupling.Flags = TailCar(_consist[unitIdx - 1]).Coupling.Flags;
             RebuildConsist();
         };
 
@@ -1434,14 +1964,21 @@ public partial class Depot : UserControl
         return new Border { Padding = new Thickness(8), Child = panel };
     }
 
+    private const string TextPresentation = "\uFE0E";
+
     private Button SmallButton(string glyph, string tip, Action onClick)
     {
         var btn = new Button
         {
-            Content = glyph,
-            FontSize = 12,
-            Padding = new Thickness(5, 1),
+            Content = glyph + TextPresentation,
+            FontSize = 15,
+            Padding = new Thickness(0),
             MinWidth = 0,
+            MinHeight = 0,
+            Width = 26,
+            Height = 22,
+            HorizontalContentAlignment = HorizontalAlignment.Center,
+            VerticalContentAlignment = VerticalAlignment.Center,
             Cursor = _hand
         };
         btn.Classes.Add("Basic");
@@ -1452,7 +1989,20 @@ public partial class Depot : UserControl
 
     private Button DriverButton(ConsistItem item)
     {
-        (string glyph, string color) = item.Driver switch
+        var btn = SmallButton("", App.Loc["TipDriver"], () => CycleDriver(item));
+        btn.FontWeight = FontWeight.Bold;
+        _driverChrome.Add((btn, item));
+        PaintDriverButton(btn, item);
+        return btn;
+    }
+
+    private void PaintDriverButton(Button btn, ConsistItem item)
+    {
+        var type = ReferenceEquals(item, _selected) && item.Cars.Count > 1
+            ? ActiveCar(item).DriverType
+            : item.Driver;
+
+        (string glyph, string color) = type switch
         {
             eDriverType.Headdriver => ("1", "#4CAF50"),
             eDriverType.Reardriver => ("2", "#FF9800"),
@@ -1460,14 +2010,15 @@ public partial class Depot : UserControl
             _ => ("–", "#888888")
         };
 
-        var btn = SmallButton(glyph, App.Loc["TipDriver"], () => CycleDriver(item));
+        btn.Content = glyph;
         btn.Foreground = new SolidColorBrush(Color.Parse(color));
-        btn.FontWeight = FontWeight.Bold;
-        return btn;
     }
 
     private void UpdateDetails()
     {
+        generalPanel.Children.Clear();
+        consistTexturePanel.Children.Clear();
+        couplerPanel.Children.Clear();
         brakesPanel.Children.Clear();
         loadsPanel.Children.Clear();
         damagePanel.Children.Clear();
@@ -1477,18 +2028,44 @@ public partial class Depot : UserControl
             : $"{App.Loc["SelectedVehicle"]}: " +
               (_selected.Grouped ? UnitLabel(_selected) : _selected.Cars[0].Name);
 
+        if (_selected != null && !_selected.Cars.Contains(_selectedCar!))
+            _selectedCar = _selected.Cars[0];
+
+        RefreshMemberChrome();
+
         loadsPanel.Children.Add(BuildConsistLoadTools());
 
         if (_selected is null)
         {
+            generalPanel.Children.Add(DetailHint(App.Loc["SelectVehicleHint"]));
+            consistTexturePanel.Children.Add(DetailHint(App.Loc["SelectVehicleHint"]));
+            couplerPanel.Children.Add(DetailHint(App.Loc["SelectVehicleHint"]));
             brakesPanel.Children.Add(DetailHint(App.Loc["SelectVehicleHint"]));
             loadsPanel.Children.Add(DetailHint(App.Loc["SelectVehicleHint"]));
             damagePanel.Children.Add(DetailHint(App.Loc["SelectVehicleHint"]));
+            removeVehicleButton.IsEnabled = false;
             return;
         }
 
+        BuildGeneralInfo(_selected);
+
+        if (_db.TextureForSkin(ActiveCar(_selected).SkinFile) is { } tex)
+            ShowTextureInfo(tex, consistTexturePanel);
+        else
+            consistTexturePanel.Children.Add(DetailHint(App.Loc["NoTextureInfo"]));
+
+        removeVehicleButton.IsEnabled = true;
+
+        if (_selected.Cars.Count > 1)
+        {
+            couplerPanel.Children.Add(UnitScopeHint(App.Loc["CouplingUnitRear"]));
+            brakesPanel.Children.Add(UnitScopeHint(App.Loc["AppliesToUnit"]));
+        }
+
+        BuildCouplerEditor(_selected);
         BuildBrakesEditor(_selected);
         BuildLoadsEditor(_selected);
+        BuildConfigExtras(_selected);
         BuildDamageEditor(_selected);
     }
 
@@ -1512,6 +2089,14 @@ public partial class Depot : UserControl
             };
             copyPrev.Click += (_, _) => CopyLoadFromPrevious(item);
             menu.Items.Add(copyPrev);
+
+            var copyToAll = new MenuItem
+            {
+                Header = App.Loc["LoadCopyToAll"],
+                IsEnabled = IsLoadable(item)
+            };
+            copyToAll.Click += (_, _) => CopyLoadToFollowing(item);
+            menu.Items.Add(copyToAll);
 
             var max = new MenuItem
             {
@@ -1548,27 +2133,48 @@ public partial class Depot : UserControl
         return b;
     }
 
-    private bool IsLoadable(ConsistItem item)
+    private bool IsLoadable(ConsistItem item) => IsLoadable(item.Cars[0]);
+
+    private bool IsLoadable(Dynamic car)
     {
-        var p = PhysicsFor(item.Cars[0]);
-        return p != null && (p.MaxLoad > 0 || !string.IsNullOrWhiteSpace(p.LoadAccepted));
+        string? cat = _db.TextureForSkin(car.SkinFile) is { } t ? CategoryOf(t) : null;
+        if (cat is "e" or "s" or "p")
+            return false;
+        return !string.IsNullOrWhiteSpace(PhysicsFor(car)?.LoadAccepted);
     }
 
-    private int MaxLoadFor(Dynamic car)
+    private int MaxLoadFor(Dynamic car, string? type = null)
     {
-        var p = PhysicsFor(car);
-        if (p == null) return 0;
-        if (p.MaxLoad > 0) return p.MaxLoad;
-        return string.IsNullOrWhiteSpace(p.LoadAccepted) ? 0 : 1000;
+        if (!IsLoadable(car)) return 0;
+
+        if (Dynamic.IsPantStateType(type ?? car.LoadType)) return Dynamic.PantStateMax;
+
+        if (car.MaxLoad >= 0) return car.MaxLoad;
+        return PhysicsFor(car)?.MaxLoad ?? 0;
+    }
+
+    private int LoadLimitFor(Dynamic car, string? type = null)
+    {
+        int max = MaxLoadFor(car, type);
+        return max > 0 ? max : (IsLoadable(car) ? int.MaxValue : 0);
     }
 
     private List<string> AcceptedTypesFor(Dynamic car)
     {
         var p = PhysicsFor(car);
-        if (p != null && !string.IsNullOrWhiteSpace(p.LoadAccepted))
-            return p.LoadAccepted.Split(',', ';').Select(s => s.Trim()).Where(s => s.Length > 0).ToList();
-        return LoadTypes().ToList();
+        if (!IsLoadable(car) || p == null)
+            return new List<string>();
+
+        return p.LoadAccepted.Split(',', ';')
+            .Select(s => s.Trim())
+            .Where(s => s.Length > 0)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
     }
+
+    private bool Accepts(Dynamic car, string? type) =>
+        !string.IsNullOrEmpty(type) &&
+        AcceptedTypesFor(car).Contains(type!, StringComparer.OrdinalIgnoreCase);
 
     private void CopyLoadFromPrevious(ConsistItem item)
     {
@@ -1578,10 +2184,9 @@ public partial class Depot : UserControl
         var source = _consist[idx - 1].Cars[0];
         foreach (var c in item.Cars)
         {
-            int max = MaxLoadFor(c);
-            c.LoadType = max > 0 ? source.LoadType : null;
-            c.LoadCount = max > 0 ? Math.Min(source.LoadCount, max) : 0;
-            if (c.LoadCount > 0) c.HasVelocity = true;
+            if (!Accepts(c, source.LoadType)) continue;
+            c.LoadType = source.LoadType;
+            c.LoadCount = Math.Min(source.LoadCount, LoadLimitFor(c));
         }
         RebuildConsist();
     }
@@ -1593,17 +2198,32 @@ public partial class Depot : UserControl
         RebuildConsist();
     }
 
+    private void CopyLoadToFollowing(ConsistItem item)
+    {
+        int idx = _consist.IndexOf(item);
+        if (idx < 0) return;
+
+        var lead = item.Cars[0];
+        string? type = lead.LoadType;
+        if (string.IsNullOrEmpty(type)) return;
+
+        foreach (var c in _consist.Skip(idx + 1).SelectMany(u => u.Cars))
+        {
+            if (!AcceptedTypesFor(c).Contains(type!, StringComparer.OrdinalIgnoreCase))
+                continue;
+            c.LoadType = type;
+            c.LoadCount = Math.Min(lead.LoadCount, MaxLoadFor(c));
+        }
+        RebuildConsist();
+    }
+
     private void RandomLoadTypeForConsist()
     {
         foreach (var c in _consist.SelectMany(u => u.Cars))
         {
-            int max = MaxLoadFor(c);
-            if (max <= 0) continue;
             var types = AcceptedTypesFor(c);
             if (types.Count == 0) continue;
             c.LoadType = types[_rng.Next(types.Count)];
-            c.LoadCount = max;
-            c.HasVelocity = true;
         }
         RebuildConsist();
     }
@@ -1626,7 +2246,6 @@ public partial class Depot : UserControl
             if (string.IsNullOrEmpty(c.LoadType)) continue;
             int min = Math.Max(1, max / 10);
             c.LoadCount = _rng.Next(min, max + 1);
-            c.HasVelocity = true;
         }
         RebuildConsist();
     }
@@ -1639,24 +2258,268 @@ public partial class Depot : UserControl
             car.LoadType = AcceptedTypesFor(car).FirstOrDefault();
         if (string.IsNullOrEmpty(car.LoadType)) return;
         car.LoadCount = max;
-        car.HasVelocity = true;
     }
+
+    private void BuildGeneralInfo(ConsistItem item)
+    {
+        var car = ActiveCar(item);
+        var inv = CultureInfo.InvariantCulture;
+
+        bool unit = item.Cars.Count > 1;
+        var members = item.Cars.Select(PhysicsFor).Where(p => p != null).ToList();
+
+        double? length = members.Count == 0 ? null
+            : unit ? members.Sum(p => p!.Length) : members[0]!.Length;
+        double? mass = members.Count == 0 ? null
+            : (unit ? members.Sum(p => p!.Mass) : members[0]!.Mass) / 1000.0;
+        double? vmax = members.Count == 0 ? null
+            : unit ? members.Min(p => p!.VMax) : members[0]!.VMax;
+
+        generalPanel.Children.Add(InfoRow($"{App.Loc["Length"]} [m]:",
+            length?.ToString("0.##", inv)));
+        generalPanel.Children.Add(InfoRow($"{App.Loc["Mass"]} [t]:",
+            mass?.ToString("0.#", inv)));
+        generalPanel.Children.Add(InfoRow($"{App.Loc["VMax"]} [km/h]:",
+            vmax?.ToString("0", inv)));
+
+        if (unit)
+            generalPanel.Children.Add(InfoRow($"{App.Loc["VehicleCount"]}:",
+                item.Cars.Count.ToString(inv)));
+
+        generalPanel.Children.Add(InfoRow($"{App.Loc["Model"]}:", car.MmdFile));
+        generalPanel.Children.Add(InfoRow($"{App.Loc["Texture"]}:", car.SkinFile));
+    }
+
+    private static Control InfoRow(string label, string? value)
+    {
+        var grid = new Grid { ColumnDefinitions = new ColumnDefinitions("Auto,10,*") };
+
+        var caption = new TextBlock
+        {
+            Text = label,
+            FontSize = 12,
+            MinWidth = 110,
+            TextAlignment = TextAlignment.Right,
+            HorizontalAlignment = HorizontalAlignment.Right,
+            VerticalAlignment = VerticalAlignment.Center
+        };
+
+        var reading = new TextBlock
+        {
+            Text = string.IsNullOrWhiteSpace(value) ? "–" : value,
+            FontSize = 12,
+            TextAlignment = TextAlignment.Right,
+            HorizontalAlignment = HorizontalAlignment.Right,
+            VerticalAlignment = VerticalAlignment.Center,
+            TextWrapping = TextWrapping.Wrap
+        };
+
+        Grid.SetColumn(reading, 2);
+        grid.Children.Add(caption);
+        grid.Children.Add(reading);
+        return grid;
+    }
+
+    private void BuildCouplerEditor(ConsistItem item)
+    {
+        int unitIdx = _consist.IndexOf(item);
+        if (unitIdx < 0)
+            return;
+
+        bool isLast = unitIdx >= _consist.Count - 1;
+
+        var d = TailCar(item);
+
+        var grid = new Grid
+        {
+            ColumnDefinitions = new ColumnDefinitions("*,8,*"),
+            RowDefinitions = new RowDefinitions("Auto,Auto,Auto,Auto"),
+            RowSpacing = 4
+        };
+        for (int i = 0; i < CouplingBitKeys.Length; i++)
+        {
+            int bit = 1 << i;
+            var check = new CheckBox
+            {
+                Content = App.Loc[CouplingBitKeys[i]],
+                IsChecked = d.Coupling.Has(bit),
+                Classes = { "Checklist" }
+            };
+            check.IsCheckedChanged += (_, _) =>
+            {
+                d.Coupling.Set(bit, check.IsChecked == true);
+                RebuildConsist();
+            };
+            int half = (CouplingBitKeys.Length + 1) / 2;
+            Grid.SetColumn(check, i < half ? 0 : 2);
+            Grid.SetRow(check, i % half);
+            grid.Children.Add(check);
+        }
+        couplerPanel.Children.Add(grid);
+
+        var copy = new Button
+        {
+            Content = App.Loc["CopyCoupler"],
+            FontSize = 11,
+            Cursor = _hand,
+            HorizontalAlignment = HorizontalAlignment.Stretch,
+            HorizontalContentAlignment = HorizontalAlignment.Center,
+            IsEnabled = unitIdx > 0
+        };
+        copy.Classes.Add("Flat");
+        copy.Click += (_, _) =>
+        {
+            if (unitIdx <= 0) return;
+            d.Coupling.Flags = TailCar(_consist[unitIdx - 1]).Coupling.Flags;
+            RebuildConsist();
+            UpdateDetails();
+        };
+
+        var auto = new Button
+        {
+            Content = App.Loc["AutoCoupler"],
+            FontSize = 11,
+            Cursor = _hand,
+            HorizontalAlignment = HorizontalAlignment.Stretch,
+            HorizontalContentAlignment = HorizontalAlignment.Center,
+            IsEnabled = _consist.Count > 1 && !isLast
+        };
+        auto.Classes.Add("Flat");
+        ToolTip.SetTip(auto, App.Loc["TipAutoCoupler"]);
+        auto.Click += (_, _) =>
+        {
+            AutoConnectAll();
+            RebuildConsist();
+            UpdateDetails();
+        };
+
+        var buttons = new Grid
+        {
+            ColumnDefinitions = new ColumnDefinitions("125*,4,48*"),
+            Margin = new Thickness(0, 6, 0, 0)
+        };
+        Grid.SetColumn(copy, 0);
+        Grid.SetColumn(auto, 2);
+        buttons.Children.Add(copy);
+        buttons.Children.Add(auto);
+        couplerPanel.Children.Add(buttons);
+    }
+
+    private void BuildConfigExtras(ConsistItem item)
+    {
+        var driver = new ComboBox { FontSize = 12, MinWidth = 0 };
+        foreach (string key in new[] { "DriverHead", "DriverRear", "DriverPassenger", "DriverNobody" })
+            driver.Items.Add(new ComboBoxItem { Content = App.Loc[key] });
+        var crewCar = ActiveCar(item);
+
+        driver.SelectedIndex = crewCar.DriverType switch
+        {
+            eDriverType.Headdriver => 0,
+            eDriverType.Reardriver => 1,
+            eDriverType.Passenger  => 2,
+            _                      => 3
+        };
+        driver.SelectionChanged += (_, _) =>
+        {
+            var picked = driver.SelectedIndex switch
+            {
+                0 => eDriverType.Headdriver,
+                1 => eDriverType.Reardriver,
+                2 => eDriverType.Passenger,
+                _ => eDriverType.Nobody
+            };
+            if (picked == crewCar.DriverType) return;
+
+            crewCar.DriverType = picked;
+            item.Driver = UnitDriver(item.Cars);
+            if (ReferenceEquals(_selected, item))
+                SyncStartingVehicle();
+            RebuildConsist();
+            AppState.Instance.NotifyChanged();
+        };
+        driver.MinWidth = 0;
+        driver.HorizontalAlignment = HorizontalAlignment.Stretch;
+        loadsPanel.Children.Insert(0, LabeledRow(App.Loc["CrewLabel"], driver, labelWidth: 70));
+
+        var reversed = new CheckBox
+        {
+            Content = App.Loc["Reversed"],
+            IsChecked = item.Flipped,
+            FontSize = 11
+        };
+        reversed.IsCheckedChanged += (_, _) =>
+        {
+            if ((reversed.IsChecked == true) != item.Flipped)
+                FlipItem(item);
+        };
+
+        var d = item.Cars[0];
+        var thermo = new CheckBox
+        {
+            Content = App.Loc["ThermoAmbient"],
+            IsChecked = d.Coupling.ThermoDynamic,
+            FontSize = 11
+        };
+        thermo.IsCheckedChanged += (_, _) => d.Coupling.ThermoDynamic = thermo.IsChecked == true;
+
+        var switches = new Grid
+        {
+            ColumnDefinitions = new ColumnDefinitions("*,8,*"),
+            Margin = new Thickness(0, 4, 0, 0)
+        };
+        Grid.SetColumn(thermo, 2);
+        switches.Children.Add(reversed);
+        switches.Children.Add(thermo);
+        loadsPanel.Children.Add(switches);
+    }
+
+    private void RemoveVehicleButton_OnClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    {
+        if (_selected is { } item)
+            RemoveItem(item);
+    }
+
+    private void ConsistFilter_OnChanged(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    {
+        if (_suppress) return;
+        StarterNG.Classes.Settings.Instance.ShowAiVehicles = depotShowAiCheck.IsChecked == true;
+        StarterNG.Classes.Settings.Instance.DrivableOnly = depotDrivableOnlyCheck.IsChecked == true;
+        PopulateSceneryConsists();
+    }
+
+    private static TextBlock UnitScopeHint(string text) => new()
+    {
+        Text = text,
+        FontSize = 11,
+        Opacity = 0.6,
+        TextWrapping = TextWrapping.Wrap,
+        Margin = new Thickness(0, 0, 0, 2)
+    };
 
     private static TextBlock DetailHint(string text) => new()
     {
         Text = text, Opacity = 0.6, FontSize = 12, TextWrapping = TextWrapping.Wrap
     };
 
-    private static Control LabeledRow(string label, Control control)
+    private static Control LabeledRow(string label, Control control, double labelWidth = 120)
     {
-        var sp = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8 };
-        sp.Children.Add(new TextBlock
+        var grid = new Grid { ColumnDefinitions = new ColumnDefinitions("Auto,8,*") };
+
+        var caption = new TextBlock
         {
-            Text = label, VerticalAlignment = VerticalAlignment.Center,
-            FontSize = 12, MinWidth = 120
-        });
-        sp.Children.Add(control);
-        return sp;
+            Text = label,
+            FontSize = 12,
+            MinWidth = labelWidth,
+            TextAlignment = TextAlignment.Right,
+            HorizontalAlignment = HorizontalAlignment.Right,
+            VerticalAlignment = VerticalAlignment.Center
+        };
+
+        control.HorizontalAlignment = HorizontalAlignment.Stretch;
+        Grid.SetColumn(control, 2);
+        grid.Children.Add(caption);
+        grid.Children.Add(control);
+        return grid;
     }
 
     private static void AddOption(ComboBox combo, string content, string? tag)
@@ -1666,58 +2529,49 @@ public partial class Depot : UserControl
     {
         var brake = item.Cars[0].Coupling.GetBrake();
 
-        var modeCombo = new ComboBox { FontSize = 12, MinWidth = 280 };
-        AddOption(modeCombo, App.Loc["None"], null);
-        foreach (var m in BrakeSetting.Modes) AddOption(modeCombo, BrakeModeLabel(m), m);
-        modeCombo.SelectedIndex = brake?.Mode is { } mode
-            ? Array.IndexOf(BrakeSetting.Modes, mode) + 1 : 0;
+        ComboBox Combo(string?[] codes, string? current, Func<string?, string> label)
+        {
+            var combo = new ComboBox { FontSize = 12, MinWidth = 0 };
+            foreach (var code in codes) AddOption(combo, label(code), code);
+            combo.SelectedIndex = Math.Max(0, Array.IndexOf(codes, current));
+            return combo;
+        }
 
-        string?[] loads = { null, "T", "H", "F", "A" };
-        var loadCombo = new ComboBox { FontSize = 12, MinWidth = 280 };
-        foreach (var l in loads) AddOption(loadCombo, LoadLabel(l), l);
-        loadCombo.SelectedIndex = Math.Max(0, Array.IndexOf(loads, brake?.Load));
+        static string?[] WithDefault(string[] codes) =>
+            new string?[] { null }.Concat(codes).ToArray();
 
-        string?[] switches = { null, "0", "1", "A" };
-        var switchCombo = new ComboBox { FontSize = 12, MinWidth = 280 };
-        foreach (var s in switches) AddOption(switchCombo, SwitchLabel(s), s);
-        switchCombo.SelectedIndex = Math.Max(0, Array.IndexOf(switches, brake?.Switch));
+        var modeCombo = Combo(WithDefault(BrakeSetting.Modes), brake?.Mode, BrakeModeLabel);
+        var switchCombo = Combo(WithDefault(BrakeSetting.Switches), brake?.Switch, SwitchLabel);
+        var loadCombo = Combo(WithDefault(BrakeSetting.Loads), brake?.Load, LoadLabel);
 
         void Apply()
         {
-            string? selMode = (modeCombo.SelectedItem as ComboBoxItem)?.Tag as string;
-            if (selMode is null)
-            {
-                foreach (var c in item.Cars) c.Coupling.SetBrake(null);
-                return;
-            }
             var b = new BrakeSetting
             {
-                Mode = selMode,
-                Load = (loadCombo.SelectedItem as ComboBoxItem)?.Tag as string,
-                Switch = (switchCombo.SelectedItem as ComboBoxItem)?.Tag as string
+                Mode = (modeCombo.SelectedItem as ComboBoxItem)?.Tag as string,
+                Switch = (switchCombo.SelectedItem as ComboBoxItem)?.Tag as string,
+                Load = (loadCombo.SelectedItem as ComboBoxItem)?.Tag as string
             };
-            foreach (var c in item.Cars) c.Coupling.SetBrake(b);
+            foreach (var c in UnitTargets(item)) c.Coupling.SetBrake(b);
         }
 
         modeCombo.SelectionChanged += (_, _) => Apply();
-        loadCombo.SelectionChanged += (_, _) => Apply();
         switchCombo.SelectionChanged += (_, _) => Apply();
+        loadCombo.SelectionChanged += (_, _) => Apply();
 
-        brakesPanel.Children.Add(LabeledRow(App.Loc["BrakeMode"], modeCombo));
-        brakesPanel.Children.Add(LabeledRow(App.Loc["BrakeLoad"], loadCombo));
-        brakesPanel.Children.Add(LabeledRow(App.Loc["BrakeSwitch"], switchCombo));
+        brakesPanel.Children.Add(LabeledRow(App.Loc["BrakeMode"], modeCombo, labelWidth: 96));
+        brakesPanel.Children.Add(LabeledRow(App.Loc["BrakeSwitch"], switchCombo, labelWidth: 96));
+        brakesPanel.Children.Add(LabeledRow(App.Loc["BrakeLoad"], loadCombo, labelWidth: 96));
     }
 
-    private static string BrakeModeLabel(string code) => code switch
+    private static string BrakeModeLabel(string? code) => code switch
     {
         "G" => App.Loc["BrakeFreight"],
         "P" => App.Loc["BrakePassenger"],
         "R" => App.Loc["BrakeExpress"],
-        "R+Mg" => App.Loc["BrakeExpressMg"],
+        "M" => App.Loc["BrakeExpressMg"],
         "Q" => App.Loc["BrakeNoAir"],
-        "O" => App.Loc["BrakeOff"],
-        "A" => App.Loc["BrakeAuto"],
-        _ => code
+        _ => App.Loc["BrakeActingNone"]
     };
 
     private static string LoadLabel(string? code) => code switch
@@ -1725,21 +2579,19 @@ public partial class Depot : UserControl
         "T" => App.Loc["LoadEmpty"],
         "H" => App.Loc["LoadMedium"],
         "F" => App.Loc["LoadFull"],
-        "A" => App.Loc["LoadAuto"],
-        _ => App.Loc["None"]
+        _ => App.Loc["LoadNeutral"]
     };
 
     private static string SwitchLabel(string? code) => code switch
     {
         "0" => App.Loc["SwitchOff"],
         "1" => App.Loc["SwitchOff10"],
-        "A" => App.Loc["SwitchOn"],
-        _ => App.Loc["None"]
+        _ => App.Loc["SwitchNormal"]
     };
 
     private void BuildDamageEditor(ConsistItem item)
     {
-        var w = item.Cars[0].Coupling.GetWheels() ?? new WheelSettings();
+        var w = ActiveCar(item).Coupling.GetWheels() ?? new WheelSettings();
 
         NumericUpDown Spin(int value, int max) => new()
         {
@@ -1761,7 +2613,7 @@ public partial class Depot : UserControl
                 FlatnessRand = (int)(flatRand.Value ?? 0),
                 FlatnessProb = (int)(flatProb.Value ?? 0)
             };
-            foreach (var c in item.Cars)
+            foreach (var c in MemberTargets(item))
                 c.Coupling.SetWheels(ws);
         }
 
@@ -1772,9 +2624,8 @@ public partial class Depot : UserControl
 
         var grid = new Grid
         {
-            ColumnDefinitions = new ColumnDefinitions("Auto,*"),
-            RowSpacing = 6,
-            ColumnSpacing = 8
+            ColumnDefinitions = new ColumnDefinitions("*,8,Auto"),
+            RowSpacing = 6
         };
         void Row(string label, Control control)
         {
@@ -1785,14 +2636,15 @@ public partial class Depot : UserControl
             {
                 Text = label, FontSize = 12,
                 TextWrapping = TextWrapping.Wrap,
+                TextAlignment = TextAlignment.Right,
                 VerticalAlignment = VerticalAlignment.Center
             };
             Grid.SetRow(caption, r);
             Grid.SetColumn(caption, 0);
 
-            control.HorizontalAlignment = HorizontalAlignment.Left;
+            control.HorizontalAlignment = HorizontalAlignment.Right;
             Grid.SetRow(control, r);
-            Grid.SetColumn(control, 1);
+            Grid.SetColumn(control, 2);
 
             grid.Children.Add(caption);
             grid.Children.Add(control);
@@ -1807,21 +2659,23 @@ public partial class Depot : UserControl
 
     private void BuildLoadsEditor(ConsistItem item)
     {
-        var lead = item.Cars[0];
-        var phys = PhysicsFor(lead);
+        var lead = ActiveCar(item);
+        var available = AcceptedTypesFor(lead);
 
-        var available = phys != null && !string.IsNullOrWhiteSpace(phys.LoadAccepted)
-            ? phys.LoadAccepted.Split(',', ';').Select(s => s.Trim()).Where(s => s.Length > 0).ToList()
-            : LoadTypes().ToList();
+        if (available.Count == 0 && string.IsNullOrEmpty(lead.LoadType))
+        {
+            loadsPanel.Children.Add(DetailHint(App.Loc["LoadNotLoadable"]));
+            return;
+        }
 
         if (!string.IsNullOrEmpty(lead.LoadType) &&
             !available.Contains(lead.LoadType!, StringComparer.OrdinalIgnoreCase))
             available.Insert(0, lead.LoadType!);
 
-        var typeCombo = new ComboBox { FontSize = 12, MinWidth = 200 };
+        var typeCombo = new ComboBox { FontSize = 12, MinWidth = 0 };
         typeCombo.Items.Add(new ComboBoxItem { Content = App.Loc["None"], Tag = null });
         foreach (var name in available)
-            typeCombo.Items.Add(new ComboBoxItem { Content = name, Tag = name });
+            typeCombo.Items.Add(new ComboBoxItem { Content = LoadDesc(name), Tag = name });
 
         typeCombo.SelectedIndex = 0;
         if (!string.IsNullOrEmpty(lead.LoadType))
@@ -1833,76 +2687,95 @@ public partial class Depot : UserControl
                     break;
                 }
 
-        int maxLoad = phys != null && phys.MaxLoad > 0 ? phys.MaxLoad : 1000;
+        int limit = LoadLimitFor(lead);
         var countBox = new NumericUpDown
         {
-            FontSize = 12, Minimum = 0, Maximum = maxLoad, Increment = 1,
-            Value = Math.Min(lead.LoadCount, maxLoad), MinWidth = 120, FormatString = "0"
+            FontSize = 12, Minimum = 0, Maximum = limit, Increment = 1,
+            Value = Math.Min(lead.LoadCount, limit), MinWidth = 120, FormatString = "0"
         };
+
+        var pantHint = DetailHint(App.Loc["LoadPantStateHint"]);
+        pantHint.IsVisible = lead.IsPantState;
+
+        string? SelectedType() => (typeCombo.SelectedItem as ComboBoxItem)?.Tag as string;
 
         void Apply()
         {
-            string? type = (typeCombo.SelectedItem as ComboBoxItem)?.Tag as string;
+            string? type = SelectedType();
             int count = (int)(countBox.Value ?? 0);
-            foreach (var c in item.Cars)
+            foreach (var c in MemberTargets(item))
             {
 
                 c.LoadType = string.IsNullOrEmpty(type) ? null : type;
-                c.LoadCount = string.IsNullOrEmpty(type) ? 0 : count;
-                if (c.LoadCount > 0)
-                    c.HasVelocity = true;
+                c.LoadCount = string.IsNullOrEmpty(type) ? 0 : Math.Min(count, LoadLimitFor(c, type));
             }
         }
 
-        typeCombo.SelectionChanged += (_, _) => Apply();
+        typeCombo.SelectionChanged += (_, _) =>
+        {
+            string? type = SelectedType();
+            pantHint.IsVisible = Dynamic.IsPantStateType(type);
+            countBox.Maximum = LoadLimitFor(lead, type);
+            Apply();
+        };
         countBox.ValueChanged += (_, _) => Apply();
 
         loadsPanel.Children.Add(LabeledRow(App.Loc["LoadType"], typeCombo));
         loadsPanel.Children.Add(LabeledRow(App.Loc["LoadCount"], countBox));
+        loadsPanel.Children.Add(pantHint);
     }
 
-    private static List<string>? _loadTypes;
     private static Dictionary<string, int>? _loadWeights;
 
     private static void EnsureLoads()
     {
-        if (_loadTypes != null)
+        if (_loadWeights != null)
             return;
 
-        var names = new List<string>();
-        var weights = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+        var weights = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase)
+        {
+            [Dynamic.PantState] = 0
+        };
         try
         {
             string path = Path.Combine("data", "load_weights.txt");
             if (File.Exists(path))
             {
+                var body = new StringBuilder();
                 foreach (var raw in File.ReadAllLines(path, Encoding.GetEncoding(1250)))
                 {
-                    string line = raw.Trim();
-                    if (line.Length == 0 || line.StartsWith("#") || line.StartsWith("//"))
+                    string line = raw;
+                    int comment = line.IndexOfAny(new[] { '#', ';' });
+                    if (comment >= 0) line = line[..comment];
+                    int slashes = line.IndexOf("//", StringComparison.Ordinal);
+                    if (slashes >= 0) line = line[..slashes];
+                    body.Append(line).Append(' ');
+                }
+
+                var tokens = body.Replace(":", " : ").ToString()
+                    .Split(new[] { ' ', '\t' }, StringSplitOptions.RemoveEmptyEntries);
+
+                for (int i = 1; i + 1 < tokens.Length; i++)
+                {
+                    if (tokens[i] != ":") continue;
+                    string name = tokens[i - 1];
+                    if (name is "{" or "}") continue;
+                    if (!int.TryParse(tokens[i + 1], NumberStyles.Integer,
+                            CultureInfo.InvariantCulture, out int w))
                         continue;
-                    int colon = line.IndexOf(':');
-                    string name = (colon >= 0 ? line[..colon] : line).Trim();
-                    if (name.Length == 0) continue;
-                    names.Add(name);
-                    if (colon >= 0 && int.TryParse(line[(colon + 1)..].Trim(), out int w))
-                        weights[name] = w;
+                    weights[name] = w;
                 }
             }
         }
         catch {  }
 
-        _loadTypes = names.Distinct(StringComparer.OrdinalIgnoreCase)
-                          .OrderBy(s => s, StringComparer.OrdinalIgnoreCase)
-                          .ToList();
         _loadWeights = weights;
     }
 
-    private static IReadOnlyList<string> LoadTypes()
-    {
-        EnsureLoads();
-        return _loadTypes!;
-    }
+    private static string LoadDesc(string name) =>
+        string.Equals(name, Dynamic.PantState, StringComparison.OrdinalIgnoreCase)
+            ? App.Loc["LoadPantState"]
+            : name;
 
     private static int LoadWeight(string? name)
     {
@@ -1910,12 +2783,14 @@ public partial class Depot : UserControl
         return !string.IsNullOrEmpty(name) && _loadWeights!.TryGetValue(name!, out int w) ? w : 1000;
     }
 
-    private Bitmap? GetMiniBitmap(string? name, int height)
+    private Bitmap? GetMiniBitmap(string? name, int height, bool strict = false)
     {
         if (string.IsNullOrEmpty(name))
             return null;
+        if (strict && !VehicleDatabase.HasMini(name))
+            return null;
 
-        string key = $"{name}@{height}";
+        string key = $"{(strict ? "!" : "")}{name}@{height}";
         if (_miniCache.TryGetValue(key, out var cached))
             return cached;
 
@@ -1958,27 +2833,76 @@ public partial class Depot : UserControl
             ReplaceSelected(win.Picked);
     }
 
-    private async void RandomTexturesButton_OnClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    public async Task RandomizeCurrentTrainsetAsync()
+    {
+        if (AppState.Instance.CurrentTrainset is not { } trainset)
+            return;
+
+        if (!ReferenceEquals(trainset, _editingTrainset))
+        {
+            PopulateSceneryConsists();
+            LoadTrainset(trainset);
+        }
+        await RunTextureRandomizer();
+    }
+
+    public void ToolRandomOrder() => RandomOrderButton_OnClick(null, null!);
+    public void ToolRandomOrientation() => RandomOrientButton_OnClick(null, null!);
+
+    private async void RandomTexturesButton_OnClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e) =>
+        await RunTextureRandomizer();
+
+    private async Task RunTextureRandomizer()
     {
         if (_consist.Count == 0) return;
-        if (TopLevel.GetTopLevel(this) is not Window owner) return;
+        if (await AskTextureRandomizerOpts() is not { } opts) return;
+
+        if (ApplyTextureRandomizer(opts))
+            RebuildConsist();
+    }
+
+    public async Task RandomizeSceneryTrainsetsAsync(Scenery scenery)
+    {
+        if (scenery.Trainsets.Count == 0) return;
+        if (await AskTextureRandomizerOpts() is not { } opts) return;
+
+        var editing = _editingTrainset;
+        foreach (var trainset in scenery.Trainsets)
+        {
+            LoadTrainset(trainset);
+            if (ApplyTextureRandomizer(opts))
+                WriteBackToScenery();
+        }
+
+        if (editing != null)
+            LoadTrainset(editing);
+        RebuildConsist();
+    }
+
+    private async Task<TexRandomizerOpts?> AskTextureRandomizerOpts()
+    {
+        if (TopLevel.GetTopLevel(this) is not Window owner) return null;
 
         var dlg = BuildTextureRandomizerDialog();
         bool? ok = await dlg.ShowDialog<bool?>(owner);
-        if (ok != true) return;
+        return ok == true ? dlg.Tag as TexRandomizerOpts : null;
+    }
 
-        if (dlg.Tag is not TexRandomizerOpts opts) return;
+    private bool ApplyTextureRandomizer(TexRandomizerOpts opts)
+    {
+        if (_consist.Count == 0) return false;
+
         var rnd = new TexRandomizer(_db, _rng)
         {
             WithoutArchival = opts.WithoutArchival,
             RevisionTolerance = opts.RevisionTolerance,
             RevYear = opts.RevYear
         };
-        if (rnd.Apply(_consist, MakeDynamic) > 0)
-        {
-            AutoConnectAll();
-            RebuildConsist();
-        }
+        if (rnd.Apply(_consist, MakeDynamic) <= 0)
+            return false;
+
+        AutoConnectAll();
+        return true;
     }
 
     private Window BuildTextureRandomizerDialog()
@@ -2126,88 +3050,7 @@ public partial class Depot : UserControl
 
     private async Task EditRandomizerRules(Window owner)
     {
-        string path = TexRandomizer.RulesPath;
-        string text = "";
-        try
-        {
-            if (File.Exists(path))
-                text = File.ReadAllText(path);
-        }
-        catch { }
-
-        var box = new TextBox
-        {
-            Text = text,
-            AcceptsReturn = true,
-            TextWrapping = TextWrapping.NoWrap,
-            FontFamily = StarterNG.Infrastructure.MonoFont.Family,
-            FontSize = 12
-        };
-        ScrollViewer.SetHorizontalScrollBarVisibility(box, Avalonia.Controls.Primitives.ScrollBarVisibility.Auto);
-        ScrollViewer.SetVerticalScrollBarVisibility(box, Avalonia.Controls.Primitives.ScrollBarVisibility.Auto);
-
-        var win = new Window
-        {
-            Title = App.Loc["RandomizeTexturesRules"],
-            Width = 480,
-            Height = 360,
-            WindowStartupLocation = WindowStartupLocation.CenterOwner
-        };
-
-        var save = new Button { Content = App.Loc["RandomizeTexturesRulesSave"], Cursor = _hand };
-        save.Classes.Add("Accent");
-        save.Click += (_, _) =>
-        {
-            try
-            {
-                string? dir = Path.GetDirectoryName(path);
-                if (!string.IsNullOrEmpty(dir))
-                    Directory.CreateDirectory(dir);
-                File.WriteAllText(path, box.Text ?? "");
-            }
-            catch { }
-            win.Close();
-        };
-
-        var cancel = new Button { Content = App.Loc["Cancel"], Cursor = _hand };
-        cancel.Classes.Add("Flat");
-        cancel.Click += (_, _) => win.Close();
-
-        var buttons = new StackPanel
-        {
-            Orientation = Orientation.Horizontal,
-            HorizontalAlignment = HorizontalAlignment.Right,
-            Spacing = 8,
-            Margin = new Thickness(0, 8, 0, 0),
-            Children = { save, cancel }
-        };
-        DockPanel.SetDock(buttons, Dock.Bottom);
-
-        win.Content = new DockPanel
-        {
-            Margin = new Thickness(10),
-            Children =
-            {
-                buttons,
-                new StackPanel
-                {
-                    Spacing = 6,
-                    Children =
-                    {
-                        new TextBlock
-                        {
-                            Text = App.Loc["RandomizeTexturesRulesHint"],
-                            TextWrapping = TextWrapping.Wrap,
-                            Opacity = 0.8,
-                            FontSize = 11
-                        },
-                        box
-                    }
-                }
-            }
-        };
-
-        await win.ShowDialog(owner);
+        await new RulesWindow().ShowDialog(owner);
     }
 
     private sealed class TexRandomizerOpts
@@ -2295,16 +3138,6 @@ public partial class Depot : UserControl
         _pendingDragConsistIndex = -1;
     }
 
-    private void ArmConsistDrag(PointerPressedEventArgs e, Visual relativeTo, int index, ConsistItem item)
-    {
-        ClearPendingDrag();
-        _pendingDragPress = e;
-        _pendingDragOrigin = e.GetPosition(relativeTo);
-        _pendingDragTexture = null;
-        _pendingDragConsistIndex = index;
-        _pendingBrowserSync = item;
-    }
-
     private void ClearPendingDrag()
     {
         _pendingDragPress = null;
@@ -2340,6 +3173,7 @@ public partial class Depot : UserControl
         {
             _dragTexture = texture;
             _dragConsistIndex = -1;
+            CaptureCardMidpoints();
             var data = new DataTransfer();
             data.Add(DataTransferItem.CreateText(DragVehicleFormat));
             try
@@ -2349,27 +3183,12 @@ public partial class Depot : UserControl
             finally
             {
                 _dragTexture = null;
+                CloseDropGap();
                 ClearPendingDrag();
             }
             return;
         }
 
-        if (consistIndex >= 0)
-        {
-            _dragTexture = null;
-            _dragConsistIndex = consistIndex;
-            var data = new DataTransfer();
-            data.Add(DataTransferItem.CreateText(DragConsistFormat));
-            try
-            {
-                await DragDrop.DoDragDropAsync(press, data, DragDropEffects.Move);
-            }
-            finally
-            {
-                _dragConsistIndex = -1;
-                ClearPendingDrag();
-            }
-        }
     }
 
     private void PendingDrag_OnPointerReleased(object? sender, PointerReleasedEventArgs e)
@@ -2394,6 +3213,10 @@ public partial class Depot : UserControl
         {
             e.DragEffects = _dragConsistIndex >= 0 ? DragDropEffects.Move : DragDropEffects.Copy;
             e.Handled = true;
+
+            double pointerX = e.GetPosition(consistScroll).X;
+            UpdateDropIndex(pointerX + consistScroll.Offset.X);
+            _edgeScroller.Update(consistScroll, pointerX);
         }
         else
         {
@@ -2401,36 +3224,182 @@ public partial class Depot : UserControl
         }
     }
 
+    private void Strip_OnPointerMoved(object? sender, PointerEventArgs e)
+    {
+        var point = e.GetPosition(consistStack);
+
+        if (!_cardDragging)
+        {
+            if (_pressCardIndex < 0 ||
+                !e.GetCurrentPoint(consistStack).Properties.IsLeftButtonPressed)
+                return;
+
+            var delta = point - _pressPoint;
+            if (Math.Abs(delta.X) < DragThreshold && Math.Abs(delta.Y) < DragThreshold)
+                return;
+
+            BeginCardDrag(e);
+            if (!_cardDragging) return;
+        }
+
+        Canvas.SetLeft(_carried!, point.X - _grabOffset);
+
+        double pointerX = e.GetPosition(consistScroll).X;
+        UpdateDropIndex(pointerX + consistScroll.Offset.X);
+        _edgeScroller.Update(consistScroll, pointerX);
+    }
+
+    private void Strip_OnPointerReleased(object? sender, PointerReleasedEventArgs e)
+    {
+        if (!_cardDragging)
+        {
+            int clicked = _pressCardIndex;
+            _pressCardIndex = -1;
+
+            if (e.InitialPressMouseButton == MouseButton.Left &&
+                clicked >= 0 && clicked < _consist.Count &&
+                _consist[clicked].Cars.Count > 0)
+                SelectInBrowser(_consist[clicked].Cars[0]);
+            return;
+        }
+
+        int from = _dragConsistIndex;
+        int target = _dropTracker.Index;
+
+        EndCardDrag();
+
+        if (from >= 0 && target >= 0)
+            MoveConsistUnit(from, target);
+    }
+
+    private void BeginCardDrag(PointerEventArgs e)
+    {
+        int card = _pressCardIndex;
+        if (card < 0 || 2 * card + 1 >= consistStack.Children.Count)
+            return;
+
+        var cardVisual = consistStack.Children[2 * card];
+        var coupler = consistStack.Children[2 * card + 1];
+        var bounds = cardVisual.Bounds;
+
+        _dragConsistIndex = card;
+        _dragTexture = null;
+        _dragCardWidth = Math.Max(bounds.Width + coupler.Bounds.Width, 24);
+        _grabOffset = Math.Clamp(_pressPoint.X - bounds.Left, 0, _dragCardWidth);
+
+        CaptureCardMidpoints();
+
+        _carried = new Border
+        {
+            Width = bounds.Width,
+            Height = bounds.Height,
+            Opacity = 0.85,
+            CornerRadius = new CornerRadius(6),
+            BorderThickness = new Thickness(2),
+            BorderBrush = CardBorderSel,
+            Background = CardBgSel,
+            Child = new Image
+            {
+                Source = CardSnapshot(cardVisual),
+                Stretch = Stretch.Uniform
+            }
+        };
+        Canvas.SetTop(_carried, bounds.Top);
+        Canvas.SetLeft(_carried, bounds.Left);
+        consistOverlay.Children.Add(_carried);
+
+        cardVisual.IsVisible = false;
+        coupler.IsVisible = false;
+
+        _cardDragging = true;
+        e.Pointer.Capture(consistStack);
+    }
+
+    private static Bitmap? CardSnapshot(Control source)
+    {
+        if (source.Bounds.Width < 1 || source.Bounds.Height < 1)
+            return null;
+
+        try
+        {
+            var size = new PixelSize((int)source.Bounds.Width, (int)source.Bounds.Height);
+            var bitmap = new RenderTargetBitmap(size, new Vector(96, 96));
+            bitmap.Render(source);
+            return bitmap;
+        }
+        catch (Exception ex)
+        {
+            Infrastructure.Diagnostics.Log("Card snapshot", ex);
+            return null;
+        }
+    }
+
+    private void EndCardDrag()
+    {
+        if (_dragConsistIndex >= 0 && 2 * _dragConsistIndex + 1 < consistStack.Children.Count)
+        {
+            consistStack.Children[2 * _dragConsistIndex].IsVisible = true;
+            consistStack.Children[2 * _dragConsistIndex + 1].IsVisible = true;
+        }
+
+        if (_carried != null)
+            consistOverlay.Children.Remove(_carried);
+        _carried = null;
+
+        CloseDropGap();
+        _dragConsistIndex = -1;
+        _pressCardIndex = -1;
+        _cardDragging = false;
+    }
+
+    private void CaptureCardMidpoints()
+    {
+        var midpoints = new List<double>();
+        for (int i = 0; i < consistStack.Children.Count; i += 2)
+        {
+            int card = i / 2;
+            if (card == _dragConsistIndex) continue;
+
+            var child = consistStack.Children[i];
+            if (_dropGap.IsGap(child)) continue;
+
+            midpoints.Add(child.Bounds.Center.X -
+                          (_dragConsistIndex >= 0 && card > _dragConsistIndex ? _dragCardWidth : 0));
+        }
+        _dropTracker.Capture(midpoints);
+    }
+
+    private void UpdateDropIndex(double contentX)
+    {
+        if (!_dropTracker.Update(contentX)) return;
+
+        int card = _dropTracker.Index;
+        if (_dragConsistIndex >= 0 && card > _dragConsistIndex)
+            card++;
+
+        _dropGap.Show(consistStack, 2 * card, _dragCardWidth);
+    }
+
+    private void CloseDropGap()
+    {
+        _dropTracker.Reset();
+        _edgeScroller.Stop();
+        _dropGap.Hide(consistStack);
+    }
+
     private void Consist_OnDrop(object? sender, DragEventArgs e)
     {
+        int target = _dropTracker.Index >= 0 ? _dropTracker.Index : _consist.Count;
+        CloseDropGap();
+
         if (_dragTexture != null)
         {
-            InsertTextureAt(_dragTexture, _consist.Count);
+            InsertTextureAt(_dragTexture, target);
             e.Handled = true;
         }
         else if (_dragConsistIndex >= 0)
         {
-            MoveConsistUnit(_dragConsistIndex, _consist.Count);
-            e.Handled = true;
-        }
-    }
-
-    private void ConsistCard_OnDrop(DragEventArgs e, int targetIndex, Control card)
-    {
-        double x = e.GetPosition(card).X;
-        bool after = x > card.Bounds.Width / 2;
-        int insertAt = after ? targetIndex + 1 : targetIndex;
-
-        if (_dragConsistIndex >= 0)
-        {
-            MoveConsistUnit(_dragConsistIndex, insertAt);
-            e.Handled = true;
-            return;
-        }
-
-        if (_dragTexture != null)
-        {
-            InsertTextureAt(_dragTexture, insertAt);
+            MoveConsistUnit(_dragConsistIndex, target);
             e.Handled = true;
         }
     }
@@ -2438,13 +3407,12 @@ public partial class Depot : UserControl
     private void MoveConsistUnit(int from, int to)
     {
         if (from < 0 || from >= _consist.Count) return;
-        if (to > from) to--;
-        to = Math.Clamp(to, 0, _consist.Count - 1);
-        if (from == to) return;
 
         var item = _consist[from];
         _consist.RemoveAt(from);
+        to = Math.Clamp(to, 0, _consist.Count);
         _consist.Insert(to, item);
+
         _selected = item;
         AutoConnectAll();
         RebuildConsist();

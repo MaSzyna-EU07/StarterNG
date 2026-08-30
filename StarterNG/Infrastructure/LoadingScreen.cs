@@ -29,9 +29,9 @@ public static class LoadingScreen
 
             WriteBmp(src, dest);
         }
-        catch
+        catch (Exception ex)
         {
-
+            Diagnostics.Log("Loading screen logo", ex);
         }
     }
 

@@ -18,11 +18,43 @@ public static class ConsistContextMenu
         Control owner,
         Func<Trainset?> getTarget,
         Action<List<Dynamic>> applyVehicles,
-        Action? removeAll = null)
+        Action? removeAll = null,
+        Func<Dynamic?>? getVehicle = null,
+        Action<Dynamic>? removeVehicle = null,
+        Action? randomOrder = null,
+        Action? randomTurn = null)
     {
         var menu = new ContextMenu();
 
-        menu.Opening += (_, _) => Populate(menu, owner, getTarget, applyVehicles, removeAll);
+        menu.Opening += (_, _) =>
+        {
+            Populate(menu, owner, getTarget, applyVehicles, removeAll);
+
+            if (randomOrder != null || randomTurn != null)
+            {
+                var schedule = new MenuItem { Header = App.Loc["ConsistSchedule"] };
+                if (randomOrder != null)
+                {
+                    var mo = new MenuItem { Header = App.Loc["RandomizeOrder"] };
+                    mo.Click += (_, _) => randomOrder();
+                    schedule.Items.Add(mo);
+                }
+                if (randomTurn != null)
+                {
+                    var mt = new MenuItem { Header = App.Loc["RandomizeOrientation"] };
+                    mt.Click += (_, _) => randomTurn();
+                    schedule.Items.Add(mt);
+                }
+                menu.Items.Add(schedule);
+            }
+
+            if (removeVehicle == null || getVehicle?.Invoke() is not { } v) return;
+
+            menu.Items.Add(new Separator());
+            var mi = new MenuItem { Header = App.Loc["RemoveVehicle"] };
+            mi.Click += (_, _) => removeVehicle(v);
+            menu.Items.Add(mi);
+        };
         return menu;
     }
 
@@ -49,6 +81,31 @@ public static class ConsistContextMenu
                 load.Items.Add(BuildPresetItem(menu, preset, applyVehicles));
         }
         menu.Items.Add(load);
+
+        var append = new MenuItem { Header = App.Loc["WarehouseAppend"] };
+        if (presets.Count == 0)
+        {
+            append.Items.Add(new MenuItem { Header = App.Loc["PresetEmpty"], IsEnabled = false });
+        }
+        else
+        {
+            foreach (var preset in presets)
+            {
+                var entry = preset;
+                var mi = new MenuItem { Header = entry.Name };
+                mi.Click += (_, _) =>
+                {
+                    var added = ConsistText.VehiclesFrom(entry.Entry);
+                    if (added is null || added.Count == 0) return;
+                    var merged = target is null
+                        ? added
+                        : new List<Dynamic>(target.Vehicles).Concat(added).ToList();
+                    applyVehicles(merged);
+                };
+                append.Items.Add(mi);
+            }
+        }
+        menu.Items.Add(append);
 
         var sort = new MenuItem { Header = App.Loc["PresetSort"] };
         var sortName = new MenuItem
@@ -148,7 +205,7 @@ public static class ConsistContextMenu
 
         var nameBox = new TextBox
         {
-            Watermark = App.Loc["PresetNamePrompt"],
+            PlaceholderText = App.Loc["PresetNamePrompt"],
             Text = DefaultName(target),
             MinWidth = 220
         };
