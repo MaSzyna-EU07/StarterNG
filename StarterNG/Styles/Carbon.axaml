@@ -81,22 +81,26 @@
         </ControlTheme>
         <ControlTheme x:Key="{x:Type TabItem}" TargetType="TabItem">
             <Setter Property="FontSize" Value="13" />
-            <Setter Property="MinHeight" Value="24" />
-            <Setter Property="Padding" Value="12,3" />
-            <Setter Property="Margin" Value="0,0,2,0" />
+            <Setter Property="MinHeight" Value="26" />
+            <Setter Property="Padding" Value="14,4" />
+            <Setter Property="Margin" Value="0" />
             <Setter Property="Foreground" Value="{StaticResource CarbonFgDim}" />
             <Setter Property="VerticalContentAlignment" Value="Center" />
             <Setter Property="Template">
                 <ControlTemplate>
-                    <Border Name="root" Background="Transparent"
-                            BorderBrush="Transparent" BorderThickness="1,2,1,0"
-                            CornerRadius="2,2,0,0"
-                            Padding="{TemplateBinding Padding}">
-                        <ContentPresenter Name="PART_ContentPresenter"
-                                          Content="{TemplateBinding Header}"
-                                          ContentTemplate="{TemplateBinding HeaderTemplate}"
-                                          HorizontalAlignment="Center"
-                                          VerticalAlignment="Center" />
+                    <Border Name="tab"
+                            Background="{StaticResource CarbonAppBg}"
+                            BorderBrush="{StaticResource CarbonBorderLight}"
+                            BorderThickness="0,0,1,0">
+                        <Border Name="root" Background="Transparent"
+                                BorderBrush="Transparent" BorderThickness="0,2,0,0"
+                                Padding="{TemplateBinding Padding}">
+                            <ContentPresenter Name="PART_ContentPresenter"
+                                              Content="{TemplateBinding Header}"
+                                              ContentTemplate="{TemplateBinding HeaderTemplate}"
+                                              HorizontalAlignment="Center"
+                                              VerticalAlignment="Center" />
+                        </Border>
                     </Border>
                 </ControlTemplate>
             </Setter>
@@ -105,8 +109,12 @@
                 <Setter Property="Background" Value="{StaticResource CarbonHoverBg}" />
             </Style>
 
+            <Style Selector="^:selected /template/ Border#tab">
+                <Setter Property="Background" Value="{StaticResource CarbonPanelBg}" />
+                <Setter Property="BorderThickness" Value="0" />
+            </Style>
             <Style Selector="^:selected /template/ Border#root">
-                <Setter Property="Background" Value="{StaticResource CarbonHeaderBg}" />
+                <Setter Property="Background" Value="{StaticResource CarbonPanelBg}" />
                 <Setter Property="BorderBrush" Value="{StaticResource CarbonAccentBright}" />
             </Style>
             <Style Selector="^:selected">
@@ -121,6 +129,11 @@
         <Setter Property="Foreground" Value="{StaticResource CarbonFg}" />
         <Setter Property="FontFamily" Value="Tahoma, Segoe UI, Inter" />
         <Setter Property="FontSize" Value="13" />
+    </Style>
+
+    <Style Selector="TabControl">
+        <Setter Property="Background" Value="{StaticResource CarbonPanelBg}" />
+        <Setter Property="Padding" Value="0" />
     </Style>
 
     <Style Selector="ComboBox">
