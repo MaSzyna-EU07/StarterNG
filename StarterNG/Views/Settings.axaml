@@ -28,7 +28,7 @@
             </Grid>
         </Border>
 
-        <TabControl TabStripPlacement="Top">
+        <TabControl TabStripPlacement="Top" Margin="0,4,0,0">
 
             <TabItem Header="{Binding [General], Source={x:Static starterNg:App.Loc}}">
                 <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
