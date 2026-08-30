@@ -252,6 +252,10 @@ public class Scenery
     private string ParseAndStripOptionalIncludes(string content)
     {
         Includes.Clear();
+
+        if (content.IndexOf("$optional", StringComparison.OrdinalIgnoreCase) < 0)
+            return content;
+
         return Regex.Replace(
             content,
             @"include\s+(\S+(?:\s+\S+)*?)\s+end\s*//[^\r\n]*\$optional([^\r\n]*)\r?\n([\s\S]*?)endoptional\b",
