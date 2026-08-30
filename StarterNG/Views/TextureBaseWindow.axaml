@@ -1,8 +1,9 @@
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:starterNg="clr-namespace:StarterNG"
+        xmlns:views="clr-namespace:StarterNG.Views"
         x:Class="StarterNG.Views.TextureBaseWindow"
-        x:CompileBindings="False"
+        x:CompileBindings="True"
         Title="{Binding [TextureBaseTitle], Source={x:Static starterNg:App.Loc}}"
         Width="980" Height="560"
         WindowStartupLocation="CenterOwner"
@@ -43,7 +44,7 @@
                           Background="Transparent" ResizeDirection="Rows" />
             <ListBox Name="modelList" Grid.Row="2" Classes="Compact">
                 <ListBox.ItemTemplate>
-                    <DataTemplate>
+                    <DataTemplate x:DataType="views:TextureModelRow">
                         <Grid ColumnDefinitions="28,90,*" ColumnSpacing="4">
                             <TextBlock Grid.Column="0" Text="{Binding No}" Opacity="0.6" />
                             <TextBlock Grid.Column="1" Text="{Binding Klasa}" TextTrimming="CharacterEllipsis" />
@@ -60,7 +61,7 @@
 
         <ListBox Name="textureList" DoubleTapped="TextureList_OnDoubleTapped">
             <ListBox.ItemTemplate>
-                <DataTemplate>
+                <DataTemplate x:DataType="views:TextureRow">
                     <Grid ColumnDefinitions="1.4*,0.9*,1.2*,90,*" ColumnSpacing="8">
                         <TextBlock Grid.Column="0" Text="{Binding Skin}" TextTrimming="CharacterEllipsis" />
                         <TextBlock Grid.Column="1" Text="{Binding Mini}" Opacity="0.85" TextTrimming="CharacterEllipsis" />

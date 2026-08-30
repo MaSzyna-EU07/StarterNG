@@ -14,7 +14,7 @@ namespace StarterNG.Views;
 public partial class TextureBaseWindow : Window
 {
     private readonly VehicleDatabase _db = GameData.Instance.Vehicles;
-    private readonly List<Row> _all = new();
+    private readonly List<TextureRow> _all = new();
 
     public VehicleTexture? Picked { get; private set; }
 
@@ -25,7 +25,7 @@ public partial class TextureBaseWindow : Window
         foreach (var t in _db.Textures)
         {
             if (_db.IsSetFollower(t)) continue;
-            _all.Add(new Row(t, _db));
+            _all.Add(new TextureRow(t, _db));
         }
 
         foreach (var box in new Control[] { fName, fOp, fMini, fAuthor, fStation, fPhoto, fModel })
@@ -51,8 +51,6 @@ public partial class TextureBaseWindow : Window
         Refresh();
     }
 
-    private sealed record ModelRow(string No, string Klasa, string Sciezka);
-
     private void BuildModelList()
     {
         modelList.ItemsSource = null;
@@ -63,7 +61,7 @@ public partial class TextureBaseWindow : Window
             .Where(r => r.Mini.Length > 0)
             .GroupBy(r => r.Mini, StringComparer.OrdinalIgnoreCase)
             .OrderBy(g => g.Key, StringComparer.OrdinalIgnoreCase)
-            .Select((g, i) => new ModelRow($"{i + 1}.", g.Key, g.First().Directory))
+            .Select((g, i) => new TextureModelRow($"{i + 1}.", g.Key, g.First().Directory))
             .ToList();
 
         modelList.ItemsSource = rows;
@@ -89,7 +87,7 @@ public partial class TextureBaseWindow : Window
 
     private void Refresh()
     {
-        IEnumerable<Row> q = _all;
+        IEnumerable<TextureRow> q = _all;
 
         q = Filter(q, fNameOn, fName, r => r.Skin);
         q = Filter(q, fOpOn, fOp, r => r.Operator);
@@ -102,7 +100,7 @@ public partial class TextureBaseWindow : Window
         if ((typeList.SelectedItem as ListBoxItem)?.Tag is string cat)
             q = q.Where(r => string.Equals(r.Category, cat, StringComparison.OrdinalIgnoreCase));
 
-        if (modelList.SelectedItem is ModelRow mr)
+        if (modelList.SelectedItem is TextureModelRow mr)
             q = q.Where(r => string.Equals(r.Mini, mr.Klasa, StringComparison.OrdinalIgnoreCase));
 
         if (fRevFromOn.IsChecked == true && ParseDate(fRevFrom.Text) is { } from)
@@ -120,8 +118,8 @@ public partial class TextureBaseWindow : Window
         statusText.Text = $"{list.Count} / {_all.Count}";
     }
 
-    private static IEnumerable<Row> Filter(
-        IEnumerable<Row> src, CheckBox? on, TextBox? box, Func<Row, string> field)
+    private static IEnumerable<TextureRow> Filter(
+        IEnumerable<TextureRow> src, CheckBox? on, TextBox? box, Func<TextureRow, string> field)
     {
         if (on?.IsChecked != true) return src;
         string needle = box?.Text?.Trim() ?? "";
@@ -131,14 +129,14 @@ public partial class TextureBaseWindow : Window
 
     private void TextureList_OnDoubleTapped(object? sender, TappedEventArgs e)
     {
-        if (textureList.SelectedItem is not Row row) return;
+        if (textureList.SelectedItem is not TextureRow row) return;
         Picked = row.Texture;
         Close();
     }
 
     private void TextureList_OnContextRequested(object? sender, ContextRequestedEventArgs e)
     {
-        if (textureList.SelectedItem is not Row row) return;
+        if (textureList.SelectedItem is not TextureRow row) return;
 
         var menu = new ContextMenu();
         var copy = new MenuItem { Header = App.Loc["CopyTextureName"] };
@@ -176,37 +174,40 @@ public partial class TextureBaseWindow : Window
         menu.Open(textureList);
         e.Handled = true;
     }
+}
 
-    private sealed class Row
+internal sealed record TextureModelRow(string No, string Klasa, string Sciezka);
+
+internal sealed class TextureRow
+{
+    public VehicleTexture Texture { get; }
+    public string Skin { get; }
+    public string Mini { get; }
+    public string Operator { get; }
+    public string Revision { get; }
+    public string Author { get; }
+    public string Station { get; }
+    public string Photo { get; }
+    public string Model { get; }
+    public string Category { get; }
+    public string Directory { get; }
+    public DateTime? RevisionDate { get; }
+
+    public TextureRow(VehicleTexture t, VehicleDatabase db)
     {
-        public VehicleTexture Texture { get; }
-        public string Skin { get; }
-        public string Mini { get; }
-        public string Operator { get; }
-        public string Revision { get; }
-        public string Author { get; }
-        public string Station { get; }
-        public string Photo { get; }
-        public string Model { get; }
-        public string Category { get; }
-        public string Directory { get; }
-        public DateTime? RevisionDate { get; }
-
-        public Row(VehicleTexture t, VehicleDatabase db)
-        {
-            Texture = t;
-            Skin = Path.GetFileNameWithoutExtension(t.Skinfile);
-            Mini = db.ResolveMiniName(t) ?? t.ResolvedClass ?? "";
-            Operator = t.Meta?.Operator ?? "";
-            Revision = t.Meta?.RevisionDate ?? "";
-            Author = t.Meta?.TextureAuthor ?? "";
-            Station = t.Meta?.Depot ?? "";
-            Photo = t.Meta?.PhotoAuthor ?? "";
-            Model = t.Model ?? "";
-            Category = t.ResolvedCategory ?? "";
-            Directory = t.Directory ?? "";
-            RevisionDate = DateTime.TryParse(Revision, System.Globalization.CultureInfo.InvariantCulture,
-                System.Globalization.DateTimeStyles.None, out var rev) ? rev : null;
-        }
+        Texture = t;
+        Skin = Path.GetFileNameWithoutExtension(t.Skinfile);
+        Mini = db.ResolveMiniName(t) ?? t.ResolvedClass ?? "";
+        Operator = t.Meta?.Operator ?? "";
+        Revision = t.Meta?.RevisionDate ?? "";
+        Author = t.Meta?.TextureAuthor ?? "";
+        Station = t.Meta?.Depot ?? "";
+        Photo = t.Meta?.PhotoAuthor ?? "";
+        Model = t.Model ?? "";
+        Category = t.ResolvedCategory ?? "";
+        Directory = t.Directory ?? "";
+        RevisionDate = DateTime.TryParse(Revision, System.Globalization.CultureInfo.InvariantCulture,
+            System.Globalization.DateTimeStyles.None, out var rev) ? rev : null;
     }
 }
+
