@@ -173,9 +173,9 @@ public static class PresetStore
                     return col;
             }
         }
-        catch
+        catch (Exception ex)
         {
-
+            StarterNG.Infrastructure.Diagnostics.Log($"reading {FilePath}", ex);
         }
         return new PresetCollection();
     }
@@ -187,9 +187,9 @@ public static class PresetStore
             Directory.CreateDirectory(Path.GetDirectoryName(FilePath)!);
             File.WriteAllText(FilePath, JsonSerializer.Serialize(col, TypeInfo));
         }
-        catch
+        catch (Exception ex)
         {
-
+            StarterNG.Infrastructure.Diagnostics.Log($"saving {FilePath}", ex);
         }
     }
 }

@@ -38,7 +38,10 @@ public sealed class Physics
                 foreach (string f in Directory.EnumerateFiles(dynamicRoot, "*.fiz", SearchOption.AllDirectories))
                     index[Path.GetFileNameWithoutExtension(f)] = f;
         }
-        catch {  }
+        catch (Exception ex)
+        {
+            StarterNG.Infrastructure.Diagnostics.Log($"indexing {dynamicRoot}", ex);
+        }
 
         _fizIndex = index;
         return index;
@@ -66,7 +69,7 @@ public sealed class Physics
         {
             phys = new Physics { AllowedFlagB = -1 };
             try { Parse(phys, path, Path.GetDirectoryName(path) ?? "", null, 0); }
-            catch {  }
+            catch (Exception ex) { StarterNG.Infrastructure.Diagnostics.Log($"physics/{Path.GetFileName(path)}", ex); }
 
             if (phys.AllowedFlagB == -1)
             {

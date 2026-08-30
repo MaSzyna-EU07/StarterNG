@@ -215,9 +215,9 @@ public sealed class KeyboardConfig
             File.WriteAllText(_savePath, ToText(), FileEncoding);
             Dirty = false;
         }
-        catch
+        catch (Exception ex)
         {
-
+            StarterNG.Infrastructure.Diagnostics.Log($"saving {_savePath}", ex);
         }
     }
 }

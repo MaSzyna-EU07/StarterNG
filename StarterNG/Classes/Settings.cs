@@ -198,7 +198,10 @@ public sealed class Settings
                 fallback ??= path;
             }
         }
-        catch {  }
+        catch (Exception ex)
+        {
+            StarterNG.Infrastructure.Diagnostics.Log("looking for the simulator executable", ex);
+        }
 
         if (fallback != null)
         {
@@ -346,9 +349,9 @@ public sealed class Settings
             File.WriteAllText(path, _config.ToText(), FileEncoding);
             TouchConfigAge();
         }
-        catch
+        catch (Exception ex)
         {
-
+            StarterNG.Infrastructure.Diagnostics.Log($"saving {path}", ex);
         }
     }
 

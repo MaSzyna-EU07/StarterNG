@@ -44,7 +44,10 @@ public static class SceneryI18n
             if (doc.RootElement.ValueKind == JsonValueKind.Object)
                 Flatten("", doc.RootElement);
         }
-        catch {  }
+        catch (Exception ex)
+        {
+            StarterNG.Infrastructure.Diagnostics.Log($"scenery i18n/{Path.GetFileName(path)}", ex);
+        }
     }
 
     private static void Flatten(string prefix, JsonElement obj)

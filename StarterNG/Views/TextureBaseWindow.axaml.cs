@@ -210,4 +210,3 @@ internal sealed class TextureRow
             System.Globalization.DateTimeStyles.None, out var rev) ? rev : null;
     }
 }
-

@@ -446,7 +446,9 @@ public partial class MainWindow : Window
         var watcher = new Thread(() =>
         {
             try { sim.WaitForExit(); }
-            catch {  }
+            catch
+            {
+            }
             Dispatcher.UIThread.Post(RestoreFromSimulator);
         })
         {

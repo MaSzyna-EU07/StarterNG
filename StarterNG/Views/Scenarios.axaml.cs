@@ -391,7 +391,10 @@ public partial class Scenarios : UserControl
         {
             Process.Start(new ProcessStartInfo(full) { UseShellExecute = true });
         }
-        catch {  }
+        catch (Exception ex)
+        {
+            StarterNG.Infrastructure.Diagnostics.Log($"opening {full}", ex);
+        }
     }
 
     public void RebuildAfterLanguageChange()

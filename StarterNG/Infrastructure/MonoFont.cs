@@ -38,7 +38,9 @@ public static class MonoFont
             if (anyMono is not null)
                 return new FontFamily(anyMono);
         }
-        catch {  }
+        catch
+        {
+        }
 
         return FontFamily.Default;
     }

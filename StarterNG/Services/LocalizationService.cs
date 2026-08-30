@@ -21,8 +21,22 @@ public class LocalizationService : INotifyPropertyChanged
 
     public string CurrentLangCode { get; private set; } = "en";
 
-    public string this[string key] =>
-        _strings.TryGetValue(key, out var value) ? value : key;
+    private readonly HashSet<string> _reportedMisses = new(StringComparer.Ordinal);
+
+    public string this[string key]
+    {
+        get
+        {
+            if (_strings.TryGetValue(key, out var value))
+                return value;
+
+            lock (_reportedMisses)
+                if (_reportedMisses.Add(key))
+                    Infrastructure.Diagnostics.Log($"lang/{CurrentLangCode}: missing key \"{key}\"");
+
+            return key;
+        }
+    }
 
     public readonly record struct LanguageInfo(string Code, string Name, string Path);
 
@@ -40,9 +54,9 @@ public class LocalizationService : INotifyPropertyChanged
                 if (!string.IsNullOrEmpty(code))
                     list.Add(new LanguageInfo(code, string.IsNullOrEmpty(name) ? code : name, path));
             }
-            catch
+            catch (Exception ex)
             {
-
+                StarterNG.Infrastructure.Diagnostics.Log($"lang/{Path.GetFileName(path)}", ex);
             }
         }
         return list;
@@ -114,6 +128,8 @@ public class LocalizationService : INotifyPropertyChanged
         }
 
         _strings = dict;
+        lock (_reportedMisses)
+            _reportedMisses.Clear();
         CurrentLangCode = code;
         CurrentLanguage = name;
     }
