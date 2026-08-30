@@ -15,6 +15,9 @@ public static class Diagnostics
     private static readonly object Gate = new();
     private static readonly List<string> Lines = new();
 
+    private static StreamWriter? _writer;
+    private static bool _writerFailed;
+
     public static string LogPath =>
         Path.Combine(Directory.GetCurrentDirectory(), "starter", "bledy.txt");
 
@@ -25,13 +28,29 @@ public static class Diagnostics
 
     public static void Clear()
     {
-        lock (Gate) Lines.Clear();
+        lock (Gate)
+        {
+            Lines.Clear();
+            CloseWriter();
+            try
+            {
+                if (File.Exists(LogPath))
+                    File.Delete(LogPath);
+            }
+            catch
+            {
+            }
+        }
     }
 
     public static void Log(string message)
     {
+        string line = $"{DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture)}  {message}";
         lock (Gate)
-            Lines.Add($"{DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture)}  {message}");
+        {
+            Lines.Add(line);
+            Append(line);
+        }
     }
 
     public static void Log(IEnumerable<string> messages)
@@ -45,22 +64,66 @@ public static class Diagnostics
 
     public static void Flush()
     {
-        string[] snapshot;
         lock (Gate)
         {
-            if (Lines.Count == 0) return;
-            snapshot = Lines.ToArray();
+            if (Lines.Count == 0)
+                return;
+
+            try
+            {
+                _writer?.Flush();
+            }
+            catch (Exception ex)
+            {
+                _writerFailed = true;
+                Lines.Add($"log flush failed: {ex.GetType().Name}: {ex.Message}");
+            }
+
+            if (!_writerFailed && _writer is not null)
+                return;
+
+            try
+            {
+                Directory.CreateDirectory(Path.GetDirectoryName(LogPath)!);
+                File.WriteAllLines(LogPath, Lines);
+            }
+            catch
+            {
+            }
         }
+    }
+
+    private static void Append(string line)
+    {
+        if (_writerFailed)
+            return;
 
         try
         {
-            string dir = Path.GetDirectoryName(LogPath)!;
-            Directory.CreateDirectory(dir);
-            File.WriteAllLines(LogPath, snapshot);
+            if (_writer is null)
+            {
+                Directory.CreateDirectory(Path.GetDirectoryName(LogPath)!);
+                _writer = new StreamWriter(LogPath, append: false) { AutoFlush = true };
+            }
+            _writer.WriteLine(line);
+        }
+        catch
+        {
+            _writerFailed = true;
+            CloseWriter();
+        }
+    }
+
+    private static void CloseWriter()
+    {
+        try
+        {
+            _writer?.Dispose();
         }
         catch
         {
         }
+        _writer = null;
     }
 
     private static Window? Owner =>

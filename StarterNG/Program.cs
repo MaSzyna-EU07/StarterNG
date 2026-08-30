@@ -5,7 +5,7 @@ using StarterNG.Infrastructure;
 
 namespace StarterNG;
 
-class Program
+static class Program
 {
 
     [STAThread]
@@ -39,9 +39,15 @@ class Program
         }
     }
 
+    private static AppBuilder WithDiagnosticsLogging(this AppBuilder builder)
+    {
+        DiagnosticsLogSink.Install();
+        return builder;
+    }
+
     public static AppBuilder BuildAvaloniaApp()
         => AppBuilder.Configure<App>()
             .UsePlatformDetect()
             .WithInterFont()
-            .LogToTrace();
+            .WithDiagnosticsLogging();
 }
