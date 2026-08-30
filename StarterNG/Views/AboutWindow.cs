@@ -11,7 +11,7 @@ namespace StarterNG.Views;
 
 public static class AboutWindow
 {
-    private const string RepositoryUrl = "https://github.com/maj00r/StarterNG";
+    private const string RepositoryUrl = "https://github.com/MaSzyna-EU07/StarterNG";
 
     private static readonly string[] ChangelogNames =
     {
