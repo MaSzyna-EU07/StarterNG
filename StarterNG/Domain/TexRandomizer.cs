@@ -53,13 +53,13 @@ public sealed class TexRandomizer
                     _stock.Add(parts);
             }
         }
-        catch
+        catch (Exception ex)
         {
-
+            StarterNG.Infrastructure.Diagnostics.Log("texture randomizer stock list", ex);
         }
     }
 
-    public int Apply(IList<ConsistItem> consist, Func<VehicleTexture, Dynamic> makeCar)
+    public int Apply(Consist consist, Func<VehicleTexture, Dynamic> makeCar)
     {
         int changed = 0;
         for (int i = 0; i < consist.Count; i++)
@@ -110,7 +110,7 @@ public sealed class TexRandomizer
         return changed;
     }
 
-    private string? ResolveFilterMini(ConsistItem item, int index, IList<ConsistItem> consist, VehicleTexture? current)
+    private string? ResolveFilterMini(ConsistItem item, int index, Consist consist, VehicleTexture? current)
     {
         if (current != null)
         {

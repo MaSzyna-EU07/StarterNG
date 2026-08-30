@@ -145,14 +145,14 @@ public static class UData
             var fiz = physicsFor(v);
             if (fiz == null) continue;
 
-            var loads = fiz.LoadAccepted
+            var cargo = fiz.LoadAccepted
                 .Split(',', StringSplitOptions.RemoveEmptyEntries)
                 .Select(x => x.Trim())
                 .Where(x => x.Length > 0)
                 .ToList();
 
-            if (loads.Count > 0)
-                v.LoadType = loads[rng.Next(loads.Count)];
+            if (cargo.Count > 0)
+                v.LoadType = cargo[rng.Next(cargo.Count)];
         }
     }
 
