@@ -26,9 +26,48 @@ public class SettingsStoreTests
         Assert.Equal(1920, settings.Width);
         Assert.Equal(1080, settings.Height);
         Assert.True(settings.Fullscreen);
-        Assert.Equal("Polski", settings.Language);
+        Assert.Equal("pl", settings.LanguageCode);
         Assert.True(settings.LanguageWasSet);
         Assert.Equal(UserIni, installation.SettingsStore.LoadedFrom);
+    }
+
+    [Fact]
+    public void A_language_the_starter_does_not_ship_survives_a_round_trip()
+    {
+        // A user-supplied translation must reach the simulator as written; folding
+        // every unknown code into "en" is what forced eu07.exe into English.
+        var installation = WithHome(new InMemoryFileSystem().WithFile(UserIni, "lang zh\n"));
+        installation.SettingsStore.Load();
+
+        Assert.Equal("zh", installation.SettingsStore.Settings.LanguageCode);
+
+        installation.SettingsStore.Save();
+
+        Assert.Contains("lang zh", installation.Files.ReadAllText(UserIni));
+    }
+
+    [Fact]
+    public void A_language_chosen_in_the_picker_is_written_as_its_own_code()
+    {
+        var installation = WithHome();
+        installation.SettingsStore.Load();
+        installation.SettingsStore.Settings.Language = "中文";
+        installation.SettingsStore.Settings.LanguageCode = "zh";
+
+        installation.SettingsStore.Save();
+
+        Assert.Contains("lang zh", installation.Files.ReadAllText(UserIni));
+    }
+
+    [Fact]
+    public void With_no_language_recorded_the_file_still_names_one()
+    {
+        var installation = WithHome();
+        installation.SettingsStore.Load();
+
+        installation.SettingsStore.Save();
+
+        Assert.Contains("lang en", installation.Files.ReadAllText(UserIni));
     }
 
     [Fact]

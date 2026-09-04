@@ -43,13 +43,19 @@ public sealed class AppServices
         Localization = new LocalizationService(log);
         Sceneries = new SceneryRepository(files, paths, log, new SceneryParser(clock, Random));
         SceneryImages = new SceneryImageLocator(files);
-        MiniTextures = new MiniTextureIndex(files, paths);
+        MiniTextures = new MiniTextureIndex(files, paths, environment);
         Vehicles = new TexturesTxtVehicleRepository(files, paths, log, new TexturesTxtParser());
         Physics = new FizPhysicsRepository(files, paths, log);
         MissingAssets = new MissingAssetScanner(files, paths);
         SceneryTexts = new SceneryTranslations(files, log);
         Timetables = new TimetableLocator(files);
         LoadWeights = new LoadWeightsRepository(files, paths, log);
+        // Leaves a trail when the thumbnail debug switch is on, so a run with
+        // missing minis is never mistaken for a broken installation.
+        if (MiniTextures is MiniTextureIndex { SimulatedMissRate: > 0 } debugMinis)
+            log.Log($"{MiniTextureIndex.MissRateVariable}={debugMinis.SimulatedMissRate}: " +
+                    "ukrywam ten procent miniatur pojazdow");
+
         Library = new GameLibrary(Vehicles, Sceneries, MiniTextures, Physics, log);
         State = new AppState();
 

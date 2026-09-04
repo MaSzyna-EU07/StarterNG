@@ -427,26 +427,6 @@ public partial class Scenarios : UserControl
     private static readonly Avalonia.Media.IBrush SelectedVehicleBrush =
         new Avalonia.Media.SolidColorBrush(Avalonia.Media.Color.Parse("#41C400"));
 
-    private static readonly Avalonia.Media.IBrush MissingMiniBrush =
-        new Avalonia.Media.SolidColorBrush(Avalonia.Media.Color.Parse("#22808080"));
-
-    private static Control MissingMiniBox(string? label, int height) => new Border
-    {
-        Height = height,
-        Width = height * 2,
-        Background = MissingMiniBrush,
-        CornerRadius = new Avalonia.CornerRadius(4),
-        Child = new TextBlock
-        {
-            Text = label,
-            FontSize = 10,
-            TextWrapping = Avalonia.Media.TextWrapping.Wrap,
-            HorizontalAlignment = HorizontalAlignment.Center,
-            VerticalAlignment = VerticalAlignment.Center,
-            TextAlignment = Avalonia.Media.TextAlignment.Center
-        }
-    };
-
     private readonly Dictionary<string, Bitmap?> _miniCache = new();
 
     private Bitmap? LoadMini(string? name, int height)
@@ -834,7 +814,7 @@ public partial class Scenarios : UserControl
                     Stretch = Avalonia.Media.Stretch.Uniform,
                     Margin = new Thickness(0)
                 })
-                : MissingMiniBox(train.SkinFile, thumbH);
+                : MiniTextures.MissingVisual(train.SkinFile, thumbH);
 
             bool selected = !string.IsNullOrEmpty(train.Name) &&
                 string.Equals(train.Name, AppServices.Current.State.StartingVehicleName,
@@ -1025,14 +1005,11 @@ public partial class Scenarios : UserControl
         for (int i = _dragBlockStart; i < _dragBlockStart + _dragBlockLength; i++)
         {
             var source = consistStack.Children[i];
+            // The ghost mirrors what the slot shows, stand-in wagons included, so
+            // dragging a vehicle with no thumbnail still carries something visible.
             Control copy = source is Border { Child: Image image }
                 ? new Image { Source = image.Source, Height = image.Height, Stretch = image.Stretch }
-                : new Border
-                {
-                    Width = source.Bounds.Width,
-                    Height = source.Bounds.Height,
-                    Background = MissingMiniBrush
-                };
+                : MiniTextures.MissingVisual(null, (int)source.Bounds.Height);
             panel.Children.Add(copy);
         }
 

@@ -92,18 +92,9 @@ public sealed class VehicleCards
             }
             else
             {
-                minis.Children.Add(MemberFrame(new Border
-                {
-                    Height = VehicleCardStyle.ThumbHeight, Width = 90, Background = VehicleCardStyle.Placeholder,
-                    CornerRadius = new CornerRadius(4),
-                    Child = new TextBlock
-                    {
-                        Text = car.SkinFile, FontSize = 10, TextWrapping = TextWrapping.Wrap,
-                        HorizontalAlignment = HorizontalAlignment.Center,
-                        VerticalAlignment = VerticalAlignment.Center,
-                        TextAlignment = TextAlignment.Center
-                    }
-                }, item, car, CardCaption(item, car, index)));
+                minis.Children.Add(MemberFrame(
+                    MiniTextures.MissingVisual(car.SkinFile, VehicleCardStyle.ThumbHeight),
+                    item, car, CardCaption(item, car, index)));
             }
         }
 

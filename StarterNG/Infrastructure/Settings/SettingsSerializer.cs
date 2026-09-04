@@ -23,7 +23,13 @@ public sealed class SettingsSerializer
     {
 
         s.LanguageWasSet = c.Has("lang");
-        s.Language = c.GetString("lang", "en").ToLowerInvariant() == "pl" ? "Polski" : "English";
+        // Kept as the code the file holds. Startup hands it to the localisation
+        // service, which resolves it to a display name and writes that back; the
+        // starter must not decide here that an unrecognised code means English,
+        // because the same key is what tells the simulator which language to run
+        // in.
+        s.LanguageCode = c.GetString("lang", "");
+        s.Language = s.LanguageCode;
         s.Fullscreen = c.GetBool("fullscreen", false);
         s.PauseWhenInactive = c.GetBool("inactivepause", true);
         s.PauseOnStart = c.GetBool("pause", false);
@@ -165,7 +171,7 @@ public sealed class SettingsSerializer
         foreach (string key in ObsoleteKeys)
             c.Remove(key);
 
-        c.Set("lang", s.Language == "Polski" ? "pl" : "en");
+        c.Set("lang", string.IsNullOrWhiteSpace(s.LanguageCode) ? "en" : s.LanguageCode);
         c.SetBool("fullscreen", s.Fullscreen);
         c.SetBool("inactivepause", s.PauseWhenInactive);
         c.SetBool("pause", s.PauseOnStart);

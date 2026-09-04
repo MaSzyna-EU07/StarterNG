@@ -277,8 +277,9 @@ public partial class Settings : UserControl, ISettingsCapture
     public void CaptureInto(SimulatorSettings s)
     {
 
-        s.Language = (ChangeLanguageCb.SelectedItem as ComboBoxItem)?.Content?.ToString()
-                     ?? App.Loc.CurrentLanguage;
+        var language = ChangeLanguageCb.SelectedItem as ComboBoxItem;
+        s.Language = language?.Content?.ToString() ?? App.Loc.CurrentLanguage;
+        s.LanguageCode = language?.Tag as string ?? App.Loc.CurrentLangCode;
         s.Fullscreen = IsChecked(FullscreenCb);
         s.PauseWhenInactive = IsChecked(PauseInactiveCb);
         s.PauseOnStart = IsChecked(PauseStartCb);

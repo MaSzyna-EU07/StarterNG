@@ -27,7 +27,19 @@ public sealed class SimulatorSettings
     /// </summary>
     public bool LanguageWasSet { get; internal set; }
 
+    /// <summary>
+    /// Display name of the starter's language, as the picker shows it ("Polski",
+    /// "English", "中文"). Resolved from <see cref="LanguageCode"/> at startup.
+    /// </summary>
     public string Language = "English";
+
+    /// <summary>
+    /// The language's code, as its startercfg/lang/*.xml declares it and as
+    /// eu07.ini stores it. This is what the simulator reads, so it has to carry
+    /// whatever language the user actually picked rather than being folded into
+    /// one of two known ones.
+    /// </summary>
+    public string LanguageCode = "";
     public bool Fullscreen;
     public bool PauseWhenInactive = true;
     public bool PauseOnStart;

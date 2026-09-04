@@ -51,7 +51,12 @@ public partial class App : Avalonia.Application
     {
 
         var resolvedName = Loc.Load(langNameOrCode);
+
+        // The service is the authority on which language actually loaded: the code
+        // goes to eu07.ini for the simulator, the name to the picker.
         AppServices.Current.Settings.Language = resolvedName;
+        AppServices.Current.Settings.LanguageCode = Loc.CurrentLangCode;
+
         ApplyCulture(Loc.CurrentLangCode);
     }
 
