@@ -89,6 +89,8 @@ public partial class Depot : UserControl
             _db, _info, _consist, _cargo, _hand,
             RebuildConsist, _cards.RefreshMemberChrome, _browser.ShowTextureInfo);
 
+        _browser.TextureSelected = _details.ShowTexture;
+
         Dispatcher.UIThread.Post(() =>
         {
             hideArchivalCheck.IsChecked = AppServices.Current.Settings.HideArchivalVehicles;

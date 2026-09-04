@@ -22,6 +22,10 @@ public sealed class VehicleInfo
     public string? CategoryOf(Dynamic car) =>
         TextureFor(car) is { } t ? CategoryOf(t) : null;
 
+    public VehiclePhysics? PhysicsFor(VehicleTexture texture) =>
+        AppServices.Current.Physics.For(texture.Directory, texture.Model)
+        ?? AppServices.Current.Physics.For(texture.Directory, texture.Skinfile);
+
     public VehiclePhysics? PhysicsFor(Dynamic car)
     {
         string? dbModel = TextureFor(car)?.Model;

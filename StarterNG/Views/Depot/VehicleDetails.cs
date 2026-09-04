@@ -122,6 +122,26 @@ public sealed class VehicleDetails
         AddConsistLoadSection();
     }
 
+    public void ShowTexture(VehicleTexture texture)
+    {
+        generalPanel.Children.Clear();
+        consistTexturePanel.Children.Clear();
+
+        var inv = CultureInfo.InvariantCulture;
+        var physics = _info.PhysicsFor(texture);
+
+        generalPanel.Children.Add(Reading($"{App.Loc["Length"]} [m]",
+            physics?.Length.ToString("0.##", inv)));
+        generalPanel.Children.Add(Reading($"{App.Loc["Mass"]} [t]",
+            physics is null ? null : (physics.Mass / 1000.0).ToString("0.#", inv)));
+        generalPanel.Children.Add(Reading($"{App.Loc["VMax"]} [km/h]",
+            physics?.VMax.ToString("0", inv)));
+        generalPanel.Children.Add(Reading(App.Loc["Model"], texture.Model));
+        generalPanel.Children.Add(Reading(App.Loc["Texture"], texture.Skinfile));
+
+        _showTextureInfo(texture, consistTexturePanel);
+    }
+
     private void BuildGeneralInfo(ConsistItem item)
     {
         var car = _consist.ActiveCar(item);

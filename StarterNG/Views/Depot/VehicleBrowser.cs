@@ -49,6 +49,8 @@ public sealed class VehicleBrowser
 
     public VehicleTexture? Selected { get; private set; }
 
+    public Action<VehicleTexture>? TextureSelected { get; set; }
+
     private bool _suppress;
     private bool _syncingCombos;
 
@@ -342,6 +344,11 @@ public sealed class VehicleBrowser
             miniPreview.Source = _minis.Get(_db.ResolveMiniName(texture), MiniPreviewHeight);
             addVehicleButton.IsEnabled = true;
             SyncCombosTo(texture);
+
+            // Clicking a card in the consist also selects its texture here. The
+            // detail panels then belong to that car, not to the catalogue entry.
+            if (!_syncingCombos)
+                TextureSelected?.Invoke(texture);
         }
         else
         {
