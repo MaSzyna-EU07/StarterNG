@@ -214,6 +214,8 @@
     <String key="LoadToAllShort">A következőkre</String>
     <String key="LoadMaxShort">Legnagyobb</String>
     <String key="ConsistLoadTools">A teljes szerelvény rakománya</String>
+    <String key="ConsistReady">Consist ready to go</String>
+    <String key="ConsistReadyDesc">The consist starts prepared: brake pipe charged, driver’s brake valve set, batteries closed. Unchecked it starts cold and braked.</String>
     <String key="ConsistRandomType">Véletlen típus</String>
     <String key="ConsistMaxAmount">Legnagyobb mennyiség</String>
     <String key="ConsistRandomAmount">Véletlen mennyiség</String>
@@ -440,10 +442,6 @@
     <String key="AutoCloseStarter">A starter automatikus bezárása</String>
     <String key="LargeThumbnails">Nagy előnézetek</String>
     <String key="AutoExpandSceneryTree">Pályafa automatikus kibontása</String>
-    <String key="BatteryDefault">Akkumulátor indításkor</String>
-    <String key="BatteryDefaultScenario">Forgatókönyv szerint</String>
-    <String key="BatteryDefaultOff">Mindig ki</String>
-    <String key="BatteryDefaultOn">Mindig be</String>
 
     <!-- Controls / key bindings -->
     <String key="Controls">Irányítás</String>

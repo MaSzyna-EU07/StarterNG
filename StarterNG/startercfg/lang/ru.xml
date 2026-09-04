@@ -214,6 +214,8 @@
     <String key="LoadToAllShort">На следующие</String>
     <String key="LoadMaxShort">Максимум</String>
     <String key="ConsistLoadTools">Груз всего состава</String>
+    <String key="ConsistReady">Consist ready to go</String>
+    <String key="ConsistReadyDesc">The consist starts prepared: brake pipe charged, driver’s brake valve set, batteries closed. Unchecked it starts cold and braked.</String>
     <String key="ConsistRandomType">Случайный тип</String>
     <String key="ConsistMaxAmount">Максимальное количество</String>
     <String key="ConsistRandomAmount">Случайное количество</String>
@@ -440,10 +442,6 @@
     <String key="AutoCloseStarter">Автоматически закрывать стартер</String>
     <String key="LargeThumbnails">Крупные миниатюры</String>
     <String key="AutoExpandSceneryTree">Автоматически разворачивать дерево сценерий</String>
-    <String key="BatteryDefault">Батарея при запуске</String>
-    <String key="BatteryDefaultScenario">По сценарию</String>
-    <String key="BatteryDefaultOff">Всегда выключена</String>
-    <String key="BatteryDefaultOn">Всегда включена</String>
 
     <!-- Controls / key bindings -->
     <String key="Controls">Управление</String>

@@ -2,8 +2,6 @@ using System;
 
 namespace StarterNG.Domain.Settings;
 
-public enum BatteryDefault { Default = 0, AlwaysOff = 1, AlwaysOn = 2 }
-
 public enum ExeProblem { None, NotFound, NotExecutable, WrongPlatform }
 
 public sealed class SimulatorSettings
@@ -107,7 +105,6 @@ public sealed class SimulatorSettings
     public bool AutoCloseStarter;
     public bool LargeThumbnails;
     public bool AutoExpandSceneryTree;
-    public BatteryDefault BatteryDefault = BatteryDefault.Default;
 
     public bool ShowAiVehicles = true;
     public bool DrivableOnly = true;

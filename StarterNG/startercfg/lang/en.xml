@@ -214,6 +214,8 @@
     <String key="LoadToAllShort">To following</String>
     <String key="LoadMaxShort">Maximum</String>
     <String key="ConsistLoadTools">Whole-consist load</String>
+    <String key="ConsistReady">Consist ready to go</String>
+    <String key="ConsistReadyDesc">The consist starts prepared: brake pipe charged, driver’s brake valve set, batteries closed. Unchecked it starts cold and braked.</String>
     <String key="ConsistRandomType">Random type</String>
     <String key="ConsistMaxAmount">Maximum amount</String>
     <String key="ConsistRandomAmount">Random amount</String>
@@ -474,11 +476,6 @@
     <String key="AutoCloseStarter">Automatically close starter</String>
     <String key="LargeThumbnails">Large thumbnails</String>
     <String key="AutoExpandSceneryTree">Automatically expand scenery tree</String>
-    <String key="BatteryDefault">Battery on launch</String>
-    <String key="BatteryDefaultDesc">Battery state when the simulation starts, unless the scenario decides otherwise.</String>
-    <String key="BatteryDefaultScenario">Scenario default</String>
-    <String key="BatteryDefaultOff">Always off</String>
-    <String key="BatteryDefaultOn">Always on</String>
 
     <!-- Controls / key bindings -->
     <String key="Controls">Controls</String>

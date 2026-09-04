@@ -555,13 +555,15 @@ public sealed class VehicleDetails
         if (_consist.Count == 0)
             return;
 
-        var buttons = Stack(
+        var tools = Stack(
             LoadToolButton(App.Loc["ConsistRandomType"],
                 () => { _cargo.RandomTypes(_consist); _redraw(); }, secondary: true),
             LoadToolButton(App.Loc["ConsistMaxAmount"],
                 () => { _cargo.MaxAmounts(_consist); _redraw(); }, secondary: true),
             LoadToolButton(App.Loc["ConsistRandomAmount"],
                 () => { _cargo.RandomAmounts(_consist); _redraw(); }, secondary: true));
+
+        var buttons = Stack(ReadyToGoRow(), tools);
 
         var count = new TextBlock
         {
@@ -572,6 +574,29 @@ public sealed class VehicleDetails
         };
 
         loadsPanel.Children.Add(Section(App.Loc["ConsistLoadTools"], buttons, count));
+    }
+
+    private Control ReadyToGoRow()
+    {
+        var trainset = _consist.EditingTrainset;
+        var ready = new CheckBox
+        {
+            Content = App.Loc["ConsistReady"],
+            FontSize = 12,
+            IsEnabled = trainset is not null,
+            IsChecked = trainset?.ReadyToGo ?? false
+        };
+        ToolTip.SetTip(ready, App.Loc["ConsistReadyDesc"]);
+
+        ready.IsCheckedChanged += (_, _) =>
+        {
+            if (trainset is null)
+                return;
+            trainset.ReadyToGo = ready.IsChecked == true;
+            _redraw();
+        };
+
+        return Row(content: ready);
     }
 
     private Button LoadToolButton(string text, Action onClick, bool secondary = false)

@@ -34,7 +34,6 @@ public sealed class StartSimulation
 {
     private const char ExportPrefix = '$';
 
-    private const float BatteryOnVelocity = 0.1f;
 
     private readonly AppState _state;
     private readonly SettingsStore _settings;
@@ -80,8 +79,6 @@ public sealed class StartSimulation
         if (scenery is null || trainset is null)
             return new SimulationStartResult(SimulationStartOutcome.NothingSelected);
 
-        ApplyBatteryDefault(trainset);
-
         string? vehicle = TrainsetDisplay.UniquifyForLaunch(trainset, scenery, _state.StartingVehicleName)
                           ?? StartableVehicle(trainset, _state.StartingVehicleName);
         _state.StartingVehicleName = vehicle;
@@ -123,18 +120,4 @@ public sealed class StartSimulation
         return new SimulationStartResult(SimulationStartOutcome.Started, process, executable);
     }
 
-    private void ApplyBatteryDefault(Trainset trainset)
-    {
-        if (trainset.Vehicles.Count == 0)
-            return;
-
-        trainset.Velocity = _settings.Settings.BatteryDefault switch
-        {
-            BatteryDefault.AlwaysOff => 0f,
-            BatteryDefault.AlwaysOn => MathF.Abs(trainset.OriginalVelocity) < 0.01f
-                ? BatteryOnVelocity
-                : trainset.OriginalVelocity,
-            _ => trainset.OriginalVelocity
-        };
-    }
 }

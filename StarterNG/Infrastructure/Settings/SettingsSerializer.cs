@@ -136,7 +136,6 @@ public sealed class SettingsSerializer
         s.AutoCloseStarter = c.GetBool("starter.autoclose", false);
         s.LargeThumbnails = c.GetBool("starter.largethumbnails", false);
         s.AutoExpandSceneryTree = c.GetBool("starter.expandtree", false);
-        s.BatteryDefault = (BatteryDefault)Clamp(c.GetInt("starter.batterydefault", 0), 0, 2);
         s.ShowAiVehicles = c.GetBool("starter.show.ai", true);
         s.DrivableOnly = c.GetBool("starter.drivableonly", true);
         s.ShowArchivalSceneries = c.GetBool("starter.show.archival", true);
@@ -265,7 +264,6 @@ public sealed class SettingsSerializer
         c.SetBool("starter.autoclose", s.AutoCloseStarter);
         c.SetBool("starter.largethumbnails", s.LargeThumbnails);
         c.SetBool("starter.expandtree", s.AutoExpandSceneryTree);
-        c.SetInt("starter.batterydefault", (int)s.BatteryDefault);
         c.SetBool("starter.show.ai", s.ShowAiVehicles);
         c.SetBool("starter.drivableonly", s.DrivableOnly);
         c.SetBool("starter.show.archival", s.ShowArchivalSceneries);

@@ -214,6 +214,8 @@
     <String key="LoadToAllShort">Do następnych</String>
     <String key="LoadMaxShort">Maksymalny</String>
     <String key="ConsistLoadTools">Ładunki zestawienia</String>
+    <String key="ConsistReady">Skład gotowy do jazdy</String>
+    <String key="ConsistReadyDesc">Skład startuje przygotowany: przewód główny napełniony, kran maszynisty ustawiony, akumulatory załączone. Odznaczony startuje zimny i zahamowany.</String>
     <String key="ConsistRandomType">Losowy rodzaj</String>
     <String key="ConsistMaxAmount">Maksymalna ilość</String>
     <String key="ConsistRandomAmount">Losowa ilość</String>
@@ -474,11 +476,6 @@
     <String key="AutoCloseStarter">Zamknij starter automatycznie</String>
     <String key="LargeThumbnails">Duże miniaturki</String>
     <String key="AutoExpandSceneryTree">Automatycznie rozwijanie drzewka scenerii</String>
-    <String key="BatteryDefault">Akumulator przy starcie</String>
-    <String key="BatteryDefaultDesc">Stan akumulatora przy starcie symulacji, o ile scenariusz nie zdecyduje inaczej.</String>
-    <String key="BatteryDefaultScenario">Domyślnie ze scenerii</String>
-    <String key="BatteryDefaultOff">Zawsze wyłączony</String>
-    <String key="BatteryDefaultOn">Zawsze włączony</String>
 
     <!-- Sterowanie / przypisania klawiszy -->
     <String key="Controls">Sterowanie</String>

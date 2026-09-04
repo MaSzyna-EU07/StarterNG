@@ -214,6 +214,8 @@
     <String key="LoadToAllShort">Na následující</String>
     <String key="LoadMaxShort">Maximální</String>
     <String key="ConsistLoadTools">Náklad celé soupravy</String>
+    <String key="ConsistReady">Consist ready to go</String>
+    <String key="ConsistReadyDesc">The consist starts prepared: brake pipe charged, driver’s brake valve set, batteries closed. Unchecked it starts cold and braked.</String>
     <String key="ConsistRandomType">Náhodný druh</String>
     <String key="ConsistMaxAmount">Maximální množství</String>
     <String key="ConsistRandomAmount">Náhodné množství</String>
@@ -440,10 +442,6 @@
     <String key="AutoCloseStarter">Automaticky zavřít starter</String>
     <String key="LargeThumbnails">Velké náhledy</String>
     <String key="AutoExpandSceneryTree">Automaticky rozbalit strom scenérií</String>
-    <String key="BatteryDefault">Baterie při spuštění</String>
-    <String key="BatteryDefaultScenario">Podle scénáře</String>
-    <String key="BatteryDefaultOff">Vždy vypnutá</String>
-    <String key="BatteryDefaultOn">Vždy zapnutá</String>
 
     <!-- Controls / key bindings -->
     <String key="Controls">Ovládání</String>

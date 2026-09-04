@@ -118,14 +118,6 @@
                                     <ctl:SettingRow ConfigKey="starter.expandtree">
                                         <CheckBox x:Name="AutoExpandTreeCb" Content="{Binding [AutoExpandSceneryTree], Source={x:Static starterNg:App.Loc}}" />
                                     </ctl:SettingRow>
-                                    <ctl:SettingRow ConfigKey="starter.batterydefault" Label="{Binding [BatteryDefault], Source={x:Static starterNg:App.Loc}}"
-                                                    Description="{Binding [BatteryDefaultDesc], Source={x:Static starterNg:App.Loc}}">
-                                        <ComboBox x:Name="BatteryDefaultCb" SelectedIndex="0">
-                                            <ComboBoxItem Content="{Binding [BatteryDefaultScenario], Source={x:Static starterNg:App.Loc}}" />
-                                            <ComboBoxItem Content="{Binding [BatteryDefaultOff], Source={x:Static starterNg:App.Loc}}" />
-                                            <ComboBoxItem Content="{Binding [BatteryDefaultOn], Source={x:Static starterNg:App.Loc}}" />
-                                        </ComboBox>
-                                    </ctl:SettingRow>
                                 </StackPanel>
                             </ctl:SettingsSection>
 

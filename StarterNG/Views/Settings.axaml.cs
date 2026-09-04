@@ -260,7 +260,6 @@ public partial class Settings : UserControl, ISettingsCapture
             AutoCloseStarterCb.IsChecked = s.AutoCloseStarter;
             LargeThumbnailsCb.IsChecked = s.LargeThumbnails;
             AutoExpandTreeCb.IsChecked = s.AutoExpandSceneryTree;
-            BatteryDefaultCb.SelectedIndex = (int)s.BatteryDefault;
         }
         finally
         {
@@ -358,7 +357,6 @@ public partial class Settings : UserControl, ISettingsCapture
         s.AutoCloseStarter = IsChecked(AutoCloseStarterCb);
         s.LargeThumbnails = IsChecked(LargeThumbnailsCb);
         s.AutoExpandSceneryTree = IsChecked(AutoExpandTreeCb);
-        s.BatteryDefault = (BatteryDefault)Math.Max(0, BatteryDefaultCb.SelectedIndex);
     }
 
     private void ComButton_OnClick(object? sender, RoutedEventArgs e)

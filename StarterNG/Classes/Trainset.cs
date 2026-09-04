@@ -22,6 +22,29 @@ public class Trainset
     public float Offset;
     public float Velocity;
     public float OriginalVelocity;
+
+    // The scenery format has no battery field: a trainset with a non-zero speed is
+    // the prepared one. DynObj.cpp derives ReadyFlag from it, and that branch of
+    // CheckLocomotiveParameters is what charges the pipes, sets the brake handle
+    // and closes the battery contactor. The sign carries the direction, so a
+    // consist authored on the move keeps its own speed.
+    private const float StandingStill = 0.01f;
+    private const float PreparedCreep = 0.1f;
+
+    public bool ReadyToGo
+    {
+        get => MathF.Abs(Velocity) >= StandingStill;
+        set
+        {
+            if (!value)
+            {
+                Velocity = 0f;
+                return;
+            }
+
+            Velocity = MathF.Abs(OriginalVelocity) < StandingStill ? PreparedCreep : OriginalVelocity;
+        }
+    }
     public string Description;
     public List<Dynamic> Vehicles;
 
