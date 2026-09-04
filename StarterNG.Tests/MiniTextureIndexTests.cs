@@ -12,7 +12,7 @@ public class MiniTextureIndexTests
         "406r", "424z", "621z", "z1kd", "gags", "eaos", "falns", "uacs", "sgs", "kbs"
     };
 
-    private static MiniTextureIndex Build(int missRate)
+    private static MiniTextureIndex Build(int? missRate)
     {
         var files = new InMemoryFileSystem();
         foreach (string name in Names)
@@ -20,19 +20,31 @@ public class MiniTextureIndexTests
         files.WithFile(TestInstallation.At("textures", "mini", "other.bmp"), "bitmap");
 
         var environment = new FakeEnvironment();
-        if (missRate > 0)
-            environment.With(MiniTextureIndex.MissRateVariable, missRate.ToString());
+        if (missRate is { } rate)
+            environment.With(MiniTextureIndex.MissRateVariable, rate.ToString());
 
         return new MiniTextureIndex(files, new GamePaths(TestInstallation.Root), environment);
     }
 
     [Fact]
-    public void Without_the_debug_variable_every_thumbnail_loads()
+    public void Setting_the_variable_to_zero_shows_the_installation_as_it_is()
     {
         var index = Build(missRate: 0);
 
         Assert.Equal(0, index.SimulatedMissRate);
         Assert.All(Names, name => Assert.True(index.Has(name)));
+    }
+
+    [Fact]
+    public void The_temporary_default_still_hides_half_the_thumbnails()
+    {
+        // Guards the testing default in MiniTextureIndex.DefaultMissRate. When
+        // that goes back to 0 for release, this test is what says so - change it
+        // together with the constant, do not delete it quietly.
+        var index = Build(missRate: null);
+
+        Assert.Equal(50, index.SimulatedMissRate);
+        Assert.Contains(Names, name => !index.Has(name));
     }
 
     [Fact]

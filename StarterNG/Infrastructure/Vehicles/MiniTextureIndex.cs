@@ -20,13 +20,23 @@ public sealed class MiniTextureIndex : IMiniTextureIndex
     private const string FallbackName = "other";
 
     /// <summary>
-    /// Set to 1-100 to make that percentage of thumbnails behave as if the
-    /// installation did not have their file - the vehicle then falls back to
-    /// other.bmp exactly as one naming an unknown thumbnail would. For checking
-    /// how a consist looks when some of its stock has no picture of its own.
-    /// Off unless the variable is set.
+    /// Set to 0-100 to override <see cref="DefaultMissRate"/>: the percentage of
+    /// thumbnails that behave as if the installation did not have their file, so
+    /// the vehicle falls back to other.bmp exactly as one naming an unknown
+    /// thumbnail would. Set it to 0 to see the installation as it really is.
     /// </summary>
     public const string MissRateVariable = "STARTER_DEBUG_MISSING_MINI";
+
+    /// <summary>
+    /// TEMPORARY, FOR TESTING THE MISSING-THUMBNAIL DRAWING. Half the vehicles in
+    /// every consist will show the other.bmp stand-in instead of their own
+    /// picture, whether or not the installation is complete.
+    ///
+    /// Set this back to 0 before release - it is the whole of the switch, and
+    /// MiniTextureIndexTests.The_temporary_default_still_hides_half_the_thumbnails
+    /// fails the moment it changes, so nothing ships it by accident.
+    /// </summary>
+    private const int DefaultMissRate = 50;
 
     private readonly IFileSystem _files;
     private readonly IGamePaths _paths;
@@ -93,7 +103,7 @@ public sealed class MiniTextureIndex : IMiniTextureIndex
         string? raw = environment?.GetVariable(MissRateVariable);
         return int.TryParse(raw, NumberStyles.Integer, CultureInfo.InvariantCulture, out int rate)
             ? Math.Clamp(rate, 0, 100)
-            : 0;
+            : DefaultMissRate;
     }
 
     private Dictionary<string, string> Index()
