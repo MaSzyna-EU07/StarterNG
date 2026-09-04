@@ -234,6 +234,13 @@ public sealed class VehicleCards
     /// Selects an item without going through a redraw. <paramref name="car"/> picks the
     /// active member of a multi-vehicle unit; null keeps the current one when possible.
     /// </summary>
+    /// <summary>
+    /// Gives an item the selection a click would give it. Removing a vehicle only
+    /// moves the highlight, which left the starting vehicle, the detail panels and
+    /// the browser pointing at what was deleted.
+    /// </summary>
+    public void Activate(ConsistItem item) => Select(item, null);
+
     private void Select(ConsistItem item, Dynamic? car)
     {
         var target = car ?? (ReferenceEquals(_consist.Selected, item)

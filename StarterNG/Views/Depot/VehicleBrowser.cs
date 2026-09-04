@@ -445,6 +445,7 @@ public sealed class VehicleBrowser
         }
 
         Reading(App.Loc["TextureInfo"], Consist.Base(texture.Skinfile));
+        Reading(App.Loc["Model"], texture.Directory + texture.Model);
 
         if (texture.Meta is { } meta)
         {

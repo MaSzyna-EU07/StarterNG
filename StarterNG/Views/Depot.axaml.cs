@@ -147,6 +147,19 @@ public partial class Depot : UserControl
     private void VehicleListBox_OnPointerPressed(object? sender, PointerPressedEventArgs e) =>
         _drag.VehicleListPressed(sender, e);
 
+    /// <summary>
+    /// Floor of the consist row with the small thumbnails, one thumbnail height
+    /// below the roomy one.
+    /// </summary>
+    private const double SmallConsistRowHeight = 106;
+
+    private const double LargeConsistRowHeight = 140;
+
+    private void SyncConsistRowHeight() =>
+        depotGrid.RowDefinitions[2].MinHeight = AppServices.Current.Settings.LargeThumbnails
+            ? LargeConsistRowHeight
+            : SmallConsistRowHeight;
+
     private Dynamic NewVehicle(VehicleTexture texture) =>
         _consist.MakeDynamic(texture, _listScenery ?? AppServices.Current.State.CurrentScenery);
 
@@ -177,6 +190,7 @@ public partial class Depot : UserControl
 
     private void RebuildConsist()
     {
+        SyncConsistRowHeight();
         consistStack.Children.Clear();
         _cards.Forget();
         _drag.Reset();
@@ -192,6 +206,13 @@ public partial class Depot : UserControl
         }
 
         emptyHint.IsVisible = _consist.Count == 0;
+
+        // A selection the consist moved on its own - after a removal, say - is only
+        // highlighted; activating it runs what a click would have run.
+        if (_consist.Selected is { } moved &&
+            (_consist.SelectedCar is null || !moved.Cars.Contains(_consist.SelectedCar)))
+            _cards.Activate(moved);
+
         _details.Refresh();
         UpdateTrainStats();
         WriteBackToScenery();

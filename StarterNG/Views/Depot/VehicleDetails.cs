@@ -304,19 +304,21 @@ public sealed class VehicleDetails
 
         if (IsPassengerVehicle(item))
         {
-            var lead = item.Cars[0];
+            // The number rides in each vehicle's own name, so it belongs to the
+            // member the user picked inside the unit, not to its first car.
+            var numbered = _consist.ActiveCar(item);
             var numBox = new NumericUpDown
             {
                 FontSize = 12,
                 Minimum = 0,
                 Maximum = 99999,
                 Increment = 1,
-                Value = Consist.GetWagonNumber(lead),
+                Value = Consist.GetWagonNumber(numbered),
                 FormatString = "0"
             };
             numBox.ValueChanged += (_, _) =>
             {
-                _consist.SetWagonNumber(lead, (int)(numBox.Value ?? 0));
+                _consist.SetWagonNumber(numbered, (int)(numBox.Value ?? 0));
                 _redraw();
             };
             rows.Children.Add(Row(App.Loc["WagonNumber"], numBox));
