@@ -14,6 +14,7 @@ using Avalonia.Threading;
 
 using StarterNG.Classes;
 using StarterNG.Domain;
+using StarterNG.Domain.Sceneries;
 
 namespace StarterNG.Views;
 

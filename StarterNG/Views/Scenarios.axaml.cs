@@ -17,6 +17,8 @@ using Avalonia.Markup.Xaml;
 using Avalonia.Media.Imaging;
 using StarterNG.Classes;
 using StarterNG.Domain;
+using StarterNG.Application;
+using StarterNG.Domain.Sceneries;
 
 namespace StarterNG.Views;
 
@@ -310,7 +312,7 @@ public partial class Scenarios : UserControl
         SceneryI18n.LoadFor(scenery, App.Loc.CurrentLangCode);
         sceneryDescription.Text = scenery.LocalizedDescription;
 
-        string? imagePath = scenery.ImagePath;
+        string? imagePath = AppServices.Current.SceneryImages.Resolve(scenery);
         if (imagePath is not null)
         {
             try
@@ -551,16 +553,17 @@ public partial class Scenarios : UserControl
         try
         {
             weatherForm.IsEnabled = true;
-            weatherTime.SelectedTime = ParseTime(scenery.ScenarioTimeOverride);
-            weatherDate.SelectedDate = DateOfDayOfYear(scenery.Day);
-            weatherTemp.Value = scenery.Temperature;
-            weatherFog.Value = SliderFromFog(scenery.FogEnd);
-            SelectByTag(weatherSeason, scenery.Day.ToString(), excludeFromNearest: "0");
-            SelectByTag(weatherOvercast, scenery.OvercastRandom
+            var weather = scenery.Weather;
+            weatherTime.SelectedTime = ParseTime(weather.ScenarioTimeOverride);
+            weatherDate.SelectedDate = DateOfDayOfYear(weather.Day);
+            weatherTemp.Value = weather.Temperature;
+            weatherFog.Value = SliderFromFog(weather.FogEnd);
+            SelectByTag(weatherSeason, weather.Day.ToString(), excludeFromNearest: "0");
+            SelectByTag(weatherOvercast, weather.OvercastRandom
                 ? RandomTag
-                : scenery.Overcast.ToString(CultureInfo.InvariantCulture));
+                : weather.Overcast.ToString(CultureInfo.InvariantCulture));
 
-            ApplyTodayPreview(scenery.Day == 0);
+            ApplyTodayPreview(weather.Day == 0);
             UpdateWeatherLabels();
         }
         finally
@@ -574,22 +577,22 @@ public partial class Scenarios : UserControl
         if (_loadingWeather || _currentScenery is null)
             return;
 
-        var scn = _currentScenery;
+        var weather = _currentScenery.Weather;
         if (weatherTime.SelectedTime is { } t)
-            scn.ScenarioTimeOverride = $"{t.Hours:D2}:{t.Minutes:D2}";
+            weather.ScenarioTimeOverride = $"{t.Hours:D2}:{t.Minutes:D2}";
 
-        scn.Day = _todaySeason ? 0 : SelectedDayOfYear();
-        scn.Temperature = weatherTemp.Value;
-        scn.FogEnd = FogFromSlider(weatherFog.Value);
+        weather.Day = _todaySeason ? 0 : SelectedDayOfYear();
+        weather.Temperature = weatherTemp.Value;
+        weather.FogEnd = FogFromSlider(weatherFog.Value);
         if ((weatherOvercast.SelectedItem as ComboBoxItem)?.Tag is string ov)
         {
-            scn.OvercastRandom = ov == RandomTag;
-            if (!scn.OvercastRandom &&
+            weather.OvercastRandom = ov == RandomTag;
+            if (!weather.OvercastRandom &&
                 double.TryParse(ov, NumberStyles.Float, CultureInfo.InvariantCulture, out double oc))
-                scn.Overcast = oc;
+                weather.Overcast = oc;
         }
 
-        scn.WeatherDirty = true;
+        weather.Dirty = true;
         UpdateWeatherLabels();
     }
 
@@ -599,23 +602,23 @@ public partial class Scenarios : UserControl
         weatherFogLabel.Text = FormatFog(FogFromSlider(weatherFog.Value));
         weatherDayDate.Text = string.Format(LanguageCulture, App.Loc["DayOfYear"], SelectedDayOfYear());
 
-        weatherRestore.IsEnabled = _currentScenery?.WeatherChanged ?? false;
+        weatherRestore.IsEnabled = _currentScenery?.Weather.Changed ?? false;
     }
 
     private static int FogFromSlider(double position)
     {
-        double metres = Scenery.FogMin *
-                        System.Math.Pow((double)Scenery.FogMax / Scenery.FogMin, position / 1000.0);
+        double metres = SceneryWeather.FogMin *
+                        System.Math.Pow((double)SceneryWeather.FogMax / SceneryWeather.FogMin, position / 1000.0);
         int step = metres < 100 ? 5 : metres < 1000 ? 10 : 100;
         return System.Math.Clamp((int)(System.Math.Round(metres / step) * step),
-                                 Scenery.FogMin, Scenery.FogMax);
+                                 SceneryWeather.FogMin, SceneryWeather.FogMax);
     }
 
     private static double SliderFromFog(int metres)
     {
-        double clamped = System.Math.Clamp(metres, Scenery.FogMin, Scenery.FogMax);
-        return 1000.0 * System.Math.Log(clamped / Scenery.FogMin) /
-               System.Math.Log((double)Scenery.FogMax / Scenery.FogMin);
+        double clamped = System.Math.Clamp(metres, SceneryWeather.FogMin, SceneryWeather.FogMax);
+        return 1000.0 * System.Math.Log(clamped / SceneryWeather.FogMin) /
+               System.Math.Log((double)SceneryWeather.FogMax / SceneryWeather.FogMin);
     }
 
     private static string FormatFog(int metres) =>
@@ -688,7 +691,7 @@ public partial class Scenarios : UserControl
     private void WeatherRestore_OnClick(object? sender, RoutedEventArgs e)
     {
         if (_currentScenery is null) return;
-        _currentScenery.RestoreWeather();
+        _currentScenery.Weather.Restore();
         ShowWeather(_currentScenery);
     }
 

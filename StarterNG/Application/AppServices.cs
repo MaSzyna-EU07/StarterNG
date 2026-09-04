@@ -1,6 +1,7 @@
 using System;
 using StarterNG.Application.Abstractions;
 using StarterNG.Infrastructure.Adapters;
+using StarterNG.Infrastructure.Sceneries;
 using StarterNG.Services;
 
 namespace StarterNG.Application;
@@ -33,8 +34,11 @@ public sealed class AppServices
 
         var log = new FileDiagnosticsLog(files, clock, paths);
         Log = log;
+        Random = new SystemRandomSource();
         Processes = new SystemProcessLauncher(log);
         Localization = new LocalizationService(log);
+        Sceneries = new SceneryRepository(files, paths, log, new SceneryParser(clock, Random));
+        SceneryImages = new SceneryImageLocator(files);
     }
 
     /// <summary>
@@ -65,6 +69,12 @@ public sealed class AppServices
     public IDiagnosticsLog Log { get; }
 
     public IProcessLauncher Processes { get; }
+
+    public IRandomSource Random { get; }
+
+    public ISceneryRepository Sceneries { get; }
+
+    public SceneryImageLocator SceneryImages { get; }
 
     /// <summary>
     /// Exposed as the concrete service rather than <see cref="ILocalizedStrings"/>

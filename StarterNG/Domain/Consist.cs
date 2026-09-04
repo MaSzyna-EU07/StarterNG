@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 
 using StarterNG.Classes;
+using StarterNG.Domain.Sceneries;
 
 namespace StarterNG.Domain;
 

@@ -18,6 +18,7 @@ using Avalonia.Threading;
 using Avalonia.VisualTree;
 using StarterNG.Classes;
 using StarterNG.Domain;
+using StarterNG.Domain.Sceneries;
 
 namespace StarterNG.Views;
 

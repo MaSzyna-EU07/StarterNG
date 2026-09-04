@@ -4,6 +4,9 @@ using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using StarterNG.Application;
+using StarterNG.Application.Abstractions;
+using StarterNG.Domain.Sceneries;
 
 namespace StarterNG.Classes;
 
@@ -26,16 +29,11 @@ public sealed class GameData
     public bool Loaded { get; private set; }
 
     public void Load(IProgress<LoadStatus>? progress = null,
-                     string sceneryDir = "scenery/",
                      string miniDir = "textures/mini/",
                      string dynamicRoot = "dynamic")
     {
         if (Loaded)
             return;
-
-        var scnFiles = EnumerateScenery(sceneryDir);
-        int total = Math.Max(1, scnFiles.Count);
-        int done = 0;
 
         progress?.Report(new LoadStatus(0, LoadPhase.Vehicles, "textures.txt"));
         int vehicles = Vehicles.LoadFromTexturesTxt(dynamicRoot);
@@ -46,61 +44,19 @@ public sealed class GameData
             () => VehicleDatabase.PreloadMiniIndex(miniDir),
             () => Physics.PreloadIndex());
 
-        var sceneryLock = new object();
-        var doneCount = done;
-        Parallel.ForEach(scnFiles, new ParallelOptions { MaxDegreeOfParallelism = Environment.ProcessorCount },
-            file =>
-            {
-                try
-                {
-                    var scenery = new Scenery(file);
-                    lock (sceneryLock)
-                    {
-                        Sceneries.Add(scenery);
-                        doneCount++;
-                        progress?.Report(new LoadStatus((double)doneCount / total, LoadPhase.Sceneries,
-                            Path.GetFileName(file)));
-                    }
-                }
-                catch (Exception ex)
-                {
-                    StarterNG.Infrastructure.Diagnostics.Log($"scenery/{Path.GetFileName(file)}", ex);
-                }
-            });
-        done = doneCount;
+        var sceneryProgress = progress is null
+            ? null
+            : new Progress<SceneryLoadProgress>(step => progress.Report(
+                new LoadStatus((double)step.Loaded / step.Total, LoadPhase.Sceneries, step.FileName)));
+        ReloadSceneries(sceneryProgress);
 
         progress?.Report(new LoadStatus(1.0, LoadPhase.Done, null));
         Loaded = true;
     }
 
-    public void ReloadSceneries(string sceneryDir = "scenery/")
+    public void ReloadSceneries(IProgress<SceneryLoadProgress>? progress = null)
     {
         Sceneries.Clear();
-        var scnFiles = EnumerateScenery(sceneryDir);
-        var sceneryLock = new object();
-        Parallel.ForEach(scnFiles, new ParallelOptions { MaxDegreeOfParallelism = Environment.ProcessorCount },
-            file =>
-            {
-                try
-                {
-                    var scenery = new Scenery(file);
-                    lock (sceneryLock)
-                        Sceneries.Add(scenery);
-                }
-                catch (Exception ex)
-                {
-                    StarterNG.Infrastructure.Diagnostics.Log($"scenery/{Path.GetFileName(file)}", ex);
-                }
-            });
-    }
-
-    private static List<string> EnumerateScenery(string sceneryDir)
-    {
-        if (!Directory.Exists(sceneryDir))
-            return new List<string>();
-
-        return Directory.GetFiles(sceneryDir, "*.scn")
-            .Where(p => !Path.GetFileName(p).StartsWith("$"))
-            .ToList();
+        Sceneries.AddRange(AppServices.Current.Sceneries.LoadAll(progress));
     }
 }

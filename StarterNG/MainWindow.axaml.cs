@@ -17,6 +17,8 @@ using StarterNG.Infrastructure;
 using StarterNG.Services;
 using StarterNG.Views;
 using SettingsModel = StarterNG.Classes.Settings;
+using StarterNG.Application;
+using StarterNG.Domain.Sceneries;
 
 namespace StarterNG;
 
@@ -443,14 +445,14 @@ public partial class MainWindow : Window
 
         LoadingScreen.Prepare(trainset.Logo, Path.GetFileNameWithoutExtension(scenery.Path));
 
-        scenery.WeatherDirty = true;
+        scenery.Weather.Dirty = true;
 
         string dir = Path.GetDirectoryName(scenery.Path) ?? "scenery";
         string exportName = "$" + Path.GetFileName(scenery.Path);
         string exportPath = Path.Combine(dir, exportName);
         try
         {
-            File.WriteAllText(exportPath, scenery.BuildExportContent(SettingsModel.Instance.IgnoreIrrelevantTrains), Encoding.GetEncoding(1250));
+            File.WriteAllText(exportPath, scenery.BuildExportContent(SettingsModel.Instance.IgnoreIrrelevantTrains, AppServices.Current.Random), Encoding.GetEncoding(1250));
         }
         catch (Exception ex)
         {
