@@ -20,7 +20,6 @@ public sealed class SceneryRepository : ISceneryRepository
     private readonly IGamePaths _paths;
     private readonly IDiagnosticsLog _log;
     private readonly SceneryParser _parser;
-    private readonly Encoding _encoding;
 
     public SceneryRepository(IFileSystem files, IGamePaths paths, IDiagnosticsLog log, SceneryParser parser)
     {
@@ -28,7 +27,6 @@ public sealed class SceneryRepository : ISceneryRepository
         _paths = paths;
         _log = log;
         _parser = parser;
-        _encoding = LegacyText.CodePage1250;
     }
 
     public IReadOnlyList<Scenery> LoadAll(IProgress<SceneryLoadProgress>? progress = null)
@@ -60,7 +58,7 @@ public sealed class SceneryRepository : ISceneryRepository
             if (!_files.FileExists(path))
                 return null;
 
-            var scenery = _parser.Parse(path, _files.ReadAllText(path, _encoding));
+            var scenery = _parser.Parse(path, LegacyText.Decode(_files.ReadAllBytes(path)));
             scenery.HasCompanionTimetable = _files.FileExists(Path.ChangeExtension(path, ".sbt"));
             return scenery;
         }

@@ -63,6 +63,8 @@ public sealed class InMemoryFileSystem : IFileSystem
     public string[] ReadAllLines(string path) =>
         ReadAllText(path).Split('\n').Select(line => line.TrimEnd('\r')).ToArray();
 
+    public byte[] ReadAllBytes(string path) => Bytes(path);
+
     public Stream OpenRead(string path) => new MemoryStream(Bytes(path), writable: false);
 
     public void WriteAllText(string path, string contents) => WithFile(path, contents);

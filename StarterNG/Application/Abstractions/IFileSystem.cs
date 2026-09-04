@@ -17,6 +17,8 @@ public interface IFileSystem
 
     string[] ReadAllLines(string path);
 
+    byte[] ReadAllBytes(string path);
+
     Stream OpenRead(string path);
 
     void WriteAllText(string path, string contents);

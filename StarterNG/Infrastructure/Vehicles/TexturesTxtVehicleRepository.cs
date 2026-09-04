@@ -16,7 +16,6 @@ public sealed class TexturesTxtVehicleRepository : IVehicleRepository
     private readonly IGamePaths _paths;
     private readonly IDiagnosticsLog _log;
     private readonly TexturesTxtParser _parser;
-    private readonly Encoding _encoding;
 
     public TexturesTxtVehicleRepository(IFileSystem files, IGamePaths paths, IDiagnosticsLog log,
                                         TexturesTxtParser parser)
@@ -25,7 +24,6 @@ public sealed class TexturesTxtVehicleRepository : IVehicleRepository
         _paths = paths;
         _log = log;
         _parser = parser;
-        _encoding = LegacyText.CodePage1250;
     }
 
     public int Load(VehicleCatalog catalog)
@@ -51,7 +49,7 @@ public sealed class TexturesTxtVehicleRepository : IVehicleRepository
     {
         try
         {
-            string[] lines = _files.ReadAllText(path, _encoding).Split('\n');
+            string[] lines = LegacyText.Decode(_files.ReadAllBytes(path)).Split('\n');
             return _parser.Parse(RelativeDirectory(path), lines);
         }
         catch (Exception ex)

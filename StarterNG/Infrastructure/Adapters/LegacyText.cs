@@ -21,6 +21,27 @@ public static class LegacyText
 
     public static bool IsFallback { get; private set; }
 
+    /// <summary>
+    /// Decodes a game file. Most are code page 1250, but a few have been re-saved
+    /// as UTF-8 over the years, and reading those as 1250 turns "Zakład" into
+    /// "ZakĹ‚ad". Valid UTF-8 is taken at its word; anything that fails a strict
+    /// decode is 1250, which cannot fail.
+    /// </summary>
+    public static string Decode(byte[] bytes)
+    {
+        try
+        {
+            return Utf8Strict.GetString(bytes);
+        }
+        catch (DecoderFallbackException)
+        {
+            return CodePage1250.GetString(bytes);
+        }
+    }
+
+    private static readonly Encoding Utf8Strict =
+        new UTF8Encoding(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true);
+
     private static Encoding Resolve()
     {
         try

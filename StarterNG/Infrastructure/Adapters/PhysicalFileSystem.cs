@@ -18,6 +18,8 @@ public sealed class PhysicalFileSystem : IFileSystem
 
     public string[] ReadAllLines(string path) => File.ReadAllLines(path);
 
+    public byte[] ReadAllBytes(string path) => File.ReadAllBytes(path);
+
     public Stream OpenRead(string path) => File.OpenRead(path);
 
     public void WriteAllText(string path, string contents) => File.WriteAllText(path, contents);
