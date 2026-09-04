@@ -7,6 +7,7 @@ using System.Linq;
 using System.Text;
 using StarterNG.Application.Abstractions;
 using StarterNG.Domain.Vehicles;
+using StarterNG.Infrastructure.Adapters;
 
 namespace StarterNG.Infrastructure.Vehicles;
 
@@ -51,7 +52,7 @@ public sealed class FizPhysicsRepository : IPhysicsRepository
         _files = files;
         _paths = paths;
         _log = log;
-        _encoding = LegacyEncoding();
+        _encoding = LegacyText.CodePage1250;
     }
 
     public void Preload() => Index();
@@ -270,15 +271,4 @@ public sealed class FizPhysicsRepository : IPhysicsRepository
                  .ToList();
     }
 
-    private static Encoding LegacyEncoding()
-    {
-        try
-        {
-            return Encoding.GetEncoding(1250);
-        }
-        catch (Exception)
-        {
-            return Encoding.Latin1;
-        }
-    }
 }

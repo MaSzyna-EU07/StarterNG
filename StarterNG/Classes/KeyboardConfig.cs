@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
+using StarterNG.Infrastructure.Adapters;
 
 namespace StarterNG.Classes;
 
@@ -43,8 +44,7 @@ public sealed class KeyboardConfig
 
         try
         {
-            Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
-            return Encoding.GetEncoding(1250);
+            return LegacyText.CodePage1250;
         }
         catch
         {

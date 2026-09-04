@@ -20,6 +20,7 @@ using StarterNG.Domain;
 using StarterNG.Application;
 using StarterNG.Domain.Sceneries;
 using StarterNG.Presentation.Scenarios;
+using StarterNG.Infrastructure.Adapters;
 
 namespace StarterNG.Views;
 
@@ -708,7 +709,7 @@ public partial class Scenarios : UserControl
 
         try
         {
-            timetableContent.Text = File.ReadAllText(path, Encoding.GetEncoding(1250));
+            timetableContent.Text = File.ReadAllText(path, LegacyText.CodePage1250);
             UpdateTimetableTab(true);
         }
         catch

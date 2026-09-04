@@ -5,6 +5,7 @@ using StarterNG.Application.Abstractions;
 using StarterNG.Classes;
 using StarterNG.Domain.Settings;
 using StarterNG.Infrastructure.Settings;
+using StarterNG.Infrastructure.Adapters;
 
 namespace StarterNG.Application;
 
@@ -50,7 +51,7 @@ public sealed class SettingsStore
         _paths = paths;
         _serializer = serializer;
         _executables = executables;
-        _encoding = LegacyEncoding();
+        _encoding = LegacyText.CodePage1250;
     }
 
     /// <summary>The settings the application is running with.</summary>
@@ -172,20 +173,4 @@ public sealed class SettingsStore
 
     public string ResolveExecutable(out ExeProblem problem) => _executables.Resolve(Settings, out problem);
 
-    /// <summary>
-    /// The .ini keeps its own code page. UTF-8 is a safe fallback if the code
-    /// page provider is unavailable.
-    /// </summary>
-    private static Encoding LegacyEncoding()
-    {
-        try
-        {
-            Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
-            return Encoding.GetEncoding(1250);
-        }
-        catch (Exception)
-        {
-            return Encoding.UTF8;
-        }
-    }
 }

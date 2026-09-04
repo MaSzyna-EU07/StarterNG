@@ -6,6 +6,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using StarterNG.Classes;
 using StarterNG.Infrastructure;
+using StarterNG.Infrastructure.Adapters;
 
 namespace StarterNG.Domain;
 
@@ -40,7 +41,7 @@ public static class UDepot
         string text;
         try
         {
-            text = File.ReadAllText(file, Encoding.GetEncoding(1250));
+            text = File.ReadAllText(file, LegacyText.CodePage1250);
         }
         catch (Exception ex)
         {
@@ -141,7 +142,7 @@ public static class UDepot
 
             string? dir = Path.GetDirectoryName(path);
             if (!string.IsNullOrEmpty(dir)) Directory.CreateDirectory(dir);
-            File.WriteAllText(path, sb.ToString(), Encoding.GetEncoding(1250));
+            File.WriteAllText(path, sb.ToString(), LegacyText.CodePage1250);
             return true;
         }
         catch (Exception ex)

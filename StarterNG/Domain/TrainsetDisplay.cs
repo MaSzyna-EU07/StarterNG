@@ -169,11 +169,17 @@ public static class TrainsetDisplay
             if (p != null)
                 massKg += p.Mass;
 
-            if (loadWeightKg != null &&
-                car.LoadCount > 0 &&
-                !string.IsNullOrEmpty(car.LoadType) &&
-                LoadAccepted(p, car.LoadType))
-                loadKg += (double)car.LoadCount * loadWeightKg(car.LoadType);
+            if (loadWeightKg != null && car.LoadCount > 0 && !string.IsNullOrEmpty(car.LoadType))
+            {
+                if (LoadAccepted(p, car.LoadType))
+                    loadKg += (double)car.LoadCount * loadWeightKg(car.LoadType);
+                else
+                    // The scenery loads something this vehicle's .fiz does not
+                    // accept. It is left out of the gross mass, and saying so beats
+                    // leaving the reading quietly short.
+                    AppServices.Current.Log.Log(
+                        $"{car.Name}: nieobslugiwany ladunek \"{car.LoadType}\"");
+            }
         }
         return (lengthM, massKg, loadKg);
     }

@@ -5,6 +5,7 @@ using System.IO;
 using System.Text;
 using StarterNG.Application.Abstractions;
 using StarterNG.Domain.Vehicles;
+using StarterNG.Infrastructure.Adapters;
 
 namespace StarterNG.Infrastructure.Vehicles;
 
@@ -51,7 +52,7 @@ public sealed class LoadWeightsRepository
 
         try
         {
-            return new LoadWeightsTable(ParsePairs(_files.ReadAllText(path, LegacyEncoding())));
+            return new LoadWeightsTable(ParsePairs(_files.ReadAllText(path, LegacyText.CodePage1250)));
         }
         catch (Exception ex)
         {
@@ -100,15 +101,4 @@ public sealed class LoadWeightsRepository
         return weights;
     }
 
-    private static Encoding LegacyEncoding()
-    {
-        try
-        {
-            return Encoding.GetEncoding(1250);
-        }
-        catch (Exception)
-        {
-            return Encoding.Latin1;
-        }
-    }
 }

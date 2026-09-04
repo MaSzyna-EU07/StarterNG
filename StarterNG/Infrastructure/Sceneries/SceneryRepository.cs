@@ -8,6 +8,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using StarterNG.Application.Abstractions;
 using StarterNG.Domain.Sceneries;
+using StarterNG.Infrastructure.Adapters;
 
 namespace StarterNG.Infrastructure.Sceneries;
 
@@ -36,7 +37,7 @@ public sealed class SceneryRepository : ISceneryRepository
         _paths = paths;
         _log = log;
         _parser = parser;
-        _encoding = CodePage1250();
+        _encoding = LegacyText.CodePage1250;
     }
 
     public IReadOnlyList<Scenery> LoadAll(IProgress<SceneryLoadProgress>? progress = null)
@@ -83,19 +84,4 @@ public sealed class SceneryRepository : ISceneryRepository
         _files.GetFiles(_paths.Scenery, "*.scn")
               .Where(path => Path.GetFileName(path).FirstOrDefault() != ExcludedPrefix);
 
-    /// <summary>
-    /// The .scn dialect predates Unicode. The provider is registered by the entry
-    /// point; fall back to Latin-1 if that ever fails so loading still works.
-    /// </summary>
-    private static Encoding CodePage1250()
-    {
-        try
-        {
-            return Encoding.GetEncoding(1250);
-        }
-        catch (Exception)
-        {
-            return Encoding.Latin1;
-        }
-    }
 }

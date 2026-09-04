@@ -4,6 +4,7 @@ using System.IO;
 using System.Text;
 using StarterNG.Application.Abstractions;
 using StarterNG.Domain.Vehicles;
+using StarterNG.Infrastructure.Adapters;
 
 namespace StarterNG.Infrastructure.Vehicles;
 
@@ -28,7 +29,7 @@ public sealed class TexturesTxtVehicleRepository : IVehicleRepository
         _paths = paths;
         _log = log;
         _parser = parser;
-        _encoding = LegacyEncoding();
+        _encoding = LegacyText.CodePage1250;
     }
 
     public int Load(VehicleCatalog catalog)
@@ -98,15 +99,4 @@ public sealed class TexturesTxtVehicleRepository : IVehicleRepository
         return relative.Replace('\\', '/').TrimEnd('/') + "/";
     }
 
-    private static Encoding LegacyEncoding()
-    {
-        try
-        {
-            return Encoding.GetEncoding(1250);
-        }
-        catch (Exception)
-        {
-            return Encoding.Latin1;
-        }
-    }
 }

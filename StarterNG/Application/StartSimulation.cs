@@ -6,6 +6,7 @@ using StarterNG.Application.Abstractions;
 using StarterNG.Classes;
 using StarterNG.Domain;
 using StarterNG.Domain.Settings;
+using StarterNG.Infrastructure.Adapters;
 
 namespace StarterNG.Application;
 
@@ -125,7 +126,7 @@ public sealed class StartSimulation
         {
             _files.WriteAllText(exportPath,
                                 scenery.BuildExportContent(_settings.Settings.IgnoreIrrelevantTrains, _random),
-                                LegacyEncoding());
+                                LegacyText.CodePage1250);
         }
         catch (Exception ex)
         {
@@ -174,15 +175,4 @@ public sealed class StartSimulation
         };
     }
 
-    private static Encoding LegacyEncoding()
-    {
-        try
-        {
-            return Encoding.GetEncoding(1250);
-        }
-        catch (Exception)
-        {
-            return Encoding.Latin1;
-        }
-    }
 }

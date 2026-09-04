@@ -8,6 +8,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Text.Json.Serialization.Metadata;
 using System.Text.RegularExpressions;
+using StarterNG.Infrastructure.Adapters;
 
 namespace StarterNG.Classes;
 
@@ -100,7 +101,7 @@ public static class PresetStore
         int added = 0;
         try
         {
-            string text = File.ReadAllText(path, Encoding.GetEncoding(1250));
+            string text = File.ReadAllText(path, LegacyText.CodePage1250);
             var section = Regex.Matches(text,
                 @"\[TRAINSET\d+\s*=\s*([^\]]*)\](.*?)(?=\[TRAINSET|\z)",
                 RegexOptions.IgnoreCase | RegexOptions.Singleline);
