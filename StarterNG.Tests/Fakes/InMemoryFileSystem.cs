@@ -19,14 +19,29 @@ public sealed class InMemoryFileSystem : IFileSystem
 
     public DateTime LastWriteTimeUtc { get; set; } = new(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc);
 
-    /// <summary>Adds a text file, creating its parent directories.</summary>
-    public InMemoryFileSystem WithFile(string path, string contents)
+    static InMemoryFileSystem()
+    {
+        // The game's own files are code page 1250; a test that writes Polish text
+        // into one needs the provider registered just as the application does.
+        Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
+    }
+
+    /// <summary>Adds a UTF-8 text file, creating its parent directories.</summary>
+    public InMemoryFileSystem WithFile(string path, string contents) =>
+        WithFile(path, contents, Encoding.UTF8);
+
+    /// <summary>Adds a text file in a given encoding, as the game's files are stored.</summary>
+    public InMemoryFileSystem WithFile(string path, string contents, Encoding encoding)
     {
         string key = Normalize(path);
-        _files[key] = Encoding.UTF8.GetBytes(contents);
+        _files[key] = encoding.GetBytes(contents);
         AddParents(key);
         return this;
     }
+
+    /// <summary>Adds a file in the code page the .scn and .fiz formats use.</summary>
+    public InMemoryFileSystem WithLegacyFile(string path, string contents) =>
+        WithFile(path, contents, Encoding.GetEncoding(1250));
 
     /// <summary>Adds an empty directory.</summary>
     public InMemoryFileSystem WithDirectory(string path)

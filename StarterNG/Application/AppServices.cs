@@ -48,6 +48,7 @@ public sealed class AppServices
         Physics = new FizPhysicsRepository(files, paths, log);
         MissingAssets = new MissingAssetScanner(files, paths);
         SceneryTexts = new SceneryTranslations(files, log);
+        Timetables = new TimetableLocator(files);
         LoadWeights = new LoadWeightsRepository(files, paths, log);
         Library = new GameLibrary(Vehicles, Sceneries, MiniTextures, Physics, log);
         State = new AppState();
@@ -108,6 +109,8 @@ public sealed class AppServices
     public MissingAssetScanner MissingAssets { get; }
 
     public ISceneryTranslations SceneryTexts { get; }
+
+    public TimetableLocator Timetables { get; }
 
     public LoadWeightsRepository LoadWeights { get; }
 

@@ -19,6 +19,7 @@ using StarterNG.Classes;
 using StarterNG.Domain;
 using StarterNG.Application;
 using StarterNG.Domain.Sceneries;
+using StarterNG.Presentation.Scenarios;
 
 namespace StarterNG.Views;
 
@@ -65,60 +66,29 @@ public partial class Scenarios : UserControl
     {
         sceneryList.Items.Clear();
 
-        bool showArchival = archivalSwitch.IsChecked != true;
-        var groupNodes = new Dictionary<string, TreeViewItem>();
-        var topLevel = new List<TreeViewItem>();
+        bool includeArchival = archivalSwitch.IsChecked != true;
+        bool expandGroups = AppServices.Current.Settings.AutoExpandSceneryTree;
 
-        for (int i = 0; i < Sceneries.Count; i++)
+        var nodes = new SceneryTreeBuilder(AppServices.Current.SceneryTexts)
+            .Build(Sceneries, includeArchival, App.Loc.CurrentLangCode);
+
+        foreach (var node in nodes)
+            sceneryList.Items.Add(ToTreeItem(node, expandGroups));
+    }
+
+    private static TreeViewItem ToTreeItem(SceneryTreeNode node, bool expandGroups)
+    {
+        var item = new TreeViewItem
         {
-            var scenery = Sceneries[i];
-            if (scenery.Archival && !showArchival)
-                continue;
+            Header = node.Label,
+            Tag = node.IsGroup ? null : node.SceneryIndex,
+            IsExpanded = node.IsGroup && expandGroups
+        };
 
-            bool expand = AppServices.Current.Settings.AutoExpandSceneryTree;
-            AppServices.Current.SceneryTexts.LoadFor(scenery, App.Loc.CurrentLangCode);
-            string label = scenery.DisplayName;
+        foreach (var child in node.Children)
+            item.Items.Add(ToTreeItem(child, expandGroups));
 
-            if (string.IsNullOrEmpty(scenery.Group))
-            {
-                topLevel.Add(new TreeViewItem
-                {
-                    Header = label,
-                    Tag = i
-                });
-                continue;
-            }
-
-            if (!groupNodes.TryGetValue(scenery.Group, out var groupNode))
-            {
-                groupNode = new TreeViewItem
-                {
-                    Header = AppServices.Current.SceneryTexts.Translate(scenery.Group),
-                    IsExpanded = expand
-                };
-                groupNodes[scenery.Group] = groupNode;
-                topLevel.Add(groupNode);
-            }
-
-            groupNode.Items.Add(new TreeViewItem
-            {
-                Header = label,
-                Tag = i
-            });
-        }
-
-        foreach (var node in groupNodes.Values)
-        {
-            var children = node.Items.Cast<TreeViewItem>()
-                .OrderBy(c => c.Header as string, StringComparer.OrdinalIgnoreCase)
-                .ToList();
-            node.Items.Clear();
-            foreach (var child in children)
-                node.Items.Add(child);
-        }
-
-        foreach (var item in topLevel.OrderBy(t => t.Header as string, StringComparer.OrdinalIgnoreCase))
-            sceneryList.Items.Add(item);
+        return item;
     }
 
     private void RestoreLastScenery()
@@ -555,9 +525,9 @@ public partial class Scenarios : UserControl
             weatherForm.IsEnabled = true;
             var weather = scenery.Weather;
             weatherTime.SelectedTime = ParseTime(weather.ScenarioTimeOverride);
-            weatherDate.SelectedDate = DateOfDayOfYear(weather.Day);
+            weatherDate.SelectedDate = Seasons.DateOf(weather.Day);
             weatherTemp.Value = weather.Temperature;
-            weatherFog.Value = SliderFromFog(weather.FogEnd);
+            weatherFog.Value = FogScale.ToSlider(weather.FogEnd);
             SelectByTag(weatherSeason, weather.Day.ToString(), excludeFromNearest: "0");
             SelectByTag(weatherOvercast, weather.OvercastRandom
                 ? RandomTag
@@ -583,7 +553,7 @@ public partial class Scenarios : UserControl
 
         weather.Day = _todaySeason ? 0 : SelectedDayOfYear();
         weather.Temperature = weatherTemp.Value;
-        weather.FogEnd = FogFromSlider(weatherFog.Value);
+        weather.FogEnd = FogScale.ToMetres(weatherFog.Value);
         if ((weatherOvercast.SelectedItem as ComboBoxItem)?.Tag is string ov)
         {
             weather.OvercastRandom = ov == RandomTag;
@@ -599,32 +569,12 @@ public partial class Scenarios : UserControl
     private void UpdateWeatherLabels()
     {
         weatherTempLabel.Text = $"{(int)weatherTemp.Value} °C";
-        weatherFogLabel.Text = FormatFog(FogFromSlider(weatherFog.Value));
+        weatherFogLabel.Text = FogScale2(FogScale.ToMetres(weatherFog.Value));
         weatherDayDate.Text = string.Format(LanguageCulture, App.Loc["DayOfYear"], SelectedDayOfYear());
 
         weatherRestore.IsEnabled = _currentScenery?.Weather.Changed ?? false;
     }
 
-    private static int FogFromSlider(double position)
-    {
-        double metres = SceneryWeather.FogMin *
-                        System.Math.Pow((double)SceneryWeather.FogMax / SceneryWeather.FogMin, position / 1000.0);
-        int step = metres < 100 ? 5 : metres < 1000 ? 10 : 100;
-        return System.Math.Clamp((int)(System.Math.Round(metres / step) * step),
-                                 SceneryWeather.FogMin, SceneryWeather.FogMax);
-    }
-
-    private static double SliderFromFog(int metres)
-    {
-        double clamped = System.Math.Clamp(metres, SceneryWeather.FogMin, SceneryWeather.FogMax);
-        return 1000.0 * System.Math.Log(clamped / SceneryWeather.FogMin) /
-               System.Math.Log((double)SceneryWeather.FogMax / SceneryWeather.FogMin);
-    }
-
-    private static string FormatFog(int metres) =>
-        metres < 1000
-            ? $"{metres} m"
-            : string.Format(LanguageCulture, "{0:0.#} km", metres / 1000.0);
 
     private static CultureInfo LanguageCulture
     {
@@ -643,6 +593,12 @@ public partial class Scenarios : UserControl
             }
         }
     }
+
+    /// <summary>Day-of-year arithmetic for the weather tab's date and season pickers.</summary>
+    private static SeasonDates Seasons => new(AppServices.Current.Clock);
+
+    /// <summary>Fog read-out in the language the user is reading the rest in.</summary>
+    private static string FogScale2(int metres) => FogScale.Format(metres, LanguageCulture);
 
     private const string RandomTag = "random";
 
@@ -714,7 +670,7 @@ public partial class Scenarios : UserControl
         {
             bool prev = _loadingWeather;
             _loadingWeather = true;
-            weatherDate.SelectedDate = DateOfDayOfYear(0);
+            weatherDate.SelectedDate = Seasons.DateOf(0);
             _loadingWeather = prev;
         }
     }
@@ -735,16 +691,8 @@ public partial class Scenarios : UserControl
         CaptureWeather();
     }
 
-    private static DateTimeOffset DateOfDayOfYear(int day)
-    {
-        int year = DateTime.Now.Year;
-        int last = DateTime.IsLeapYear(year) ? 366 : 365;
-        int d = System.Math.Clamp(day <= 0 ? DateTime.Now.DayOfYear : day, 1, last);
-        return new DateTimeOffset(new DateTime(year, 1, 1).AddDays(d - 1));
-    }
-
     private int SelectedDayOfYear() =>
-        weatherDate.SelectedDate is { } date ? date.DayOfYear : DateTime.Now.DayOfYear;
+        weatherDate.SelectedDate is { } date ? date.DayOfYear : Seasons.Today;
 
     private void WeatherSeason_OnChanged(object? sender, SelectionChangedEventArgs e)
     {
@@ -761,7 +709,7 @@ public partial class Scenarios : UserControl
             {
                 ApplyTodayPreview(false);
                 _loadingWeather = true;
-                weatherDate.SelectedDate = DateOfDayOfYear(day);
+                weatherDate.SelectedDate = Seasons.DateOf(day);
                 _loadingWeather = false;
             }
         }
@@ -770,7 +718,7 @@ public partial class Scenarios : UserControl
 
     private void ShowTimetable(Scenery scenery, Trainset trainset)
     {
-        string? path = ResolveTimetablePath(scenery, trainset.Name);
+        string? path = AppServices.Current.Timetables.Resolve(scenery, trainset.Name);
         if (path is null)
         {
             timetableContent.Text = App.Loc["NoTimetable"];
@@ -799,26 +747,6 @@ public partial class Scenarios : UserControl
 
         if (!usable && timetableTab.IsSelected && timetableTab.Parent is TabControl tabs)
             tabs.SelectedIndex = 0;
-    }
-
-    private static string? ResolveTimetablePath(Scenery scenery, string? name)
-    {
-        if (string.IsNullOrWhiteSpace(name) ||
-            name.Equals("none", System.StringComparison.OrdinalIgnoreCase))
-            return null;
-
-        string scnDir = Path.GetDirectoryName(scenery.Path) ?? ".";
-        string root = Path.GetDirectoryName(scnDir) ?? ".";
-
-        var candidates = new[]
-        {
-            Path.Combine(root, "timetables", name + ".txt"),
-            Path.Combine(scnDir, name + ".txt"),
-            Path.Combine(root, "scenario", name + ".txt"),
-            Path.Combine(root, "timetables", name),
-            Path.Combine(scnDir, name),
-        };
-        return candidates.FirstOrDefault(File.Exists);
     }
 
     private const double ConsistDragThreshold = 6;
