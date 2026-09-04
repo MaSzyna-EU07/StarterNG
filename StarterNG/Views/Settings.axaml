@@ -134,7 +134,7 @@
                                     <ctl:SettingRow ConfigKey="starter.exe.path" Label="{Binding [SelectEXE], Source={x:Static starterNg:App.Loc}}">
                                         <ComboBox x:Name="SelectExeCb" SelectedIndex="0" />
                                     </ctl:SettingRow>
-                                    <ctl:SettingRow ConfigKey="debugmode">
+                                    <ctl:SettingRow Description="{Binding [DebugModeDesc], Source={x:Static starterNg:App.Loc}}" ConfigKey="debugmode">
                                         <CheckBox x:Name="DebugModeCb" Content="{Binding [DebugMode], Source={x:Static starterNg:App.Loc}}" />
                                     </ctl:SettingRow>
                                     <ctl:SettingRow ConfigKey="ai.trainman" Description="{Binding [VirtualShuntingDesc], Source={x:Static starterNg:App.Loc}}">
@@ -271,7 +271,7 @@
                                                 ValueChanged="QualitySlider_OnValueChanged" />
                                     </ctl:SettingRow>
 
-                                    <ctl:SettingRow ConfigKey="dynamiclights" Label="{Binding [DynamicLights], Source={x:Static starterNg:App.Loc}}"
+                                    <ctl:SettingRow Description="{Binding [DynamicLightsDesc], Source={x:Static starterNg:App.Loc}}" ConfigKey="dynamiclights" Label="{Binding [DynamicLights], Source={x:Static starterNg:App.Loc}}"
                                                     ValueText="{Binding #DynamicLightsSlider.Value, StringFormat='{}{0:0}'}">
                                         <Slider x:Name="DynamicLightsSlider" Minimum="0" Maximum="7" TickFrequency="1"
                                                 IsSnapToTickEnabled="True" Value="7" />
@@ -291,7 +291,7 @@
                                               Content="{Binding [RenderShadows], Source={x:Static starterNg:App.Loc}}" />
                                 </ctl:SettingsSection.Toggle>
                                 <StackPanel IsEnabled="{Binding #RenderShadowsCb.IsChecked}">
-                                    <ctl:SettingRow ConfigKey="gfx.shadow.rank.cutoff" Label="{Binding [ShadowDisplay], Source={x:Static starterNg:App.Loc}}">
+                                    <ctl:SettingRow Description="{Binding [ShadowDisplayDesc], Source={x:Static starterNg:App.Loc}}" ConfigKey="gfx.shadow.rank.cutoff" Label="{Binding [ShadowDisplay], Source={x:Static starterNg:App.Loc}}">
                                         <ComboBox x:Name="ShadowDisplayCb" SelectedIndex="0">
                                             <ComboBoxItem Content="{Binding [CSROnlyImportant], Source={x:Static starterNg:App.Loc}}" />
                                             <ComboBoxItem Content="{Binding [CSRLimited], Source={x:Static starterNg:App.Loc}}" />
@@ -431,22 +431,22 @@
                                     <ctl:SettingRow ConfigKey="livetraction" Description="{Binding [PowerOverheadLineOnlyDesc], Source={x:Static starterNg:App.Loc}}">
                                         <CheckBox x:Name="OverheadOnlyCb" Content="{Binding [PowerOverheadLineOnly], Source={x:Static starterNg:App.Loc}}" />
                                     </ctl:SettingRow>
-                                    <ctl:SettingRow ConfigKey="physicslog">
+                                    <ctl:SettingRow Description="{Binding [SaveSpeedometerTapesDesc], Source={x:Static starterNg:App.Loc}}" ConfigKey="physicslog">
                                         <CheckBox x:Name="SpeedometerTapesCb" Content="{Binding [SaveSpeedometerTapes], Source={x:Static starterNg:App.Loc}}" />
                                     </ctl:SettingRow>
                                     <ctl:SettingRow ConfigKey="debuglog">
                                         <CheckBox x:Name="SimLogsCb" Content="{Binding [SaveSimLogs], Source={x:Static starterNg:App.Loc}}" />
                                     </ctl:SettingRow>
-                                    <ctl:SettingRow ConfigKey="multiplelogs">
+                                    <ctl:SettingRow Description="{Binding [KeepPrevLogsDesc], Source={x:Static starterNg:App.Loc}}" ConfigKey="multiplelogs">
                                         <CheckBox x:Name="KeepLogsCb" Content="{Binding [KeepPrevLogs], Source={x:Static starterNg:App.Loc}}" />
                                     </ctl:SettingRow>
-                                    <ctl:SettingRow ConfigKey="gfx.skiprendering">
+                                    <ctl:SettingRow Description="{Binding [DisplaySimulationDesc], Source={x:Static starterNg:App.Loc}}" ConfigKey="gfx.skiprendering">
                                         <CheckBox x:Name="DisplaySimulationCb" Content="{Binding [DisplaySimulation], Source={x:Static starterNg:App.Loc}}" />
                                     </ctl:SettingRow>
                                     <ctl:SettingRow ConfigKey="debuglog">
                                         <CheckBox x:Name="DebugLogVisibleCb" Content="{Binding [DebugLogVisible], Source={x:Static starterNg:App.Loc}}" />
                                     </ctl:SettingRow>
-                                    <ctl:SettingRow ConfigKey="crashdamage">
+                                    <ctl:SettingRow Description="{Binding [CrashDamageDesc], Source={x:Static starterNg:App.Loc}}" ConfigKey="crashdamage">
                                         <CheckBox x:Name="CrashDamageCb" Content="{Binding [CrashDamage], Source={x:Static starterNg:App.Loc}}" />
                                     </ctl:SettingRow>
 
