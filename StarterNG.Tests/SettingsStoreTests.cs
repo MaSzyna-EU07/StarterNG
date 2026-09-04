@@ -83,6 +83,32 @@ public class SettingsStoreTests
     }
 
     [Fact]
+    public void The_consist_state_override_keeps_the_key_the_old_starter_used()
+    {
+        var installation = WithHome(new InMemoryFileSystem()
+            .WithFile(UserIni, "starter.batterydefault 2\n"));
+
+        installation.SettingsStore.Load();
+        Assert.Equal(ConsistReadyOverride.AlwaysReady, installation.SettingsStore.Settings.ReadyOverride);
+
+        installation.SettingsStore.Settings.ReadyOverride = ConsistReadyOverride.AlwaysCold;
+        installation.SettingsStore.Save();
+
+        Assert.Contains("starter.batterydefault 1", installation.Files.ReadAllText(UserIni));
+    }
+
+    [Fact]
+    public void An_out_of_range_override_falls_back_to_leaving_the_scenery_alone()
+    {
+        var installation = WithHome(new InMemoryFileSystem()
+            .WithFile(UserIni, "starter.batterydefault 9\n"));
+
+        installation.SettingsStore.Load();
+
+        Assert.Equal(ConsistReadyOverride.Scenery, installation.SettingsStore.Settings.ReadyOverride);
+    }
+
+    [Fact]
     public void A_first_run_falls_back_to_the_ini_shipped_with_the_installation()
     {
         var installation = WithHome(new InMemoryFileSystem()

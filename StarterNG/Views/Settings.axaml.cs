@@ -260,6 +260,7 @@ public partial class Settings : UserControl, ISettingsCapture
             AutoCloseStarterCb.IsChecked = s.AutoCloseStarter;
             LargeThumbnailsCb.IsChecked = s.LargeThumbnails;
             AutoExpandTreeCb.IsChecked = s.AutoExpandSceneryTree;
+            ReadyOverrideCb.SelectedIndex = (int)s.ReadyOverride;
         }
         finally
         {
@@ -357,6 +358,7 @@ public partial class Settings : UserControl, ISettingsCapture
         s.AutoCloseStarter = IsChecked(AutoCloseStarterCb);
         s.LargeThumbnails = IsChecked(LargeThumbnailsCb);
         s.AutoExpandSceneryTree = IsChecked(AutoExpandTreeCb);
+        s.ReadyOverride = (ConsistReadyOverride)Math.Clamp(ReadyOverrideCb.SelectedIndex, 0, 2);
     }
 
     private void ComButton_OnClick(object? sender, RoutedEventArgs e)

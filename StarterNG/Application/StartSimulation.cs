@@ -79,6 +79,18 @@ public sealed class StartSimulation
         if (scenery is null || trainset is null)
             return new SimulationStartResult(SimulationStartOutcome.NothingSelected);
 
+        // The depot checkbox is the consist's own state; this setting is a blanket
+        // override for people who always want the same thing, and it wins.
+        switch (_settings.Settings.ReadyOverride)
+        {
+            case ConsistReadyOverride.AlwaysCold:
+                trainset.ReadyToGo = false;
+                break;
+            case ConsistReadyOverride.AlwaysReady:
+                trainset.ReadyToGo = true;
+                break;
+        }
+
         string? vehicle = TrainsetDisplay.UniquifyForLaunch(trainset, scenery, _state.StartingVehicleName)
                           ?? StartableVehicle(trainset, _state.StartingVehicleName);
         _state.StartingVehicleName = vehicle;

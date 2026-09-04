@@ -136,6 +136,14 @@ public sealed class SettingsSerializer
         s.AutoCloseStarter = c.GetBool("starter.autoclose", false);
         s.LargeThumbnails = c.GetBool("starter.largethumbnails", false);
         s.AutoExpandSceneryTree = c.GetBool("starter.expandtree", false);
+        // An unrecognised value means "do not interfere" rather than the nearest
+        // state: clamping upwards would silently force every consist ready.
+        s.ReadyOverride = c.GetInt("starter.batterydefault", 0) switch
+        {
+            1 => ConsistReadyOverride.AlwaysCold,
+            2 => ConsistReadyOverride.AlwaysReady,
+            _ => ConsistReadyOverride.Scenery
+        };
         s.ShowAiVehicles = c.GetBool("starter.show.ai", true);
         s.DrivableOnly = c.GetBool("starter.drivableonly", true);
         s.ShowArchivalSceneries = c.GetBool("starter.show.archival", true);
@@ -264,6 +272,7 @@ public sealed class SettingsSerializer
         c.SetBool("starter.autoclose", s.AutoCloseStarter);
         c.SetBool("starter.largethumbnails", s.LargeThumbnails);
         c.SetBool("starter.expandtree", s.AutoExpandSceneryTree);
+        c.SetInt("starter.batterydefault", (int)s.ReadyOverride);
         c.SetBool("starter.show.ai", s.ShowAiVehicles);
         c.SetBool("starter.drivableonly", s.DrivableOnly);
         c.SetBool("starter.show.archival", s.ShowArchivalSceneries);

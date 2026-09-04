@@ -216,6 +216,12 @@
     <String key="ConsistLoadTools">Náklad celé soupravy</String>
     <String key="ConsistReady">Consist ready to go</String>
     <String key="ConsistReadyDesc">The consist starts prepared: brake pipe charged, driver’s brake valve set, batteries closed. Unchecked it starts cold and braked.</String>
+    <String key="ReadyOverride">Force the consist state on launch</String>
+    <String key="ReadyOverrideDesc">Overrides the depot’s "consist ready to go" box for every scenario you start.</String>
+    <String key="ReadyOverrideScenery">As authored</String>
+    <String key="ReadyOverrideCold">Always cold</String>
+    <String key="ReadyOverrideReady">Always ready</String>
+    <String key="ConsistReadyOverridden">Overridden by "Force the consist state on launch" in Settings.</String>
     <String key="ConsistRandomType">Náhodný druh</String>
     <String key="ConsistMaxAmount">Maximální množství</String>
     <String key="ConsistRandomAmount">Náhodné množství</String>

@@ -216,6 +216,12 @@
     <String key="ConsistLoadTools">Ładunki zestawienia</String>
     <String key="ConsistReady">Skład gotowy do jazdy</String>
     <String key="ConsistReadyDesc">Skład startuje przygotowany: przewód główny napełniony, kran maszynisty ustawiony, akumulatory załączone. Odznaczony startuje zimny i zahamowany.</String>
+    <String key="ReadyOverride">Wymuś stan składu przy starcie</String>
+    <String key="ReadyOverrideDesc">Nadpisuje pole „Skład gotowy do jazdy” w zajezdni dla każdego uruchamianego scenariusza.</String>
+    <String key="ReadyOverrideScenery">Jak w scenerii</String>
+    <String key="ReadyOverrideCold">Zawsze zimny</String>
+    <String key="ReadyOverrideReady">Zawsze gotowy</String>
+    <String key="ConsistReadyOverridden">Nadpisane opcją „Wymuś stan składu przy starcie” w Ustawieniach.</String>
     <String key="ConsistRandomType">Losowy rodzaj</String>
     <String key="ConsistMaxAmount">Maksymalna ilość</String>
     <String key="ConsistRandomAmount">Losowa ilość</String>

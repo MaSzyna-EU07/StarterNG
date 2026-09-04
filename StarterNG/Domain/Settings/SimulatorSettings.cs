@@ -2,6 +2,9 @@ using System;
 
 namespace StarterNG.Domain.Settings;
 
+// Values match the key eu07.ini has carried since the old starter.
+public enum ConsistReadyOverride { Scenery = 0, AlwaysCold = 1, AlwaysReady = 2 }
+
 public enum ExeProblem { None, NotFound, NotExecutable, WrongPlatform }
 
 public sealed class SimulatorSettings
@@ -105,6 +108,8 @@ public sealed class SimulatorSettings
     public bool AutoCloseStarter;
     public bool LargeThumbnails;
     public bool AutoExpandSceneryTree;
+
+    public ConsistReadyOverride ReadyOverride = ConsistReadyOverride.Scenery;
 
     public bool ShowAiVehicles = true;
     public bool DrivableOnly = true;

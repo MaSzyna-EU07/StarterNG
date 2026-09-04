@@ -12,6 +12,7 @@ using Avalonia.Media;
 using StarterNG.Classes;
 using StarterNG.Controls;
 using StarterNG.Domain;
+using StarterNG.Domain.Settings;
 using StarterNG.Domain.Vehicles;
 using StarterNG.Application;
 
@@ -579,14 +580,21 @@ public sealed class VehicleDetails
     private Control ReadyToGoRow()
     {
         var trainset = _consist.EditingTrainset;
+        var over = AppServices.Current.Settings.ReadyOverride;
+        bool overridden = over != ConsistReadyOverride.Scenery;
+
         var ready = new CheckBox
         {
             Content = App.Loc["ConsistReady"],
             FontSize = 12,
-            IsEnabled = trainset is not null,
-            IsChecked = trainset?.ReadyToGo ?? false
+            IsEnabled = trainset is not null && !overridden,
+            IsChecked = overridden
+                ? over == ConsistReadyOverride.AlwaysReady
+                : trainset?.ReadyToGo ?? false
         };
-        ToolTip.SetTip(ready, App.Loc["ConsistReadyDesc"]);
+        ToolTip.SetTip(ready, overridden
+            ? App.Loc["ConsistReadyOverridden"]
+            : App.Loc["ConsistReadyDesc"]);
 
         ready.IsCheckedChanged += (_, _) =>
         {

@@ -118,6 +118,15 @@
                                     <ctl:SettingRow ConfigKey="starter.expandtree">
                                         <CheckBox x:Name="AutoExpandTreeCb" Content="{Binding [AutoExpandSceneryTree], Source={x:Static starterNg:App.Loc}}" />
                                     </ctl:SettingRow>
+                                    <ctl:SettingRow ConfigKey="starter.batterydefault"
+                                                    Label="{Binding [ReadyOverride], Source={x:Static starterNg:App.Loc}}"
+                                                    Description="{Binding [ReadyOverrideDesc], Source={x:Static starterNg:App.Loc}}">
+                                        <ComboBox x:Name="ReadyOverrideCb" SelectedIndex="0">
+                                            <ComboBoxItem Content="{Binding [ReadyOverrideScenery], Source={x:Static starterNg:App.Loc}}" />
+                                            <ComboBoxItem Content="{Binding [ReadyOverrideCold], Source={x:Static starterNg:App.Loc}}" />
+                                            <ComboBoxItem Content="{Binding [ReadyOverrideReady], Source={x:Static starterNg:App.Loc}}" />
+                                        </ComboBox>
+                                    </ctl:SettingRow>
                                 </StackPanel>
                             </ctl:SettingsSection>
 
