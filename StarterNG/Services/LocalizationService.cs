@@ -23,12 +23,23 @@ public class LocalizationService : INotifyPropertyChanged
 
     private readonly HashSet<string> _reportedMisses = new(StringComparer.Ordinal);
 
+    /// <summary>
+    /// Keys with this suffix hold the optional one-line explanation shown under a
+    /// setting. They are only authored in en/pl, so a miss yields an empty string
+    /// (which collapses the description line) instead of the raw key, and is not
+    /// reported as a translation gap.
+    /// </summary>
+    private const string OptionalSuffix = "Desc";
+
     public string this[string key]
     {
         get
         {
             if (_strings.TryGetValue(key, out var value))
                 return value;
+
+            if (key.EndsWith(OptionalSuffix, StringComparison.Ordinal))
+                return string.Empty;
 
             lock (_reportedMisses)
                 if (_reportedMisses.Add(key))
@@ -37,6 +48,13 @@ public class LocalizationService : INotifyPropertyChanged
             return key;
         }
     }
+
+    /// <summary>
+    /// Looks up a key that may legitimately be absent, without logging a miss.
+    /// Returns an empty string when the current language does not define it.
+    /// </summary>
+    public string Opt(string key) =>
+        _strings.TryGetValue(key, out var value) ? value : string.Empty;
 
     public readonly record struct LanguageInfo(string Code, string Name, string Path);
 

@@ -45,7 +45,7 @@ public sealed class UartWindow : Window
         root.Children.Add(new TextBlock
         {
             Text = App.Loc["UartHint"],
-            FontSize = 11,
+            FontSize = 12,
             Opacity = 0.65,
             TextWrapping = TextWrapping.Wrap
         });

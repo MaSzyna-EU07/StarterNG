@@ -36,7 +36,7 @@
         </Grid>
 
         <TextBlock Name="statusText" DockPanel.Dock="Bottom" Margin="0,6,0,0"
-                   FontSize="11" Opacity="0.75" />
+                   FontSize="12" Opacity="0.75" />
 
         <Grid DockPanel.Dock="Left" Width="260" RowDefinitions="*,4,*">
             <ListBox Name="typeList" Grid.Row="0" Classes="Compact" />

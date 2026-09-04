@@ -7,6 +7,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Controls.Primitives;
 using Avalonia.Controls.Templates;
 using Avalonia.Input;
 using Avalonia.Input.Platform;
@@ -76,8 +77,11 @@ public partial class Depot : UserControl
         _cards = new VehicleCards(consistStack, _db, _consist, _cargo, _minis, _hand,
             RebuildConsist, () => _details.Refresh(), _browser.SelectInBrowser, _drag.ArmCardDrag);
 
+        // Hidden still scrolls - it only drops the bar itself.
+        MiniTextures.Sharp(miniPreview);
+
         _details = new VehicleDetails(
-            selectedVehiclePanel, generalPanel, consistTexturePanel, couplerPanel,
+            generalPanel, consistTexturePanel, couplerPanel, couplerActions,
             brakesPanel, loadsPanel, damagePanel, removeVehicleButton,
             _db, _info, _consist, _cargo, _hand,
             RebuildConsist, _cards.RefreshMemberChrome, _browser.ShowTextureInfo);
@@ -163,6 +167,9 @@ public partial class Depot : UserControl
         _details.Refresh();
     }
 
+    /// <summary>Redraws the consist cards, e.g. after the thumbnail size changed.</summary>
+    public void RefreshConsistView() => RebuildConsist();
+
     private void RebuildConsist()
     {
         consistStack.Children.Clear();
@@ -183,6 +190,10 @@ public partial class Depot : UserControl
         _details.Refresh();
         UpdateTrainStats();
         WriteBackToScenery();
+
+        // The cards are thrown away and rebuilt on every change, so a keyboard-driven
+        // edit has to be handed its card back or focus escapes the strip.
+        _cards.FocusSelectedCard(onlyIfRequested: true);
     }
 
     private void WriteBackToScenery()
@@ -232,9 +243,9 @@ public partial class Depot : UserControl
         depotDrivableOnlyCheck.IsChecked = StarterNG.Classes.Settings.Instance.DrivableOnly;
 
         _listScenery = AppState.Instance.CurrentScenery ?? _sceneries.FirstOrDefault();
-        mapConsistsPanel.Header = _listScenery != null
-            ? $"{App.Loc["MapConsists"]}: {Path.GetFileNameWithoutExtension(_listScenery.Path)}"
-            : App.Loc["NoSceneryConsists"];
+        sceneryConsistsTab.Header = App.Loc["SceneryConsists"];
+        ToolTip.SetTip(sceneryConsistsTab,
+            _listScenery != null ? Path.GetFileNameWithoutExtension(_listScenery.Path) : App.Loc["NoSceneryConsists"]);
 
         if (_listScenery != null)
         {
@@ -423,6 +434,25 @@ public partial class Depot : UserControl
     {
         if (_browser.Selected != null)
             AddTexture(_browser.Selected);
+    }
+
+    /// <summary>Keyboard shortcut entry points. See <see cref="Infrastructure.Shortcuts"/>.</summary>
+    public void KeyAddVehicle() => AddVehicleButton_OnClick(null, null!);
+
+    public void KeyRemoveVehicle() => RemoveVehicleButton_OnClick(null, null!);
+
+    public void KeyClearConsist()
+    {
+        if (_consist.EditingTrainset is { } ts && ts.Vehicles.Count > 0)
+            RemoveAllVehicles(ts);
+    }
+
+    public void KeySetWagonNumber() => _cards.ShowNumberFlyoutForSelection();
+
+    public void KeyFocusSearch()
+    {
+        searchBox.Focus();
+        searchBox.SelectAll();
     }
 
     public void ToolAddAllCategory() => AddAllCategoryButton_OnClick(null, null!);

@@ -69,7 +69,7 @@
     <String key="OptionalIncludes">Volitelné prvky</String>
     <String key="OpenTextureFolder">Otevřít složku s texturami</String>
     <String key="CopyTextureName">Kopírovat název</String>
-    <String key="CopyCoupler">Kopírovat spřáhlo z předchozího</String>
+    <String key="CopyCoupler">Kopírovat z předchozího</String>
     <String key="ThermoAmbient">Chladivo na okolní teplotě</String>
     <String key="TextureInfo">Textura</String>
     <String key="TexOperator">Dopravce</String>
@@ -185,6 +185,9 @@
     <String key="SwitchNormal">N - brzdič zabržděný</String>
     <String key="SwitchOff">0 - odbržděný, odpuštěný</String>
     <String key="SwitchOff10">1 - odbržděný, odp. z 10% pravd.</String>
+    <String key="SwitchEmergencyTest">&lt;&gt; - vyp. na zkoušku rychlobrzdy</String>
+    <String key="SwitchAgonal">X - dosluhující (20% vyp., náhodně)</String>
+    <String key="SwitchEmptied">E - vyprázdněný (potrubí na 0)</String>
 
     <!-- Damage (wheel parameters) -->
     <String key="Damage">Poškození</String>
@@ -194,15 +197,24 @@
     <String key="DamageFlatnessProb">Pravděpodobnost plochého místa (%)</String>
     <String key="LoadType">Druh nákladu</String>
     <String key="LoadCount">Množství</String>
+    <String key="LoadUnitPieces">ks</String>
+    <String key="LoadUnitTons">t</String>
+    <String key="LoadUnitGeneric">j.</String>
     <String key="LoadHint">Pro naložení vozidla zadejte množství větší než 0.</String>
     <String key="LoadNotLoadable">Toto vozidlo nepřijímá žádný náklad.</String>
     <String key="LoadPantState">Zvednutý pantograf na startu</String>
     <String key="LoadPantStateHint">Množství určuje pantograf: 1 — A, 2 — B, 3 — oba.</String>
+    <String key="Pantograph">Pantograf</String>
+    <String key="PantStateNone">Žádný</String>
+    <String key="PantStateBoth">Oba</String>
     <String key="WagonNumber">Číslo vozu</String>
     <String key="LoadCopyPrev">Kopírovat náklad z předchozího vozidla</String>
     <String key="LoadMax">Maximální možný náklad</String>
+    <String key="LoadPrevShort">Z předchozího</String>
+    <String key="LoadToAllShort">Na následující</String>
+    <String key="LoadMaxShort">Maximální</String>
     <String key="ConsistLoadTools">Náklad celé soupravy</String>
-    <String key="ConsistRandomType">Náhodný náklad</String>
+    <String key="ConsistRandomType">Náhodný druh</String>
     <String key="ConsistMaxAmount">Maximální množství</String>
     <String key="ConsistRandomAmount">Náhodné množství</String>
     <String key="Set">Nastavit</String>
@@ -252,6 +264,7 @@
     <String key="CouplingUnitRear">Spřáhlo na konci jednotky</String>
     <String key="Join">Spojit</String>
     <String key="TipJoin">Spojit toto vozidlo s následujícím do jedné jednotky</String>
+    <String key="TipReorder">Přetáhněte pro změnu pořadí</String>
     <String key="AddVehicle">Přidat</String>
     <String key="TipAddVehicle">Přidat toto vozidlo do soupravy</String>
     <String key="TipAddUnit">Přidat celou jednotku do soupravy</String>
@@ -278,7 +291,7 @@
     <String key="Fullscreen">Celá obrazovka</String>
     <String key="PauseSimInactive">Pozastavit simulaci při neaktivním okně</String>
     <String key="PauseSimStart">Pozastavit po spuštění</String>
-    <String key="CursorSensitivity">Citlivost kurzoru:</String>
+    <String key="CursorSensitivity">Citlivost kurzoru</String>
     <String key="MouseHorInvert">Převrátit myš vodorovně</String>
     <String key="MouseVertInvert">Převrátit myš svisle</String>
 
@@ -309,7 +322,7 @@
     <String key="UartRadioChannel">Kanál rádia</String>
 
     <String key="Others">Ostatní</String>
-    <String key="SelectEXE">Vybrat exe:</String>
+    <String key="SelectEXE">Vybrat exe</String>
     <String key="SelectEXEAuto">Vybrat automaticky</String>
     <String key="DebugMode">Režim ladění (testovací režim)</String>
     <String key="VirtualShunting">Virtuální posun</String>
@@ -324,12 +337,12 @@
     <String key="REOff">Vypnout vizuální vrstvu</String>
     <String key="REExperimental">Experimentální</String>
 
-    <String key="Resolution">Rozlišení:</String>
-    <String key="BufforResolution">Rozlišení bufferu:</String>
-    <String key="MaxTexResolution">Maximální rozlišení textur:</String>
-    <String key="MaxTexCabResolution">Maximální rozlišení textur kabiny:</String>
-    <String key="TexFilteringQuality">Kvalita filtrování textur:</String>
-    <String key="Multisampling">Multisampling:</String>
+    <String key="Resolution">Rozlišení</String>
+    <String key="BufforResolution">Rozlišení bufferu</String>
+    <String key="MaxTexResolution">Maximální rozlišení textur</String>
+    <String key="MaxTexCabResolution">Maximální rozlišení textur kabiny</String>
+    <String key="TexFilteringQuality">Kvalita filtrování textur</String>
+    <String key="Multisampling">Multisampling</String>
     <String key="QualityVeryLow">Velmi nízká</String>
     <String key="QualityLow">Nízká</String>
     <String key="QualityNormal">Normální</String>
@@ -346,8 +359,8 @@
     <String key="RangeHigh">Vysoká</String>
     <String key="RangeVeryHigh">Velmi vysoká</String>
     <String key="RangeDisabled">Vypnuté</String>
-    <String key="DynamicLights">Dynamické zdroje světla:</String>
-    <String key="RenderRange">Dohlednost vykreslování:</String>
+    <String key="DynamicLights">Dynamické zdroje světla</String>
+    <String key="RenderRange">Dohlednost vykreslování</String>
     <String key="FpsLimitEnable">Omezit snímkovou frekvenci</String>
     <String key="ShadowAngleLimit">Omezení délky stínů</String>
     <String key="ShadowLimitNone">Bez omezení</String>
@@ -362,6 +375,7 @@
     <String key="MotionBlur">Rozmazání pohybem</String>
     <String key="AdditionalShadersEffects">Další efekty shaderů</String>
     <String key="ReflectionsCubeMap">Odrazy jako cubemapa</String>
+    <String key="SkipPipeline">SkipPipeline</String>
     <String key="RenderVBO">Vykreslování VBO</String>
     <String key="RenderShadows">Vykreslovat stíny</String>
     <String key="ReflectionsFramerate">Frekvence obnovy odrazů</String>
@@ -419,14 +433,14 @@
     <String key="IgnoreIrrelevantTrains">Přeskočit dekorační soupravy při startu</String>
 
     <String key="Starter">Starter</String>
-    <String key="SettingsProfile">Profil nastavení:</String>
+    <String key="SettingsProfile">Profil nastavení</String>
     <String key="ProfileApply">Použít</String>
     <String key="ProfileSaveAs">Uložit jako…</String>
     <String key="ProfileNamePrompt">Název profilu</String>
     <String key="AutoCloseStarter">Automaticky zavřít starter</String>
     <String key="LargeThumbnails">Velké náhledy</String>
     <String key="AutoExpandSceneryTree">Automaticky rozbalit strom scenérií</String>
-    <String key="BatteryDefault">Baterie při spuštění:</String>
+    <String key="BatteryDefault">Baterie při spuštění</String>
     <String key="BatteryDefaultScenario">Podle scénáře</String>
     <String key="BatteryDefaultOff">Vždy vypnutá</String>
     <String key="BatteryDefaultOn">Vždy zapnutá</String>
@@ -455,6 +469,7 @@
     <String key="Save">Uložit</String>
     <String key="Reset">Obnovit</String>
     <String key="SettingsSaved">Nastavení uloženo</String>
+    <String key="UnsavedChanges">Neuložené změny</String>
 
     <!-- Errors / diagnostics -->
     <String key="FaultTitle">Chyba</String>
@@ -482,6 +497,7 @@
     <String key="GeneralInfo">Obecné</String>
     <String key="Model">Model</String>
     <String key="VMax">VMax</String>
+    <String key="Name">Název</String>
     <String key="Texture">Textura</String>
 
     <!-- Scenery tab -->
@@ -509,9 +525,9 @@
     <String key="WarehouseImportFile">Přidat soupravy ze souboru...</String>
     <String key="StartWithoutSaving">Spustit bez uložení nastavení</String>
     <String key="StartFreeFly">Spustit bez vozidla</String>
-    <String key="VolumePaused">Hlasitost při pauze:</String>
+    <String key="VolumePaused">Hlasitost při pauze</String>
     <String key="DebugLogVisible">Zobrazovat průběh simulace</String>
-    <String key="PyScreenPriority">Frekvence obnovení doplňkových obrazovek:</String>
+    <String key="PyScreenPriority">Frekvence obnovení doplňkových obrazovek</String>
     <String key="PyPriorityNormal">Standardní</String>
     <String key="PyPriorityLower">Nízká</String>
     <String key="PyPriorityLowest">Velmi nízká</String>
@@ -531,7 +547,7 @@
     <String key="TexWorks">Revize:</String>
     <String key="RevisionFrom">Revize od:</String>
     <String key="RevisionTo">Revize do:</String>
-    <String key="CrewLabel">Obsazení:</String>
+    <String key="CrewLabel">Obsazení</String>
     <String key="RuleAdd">Přidat do pravidla</String>
     <String key="RuleNew">— nové pravidlo —</String>
     <String key="RuleRemove">Odebrat z pravidla</String>
@@ -551,4 +567,18 @@
     <String key="AdvLogPage">Deník událostí</String>
     <String key="AdvClearLog">Vymazat log</String>
     <String key="ConsistSchedule">Sestava</String>
+
+    <!-- Klávesové zkratky -->
+    <String key="ShortcutsTitle">Klávesové zkratky</String>
+    <String key="ShortcutsGlobal">Obecné</String>
+    <String key="ShortcutsTabHint">Tab přepíná mezi panely, šipky fungují uvnitř seznamů. V pásu soupravy Tab skočí na vybrané vozidlo.</String>
+    <String key="ShortcutShowHelp">Tento seznam</String>
+    <String key="ShortcutFocusSearch">Přejít do vyhledávání vozidel</String>
+    <String key="ShortcutAddVehicle">Přidat vybrané vozidlo do soupravy</String>
+    <String key="ShortcutSetNumber">Nastavit číslo vozu</String>
+    <String key="ShortcutPrevNext">Předchozí / další vozidlo</String>
+    <String key="ShortcutFirstLast">První / poslední vozidlo</String>
+    <String key="ShortcutMember">Vybrat člen ve spojené jednotce</String>
+    <String key="ShortcutMoveVehicle">Posunout vozidlo v soupravě</String>
+    <String key="ShortcutCardMenu">Otevřít nabídku vozidla</String>
 </Language>

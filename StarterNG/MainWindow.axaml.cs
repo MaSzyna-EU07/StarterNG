@@ -10,6 +10,7 @@ using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Threading;
+using Avalonia.VisualTree;
 using StarterNG.Classes;
 using StarterNG.Domain;
 using StarterNG.Infrastructure;
@@ -34,6 +35,15 @@ public partial class MainWindow : Window
         ExtendClientAreaToDecorationsHint = true;
         ExtendClientAreaTitleBarHeightHint = TitleBarHeight;
 
+        if (SettingsModel.Instance.WindowMaximized)
+            WindowState = WindowState.Maximized;
+
+        PropertyChanged += (_, e) =>
+        {
+            if (e.Property == WindowStateProperty && WindowState != WindowState.Minimized)
+                SettingsModel.Instance.WindowMaximized = WindowState == WindowState.Maximized;
+        };
+
         if (OperatingSystem.IsWindows())
             TopBar.Padding = new Thickness(0, TitleBarHeight, 0, 0);
 
@@ -42,6 +52,12 @@ public partial class MainWindow : Window
 
         startButton.AddHandler(PointerReleasedEvent, StartButton_OnRightClick,
                                RoutingStrategies.Tunnel);
+
+        SettingsView.ThumbnailSizeChanged += () =>
+        {
+            DepotView.RefreshConsistView();
+            ScenariosView.RefreshConsistView();
+        };
 
         ScenariosView.RandomizeTexturesRequested += async scenery =>
         {
@@ -53,6 +69,10 @@ public partial class MainWindow : Window
                                RoutingStrategies.Tunnel);
 
         ApplyInitialNav();
+
+        // Tunnelling: the shortcuts are checked before any view sees the key, which is
+        // why OnShortcutKey has to be careful about text entry and key capture.
+        AddHandler(KeyDownEvent, OnShortcutKey, RoutingStrategies.Tunnel);
 
         AppState.Instance.Changed += UpdateStartButton;
         Opened += (_, _) =>
@@ -88,6 +108,61 @@ public partial class MainWindow : Window
         win.ShowDialog(this);
         e.Handled = true;
     }
+
+    private void OnShortcutKey(object? sender, KeyEventArgs e)
+    {
+        // A cab-control binding in Settings is waiting for this very keypress.
+        if (SettingsView?.IsCapturingKey == true)
+            return;
+
+        var mods = e.KeyModifiers & (KeyModifiers.Control | KeyModifiers.Shift | KeyModifiers.Alt);
+        if (Shortcuts.Match(e.Key, mods) is not { } id)
+            return;
+
+        // Bare keys belong to whatever is being typed into; Ctrl/Alt combinations do not
+        // collide with text entry, so those stay live everywhere.
+        if (mods == KeyModifiers.None && IsTextEntryFocused())
+            return;
+
+        switch (id)
+        {
+            case Shortcuts.Start:
+                _ = LaunchAsync(saveSettings: true, freeFly: false);
+                break;
+
+            case Shortcuts.PageScenarios: NavScenarios.IsChecked = true; break;
+            case Shortcuts.PageDepot: NavDepot.IsChecked = true; break;
+            case Shortcuts.PageSettings: NavSettings.IsChecked = true; break;
+
+            case Shortcuts.ShowHelp:
+                Views.ShortcutsWindow.Create().ShowDialog(this);
+                break;
+
+            default:
+                if (!DepotView.IsVisible)
+                    return;
+                switch (id)
+                {
+                    case Shortcuts.FocusSearch: DepotView.KeyFocusSearch(); break;
+                    case Shortcuts.AddVehicle: DepotView.KeyAddVehicle(); break;
+                    case Shortcuts.RemoveVehicle: DepotView.KeyRemoveVehicle(); break;
+                    case Shortcuts.ClearConsist: DepotView.KeyClearConsist(); break;
+                    case Shortcuts.SetNumber: DepotView.KeySetWagonNumber(); break;
+                    default: return;
+                }
+                break;
+        }
+
+        e.Handled = true;
+    }
+
+    /// <summary>
+    /// Anything that swallows plain typing: text boxes, but also the editable inner box
+    /// of a NumericUpDown or AutoCompleteBox.
+    /// </summary>
+    private bool IsTextEntryFocused() =>
+        FocusManager?.GetFocusedElement() is Visual focused
+        && (focused is TextBox || focused.FindAncestorOfType<TextBox>() != null);
 
     private void Nav_OnCheckedChanged(object? sender, RoutedEventArgs e)
     {
@@ -164,6 +239,15 @@ public partial class MainWindow : Window
     {
         var menu = new ContextMenu();
 
+        var keys = new MenuItem
+        {
+            Header = App.Loc["ShortcutsTitle"],
+            InputGesture = new KeyGesture(Key.F1)
+        };
+        keys.Click += (_, _) => Views.ShortcutsWindow.Create().ShowDialog(this);
+        menu.Items.Add(keys);
+        menu.Items.Add(new Separator());
+
         var wiki = new MenuItem { Header = App.Loc["HelpWiki"] };
         wiki.Click += (_, _) => OpenPathOrUrl("https://wiki.eu07.pl/");
         menu.Items.Add(wiki);
@@ -189,6 +273,13 @@ public partial class MainWindow : Window
                 menu.Items.Add(mi);
             }
         }
+
+        // "About" belongs with the other informational entries, not next to the
+        // Save/Reset buttons of the settings panel where it used to sit.
+        menu.Items.Add(new Separator());
+        var about = new MenuItem { Header = App.Loc["About"] };
+        about.Click += (_, _) => Views.AboutWindow.Create().ShowDialog(this);
+        menu.Items.Add(about);
 
         menu.Open(HelpButton);
     }

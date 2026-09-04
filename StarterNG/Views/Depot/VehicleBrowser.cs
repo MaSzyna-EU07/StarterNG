@@ -222,13 +222,13 @@ public sealed class VehicleBrowser
         };
         var bmp = _minis.Get(cls, height);
         if (bmp != null)
-            cell.Children.Add(new Image
+            cell.Children.Add(MiniTextures.Sharp(new Image
             {
                 Source = bmp, Height = height,
                 Stretch = Stretch.Uniform,
                 HorizontalAlignment = HorizontalAlignment.Center,
                 VerticalAlignment = VerticalAlignment.Center
-            });
+            }));
         cell.Children.Add(new TextBlock
         {
             Text = cls,
@@ -421,7 +421,7 @@ public sealed class VehicleBrowser
             target.Children.Add(new TextBlock
             {
                 Text = line,
-                FontSize = 10,
+                FontSize = 12,
                 Opacity = 0.85,
                 TextTrimming = TextTrimming.CharacterEllipsis
             });

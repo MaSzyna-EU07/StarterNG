@@ -10,13 +10,16 @@ public static class StatsBar
     public static void Fill(Panel host, IReadOnlyList<(string Label, string Value)> fields)
     {
         host.Children.Clear();
-        foreach (var (label, value) in fields)
+        for (int i = 0; i < fields.Count; i++)
         {
+            var (label, value) = fields[i];
             var pair = new StackPanel
             {
                 Orientation = Orientation.Horizontal,
                 Spacing = 5,
-                Margin = new Avalonia.Thickness(0, 0, 22, 0),
+                // no trailing gap on the last pair - these sit in a panel title,
+                // flush with its right edge
+                Margin = new Avalonia.Thickness(0, 0, i == fields.Count - 1 ? 0 : 22, 0),
                 VerticalAlignment = VerticalAlignment.Center
             };
             pair.Children.Add(new TextBlock

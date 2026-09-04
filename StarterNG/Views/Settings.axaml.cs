@@ -3,15 +3,19 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Text;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Layout;
+using Avalonia.LogicalTree;
 using Avalonia.Markup.Xaml.Styling;
 using Avalonia.Media;
 using StarterNG.Classes;
+using StarterNG.Controls;
+using StarterNG.Infrastructure;
 using StarterNG.Services;
 
 using KeyBinding = StarterNG.Classes.KeyBinding;
@@ -21,6 +25,15 @@ namespace StarterNG.Views;
 public partial class Settings : UserControl
 {
     private bool _loading;
+
+    /// <summary>
+    /// Raised once a saved (or applied) setting changes something the other tabs
+    /// have already drawn, so they can redraw instead of waiting for a restart.
+    /// </summary>
+    public event Action? ThumbnailSizeChanged;
+
+    /// <summary>Thumbnail size the other tabs were last drawn at.</summary>
+    private bool _drawnThumbs = StarterNG.Classes.Settings.Instance.LargeThumbnails;
 
     public Settings()
     {
@@ -41,6 +54,7 @@ public partial class Settings : UserControl
 
         App.Loc.LanguageChanged += SelectActiveLanguage;
         App.Loc.LanguageChanged += UpdateQualityCaptions;
+        App.Loc.LanguageChanged += UpdateSaveState;
         App.Loc.LanguageChanged += () => shaderResolutionSlider_OnValueChanged(null, null);
 
         FeedbackCb.SelectionChanged += FeedbackCb_OnSelectionChanged;
@@ -54,6 +68,10 @@ public partial class Settings : UserControl
         KeyboardConfig.Instance.Load();
         BuildControlsTab();
         AddHandler(KeyDownEvent, OnControlsKeyDown, RoutingStrategies.Tunnel);
+
+        HookDirtyTracking();
+        ApplyFilter();
+        UpdateSaveState();
     }
 
     private static int IndexOfTag(ComboBox cb, string? tag)
@@ -95,6 +113,7 @@ public partial class Settings : UserControl
         if (!File.Exists(path)) return;
         StarterNG.Classes.Settings.Instance.LoadFrom(path);
         ApplyToUi();
+        RedrawThumbnailsIfNeeded();
     }
 
     private void ProfileSaveAsButton_OnClick(object? sender, RoutedEventArgs e)
@@ -232,10 +251,9 @@ public partial class Settings : UserControl
             VehiclesVolumeSlider.Value = s.VehiclesVolume;
             PositionalVolumeSlider.Value = s.PositionalVolume;
             AmbientVolumeSlider.Value = s.AmbientVolume;
-            VolumePausedSlider.Value = s.VolumePaused;
             SkipPipelineCb.IsChecked = s.SkipPipeline;
             DebugLogVisibleCb.IsChecked = s.DebugLogVisible;
-            PyScreenPriorityCb.SelectedIndex = Math.Max(0, IndexOfTag(PyScreenPriorityCb, s.PyScreenPriority));
+            PyScreenPriorityCb.SelectedIndex = Math.Max(0, IndexOfTag(PyScreenPriorityCb, s.PythonScreenUpdateRate.ToString(CultureInfo.InvariantCulture)));
 
             AutoCloseStarterCb.IsChecked = s.AutoCloseStarter;
             LargeThumbnailsCb.IsChecked = s.LargeThumbnails;
@@ -327,10 +345,9 @@ public partial class Settings : UserControl
         s.VehiclesVolume = (int)VehiclesVolumeSlider.Value;
         s.PositionalVolume = (int)PositionalVolumeSlider.Value;
         s.AmbientVolume = (int)AmbientVolumeSlider.Value;
-        s.VolumePaused = (int)VolumePausedSlider.Value;
         s.SkipPipeline = IsChecked(SkipPipelineCb);
         s.DebugLogVisible = IsChecked(DebugLogVisibleCb);
-        s.PyScreenPriority = (PyScreenPriorityCb.SelectedItem as ComboBoxItem)?.Tag as string ?? "normal";
+        s.PythonScreenUpdateRate = ParsePriorityTag((PyScreenPriorityCb.SelectedItem as ComboBoxItem)?.Tag);
 
         s.AutoCloseStarter = IsChecked(AutoCloseStarterCb);
         s.LargeThumbnails = IsChecked(LargeThumbnailsCb);
@@ -344,31 +361,39 @@ public partial class Settings : UserControl
             new UartWindow().ShowDialog(owner);
     }
 
-    private void AboutButton_OnClick(object? sender, RoutedEventArgs e)
-    {
-        if (TopLevel.GetTopLevel(this) is Window owner)
-            AboutWindow.Create().ShowDialog(owner);
-    }
-
     private void SaveButton_OnClick(object? sender, RoutedEventArgs e)
     {
         ReadFromUi();
         StarterNG.Classes.Settings.Instance.Save();
         KeyboardConfig.Instance.Save();
+        RedrawThumbnailsIfNeeded();
+        _dirty = false;
+        UpdateSaveState();
         if (SaveStatus is not null)
             SaveStatus.Text = App.Loc["SettingsSaved"];
+    }
+
+    private void RedrawThumbnailsIfNeeded()
+    {
+        bool large = StarterNG.Classes.Settings.Instance.LargeThumbnails;
+        if (large == _drawnThumbs)
+            return;
+
+        _drawnThumbs = large;
+        ThumbnailSizeChanged?.Invoke();
     }
 
     private void ResetButton_OnClick(object? sender, RoutedEventArgs e)
     {
         StarterNG.Classes.Settings.Instance.Load();
         ApplyToUi();
+        RedrawThumbnailsIfNeeded();
         CancelCapture();
         KeyboardConfig.Instance.Load();
         RebuildBindingList();
         RebuildKeyboard();
-        if (SaveStatus is not null)
-            SaveStatus.Text = string.Empty;
+        _dirty = false;
+        UpdateSaveState();
     }
 
     private void SelectResolution(int width, int height)
@@ -404,29 +429,29 @@ public partial class Settings : UserControl
 
     private void TextureResolutionSlider_OnValueChanged(object? sender, RangeBaseValueChangedEventArgs e)
     {
-        if (texResolution is null || textureResolutionSlider is null)
+        if (TexResolutionRow is null || textureResolutionSlider is null)
             return;
 
         int resolution = 1 << (int)textureResolutionSlider.Value;
-        texResolution.Text = $"{resolution} px";
+        TexResolutionRow.ValueText = $"{resolution} px";
     }
 
     private void CabTextureResolutionSlider_OnValueChanged(object? sender, RangeBaseValueChangedEventArgs e)
     {
-        if (cabTexResolution is null || cabTextureResolutionSlider is null)
+        if (CabTexResolutionRow is null || cabTextureResolutionSlider is null)
             return;
 
         int resolution = 1 << (int)cabTextureResolutionSlider.Value;
-        cabTexResolution.Text = $"{resolution} px";
+        CabTexResolutionRow.ValueText = $"{resolution} px";
     }
 
     private void shaderResolutionSlider_OnValueChanged(object? sender, RangeBaseValueChangedEventArgs e)
     {
-        if (shaderResolution is null || shaderResolutionSlider is null)
+        if (ShadowResolutionRow is null || shaderResolutionSlider is null)
             return;
 
         int resolution = 1 << (int)shaderResolutionSlider.Value;
-        shaderResolution.Text = $"{resolution} px";
+        ShadowResolutionRow.ValueText = $"{resolution} px";
         ToolTip.SetTip(shaderResolutionSlider, ShadowMapWord(resolution));
     }
 
@@ -464,15 +489,195 @@ public partial class Settings : UserControl
     private void FeedbackCb_OnSelectionChanged(object? sender, SelectionChangedEventArgs e) =>
         UpdateFeedbackDetailVisibility();
 
-    private void UpdateFeedbackDetailVisibility()
+    /// <summary>
+    /// The port and UART rows only apply to some feedback modes. Visibility is
+    /// decided in one place — <see cref="ApplyFilter"/> — so that a search cannot
+    /// reveal a row the selected mode does not use.
+    /// </summary>
+    private void UpdateFeedbackDetailVisibility() => ApplyFilter();
+
+    private bool ConditionAllows(SettingRow row)
     {
-        FeedbackPortRow.IsVisible = FeedbackCb.SelectedIndex == 3;
-        ComButton.IsVisible = FeedbackCb.SelectedIndex == 5;
+        if (ReferenceEquals(row, FeedbackPortRow))
+            return FeedbackCb.SelectedIndex == 3;
+        if (ReferenceEquals(row, ComButtonRow))
+            return FeedbackCb.SelectedIndex == 5;
+        return true;
+    }
+
+    // ── Category navigation, search and unsaved-changes state ────────────────
+
+    private bool _dirty;
+
+    private void CategoryList_OnSelectionChanged(object? sender, SelectionChangedEventArgs e)
+    {
+        // Picking a category is how you leave a search, so the query goes with it.
+        if (SettingsSearch is { Text.Length: > 0 })
+            SettingsSearch.Text = string.Empty;   // raises TextChanged -> ApplyFilter
+        else
+            ApplyFilter();
+    }
+
+    private void SettingsSearch_OnTextChanged(object? sender, TextChangedEventArgs e) => ApplyFilter();
+
+    /// <summary>
+    /// Single owner of what is on screen. With an empty query it shows the selected
+    /// category; with a query it stacks every category and keeps only the rows that
+    /// match, collapsing sections and categories that end up empty.
+    /// </summary>
+    private void ApplyFilter()
+    {
+        if (SettingsStack is null || CategoryList is null || ControlsHost is null)
+            return;
+
+        string query = SettingsSearch?.Text?.Trim() ?? string.Empty;
+        bool searching = query.Length > 0;
+        string category = (CategoryList.SelectedItem as ListBoxItem)?.Tag as string ?? string.Empty;
+
+        // Key bindings are their own world: they bring their own scrolling and a
+        // star-sized row, so they replace the settings scroller rather than living
+        // in it, and the search box filters them instead of the settings.
+        bool bindings = category == "controls";
+        ControlsHost.IsVisible = bindings;
+        SettingsScroll.IsVisible = !bindings;
+
+        if (bindings)
+        {
+            RebuildBindingList();
+            foreach (var entry in CategoryList.Items.OfType<ListBoxItem>())
+                entry.Classes.Set("NoHits", false);
+            return;
+        }
+
+        foreach (var panel in SettingsStack.Children.OfType<StackPanel>())
+        {
+            bool anyRow = false;
+
+            foreach (var section in panel.GetLogicalDescendants().OfType<SettingsSection>())
+            {
+                bool anyInSection = false;
+
+                foreach (var row in section.GetLogicalDescendants().OfType<SettingRow>())
+                {
+                    bool visible = ConditionAllows(row) &&
+                                   (!searching || TextMatch.Contains(RowSearchText(row), query));
+                    row.IsVisible = visible;
+                    anyInSection |= visible;
+                }
+
+                section.IsVisible = anyInSection;
+                anyRow |= anyInSection;
+            }
+
+            string tag = panel.Tag as string ?? string.Empty;
+            panel.IsVisible = anyRow && (searching || tag == category);
+
+            // The caption only earns its place when several categories are stacked.
+            foreach (var caption in panel.Children.OfType<TextBlock>())
+                caption.IsVisible = searching;
+
+            if (CategoryItem(tag) is { } item)
+                item.Classes.Set("NoHits", searching && !anyRow);
+        }
+
+        if (searching)
+            SettingsScroll.Offset = new Vector(0, 0);
+    }
+
+    private ListBoxItem? CategoryItem(string tag) =>
+        CategoryList.Items.OfType<ListBoxItem>()
+            .FirstOrDefault(i => string.Equals(i.Tag as string, tag, StringComparison.Ordinal));
+
+    /// <summary>
+    /// Everything about a row a user might type: its label, its explanation and
+    /// the text of the control itself (a checkbox caption, a dropdown's options).
+    /// </summary>
+    private static string RowSearchText(SettingRow row)
+    {
+        var sb = new StringBuilder();
+        sb.Append(row.Label).Append(' ').Append(row.Description).Append(' ');
+
+        switch (row.Content)
+        {
+            case CheckBox cb:
+                sb.Append(cb.Content);
+                break;
+            case Button btn:
+                sb.Append(btn.Content);
+                break;
+            case ComboBox combo:
+                foreach (var item in combo.Items.OfType<ComboBoxItem>())
+                    sb.Append(item.Content).Append(' ');
+                break;
+        }
+
+        return sb.ToString();
+    }
+
+    /// <summary>
+    /// Subscribes every input in the panel to <see cref="MarkDirty"/> once, so the
+    /// Save button can tell the user there is something to save. Section master
+    /// switches hang off SettingsSection.Toggle rather than the logical tree, so
+    /// they are collected separately.
+    /// </summary>
+    private void HookDirtyTracking()
+    {
+        foreach (var control in this.GetLogicalDescendants().OfType<Control>())
+        {
+            switch (control)
+            {
+                // Choosing a profile changes nothing until Apply is pressed.
+                case ComboBox combo when ReferenceEquals(combo, ProfileCb):
+                    break;
+                case CheckBox cb:
+                    cb.IsCheckedChanged += (_, _) => MarkDirty();
+                    break;
+                case Slider slider:
+                    slider.ValueChanged += (_, _) => MarkDirty();
+                    break;
+                case ComboBox combo:
+                    combo.SelectionChanged += (_, _) => MarkDirty();
+                    break;
+                case NumericUpDown nud:
+                    nud.ValueChanged += (_, _) => MarkDirty();
+                    break;
+            }
+        }
+
+        foreach (var section in this.GetLogicalDescendants().OfType<SettingsSection>())
+            if (section.Toggle is CheckBox toggle)
+                toggle.IsCheckedChanged += (_, _) => MarkDirty();
+    }
+
+    private void MarkDirty()
+    {
+        if (_loading || _dirty)
+            return;
+
+        _dirty = true;
+        UpdateSaveState();
+    }
+
+    private void UpdateSaveState()
+    {
+        if (SaveButton is null || SaveStatus is null)
+            return;
+
+        bool dirty = _dirty || KeyboardConfig.Instance.Dirty;
+        SaveButton.Classes.Set("Accent", dirty);
+        SaveStatus.Text = dirty ? App.Loc["UnsavedChanges"] : string.Empty;
     }
 
     private static bool IsChecked(CheckBox cb) => cb.IsChecked == true;
 
     private static int Clamp(int v, int lo, int hi) => v < lo ? lo : (v > hi ? hi : v);
+
+    private static int ParsePriorityTag(object? tag)
+    {
+        if (tag is int i) return i;
+        if (tag is string s && int.TryParse(s, NumberStyles.Integer, CultureInfo.InvariantCulture, out int n)) return n;
+        return 200;
+    }
 
     private static int Log2(int value, int fallback)
     {
@@ -490,9 +695,14 @@ public partial class Settings : UserControl
         return 4;
     }
 
-    private TextBox? _controlsSearch;
     private StackPanel? _bindingListPanel;
     private StackPanel? _keyboardPanel;
+
+    /// <summary>
+    /// True while a cab-control binding is waiting for a keypress. The window's own
+    /// shortcuts stand down for the duration, otherwise Ctrl+N would never reach here.
+    /// </summary>
+    public bool IsCapturingKey => _capturing is not null;
 
     private KeyBinding? _capturing;
     private Button? _capturingButton;
@@ -527,10 +737,6 @@ public partial class Settings : UserControl
             VerticalAlignment = VerticalAlignment.Center,
             Foreground = FgDimBrush
         });
-        _controlsSearch = new TextBox { Width = 240, PlaceholderText = App.Loc["Search"] };
-        _controlsSearch.TextChanged += (_, _) => RebuildBindingList();
-        topBar.Children.Add(_controlsSearch);
-
         var restoreBtn = new Button { Content = App.Loc["RestoreDefaults"] };
         restoreBtn.Classes.Add("Flat");
         restoreBtn.Click += (_, _) =>
@@ -538,6 +744,7 @@ public partial class Settings : UserControl
             CancelCapture();
             KeyboardConfig.Instance.LoadDefaults();
             KeyboardConfig.Instance.Dirty = true;
+            MarkDirty();
             RebuildBindingList();
             RebuildKeyboard();
         };
@@ -576,7 +783,8 @@ public partial class Settings : UserControl
             return;
 
         _bindingListPanel.Children.Clear();
-        string filter = _controlsSearch?.Text?.Trim().ToLowerInvariant() ?? string.Empty;
+        // The sidebar search box serves this list too - see ApplyFilter.
+        string filter = SettingsSearch?.Text?.Trim() ?? string.Empty;
         var conflicts = ComputeConflicts();
 
         foreach (var b in KeyboardConfig.Instance.Bindings)
@@ -588,8 +796,8 @@ public partial class Settings : UserControl
     }
 
     private static bool MatchesFilter(KeyBinding b, string filter) =>
-        b.Command.ToLowerInvariant().Contains(filter) ||
-        b.Description.ToLowerInvariant().Contains(filter);
+        TextMatch.Contains(b.Command, filter) ||
+        TextMatch.Contains(b.Description, filter);
 
     private Control BuildBindingRow(KeyBinding b, HashSet<string> conflicts)
     {
@@ -604,14 +812,14 @@ public partial class Settings : UserControl
         {
             Text = CommandLabel(b),
             Foreground = FgBrush,
-            FontSize = 13,
+            FontSize = 12,
             TextTrimming = TextTrimming.CharacterEllipsis
         });
         label.Children.Add(new TextBlock
         {
             Text = b.Command,
             Foreground = FgDimBrush,
-            FontSize = 11,
+            FontSize = 12,
             TextTrimming = TextTrimming.CharacterEllipsis
         });
         Grid.SetColumn(label, 0);
@@ -647,6 +855,7 @@ public partial class Settings : UserControl
             b.Shift = b.Ctrl = false;
             b.Key = "none";
             KeyboardConfig.Instance.Dirty = true;
+            MarkDirty();
             RebuildBindingList();
             RebuildKeyboard();
         };
@@ -710,6 +919,7 @@ public partial class Settings : UserControl
         _capturing.Ctrl = e.KeyModifiers.HasFlag(KeyModifiers.Control);
         _capturing.Key = token;
         KeyboardConfig.Instance.Dirty = true;
+        MarkDirty();
         e.Handled = true;
 
         _capturing = null;
@@ -912,7 +1122,7 @@ public partial class Settings : UserControl
         {
             Text = App.Loc["BindKeyHint"],
             Foreground = FgDimBrush,
-            FontSize = 11,
+            FontSize = 12,
             TextWrapping = TextWrapping.Wrap
         });
         panel.Children.Add(grid);
@@ -957,6 +1167,7 @@ public partial class Settings : UserControl
         }
 
         KeyboardConfig.Instance.Dirty = true;
+        MarkDirty();
     }
 
     private static KeyBinding? CommandInSlot(string token, bool shift, bool ctrl) =>
@@ -1074,25 +1285,25 @@ public partial class Settings : UserControl
     {
         var q = QualityWords;
 
-        if (texFilteringValue != null)
-            texFilteringValue.Text = q[Clamp((int)TexFilteringSlider.Value, 1, 5) - 1];
+        if (TexFilteringRow != null)
+            TexFilteringRow.ValueText = q[Clamp((int)TexFilteringSlider.Value, 1, 5) - 1];
 
         string[] four = { q[0], q[1], q[3], q[4] };
-        if (trackCurvesValue != null)
-            trackCurvesValue.Text = four[Clamp((int)TrackCurvesSlider.Value, 1, 4) - 1];
-        if (smokeParticlesValue != null)
-            smokeParticlesValue.Text = four[Clamp((int)SmokeParticlesSlider.Value, 1, 4) - 1];
+        if (TrackCurvesRow != null)
+            TrackCurvesRow.ValueText = four[Clamp((int)TrackCurvesSlider.Value, 1, 4) - 1];
+        if (SmokeParticlesRow != null)
+            SmokeParticlesRow.ValueText = four[Clamp((int)SmokeParticlesSlider.Value, 1, 4) - 1];
 
         string[] msaa = { App.Loc["MsaaNone"], "x2", "x4", "x8" };
-        if (multisamplingValue != null)
-            multisamplingValue.Text = msaa[Clamp((int)MultisamplingSlider.Value, 1, 4) - 1];
+        if (MultisamplingRow != null)
+            MultisamplingRow.ValueText = msaa[Clamp((int)MultisamplingSlider.Value, 1, 4) - 1];
 
         string[] range = { App.Loc["RangeNormal"], App.Loc["RangeHigh"], App.Loc["RangeVeryHigh"] };
-        if (renderRangeValue != null)
-            renderRangeValue.Text = range[Clamp((int)RenderRangeSlider.Value, 1, 3) - 1];
+        if (RenderRangeRow != null)
+            RenderRangeRow.ValueText = range[Clamp((int)RenderRangeSlider.Value, 1, 3) - 1];
 
-        if (cursorSensitivityValue != null)
-            cursorSensitivityValue.Text = (int)CursorSensitivitySlider.Value switch
+        if (CursorSensitivityRow != null)
+            CursorSensitivityRow.ValueText = (int)CursorSensitivitySlider.Value switch
             {
                 <= 1 => q[1],
                 2 => App.Loc["QualityStandard"],
@@ -1100,25 +1311,25 @@ public partial class Settings : UserControl
                 _ => q[4]
             };
 
-        if (shaderRangeValue != null)
+        if (ShadowRangeRow != null)
         {
             int metres = (int)shaderRange.Value;
-            shaderRangeValue.Text = $"{metres} m";
+            ShadowRangeRow.ValueText = $"{metres} m";
             ToolTip.SetTip(shaderRange, ShadowRangeWord(metres));
         }
 
-        if (cabShadowRangeValue != null)
+        if (CabShadowRangeRow != null)
         {
             int metres = (int)cabShaderSourceRange.Value;
-            cabShadowRangeValue.Text = metres <= 0 ? App.Loc["RangeDisabled"] : $"{metres} m";
+            CabShadowRangeRow.ValueText = metres <= 0 ? App.Loc["RangeDisabled"] : $"{metres} m";
             ToolTip.SetTip(cabShaderSourceRange, CabShadowRangeWord(metres));
         }
 
-        if (reflectionsFramerateValue != null)
+        if (ReflectionsFramerateRow != null)
         {
             int fps = (int)reflectionsFramerate.Value;
             string word = ReflectionsRefreshWord(fps);
-            reflectionsFramerateValue.Text = $"{fps} FPS";
+            ReflectionsFramerateRow.ValueText = $"{fps} FPS";
             ToolTip.SetTip(reflectionsFramerate, word.Length == 0 ? null : word);
         }
     }

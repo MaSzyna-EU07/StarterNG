@@ -896,13 +896,13 @@ public partial class Scenarios : UserControl
 
             var bmp = LoadMini(miniName, thumbH);
             Control visual = bmp is not null
-                ? new Image
+                ? MiniTextures.Sharp(new Image
                 {
                     Source = bmp,
                     Height = thumbH,
                     Stretch = Avalonia.Media.Stretch.Uniform,
                     Margin = new Thickness(0)
-                }
+                })
                 : MissingMiniBox(train.SkinFile, thumbH);
 
             bool selected = !string.IsNullOrEmpty(train.Name) &&

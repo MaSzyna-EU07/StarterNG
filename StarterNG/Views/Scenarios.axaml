@@ -15,7 +15,8 @@
         </Grid.ColumnDefinitions>
         <Grid.RowDefinitions>
             <RowDefinition />
-            <RowDefinition Height="150" />
+            <!-- Measures itself, so a whole card fits at either thumbnail size. -->
+            <RowDefinition Height="Auto" MinHeight="120" MaxHeight="200" />
         </Grid.RowDefinitions>
 
         <HeaderedContentControl Grid.Column="0" Grid.Row="0" Theme="{StaticResource GroupBox}"
@@ -23,7 +24,7 @@
                                 Header="{Binding [Sceneries], Source={x:Static starterNg:App.Loc}}">
             <DockPanel LastChildFill="True">
                 <CheckBox DockPanel.Dock="Bottom" Name="archivalSwitch"
-                          Margin="2,4,0,0" FontSize="11"
+                          Margin="2,4,0,0" FontSize="12"
                           IsCheckedChanged="ArchivalSwitch_OnChanged"
                           Content="{Binding [HideArchivalSceneries], Source={x:Static starterNg:App.Loc}}" />
                 <TreeView Name="sceneryList" Classes="Compact"
@@ -54,7 +55,7 @@
                                     Header="{Binding [SceneryConsists], Source={x:Static starterNg:App.Loc}}">
             <HeaderedContentControl.Tag>
                 <Button Name="randomTexturesButton" Classes="Flat" Cursor="Hand"
-                        FontSize="11" MinHeight="0" Padding="10,1"
+                        FontSize="12" MinHeight="0" Padding="10,1"
                         Click="RandomTexturesButton_OnClick"
                         Content="{Binding [RandomizeTextures], Source={x:Static starterNg:App.Loc}}"
                         ToolTip.Tip="{Binding [TipRandomizeTextures], Source={x:Static starterNg:App.Loc}}" />
@@ -144,9 +145,9 @@
                                        VerticalAlignment="Center" TextAlignment="Right"
                                        FontWeight="SemiBold" />
                             <DockPanel Grid.Row="5" Grid.Column="2" Margin="0,-6,0,0">
-                                <TextBlock DockPanel.Dock="Right" FontSize="11"
+                                <TextBlock DockPanel.Dock="Right" FontSize="12"
                                            Foreground="{StaticResource CarbonFgDim}" Text="+50 °C" />
-                                <TextBlock FontSize="11"
+                                <TextBlock FontSize="12"
                                            Foreground="{StaticResource CarbonFgDim}" Text="-50 °C" />
                             </DockPanel>
 
@@ -161,10 +162,10 @@
                                        VerticalAlignment="Center" TextAlignment="Right"
                                        FontWeight="SemiBold" />
                             <DockPanel Grid.Row="8" Grid.Column="2" Margin="0,-6,0,0">
-                                <TextBlock DockPanel.Dock="Right" FontSize="11"
+                                <TextBlock DockPanel.Dock="Right" FontSize="12"
                                            Foreground="{StaticResource CarbonFgDim}"
                                            Text="{Binding [VisibilityGood], Source={x:Static starterNg:App.Loc}}" />
-                                <TextBlock FontSize="11" Foreground="{StaticResource CarbonFgDim}"
+                                <TextBlock FontSize="12" Foreground="{StaticResource CarbonFgDim}"
                                            Text="{Binding [VisibilityBad], Source={x:Static starterNg:App.Loc}}" />
                             </DockPanel>
 
@@ -217,9 +218,13 @@
 
         <HeaderedContentControl Grid.Row="1" Grid.ColumnSpan="3" Theme="{StaticResource GroupBox}"
                                 Header="{Binding [Consist], Source={x:Static starterNg:App.Loc}}">
+            <!-- Mass, length and the rest ride in the title bar, same as in the
+                 depot, instead of taking a row of their own above the cards. -->
+            <HeaderedContentControl.Tag>
+                <StackPanel Name="trainStats" Orientation="Horizontal"
+                            VerticalAlignment="Center" />
+            </HeaderedContentControl.Tag>
             <DockPanel LastChildFill="True">
-                <StackPanel DockPanel.Dock="Top" Name="trainStats" Orientation="Horizontal"
-                            VerticalAlignment="Center" Margin="0,0,0,6" />
                 <ScrollViewer Name="consistScroll"
                               HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
                     <Panel>

@@ -10,6 +10,7 @@
                  <FluentTheme />
                  <materialIcons:MaterialIconStyles />
                  <StyleInclude Source="avares://Starter/Styles/Carbon.axaml" />
+                 <StyleInclude Source="avares://Starter/Styles/Settings.axaml" />
 
                  <Style Selector="Button[(chrome|WindowDecorationProperties.ElementRole)=FullScreenButton]">
                      <Setter Property="IsVisible" Value="False" />

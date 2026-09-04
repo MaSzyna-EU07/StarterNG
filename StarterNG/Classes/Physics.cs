@@ -12,11 +12,26 @@ public sealed class Physics
     public double VMax;
     public double Length;
     public string LoadAccepted = "";
+    public string LoadQ = "";
     public int MaxLoad;
     public int AllowedFlagA = 3;
     public int AllowedFlagB = 3;
     public string ControlTypeA = "";
     public string ControlTypeB = "";
+
+    public string EngineType = "";
+
+    /// <summary>
+    /// True for the engine types the simulator actually runs its diesel heat model for.
+    /// Mover.cpp calls dizel_Update - and through it dizel_Heat - only for DieselEngine
+    /// and DieselElectric; LoadFIZ_EngineDecode maps the legacy "DumbDE" onto
+    /// DieselElectric. On anything else the coolant temperature struct is written and
+    /// never read.
+    /// </summary>
+    public bool IsDieselEngine =>
+        EngineType.Equals("DieselEngine", StringComparison.OrdinalIgnoreCase)
+        || EngineType.Equals("DieselElectric", StringComparison.OrdinalIgnoreCase)
+        || EngineType.Equals("DumbDE", StringComparison.OrdinalIgnoreCase);
 
     private static readonly Dictionary<string, Physics?> Cache = new(StringComparer.OrdinalIgnoreCase);
 
@@ -85,7 +100,8 @@ public sealed class Physics
 
     private static readonly HashSet<string> KnownKeys = new(StringComparer.OrdinalIgnoreCase)
     {
-        "M", "Vmax", "L", "LoadAccepted", "MaxLoad", "AllowedFlag", "ControlType"
+        "M", "Vmax", "L", "LoadAccepted", "LoadQ", "MaxLoad", "AllowedFlag", "ControlType",
+        "EngineType"
     };
 
     private static void Parse(Physics p, string path, string dir, string[]? prms, int depth)
@@ -156,7 +172,11 @@ public sealed class Physics
                 break;
             case "load":
                 if (key.Equals("LoadAccepted", StringComparison.OrdinalIgnoreCase)) p.LoadAccepted = value;
+                else if (key.Equals("LoadQ", StringComparison.OrdinalIgnoreCase)) p.LoadQ = value;
                 else if (key.Equals("MaxLoad", StringComparison.OrdinalIgnoreCase)) p.MaxLoad = (int)ParseD(value, p.MaxLoad);
+                break;
+            case "engine":
+                if (key.Equals("EngineType", StringComparison.OrdinalIgnoreCase)) p.EngineType = value;
                 break;
             case "dimensions":
                 if (key.Equals("L", StringComparison.OrdinalIgnoreCase)) p.Length = ParseD(value, p.Length);

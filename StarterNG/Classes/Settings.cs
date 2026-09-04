@@ -95,9 +95,8 @@ public sealed class Settings
     public int VehiclesVolume = 100;
     public int PositionalVolume = 100;
     public int AmbientVolume = 100;
-    public int VolumePaused = 100;
     public bool SkipPipeline;
-    public string PyScreenPriority = "normal";
+    public int PythonScreenUpdateRate = 200;
     public bool DebugLogVisible;
     private int _debugLogExtraBits;
 
@@ -122,6 +121,13 @@ public sealed class Settings
     public bool ShowArchivalSceneries = true;
     public bool HideArchivalVehicles = true;
     public string LastScenery = "";
+
+    /// <summary>
+    /// Starter's own window state, the way the old one kept WindowMaximized in
+    /// starter.ini. Only the maximised flag is remembered - a normal window
+    /// always opens at its design size, centred on the screen.
+    /// </summary>
+    public bool WindowMaximized;
 
     public static readonly string[] RenderEngines =
         { "full", "legacy", "simpleshader", "simple", "off", "experimental" };
@@ -339,7 +345,6 @@ public sealed class Settings
     public void SaveTo(string path)
     {
         WriteToConfig();
-        ApplyFramebufferFidelity();
 
         try
         {
@@ -383,21 +388,6 @@ public sealed class Settings
         {
             return false;
         }
-    }
-
-    private void ApplyFramebufferFidelity()
-    {
-        int fidelity = BufferScalePercent switch
-        {
-            <= 75 => 1,
-            <= 125 => 2,
-            <= 175 => 3,
-            _ => 0
-        };
-        if (fidelity > 0)
-            _config.SetInt("gfx.framebuffer.fidelity", fidelity);
-        else
-            _config.Remove("gfx.framebuffer.fidelity");
     }
 
     public void DumpMissingVehicleLog()
@@ -523,9 +513,10 @@ public sealed class Settings
         VehiclesVolume = Clamp((int)Math.Round(c.GetDouble("sound.volume.vehicle", 1.0) * 100), 1, 100);
         PositionalVolume = Clamp((int)Math.Round(c.GetDouble("sound.volume.positional", 1.0) * 100), 1, 100);
         AmbientVolume = Clamp((int)Math.Round(c.GetDouble("sound.volume.ambient", 1.0) * 100), 1, 100);
-        VolumePaused = Clamp((int)Math.Round(c.GetDouble("sound.volume.paused", 1.0) * 100), 0, 100);
         SkipPipeline = c.GetBool("gfx.skippipeline", false);
-        PyScreenPriority = c.GetString("pyscreenrendererpriority", "normal");
+        PythonScreenUpdateRate = c.Has("python.updatetime")
+            ? Clamp(c.GetInt("python.updatetime", 200), 0, 10000)
+            : MapOldPyScreenPriority(c.GetString("pyscreenrendererpriority", "normal"));
 
         CompressTextures = c.GetBool("compresstex", true);
         ScaleSpeculars = c.GetBool("scalespeculars", true);
@@ -547,6 +538,7 @@ public sealed class Settings
         ShowArchivalSceneries = c.GetBool("starter.show.archival", true);
         HideArchivalVehicles = c.GetBool("starter.hide.archivalvehicles", true);
         LastScenery = c.GetString("starter.last.scenery", "");
+        WindowMaximized = c.GetBool("starter.window.maximized", false);
     }
 
     private static readonly string[] ObsoleteKeys =
@@ -597,6 +589,10 @@ public sealed class Settings
         c.SetInt("width", Width);
         c.SetInt("height", Height);
         c.SetInt("starter.bufferscale", BufferScalePercent);
+        int fbw = (int)Math.Round(Width * BufferScalePercent / 100.0);
+        int fbh = (int)Math.Round(Height * BufferScalePercent / 100.0);
+        c.SetInt("gfx.framebuffer.width", fbw);
+        c.SetInt("gfx.framebuffer.height", fbh);
         c.SetInt("maxtexturesize", MaxTextureSize);
         c.SetInt("maxcabtexturesize", MaxCabTextureSize);
         c.SetInt("anisotropicfiltering", TextureFiltering);
@@ -648,9 +644,8 @@ public sealed class Settings
         c.SetDouble("sound.volume.vehicle", VehiclesVolume / 100.0);
         c.SetDouble("sound.volume.positional", PositionalVolume / 100.0);
         c.SetDouble("sound.volume.ambient", AmbientVolume / 100.0);
-        c.SetDouble("sound.volume.paused", VolumePaused / 100.0);
         c.SetBool("gfx.skippipeline", SkipPipeline);
-        c.Set("pyscreenrendererpriority", PyScreenPriority);
+        c.SetInt("python.updatetime", PythonScreenUpdateRate);
 
         c.SetBool("compresstex", CompressTextures);
         c.SetBool("scalespeculars", ScaleSpeculars);
@@ -675,6 +670,7 @@ public sealed class Settings
             c.Set("starter.last.scenery", LastScenery);
         else
             c.Remove("starter.last.scenery");
+        c.SetBool("starter.window.maximized", WindowMaximized);
     }
 
     private static int Clamp(int v, int lo, int hi) => v < lo ? lo : (v > hi ? hi : v);
@@ -689,4 +685,14 @@ public sealed class Settings
                 return i;
         return fallback;
     }
+
+    private static int MapOldPyScreenPriority(string priority) =>
+        priority.ToLowerInvariant() switch
+        {
+            "lower" => 400,
+            "lowest" => 800,
+            "idle" => 1600,
+            "off" => 0,
+            _ => 200
+        };
 }

@@ -188,7 +188,17 @@ public class Dynamic
 
     public const int PantStateMax = 3;
 
-    public int MaxLoad = -1;
+    /// <summary>
+    /// Lives in the coupling token as ".L&lt;n&gt;" - that is where the simulator reads
+    /// it from (DynObj.cpp, the MoreParams loop). The older space-separated "L&lt;n&gt;"
+    /// token in front of the load count is still read for legacy files, but never
+    /// written back: the current scenario parser reads that slot as the load count.
+    /// </summary>
+    public int MaxLoad
+    {
+        get => Coupling.MaxLoad;
+        set => Coupling.MaxLoad = value;
+    }
 
     public bool HasVelocity;
 
@@ -211,6 +221,9 @@ public class Dynamic
     {
         int p = 0;
 
+        // Legacy form: max load as its own token in front of the load count. The
+        // current scenario parser reads that slot as an int, so this is read only -
+        // the setter moves the value into the coupling token, where it is written.
         if (p < t.Count && t[p].Length > 0 && t[p][0] == 'L')
         {
             if (int.TryParse(t[p].AsSpan(1), NumberStyles.Integer,
@@ -239,8 +252,6 @@ public class Dynamic
     internal string WriteTrailing()
     {
         var sb = new StringBuilder();
-        if (MaxLoad >= 0)
-            sb.Append(" L").Append(MaxLoad.ToString(CultureInfo.InvariantCulture));
 
         bool loaded = !string.IsNullOrEmpty(LoadType);
         sb.Append(' ').Append((loaded ? LoadCount : 0).ToString(CultureInfo.InvariantCulture));
@@ -263,7 +274,6 @@ public class Dynamic
         Offset = Offset,
         DriverType = DriverType,
         Coupling = Coupling.Clone(),
-        MaxLoad = MaxLoad,
         HasVelocity = HasVelocity,
         Velocity = Velocity,
         LoadCount = LoadCount,
@@ -386,6 +396,28 @@ public sealed class Coupling
             Parameters.Add(wheels.ToParameter());
     }
 
+    /// <summary>
+    /// Max load override, the ".L&lt;n&gt;" sub-parameter. -1 means "not set", so the
+    /// vehicle keeps the MaxLoad from its .fiz.
+    /// </summary>
+    public int MaxLoad
+    {
+        get => Parameters.Find(IsMaxLoad) is { } p
+            && int.TryParse(p.AsSpan(1), NumberStyles.Integer,
+                CultureInfo.InvariantCulture, out int v) ? v : -1;
+        set
+        {
+            Parameters.RemoveAll(IsMaxLoad);
+            if (value >= 0)
+                Parameters.Add("L" + value.ToString(CultureInfo.InvariantCulture));
+        }
+    }
+
+    private static bool IsMaxLoad(string param) =>
+        param.Length > 1
+        && char.ToUpperInvariant(param[0]) == 'L'
+        && param.Skip(1).All(char.IsDigit);
+
     public bool ThermoDynamic
     {
         get => Parameters.Exists(p => p.Equals("TA", StringComparison.OrdinalIgnoreCase));
@@ -414,11 +446,15 @@ public sealed class Coupling
 
 public sealed class BrakeSetting
 {
-    public static readonly string[] Modes = { "G", "P", "R", "M", "Q" };
+    public static readonly string[] Modes = { "G", "P", "R", "M" };
 
     public static readonly string[] Loads = { "T", "H", "F" };
 
-    public static readonly string[] Switches = { "0", "1" };
+    // The simulator tests every letter of the B parameter independently, so the
+    // "off" states are a separate axis from the G/P/R/M delay position. They stay
+    // one combo because they contradict each other, but they no longer block a
+    // delay position from being picked alongside them (e.g. "BRQ").
+    public static readonly string[] Switches = { "<>", "0", "1", "X", "E", "Q" };
 
     public string? Mode;
 
@@ -426,7 +462,9 @@ public sealed class BrakeSetting
 
     public string? Switch;
 
-    public bool IsEmpty => Mode is null;
+    // A brake switch or a load adaptation with no delay position is still a
+    // parameter worth writing, so all three axes count towards emptiness.
+    public bool IsEmpty => Mode is null && Load is null && Switch is null;
 
     public static BrakeSetting? FromParameter(string? param)
     {
@@ -436,7 +474,10 @@ public sealed class BrakeSetting
         string body = param.Substring(1).ToUpperInvariant();
         var b = new BrakeSetting
         {
-            Mode = First(body, "M", "G", "P", "R", "Q"),
+            // "M" first: the simulator reads it as R plus the magnetic rail brake,
+            // so a bare "R" must not swallow it. Switches are matched in the
+            // declared order too, so "<>" wins over the digits it cannot contain.
+            Mode = First(body, "M", "G", "P", "R"),
             Load = First(body, Loads),
             Switch = First(body, Switches)
         };
@@ -457,9 +498,18 @@ public sealed class WheelSettings
 
     public int FlatnessRand;
 
-    public int FlatnessProb;
+    /// <summary>
+    /// Chance (%) that the flat spot is applied at all. The simulator defaults it
+    /// to 100 when the P sub-parameter is missing, so that is the default here too
+    /// - otherwise "0" would be written as "absent" and mean the exact opposite.
+    /// </summary>
+    public int FlatnessProb = DefaultFlatnessProb;
 
-    public bool IsEmpty => Sway <= 0 && Flatness <= 0 && FlatnessRand <= 0 && FlatnessProb <= 0;
+    public const int DefaultFlatnessProb = 100;
+
+    // A probability on its own does nothing: without a flat size there is nothing
+    // to roll for.
+    public bool IsEmpty => Sway <= 0 && Flatness <= 0 && FlatnessRand <= 0;
 
     public static WheelSettings? FromParameter(string? param)
     {
@@ -492,7 +542,7 @@ public sealed class WheelSettings
         if (Sway > 0) sb.Append('H').Append(Sway);
         if (Flatness > 0) sb.Append('F').Append(Flatness);
         if (FlatnessRand > 0) sb.Append('R').Append(FlatnessRand);
-        if (FlatnessProb > 0) sb.Append('P').Append(FlatnessProb);
+        if (FlatnessProb != DefaultFlatnessProb) sb.Append('P').Append(FlatnessProb);
         return sb.ToString();
     }
 }

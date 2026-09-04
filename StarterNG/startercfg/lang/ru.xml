@@ -69,7 +69,7 @@
     <String key="OptionalIncludes">Дополнительные элементы</String>
     <String key="OpenTextureFolder">Открыть папку с текстурами</String>
     <String key="CopyTextureName">Копировать название</String>
-    <String key="CopyCoupler">Копировать сцепку с предыдущего</String>
+    <String key="CopyCoupler">Копировать с предыдущего</String>
     <String key="ThermoAmbient">Охлаждающая жидкость при температуре среды</String>
     <String key="TextureInfo">Текстура</String>
     <String key="TexOperator">Перевозчик</String>
@@ -185,6 +185,9 @@
     <String key="SwitchNormal">N - тормоз включён</String>
     <String key="SwitchOff">0 - выключен, отпущен</String>
     <String key="SwitchOff10">1 - выключен, отпущен (10%)</String>
+    <String key="SwitchEmergencyTest">&lt;&gt; - выкл. на пробу экстренного торможения</String>
+    <String key="SwitchAgonal">X - изношенный (20% выкл., случайно)</String>
+    <String key="SwitchEmptied">E - опорожнён (магистрали на 0)</String>
 
     <!-- Damage (wheel parameters) -->
     <String key="Damage">Повреждения</String>
@@ -194,15 +197,24 @@
     <String key="DamageFlatnessProb">Вероятность ползуна (%)</String>
     <String key="LoadType">Вид груза</String>
     <String key="LoadCount">Количество</String>
+    <String key="LoadUnitPieces">шт</String>
+    <String key="LoadUnitTons">т</String>
+    <String key="LoadUnitGeneric">ед.</String>
     <String key="LoadHint">Задайте количество больше 0, чтобы загрузить единицу.</String>
     <String key="LoadNotLoadable">Эта единица не принимает груз.</String>
     <String key="LoadPantState">Поднятый пантограф на старте</String>
     <String key="LoadPantStateHint">Количество выбирает пантограф: 1 — A, 2 — B, 3 — оба.</String>
+    <String key="Pantograph">Пантограф</String>
+    <String key="PantStateNone">Нет</String>
+    <String key="PantStateBoth">Оба</String>
     <String key="WagonNumber">Номер вагона</String>
     <String key="LoadCopyPrev">Копировать груз с предыдущей единицы</String>
     <String key="LoadMax">Максимально возможный груз</String>
+    <String key="LoadPrevShort">С предыдущей</String>
+    <String key="LoadToAllShort">На следующие</String>
+    <String key="LoadMaxShort">Максимум</String>
     <String key="ConsistLoadTools">Груз всего состава</String>
-    <String key="ConsistRandomType">Случайный груз</String>
+    <String key="ConsistRandomType">Случайный тип</String>
     <String key="ConsistMaxAmount">Максимальное количество</String>
     <String key="ConsistRandomAmount">Случайное количество</String>
     <String key="Set">Задать</String>
@@ -252,6 +264,7 @@
     <String key="CouplingUnitRear">Сцепка в конце состава</String>
     <String key="Join">Соединить</String>
     <String key="TipJoin">Соединить этот вагон со следующим в один состав</String>
+    <String key="TipReorder">Перетащите для изменения порядка</String>
     <String key="AddVehicle">Добавить</String>
     <String key="TipAddVehicle">Добавить эту единицу в состав</String>
     <String key="TipAddUnit">Добавить весь сцеп в состав</String>
@@ -278,7 +291,7 @@
     <String key="Fullscreen">Полный экран</String>
     <String key="PauseSimInactive">Приостанавливать симуляцию при неактивном окне</String>
     <String key="PauseSimStart">Пауза при запуске</String>
-    <String key="CursorSensitivity">Чувствительность курсора:</String>
+    <String key="CursorSensitivity">Чувствительность курсора</String>
     <String key="MouseHorInvert">Инвертировать мышь по горизонтали</String>
     <String key="MouseVertInvert">Инвертировать мышь по вертикали</String>
 
@@ -309,7 +322,7 @@
     <String key="UartRadioChannel">Канал радио</String>
 
     <String key="Others">Прочее</String>
-    <String key="SelectEXE">Выбрать exe:</String>
+    <String key="SelectEXE">Выбрать exe</String>
     <String key="SelectEXEAuto">Выбрать автоматически</String>
     <String key="DebugMode">Режим отладки (тестовый режим)</String>
     <String key="VirtualShunting">Виртуальный манёвр</String>
@@ -324,12 +337,12 @@
     <String key="REOff">Отключить визуальный слой</String>
     <String key="REExperimental">Экспериментальный</String>
 
-    <String key="Resolution">Разрешение:</String>
-    <String key="BufforResolution">Разрешение буфера:</String>
-    <String key="MaxTexResolution">Максимальное разрешение текстур:</String>
-    <String key="MaxTexCabResolution">Максимальное разрешение текстур кабины:</String>
-    <String key="TexFilteringQuality">Качество фильтрации текстур:</String>
-    <String key="Multisampling">Multisampling:</String>
+    <String key="Resolution">Разрешение</String>
+    <String key="BufforResolution">Разрешение буфера</String>
+    <String key="MaxTexResolution">Максимальное разрешение текстур</String>
+    <String key="MaxTexCabResolution">Максимальное разрешение текстур кабины</String>
+    <String key="TexFilteringQuality">Качество фильтрации текстур</String>
+    <String key="Multisampling">Multisampling</String>
     <String key="QualityVeryLow">Очень низкое</String>
     <String key="QualityLow">Низкое</String>
     <String key="QualityNormal">Нормальное</String>
@@ -346,8 +359,8 @@
     <String key="RangeHigh">Высокий</String>
     <String key="RangeVeryHigh">Очень высокий</String>
     <String key="RangeDisabled">Отключено</String>
-    <String key="DynamicLights">Динамические источники света:</String>
-    <String key="RenderRange">Дальность отрисовки:</String>
+    <String key="DynamicLights">Динамические источники света</String>
+    <String key="RenderRange">Дальность отрисовки</String>
     <String key="FpsLimitEnable">Ограничить частоту кадров</String>
     <String key="ShadowAngleLimit">Ограничение длины теней</String>
     <String key="ShadowLimitNone">Без ограничений</String>
@@ -362,6 +375,7 @@
     <String key="MotionBlur">Размытие в движении</String>
     <String key="AdditionalShadersEffects">Дополнительные эффекты шейдеров</String>
     <String key="ReflectionsCubeMap">Отражения как кубическая карта</String>
+    <String key="SkipPipeline">SkipPipeline</String>
     <String key="RenderVBO">Отрисовка VBO</String>
     <String key="RenderShadows">Отрисовывать тени</String>
     <String key="ReflectionsFramerate">Частота обновления отражений</String>
@@ -419,14 +433,14 @@
     <String key="IgnoreIrrelevantTrains">Пропускать декоративные составы при запуске</String>
 
     <String key="Starter">Starter</String>
-    <String key="SettingsProfile">Профиль настроек:</String>
+    <String key="SettingsProfile">Профиль настроек</String>
     <String key="ProfileApply">Применить</String>
     <String key="ProfileSaveAs">Сохранить как…</String>
     <String key="ProfileNamePrompt">Название профиля</String>
     <String key="AutoCloseStarter">Автоматически закрывать стартер</String>
     <String key="LargeThumbnails">Крупные миниатюры</String>
     <String key="AutoExpandSceneryTree">Автоматически разворачивать дерево сценерий</String>
-    <String key="BatteryDefault">Батарея при запуске:</String>
+    <String key="BatteryDefault">Батарея при запуске</String>
     <String key="BatteryDefaultScenario">По сценарию</String>
     <String key="BatteryDefaultOff">Всегда выключена</String>
     <String key="BatteryDefaultOn">Всегда включена</String>
@@ -455,6 +469,7 @@
     <String key="Save">Сохранить</String>
     <String key="Reset">Сбросить</String>
     <String key="SettingsSaved">Настройки сохранены</String>
+    <String key="UnsavedChanges">Несохранённые изменения</String>
 
     <!-- Errors / diagnostics -->
     <String key="FaultTitle">Ошибка</String>
@@ -482,6 +497,7 @@
     <String key="GeneralInfo">Общие</String>
     <String key="Model">Модель</String>
     <String key="VMax">VMax</String>
+    <String key="Name">Имя</String>
     <String key="Texture">Текстура</String>
 
     <!-- Scenery tab -->
@@ -509,9 +525,9 @@
     <String key="WarehouseImportFile">Добавить составы из файла...</String>
     <String key="StartWithoutSaving">Запустить без сохранения настроек</String>
     <String key="StartFreeFly">Запустить без транспорта</String>
-    <String key="VolumePaused">Громкость на паузе:</String>
+    <String key="VolumePaused">Громкость на паузе</String>
     <String key="DebugLogVisible">Показывать ход симуляции</String>
-    <String key="PyScreenPriority">Частота обновления дополнительных экранов:</String>
+    <String key="PyScreenPriority">Частота обновления дополнительных экранов</String>
     <String key="PyPriorityNormal">Стандартная</String>
     <String key="PyPriorityLower">Низкая</String>
     <String key="PyPriorityLowest">Очень низкая</String>
@@ -531,7 +547,7 @@
     <String key="TexWorks">Ревизия:</String>
     <String key="RevisionFrom">Ревизия с:</String>
     <String key="RevisionTo">Ревизия по:</String>
-    <String key="CrewLabel">Экипаж:</String>
+    <String key="CrewLabel">Экипаж</String>
     <String key="RuleAdd">Добавить в правило</String>
     <String key="RuleNew">— новое правило —</String>
     <String key="RuleRemove">Удалить из правила</String>
@@ -551,4 +567,18 @@
     <String key="AdvLogPage">Журнал событий</String>
     <String key="AdvClearLog">Очистить журнал</String>
     <String key="ConsistSchedule">Состав</String>
+
+    <!-- Сочетания клавиш -->
+    <String key="ShortcutsTitle">Сочетания клавиш</String>
+    <String key="ShortcutsGlobal">Общие</String>
+    <String key="ShortcutsTabHint">Tab переключает панели, стрелки работают внутри списков. В полосе состава Tab переходит на выбранный вагон.</String>
+    <String key="ShortcutShowHelp">Этот список</String>
+    <String key="ShortcutFocusSearch">Перейти к поиску подвижного состава</String>
+    <String key="ShortcutAddVehicle">Добавить выбранный вагон в состав</String>
+    <String key="ShortcutSetNumber">Задать номер вагона</String>
+    <String key="ShortcutPrevNext">Предыдущий / следующий вагон</String>
+    <String key="ShortcutFirstLast">Первый / последний вагон</String>
+    <String key="ShortcutMember">Выбрать секцию в сцепленной единице</String>
+    <String key="ShortcutMoveVehicle">Переместить вагон в составе</String>
+    <String key="ShortcutCardMenu">Открыть меню вагона</String>
 </Language>

@@ -10,7 +10,7 @@
     xmlns:starterNg="clr-namespace:StarterNG"
     Title="Starter MaSzyna"
     Icon="/Assets/starter.ico"
-    Width="1010" Height="920" MinWidth="1010" MinHeight="920"
+    Width="1010" Height="768" MinWidth="1010" MinHeight="666"
     WindowStartupLocation="CenterScreen">
 
     <DockPanel LastChildFill="True">
@@ -20,7 +20,7 @@
                 BorderBrush="{StaticResource CarbonBorderLight}"
                 BorderThickness="0,0,0,1"
                 PointerPressed="TitleBar_OnPointerPressed">
-            <Grid RowDefinitions="50">
+            <Grid RowDefinitions="44">
 
                 <Grid ColumnDefinitions="Auto,*,Auto" Background="Transparent">
 
@@ -53,9 +53,9 @@
                                 VerticalAlignment="Center" Margin="0,0,3,0" Spacing="0">
                         <StackPanel Orientation="Vertical" VerticalAlignment="Center" Margin="0,0,6,0">
                             <Label Content="{Binding [Version], Source={x:Static starterNg:App.Loc}}"
-                                   FontSize="10" Foreground="{StaticResource CarbonFgDim}" Padding="0" />
+                                   FontSize="12" Foreground="{StaticResource CarbonFgDim}" Padding="0" />
                             <Label Content="{x:Static starterNg:AppInfo.Version}"
-                                   FontSize="10" Foreground="{StaticResource CarbonFg}" Padding="0" />
+                                   FontSize="12" Foreground="{StaticResource CarbonFg}" Padding="0" />
                         </StackPanel>
 
                         <ComboBox x:Name="LangCombo" Width="88" VerticalAlignment="Center"
@@ -85,10 +85,11 @@
         </Border>
 
         <Button Name="startButton" DockPanel.Dock="Bottom" Classes="Start" Height="42" Margin="3"
+                TabIndex="9"
                 Click="StartButton_OnClick"
                 Content="{Binding [Start], Source={x:Static starterNg:App.Loc}}" />
 
-        <Panel Margin="3,3,3,0">
+        <Panel Margin="3,3,3,0" TabIndex="1">
             <views:Scenarios x:Name="ScenariosView" />
             <views:Depot x:Name="DepotView" IsVisible="False" />
             <views:Settings x:Name="SettingsView" IsVisible="False" />

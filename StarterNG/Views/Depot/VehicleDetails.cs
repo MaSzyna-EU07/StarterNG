@@ -10,16 +10,17 @@ using Avalonia.Layout;
 using Avalonia.Media;
 
 using StarterNG.Classes;
+using StarterNG.Controls;
 using StarterNG.Domain;
 
 namespace StarterNG.Views;
 
 public sealed class VehicleDetails
 {
-    private readonly HeaderedContentControl selectedVehiclePanel;
     private readonly StackPanel generalPanel;
     private readonly StackPanel consistTexturePanel;
     private readonly StackPanel couplerPanel;
+    private readonly Panel couplerActions;
     private readonly StackPanel brakesPanel;
     private readonly StackPanel loadsPanel;
     private readonly StackPanel damagePanel;
@@ -36,17 +37,17 @@ public sealed class VehicleDetails
     private readonly Action<VehicleTexture, StackPanel> _showTextureInfo;
 
     public VehicleDetails(
-        HeaderedContentControl selectedVehiclePanel,
         StackPanel generalPanel, StackPanel consistTexturePanel, StackPanel couplerPanel,
+        Panel couplerActions,
         StackPanel brakesPanel, StackPanel loadsPanel, StackPanel damagePanel,
         Button removeVehicleButton,
         VehicleDatabase db, VehicleInfo info, Consist consist, Cargo cargo, Cursor hand,
         Action redraw, Action refreshChrome, Action<VehicleTexture, StackPanel> showTextureInfo)
     {
-        this.selectedVehiclePanel = selectedVehiclePanel;
         this.generalPanel = generalPanel;
         this.consistTexturePanel = consistTexturePanel;
         this.couplerPanel = couplerPanel;
+        this.couplerActions = couplerActions;
         this.brakesPanel = brakesPanel;
         this.loadsPanel = loadsPanel;
         this.damagePanel = damagePanel;
@@ -67,31 +68,27 @@ public sealed class VehicleDetails
         generalPanel.Children.Clear();
         consistTexturePanel.Children.Clear();
         couplerPanel.Children.Clear();
+        couplerActions.Children.Clear();
         brakesPanel.Children.Clear();
         loadsPanel.Children.Clear();
         damagePanel.Children.Clear();
-
-        selectedVehiclePanel.Header = _consist.Selected is null
-            ? App.Loc["SelectedVehicle"]
-            : $"{App.Loc["SelectedVehicle"]}: " +
-              (_consist.Selected.Grouped ? Consist.UnitLabel(_consist.Selected) : _consist.Selected.Cars[0].Name);
 
         if (_consist.Selected != null && !_consist.Selected.Cars.Contains(_consist.SelectedCar!))
             _consist.SelectedCar = _consist.Selected.Cars[0];
 
         _refreshChrome();
 
-        loadsPanel.Children.Add(BuildConsistLoadTools());
-
         if (_consist.Selected is null)
         {
-            generalPanel.Children.Add(DetailHint(App.Loc["SelectVehicleHint"]));
-            consistTexturePanel.Children.Add(DetailHint(App.Loc["SelectVehicleHint"]));
-            couplerPanel.Children.Add(DetailHint(App.Loc["SelectVehicleHint"]));
-            brakesPanel.Children.Add(DetailHint(App.Loc["SelectVehicleHint"]));
-            loadsPanel.Children.Add(DetailHint(App.Loc["SelectVehicleHint"]));
-            damagePanel.Children.Add(DetailHint(App.Loc["SelectVehicleHint"]));
+            generalPanel.Children.Add(PanelNote(App.Loc["SelectVehicleHint"]));
+            consistTexturePanel.Children.Add(PanelNote(App.Loc["SelectVehicleHint"]));
+            couplerPanel.Children.Add(PanelNote(App.Loc["SelectVehicleHint"]));
+            brakesPanel.Children.Add(PanelNote(App.Loc["SelectVehicleHint"]));
+            loadsPanel.Children.Add(PanelNote(App.Loc["SelectVehicleHint"]));
+            damagePanel.Children.Add(PanelNote(App.Loc["SelectVehicleHint"]));
             removeVehicleButton.IsEnabled = false;
+            // The whole-consist tools still apply with nothing selected.
+            AddConsistLoadSection();
             return;
         }
 
@@ -100,27 +97,36 @@ public sealed class VehicleDetails
         if (_db.TextureForSkin(_consist.ActiveCar(_consist.Selected).SkinFile) is { } tex)
             _showTextureInfo(tex, consistTexturePanel);
         else
-            consistTexturePanel.Children.Add(DetailHint(App.Loc["NoTextureInfo"]));
+            consistTexturePanel.Children.Add(PanelNote(App.Loc["NoTextureInfo"]));
 
         removeVehicleButton.IsEnabled = true;
 
         if (_consist.Selected.Cars.Count > 1)
         {
-            couplerPanel.Children.Add(UnitScopeHint(App.Loc["CouplingUnitRear"]));
-            brakesPanel.Children.Add(UnitScopeHint(App.Loc["AppliesToUnit"]));
+            couplerPanel.Children.Add(PanelNote(App.Loc["CouplingUnitRear"]));
+            brakesPanel.Children.Add(PanelNote(App.Loc["AppliesToUnit"]));
         }
 
         BuildCouplerEditor(_consist.Selected);
         BuildBrakesEditor(_consist.Selected);
-        BuildLoadsEditor(_consist.Selected);
-        BuildConfigExtras(_consist.Selected);
         BuildDamageEditor(_consist.Selected);
+
+        // Configuration tab: what this vehicle is, what it carries, then the actions
+        // that reach past it - each under a header that says which is which.
+        loadsPanel.Children.Add(
+            Section(App.Loc["Vehicle"], BuildVehicleSection(_consist.Selected)));
+        loadsPanel.Children.Add(
+            Section(App.Loc["Load"], BuildLoadSection(_consist.Selected)));
+        AddConsistLoadSection();
     }
 
     private void BuildGeneralInfo(ConsistItem item)
     {
         var car = _consist.ActiveCar(item);
         var inv = CultureInfo.InvariantCulture;
+
+        if (!string.IsNullOrWhiteSpace(car.Name))
+            generalPanel.Children.Add(Reading(App.Loc["Name"], car.Name));
 
         bool unit = item.Cars.Count > 1;
         var members = item.Cars.Select(_info.PhysicsFor).Where(p => p != null).ToList();
@@ -132,49 +138,19 @@ public sealed class VehicleDetails
         double? vmax = members.Count == 0 ? null
             : unit ? members.Min(p => p!.VMax) : members[0]!.VMax;
 
-        generalPanel.Children.Add(InfoRow($"{App.Loc["Length"]} [m]:",
+        generalPanel.Children.Add(Reading($"{App.Loc["Length"]} [m]",
             length?.ToString("0.##", inv)));
-        generalPanel.Children.Add(InfoRow($"{App.Loc["Mass"]} [t]:",
+        generalPanel.Children.Add(Reading($"{App.Loc["Mass"]} [t]",
             mass?.ToString("0.#", inv)));
-        generalPanel.Children.Add(InfoRow($"{App.Loc["VMax"]} [km/h]:",
+        generalPanel.Children.Add(Reading($"{App.Loc["VMax"]} [km/h]",
             vmax?.ToString("0", inv)));
 
         if (unit)
-            generalPanel.Children.Add(InfoRow($"{App.Loc["VehicleCount"]}:",
+            generalPanel.Children.Add(Reading(App.Loc["VehicleCount"],
                 item.Cars.Count.ToString(inv)));
 
-        generalPanel.Children.Add(InfoRow($"{App.Loc["Model"]}:", car.MmdFile));
-        generalPanel.Children.Add(InfoRow($"{App.Loc["Texture"]}:", car.SkinFile));
-    }
-
-    private static Control InfoRow(string label, string? value)
-    {
-        var grid = new Grid { ColumnDefinitions = new ColumnDefinitions("Auto,10,*") };
-
-        var caption = new TextBlock
-        {
-            Text = label,
-            FontSize = 12,
-            MinWidth = 110,
-            TextAlignment = TextAlignment.Right,
-            HorizontalAlignment = HorizontalAlignment.Right,
-            VerticalAlignment = VerticalAlignment.Center
-        };
-
-        var reading = new TextBlock
-        {
-            Text = string.IsNullOrWhiteSpace(value) ? "–" : value,
-            FontSize = 12,
-            TextAlignment = TextAlignment.Right,
-            HorizontalAlignment = HorizontalAlignment.Right,
-            VerticalAlignment = VerticalAlignment.Center,
-            TextWrapping = TextWrapping.Wrap
-        };
-
-        Grid.SetColumn(reading, 2);
-        grid.Children.Add(caption);
-        grid.Children.Add(reading);
-        return grid;
+        generalPanel.Children.Add(Reading(App.Loc["Model"], car.MmdFile));
+        generalPanel.Children.Add(Reading(App.Loc["Texture"], car.SkinFile));
     }
 
     private void BuildCouplerEditor(ConsistItem item)
@@ -187,12 +163,17 @@ public sealed class VehicleDetails
 
         var d = Consist.TailCar(item);
 
-        var grid = new Grid
+        // Two columns: the tab is wide enough and the list is short enough
+        // to avoid scrolling while still reading left-to-right, top-to-bottom.
+        var list = new Grid
         {
-            ColumnDefinitions = new ColumnDefinitions("*,8,*"),
-            RowDefinitions = new RowDefinitions("Auto,Auto,Auto,Auto"),
-            RowSpacing = 4
+            ColumnDefinitions = new ColumnDefinitions("*,*"),
+            RowSpacing = 2,
+            ColumnSpacing = 16
         };
+        for (int r = 0; r < (CouplingBits.BitKeys.Length + 1) / 2; r++)
+            list.RowDefinitions.Add(new RowDefinition(GridLength.Auto));
+
         for (int i = 0; i < CouplingBits.BitKeys.Length; i++)
         {
             int bit = 1 << i;
@@ -207,17 +188,16 @@ public sealed class VehicleDetails
                 d.Coupling.Set(bit, check.IsChecked == true);
                 _redraw();
             };
-            int half = (CouplingBits.BitKeys.Length + 1) / 2;
-            Grid.SetColumn(check, i < half ? 0 : 2);
-            Grid.SetRow(check, i % half);
-            grid.Children.Add(check);
+            Grid.SetRow(check, i / 2);
+            Grid.SetColumn(check, i % 2);
+            list.Children.Add(check);
         }
-        couplerPanel.Children.Add(grid);
+        couplerPanel.Children.Add(list);
 
         var copy = new Button
         {
             Content = App.Loc["CopyCoupler"],
-            FontSize = 11,
+            FontSize = 12,
             Cursor = _hand,
             HorizontalAlignment = HorizontalAlignment.Stretch,
             HorizontalContentAlignment = HorizontalAlignment.Center,
@@ -235,7 +215,7 @@ public sealed class VehicleDetails
         var auto = new Button
         {
             Content = App.Loc["AutoCoupler"],
-            FontSize = 11,
+            FontSize = 12,
             Cursor = _hand,
             HorizontalAlignment = HorizontalAlignment.Stretch,
             HorizontalContentAlignment = HorizontalAlignment.Center,
@@ -250,19 +230,23 @@ public sealed class VehicleDetails
             Refresh();
         };
 
-        var buttons = new Grid
+        // Laid out horizontally under the checkbox list so the grid can use the full tab width
+        var buttons = new StackPanel
         {
-            ColumnDefinitions = new ColumnDefinitions("125*,4,48*"),
+            Orientation = Orientation.Horizontal,
+            Spacing = 4,
             Margin = new Thickness(0, 6, 0, 0)
         };
-        Grid.SetColumn(copy, 0);
-        Grid.SetColumn(auto, 2);
         buttons.Children.Add(copy);
         buttons.Children.Add(auto);
-        couplerPanel.Children.Add(buttons);
+        couplerActions.Children.Add(buttons);
     }
 
-    private void BuildConfigExtras(ConsistItem item)
+    /// <summary>
+    /// The vehicle's own settings. Every write path is unchanged: crew and wagon number
+    /// go through the unit's active car, the coolant flag to its first car only.
+    /// </summary>
+    private Control BuildVehicleSection(ConsistItem item)
     {
         var driver = new ComboBox { FontSize = 12, MinWidth = 0 };
         foreach (string key in new[] { "DriverHead", "DriverRear", "DriverPassenger", "DriverNobody" })
@@ -296,74 +280,142 @@ public sealed class VehicleDetails
         };
         driver.MinWidth = 0;
         driver.HorizontalAlignment = HorizontalAlignment.Stretch;
-        loadsPanel.Children.Insert(0, LabeledRow(App.Loc["CrewLabel"], driver, labelWidth: 70));
 
-        var reversed = new CheckBox
-        {
-            Content = App.Loc["Reversed"],
-            IsChecked = item.Flipped,
-            FontSize = 11
-        };
-        reversed.IsCheckedChanged += (_, _) =>
-        {
-            if ((reversed.IsChecked == true) != item.Flipped)
-                _consist.Flip(item);
-        };
+        var rows = new StackPanel();
+        rows.Children.Add(Row(App.Loc["CrewLabel"], driver));
 
+        if (IsPassengerVehicle(item))
+        {
+            var lead = item.Cars[0];
+            var numBox = new NumericUpDown
+            {
+                FontSize = 12,
+                Minimum = 0,
+                Maximum = 99999,
+                Increment = 1,
+                Value = Consist.GetWagonNumber(lead),
+                FormatString = "0"
+            };
+            numBox.ValueChanged += (_, _) =>
+            {
+                _consist.SetWagonNumber(lead, (int)(numBox.Value ?? 0));
+                _redraw();
+            };
+            rows.Children.Add(Row(App.Loc["WagonNumber"], numBox));
+        }
+
+        // Orientation is not here any more: it reads and toggles off the flip button on
+        // the vehicle's own card, which lights up when the vehicle sits reversed.
+        // The flag rides on the unit's first car, so that is the car that has to own a
+        // diesel engine for it to mean anything: the simulator runs its heat model only
+        // for DieselEngine and DieselElectric, and on anything else ".TA" is written into
+        // the scenario and then ignored. Shown anyway when the flag is already set, so an
+        // inherited one stays visible and removable.
         var d = item.Cars[0];
-        var thermo = new CheckBox
-        {
-            Content = App.Loc["ThermoAmbient"],
-            IsChecked = d.Coupling.ThermoDynamic,
-            FontSize = 11
-        };
-        thermo.IsCheckedChanged += (_, _) => d.Coupling.ThermoDynamic = thermo.IsChecked == true;
+        bool thermoApplies = _info.PhysicsFor(d)?.IsDieselEngine == true
+                             || d.Coupling.ThermoDynamic;
 
-        var switches = new Grid
+        if (thermoApplies)
         {
-            ColumnDefinitions = new ColumnDefinitions("*,8,*"),
-            Margin = new Thickness(0, 4, 0, 0)
-        };
-        Grid.SetColumn(thermo, 2);
-        switches.Children.Add(reversed);
-        switches.Children.Add(thermo);
-        loadsPanel.Children.Add(switches);
+            var thermo = new CheckBox
+            {
+                Content = App.Loc["ThermoAmbient"],
+                IsChecked = d.Coupling.ThermoDynamic,
+                FontSize = 12
+            };
+            thermo.IsCheckedChanged += (_, _) => d.Coupling.ThermoDynamic = thermo.IsChecked == true;
+
+            // Label-less row, so the box indents to the control column with everything
+            // else instead of starting at the panel's left edge on its own.
+            rows.Children.Add(Row(content: thermo));
+        }
+
+        return rows;
     }
 
-    private static TextBlock UnitScopeHint(string text) => new()
+    private bool IsPassengerVehicle(ConsistItem item)
+    {
+        var lead = _consist.ActiveCar(item);
+        var phys = _info.PhysicsFor(lead);
+        if (phys == null)
+            return false;
+        return phys.LoadAccepted.Split(',', ';')
+            .Select(s => s.Trim())
+            .Where(s => s.Length > 0)
+            .Any(s => s.Equals("passengers", StringComparison.OrdinalIgnoreCase));
+    }
+
+    /// <summary>
+    /// The one row shape every detail tab uses. The label column negotiates its width
+    /// through the shared-size group on the host panel, so all rows in a panel line up
+    /// without anyone naming a pixel count - see the Compact styles in Settings.axaml.
+    /// Omitting <paramref name="content"/> makes it a read-only line; omitting
+    /// <paramref name="label"/> indents a bare widget to the control column.
+    /// </summary>
+    private static SettingRow Row(string? label = null, Control? content = null,
+                                  string? value = null, string? description = null,
+                                  string? tip = null)
+    {
+        var row = new SettingRow
+        {
+            Label = label,
+            Description = description,
+            ValueText = value,
+            Content = content
+        };
+        row.Classes.Add("Compact");
+        if (!string.IsNullOrWhiteSpace(tip))
+            ToolTip.SetTip(row, tip);
+        return row;
+    }
+
+    /// <summary>
+    /// A read-only label/value line. The dash keeps the row from collapsing when a
+    /// vehicle has no reading for the field.
+    /// </summary>
+    private static SettingRow Reading(string label, string? value)
+    {
+        bool empty = string.IsNullOrWhiteSpace(value);
+        return Row(label, value: empty ? "\u2013" : value, tip: empty ? null : value);
+    }
+
+    private static SettingsSection Section(string header, Control content, Control? meta = null)
+    {
+        var section = new SettingsSection
+        {
+            Header = header,
+            Content = content,
+            // Passive text only: Toggle sits outside the logical tree, so nothing put
+            // here can be found later with GetLogicalDescendants.
+            Toggle = meta
+        };
+        section.Classes.Add("Compact");
+        return section;
+    }
+
+    private static StackPanel Stack(params Control[] children)
+    {
+        var panel = new StackPanel { Spacing = 3 };
+        foreach (var c in children)
+            panel.Children.Add(c);
+        return panel;
+    }
+
+    private static readonly IBrush DimBrush = new SolidColorBrush(Color.Parse("#9098A0"));
+
+    /// <summary>
+    /// A note that governs a whole panel or section rather than one row - same look as a
+    /// row's description line. Replaces the old DetailHint/UnitScopeHint pair, which
+    /// differed only by a 2 px margin.
+    /// </summary>
+    private static TextBlock PanelNote(string text) => new()
     {
         Text = text,
-        FontSize = 11,
-        Opacity = 0.6,
+        FontSize = 12,
+        Foreground = DimBrush,
         TextWrapping = TextWrapping.Wrap,
-        Margin = new Thickness(0, 0, 0, 2)
+        Margin = new Thickness(0, 0, 0, 8)
     };
-
-    private static TextBlock DetailHint(string text) => new()
-    {
-        Text = text, Opacity = 0.6, FontSize = 12, TextWrapping = TextWrapping.Wrap
-    };
-
-    private static Control LabeledRow(string label, Control control, double labelWidth = 120)
-    {
-        var grid = new Grid { ColumnDefinitions = new ColumnDefinitions("Auto,8,*") };
-
-        var caption = new TextBlock
-        {
-            Text = label,
-            FontSize = 12,
-            MinWidth = labelWidth,
-            TextAlignment = TextAlignment.Right,
-            HorizontalAlignment = HorizontalAlignment.Right,
-            VerticalAlignment = VerticalAlignment.Center
-        };
-
-        control.HorizontalAlignment = HorizontalAlignment.Stretch;
-        Grid.SetColumn(control, 2);
-        grid.Children.Add(caption);
-        grid.Children.Add(control);
-        return grid;
-    }
 
     private static void AddOption(ComboBox combo, string content, string? tag)
         => combo.Items.Add(new ComboBoxItem { Content = content, Tag = tag });
@@ -402,9 +454,9 @@ public sealed class VehicleDetails
         switchCombo.SelectionChanged += (_, _) => Apply();
         loadCombo.SelectionChanged += (_, _) => Apply();
 
-        brakesPanel.Children.Add(LabeledRow(App.Loc["BrakeMode"], modeCombo, labelWidth: 96));
-        brakesPanel.Children.Add(LabeledRow(App.Loc["BrakeSwitch"], switchCombo, labelWidth: 96));
-        brakesPanel.Children.Add(LabeledRow(App.Loc["BrakeLoad"], loadCombo, labelWidth: 96));
+        brakesPanel.Children.Add(Row(App.Loc["BrakeMode"], modeCombo));
+        brakesPanel.Children.Add(Row(App.Loc["BrakeSwitch"], switchCombo));
+        brakesPanel.Children.Add(Row(App.Loc["BrakeLoad"], loadCombo));
     }
 
     private static string BrakeModeLabel(string? code) => code switch
@@ -413,7 +465,6 @@ public sealed class VehicleDetails
         "P" => App.Loc["BrakePassenger"],
         "R" => App.Loc["BrakeExpress"],
         "M" => App.Loc["BrakeExpressMg"],
-        "Q" => App.Loc["BrakeNoAir"],
         _ => App.Loc["BrakeActingNone"]
     };
 
@@ -427,8 +478,12 @@ public sealed class VehicleDetails
 
     private static string SwitchLabel(string? code) => code switch
     {
+        "<>" => App.Loc["SwitchEmergencyTest"],
         "0" => App.Loc["SwitchOff"],
         "1" => App.Loc["SwitchOff10"],
+        "X" => App.Loc["SwitchAgonal"],
+        "E" => App.Loc["SwitchEmptied"],
+        "Q" => App.Loc["BrakeNoAir"],
         _ => App.Loc["SwitchNormal"]
     };
 
@@ -439,7 +494,7 @@ public sealed class VehicleDetails
         NumericUpDown Spin(int value, int max) => new()
         {
             FontSize = 12, Minimum = 0, Maximum = max, Increment = 1,
-            Value = value, MinWidth = 0, Width = 100, FormatString = "0"
+            Value = value, MinWidth = 0, FormatString = "0"
         };
 
         var sway = Spin(w.Sway, 100);
@@ -465,84 +520,100 @@ public sealed class VehicleDetails
         flatRand.ValueChanged += (_, _) => Apply();
         flatProb.ValueChanged += (_, _) => Apply();
 
-        var grid = new Grid
-        {
-            ColumnDefinitions = new ColumnDefinitions("*,8,Auto"),
-            RowSpacing = 6
-        };
-        void Row(string label, Control control)
-        {
-            int r = grid.RowDefinitions.Count;
-            grid.RowDefinitions.Add(new RowDefinition(GridLength.Auto));
-
-            var caption = new TextBlock
-            {
-                Text = label, FontSize = 12,
-                TextWrapping = TextWrapping.Wrap,
-                TextAlignment = TextAlignment.Right,
-                VerticalAlignment = VerticalAlignment.Center
-            };
-            Grid.SetRow(caption, r);
-            Grid.SetColumn(caption, 0);
-
-            control.HorizontalAlignment = HorizontalAlignment.Right;
-            Grid.SetRow(control, r);
-            Grid.SetColumn(control, 2);
-
-            grid.Children.Add(caption);
-            grid.Children.Add(control);
-        }
-
-        Row(App.Loc["DamageSway"], sway);
-        Row(App.Loc["DamageFlatness"], flat);
-        Row(App.Loc["DamageFlatnessRand"], flatRand);
-        Row(App.Loc["DamageFlatnessProb"], flatProb);
-        damagePanel.Children.Add(grid);
+        damagePanel.Children.Add(Row(App.Loc["DamageSway"], sway));
+        damagePanel.Children.Add(Row(App.Loc["DamageFlatness"], flat));
+        damagePanel.Children.Add(Row(App.Loc["DamageFlatnessRand"], flatRand));
+        damagePanel.Children.Add(Row(App.Loc["DamageFlatnessProb"], flatProb));
     }
 
-    private Control BuildConsistLoadTools()
+    /// <summary>
+    /// The three actions that fill the selected vehicle from its neighbours. They keep
+    /// the primary (filled) look because they act on what you have selected.
+    /// </summary>
+    private Control BuildVehicleLoadTools(ConsistItem sel)
     {
-        var panel = new StackPanel { Spacing = 4, Margin = new Thickness(0, 0, 0, 4) };
-        var row = new WrapPanel { Orientation = Orientation.Horizontal };
-        row.Children.Add(LoadToolButton(App.Loc["ConsistRandomType"],
-            () => { _cargo.RandomTypes(_consist); _redraw(); }));
-        row.Children.Add(LoadToolButton(App.Loc["ConsistMaxAmount"],
-            () => { _cargo.MaxAmounts(_consist); _redraw(); }));
-        row.Children.Add(LoadToolButton(App.Loc["ConsistRandomAmount"],
-            () => { _cargo.RandomAmounts(_consist); _redraw(); }));
-        panel.Children.Add(row);
-        return panel;
+        bool loadable = _cargo.IsLoadable(sel);
+
+        var prev = LoadToolButton(App.Loc["LoadPrevShort"],
+            () => { if (_consist.Selected is { } s) { _cargo.CopyFromPrevious(_consist, s); _redraw(); } });
+        prev.IsEnabled = loadable && _consist.IndexOf(sel) > 0;
+        ToolTip.SetTip(prev, App.Loc["LoadCopyPrev"]);
+
+        var max = LoadToolButton(App.Loc["LoadMaxShort"],
+            () => { if (_consist.Selected is { } s) { _cargo.FillUnit(s); _redraw(); } });
+        max.IsEnabled = loadable;
+        ToolTip.SetTip(max, App.Loc["LoadMax"]);
+
+        var toAll = LoadToolButton(App.Loc["LoadToAllShort"],
+            () => { if (_consist.Selected is { } s) { _cargo.CopyToFollowing(_consist, s); _redraw(); } });
+        toAll.IsEnabled = loadable;
+        ToolTip.SetTip(toAll, App.Loc["LoadCopyToAll"]);
+
+        return Stack(prev, max, toAll);
     }
 
-    private Button LoadToolButton(string text, Action onClick)
+    /// <summary>
+    /// The whole-consist actions. Secondary styling plus a header that names the scope
+    /// and counts the vehicles, because these reach far past the selected card. No
+    /// tooltips: theirs used to repeat the button label word for word.
+    /// </summary>
+    private void AddConsistLoadSection()
+    {
+        if (_consist.Count == 0)
+            return;
+
+        var buttons = Stack(
+            LoadToolButton(App.Loc["ConsistRandomType"],
+                () => { _cargo.RandomTypes(_consist); _redraw(); }, secondary: true),
+            LoadToolButton(App.Loc["ConsistMaxAmount"],
+                () => { _cargo.MaxAmounts(_consist); _redraw(); }, secondary: true),
+            LoadToolButton(App.Loc["ConsistRandomAmount"],
+                () => { _cargo.RandomAmounts(_consist); _redraw(); }, secondary: true));
+
+        var count = new TextBlock
+        {
+            Text = $"{App.Loc["VehicleCount"]}: {_consist.Count}",
+            FontSize = 12,
+            Foreground = DimBrush,
+            VerticalAlignment = VerticalAlignment.Center
+        };
+
+        loadsPanel.Children.Add(Section(App.Loc["ConsistLoadTools"], buttons, count));
+    }
+
+    private Button LoadToolButton(string text, Action onClick, bool secondary = false)
     {
         var b = new Button
         {
-            Content = text, FontSize = 11, Margin = new Thickness(0, 0, 4, 4),
-            Padding = new Thickness(8, 3), Cursor = _hand,
+            Content = text, FontSize = 12,
+            Padding = new Thickness(6, 2), Cursor = _hand,
+            HorizontalAlignment = HorizontalAlignment.Stretch,
+            HorizontalContentAlignment = HorizontalAlignment.Center,
             IsEnabled = _consist.Count > 0
         };
-        b.Classes.Add("Flat");
+        b.Classes.Add(secondary ? "Outline" : "Flat");
         b.Click += (_, _) => onClick();
         return b;
     }
 
-    private void BuildLoadsEditor(ConsistItem item)
+    /// <summary>
+    /// What the selected vehicle carries, and the actions that fill it. A vehicle that
+    /// takes no cargo gets the note alone - previously the three actions stayed behind,
+    /// greyed out and useless.
+    /// </summary>
+    private Control BuildLoadSection(ConsistItem item)
     {
         var lead = _consist.ActiveCar(item);
         var available = _cargo.AcceptedTypes(lead);
 
         if (available.Count == 0 && string.IsNullOrEmpty(lead.LoadType))
-        {
-            loadsPanel.Children.Add(DetailHint(App.Loc["LoadNotLoadable"]));
-            return;
-        }
+            return PanelNote(App.Loc["LoadNotLoadable"]);
 
         if (!string.IsNullOrEmpty(lead.LoadType) &&
             !available.Contains(lead.LoadType!, StringComparer.OrdinalIgnoreCase))
             available.Insert(0, lead.LoadType!);
 
-        var typeCombo = new ComboBox { FontSize = 12, MinWidth = 0 };
+        var typeCombo = new ComboBox { FontSize = 12, MinWidth = 120 };
         typeCombo.Items.Add(new ComboBoxItem { Content = App.Loc["None"], Tag = null });
         foreach (var name in available)
             typeCombo.Items.Add(new ComboBoxItem { Content = LoadWeights.Describe(name), Tag = name });
@@ -557,41 +628,129 @@ public sealed class VehicleDetails
                     break;
                 }
 
+        string? SelectedType() => (typeCombo.SelectedItem as ComboBoxItem)?.Tag as string;
+        bool IsPant() => Dynamic.IsPantStateType(SelectedType());
+
         int limit = _cargo.LimitFor(lead);
         var countBox = new NumericUpDown
         {
             FontSize = 12, Minimum = 0, Maximum = limit, Increment = 1,
-            Value = Math.Min(lead.LoadCount, limit), MinWidth = 120, FormatString = "0"
+            Value = Math.Min(lead.LoadCount, limit), FormatString = "0",
+            HorizontalAlignment = HorizontalAlignment.Stretch
         };
 
-        var pantHint = DetailHint(App.Loc["LoadPantStateHint"]);
-        pantHint.IsVisible = lead.IsPantState;
+        var pantStateCombo = new ComboBox
+        {
+            FontSize = 12, MinWidth = 0,
+            HorizontalAlignment = HorizontalAlignment.Stretch
+        };
+        pantStateCombo.Items.Add(new ComboBoxItem { Content = App.Loc["PantStateNone"], Tag = 0 });
+        pantStateCombo.Items.Add(new ComboBoxItem { Content = "A", Tag = 1 });
+        pantStateCombo.Items.Add(new ComboBoxItem { Content = "B", Tag = 2 });
+        pantStateCombo.Items.Add(new ComboBoxItem { Content = App.Loc["PantStateBoth"], Tag = 3 });
 
-        string? SelectedType() => (typeCombo.SelectedItem as ComboBoxItem)?.Tag as string;
+        var countContainer = new Panel();
+        countContainer.Children.Add(countBox);
+        countContainer.Children.Add(pantStateCombo);
+
+        string UnitText()
+        {
+            var phys = _info.PhysicsFor(lead);
+            if (phys == null) return App.Loc["LoadUnitGeneric"];
+            if (string.Equals(phys.LoadQ, "pieces", StringComparison.OrdinalIgnoreCase))
+                return App.Loc["LoadUnitPieces"];
+            if (string.Equals(phys.LoadQ, "tonns", StringComparison.OrdinalIgnoreCase))
+                return App.Loc["LoadUnitTons"];
+            return App.Loc["LoadUnitGeneric"];
+        }
+
+        var countRow = Row(App.Loc["LoadCount"], countContainer);
+
+        void SyncPantStateFromCount()
+        {
+            int value = Math.Clamp((int)(countBox.Value ?? 0), 0, Dynamic.PantStateMax);
+            foreach (var obj in pantStateCombo.Items)
+                if (obj is ComboBoxItem ci && ci.Tag is int t && t == value)
+                {
+                    pantStateCombo.SelectedItem = ci;
+                    return;
+                }
+        }
+
+        void SyncCountFromPantState()
+        {
+            int value = pantStateCombo.SelectedItem is ComboBoxItem { Tag: int t } ? t : 0;
+            countBox.Value = Math.Clamp(value, 0, countBox.Maximum);
+        }
+
+        void UpdateVisibility()
+        {
+            bool pant = IsPant();
+            countBox.IsVisible = !pant;
+            pantStateCombo.IsVisible = pant;
+            // The unit slot is reserved by the Compact style even when empty, so the
+            // spinner does not jump sideways as the unit comes and goes.
+            countRow.Label = pant ? App.Loc["Pantograph"] : App.Loc["LoadCount"];
+            countRow.ValueText = pant ? null : UnitText();
+            // The "set an amount above 0" advice is only true while the amount is 0;
+            // past that it is a line of noise in a panel with no height to spare.
+            countRow.Description = pant ? App.Loc["LoadPantStateHint"]
+                : GetCount() == 0 ? App.Loc["LoadHint"]
+                : null;
+        }
+
+        int GetCount()
+        {
+            if (IsPant())
+                return pantStateCombo.SelectedItem is ComboBoxItem { Tag: int t } ? t : 0;
+            return (int)(countBox.Value ?? 0);
+        }
 
         void Apply()
         {
             string? type = SelectedType();
-            int count = (int)(countBox.Value ?? 0);
+            int count = GetCount();
             foreach (var c in _consist.MemberTargets(item))
             {
-
                 c.LoadType = string.IsNullOrEmpty(type) ? null : type;
                 c.LoadCount = string.IsNullOrEmpty(type) ? 0 : Math.Min(count, _cargo.LimitFor(c, type));
             }
         }
 
+        // Seed the pantograph combo from the model before any handler is listening.
+        SyncPantStateFromCount();
+        bool wasPant = IsPant();
+
         typeCombo.SelectionChanged += (_, _) =>
         {
-            string? type = SelectedType();
-            pantHint.IsVisible = Dynamic.IsPantStateType(type);
-            countBox.Maximum = _cargo.LimitFor(lead, type);
+            countBox.Maximum = _cargo.LimitFor(lead, SelectedType());
+
+            // Both widgets edit the same LoadCount, so the value is carried across only
+            // when the mode actually flips. Doing it unconditionally - as UpdateVisibility
+            // used to - reset the amount to zero on every rebuild, which is why setting
+            // the maximum load appeared to do nothing: the model was written, the panel
+            // refreshed, and the refresh immediately wrote zero back.
+            bool pant = IsPant();
+            if (pant != wasPant)
+            {
+                if (pant)
+                    SyncPantStateFromCount();
+                else
+                    SyncCountFromPantState();
+                wasPant = pant;
+            }
+
+            UpdateVisibility();
             Apply();
         };
-        countBox.ValueChanged += (_, _) => Apply();
+        pantStateCombo.SelectionChanged += (_, _) => Apply();
+        countBox.ValueChanged += (_, _) => { Apply(); UpdateVisibility(); };
 
-        loadsPanel.Children.Add(LabeledRow(App.Loc["LoadType"], typeCombo));
-        loadsPanel.Children.Add(LabeledRow(App.Loc["LoadCount"], countBox));
-        loadsPanel.Children.Add(pantHint);
+        UpdateVisibility();
+
+        return Stack(
+            Row(App.Loc["LoadType"], typeCombo),
+            countRow,
+            BuildVehicleLoadTools(item));
     }
 }

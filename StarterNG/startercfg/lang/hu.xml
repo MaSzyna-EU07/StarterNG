@@ -69,7 +69,7 @@
     <String key="OptionalIncludes">Opcionális elemek</String>
     <String key="OpenTextureFolder">Textúramappa megnyitása</String>
     <String key="CopyTextureName">Név másolása</String>
-    <String key="CopyCoupler">Kapcsolókészülék másolása az előzőről</String>
+    <String key="CopyCoupler">Másolás az előzőről</String>
     <String key="ThermoAmbient">Hűtőfolyadék környezeti hőmérsékleten</String>
     <String key="TextureInfo">Textúra</String>
     <String key="TexOperator">Üzemeltető</String>
@@ -185,6 +185,9 @@
     <String key="SwitchNormal">N - fék bekapcsolva</String>
     <String key="SwitchOff">0 - kikapcsolva, oldva</String>
     <String key="SwitchOff10">1 - kikapcsolva, oldva (10%)</String>
+    <String key="SwitchEmergencyTest">&lt;&gt; - kikapcsolva gyorsfékpróbához</String>
+    <String key="SwitchAgonal">X - elhasználódott (20% ki, véletlen)</String>
+    <String key="SwitchEmptied">E - kiürítve (vezetékek 0-n)</String>
 
     <!-- Damage (wheel parameters) -->
     <String key="Damage">Sérülés</String>
@@ -194,15 +197,24 @@
     <String key="DamageFlatnessProb">Laposodás valószínűsége (%)</String>
     <String key="LoadType">Rakomány típusa</String>
     <String key="LoadCount">Mennyiség</String>
+    <String key="LoadUnitPieces">db</String>
+    <String key="LoadUnitTons">t</String>
+    <String key="LoadUnitGeneric">egys.</String>
     <String key="LoadHint">A jármű megrakásához adjon meg 0-nál nagyobb mennyiséget.</String>
     <String key="LoadNotLoadable">Ez a jármű nem fogad rakományt.</String>
     <String key="LoadPantState">Felemelt áramszedő induláskor</String>
     <String key="LoadPantStateHint">A mennyiség az áramszedőt választja ki: 1 — A, 2 — B, 3 — mindkettő.</String>
+    <String key="Pantograph">Áramszedő</String>
+    <String key="PantStateNone">Egyik sem</String>
+    <String key="PantStateBoth">Mindkettő</String>
     <String key="WagonNumber">Kocsiszám</String>
     <String key="LoadCopyPrev">Rakomány másolása az előző járműről</String>
     <String key="LoadMax">Legnagyobb lehetséges rakomány</String>
+    <String key="LoadPrevShort">Az előzőről</String>
+    <String key="LoadToAllShort">A következőkre</String>
+    <String key="LoadMaxShort">Legnagyobb</String>
     <String key="ConsistLoadTools">A teljes szerelvény rakománya</String>
-    <String key="ConsistRandomType">Véletlen rakomány</String>
+    <String key="ConsistRandomType">Véletlen típus</String>
     <String key="ConsistMaxAmount">Legnagyobb mennyiség</String>
     <String key="ConsistRandomAmount">Véletlen mennyiség</String>
     <String key="Set">Beállítás</String>
@@ -252,6 +264,7 @@
     <String key="CouplingUnitRear">Az egység végén lévő kapcsolókészülék</String>
     <String key="Join">Összekapcsolás</String>
     <String key="TipJoin">A jármű összekapcsolása a következővel egy egységgé</String>
+    <String key="TipReorder">Húzza az átrendezéshez</String>
     <String key="AddVehicle">Hozzáadás</String>
     <String key="TipAddVehicle">Jármű hozzáadása a szerelvényhez</String>
     <String key="TipAddUnit">A teljes egység hozzáadása a szerelvényhez</String>
@@ -278,7 +291,7 @@
     <String key="Fullscreen">Teljes képernyő</String>
     <String key="PauseSimInactive">Szimuláció szüneteltetése inaktív ablaknál</String>
     <String key="PauseSimStart">Szüneteltetés indításkor</String>
-    <String key="CursorSensitivity">Kurzorérzékenység:</String>
+    <String key="CursorSensitivity">Kurzorérzékenység</String>
     <String key="MouseHorInvert">Egér vízszintes megfordítása</String>
     <String key="MouseVertInvert">Egér függőleges megfordítása</String>
 
@@ -309,7 +322,7 @@
     <String key="UartRadioChannel">Rádiócsatorna</String>
 
     <String key="Others">Egyéb</String>
-    <String key="SelectEXE">Exe kiválasztása:</String>
+    <String key="SelectEXE">Exe kiválasztása</String>
     <String key="SelectEXEAuto">Automatikus kiválasztás</String>
     <String key="DebugMode">Hibakeresési mód (teszt mód)</String>
     <String key="VirtualShunting">Virtuális tolatás</String>
@@ -324,12 +337,12 @@
     <String key="REOff">Vizuális réteg kikapcsolása</String>
     <String key="REExperimental">Kísérleti</String>
 
-    <String key="Resolution">Felbontás:</String>
-    <String key="BufforResolution">Puffer felbontása:</String>
-    <String key="MaxTexResolution">Textúrák legnagyobb felbontása:</String>
-    <String key="MaxTexCabResolution">Vezetőállás-textúrák legnagyobb felbontása:</String>
-    <String key="TexFilteringQuality">Textúraszűrés minősége:</String>
-    <String key="Multisampling">Multisampling:</String>
+    <String key="Resolution">Felbontás</String>
+    <String key="BufforResolution">Puffer felbontása</String>
+    <String key="MaxTexResolution">Textúrák legnagyobb felbontása</String>
+    <String key="MaxTexCabResolution">Vezetőállás-textúrák legnagyobb felbontása</String>
+    <String key="TexFilteringQuality">Textúraszűrés minősége</String>
+    <String key="Multisampling">Multisampling</String>
     <String key="QualityVeryLow">Nagyon alacsony</String>
     <String key="QualityLow">Alacsony</String>
     <String key="QualityNormal">Normál</String>
@@ -346,8 +359,8 @@
     <String key="RangeHigh">Magas</String>
     <String key="RangeVeryHigh">Nagyon magas</String>
     <String key="RangeDisabled">Kikapcsolva</String>
-    <String key="DynamicLights">Dinamikus fényforrások:</String>
-    <String key="RenderRange">Megjelenítési távolság:</String>
+    <String key="DynamicLights">Dinamikus fényforrások</String>
+    <String key="RenderRange">Megjelenítési távolság</String>
     <String key="FpsLimitEnable">Képkockaszám korlátozása</String>
     <String key="ShadowAngleLimit">Árnyékhossz korlátozása</String>
     <String key="ShadowLimitNone">Nincs korlát</String>
@@ -362,6 +375,7 @@
     <String key="MotionBlur">Mozgási elmosás</String>
     <String key="AdditionalShadersEffects">További shader-effektek</String>
     <String key="ReflectionsCubeMap">Tükröződések cubemapként</String>
+    <String key="SkipPipeline">SkipPipeline</String>
     <String key="RenderVBO">VBO megjelenítés</String>
     <String key="RenderShadows">Árnyékok megjelenítése</String>
     <String key="ReflectionsFramerate">Tükröződések frissítési gyakorisága</String>
@@ -419,14 +433,14 @@
     <String key="IgnoreIrrelevantTrains">Dekorációs szerelvények kihagyása indításkor</String>
 
     <String key="Starter">Starter</String>
-    <String key="SettingsProfile">Beállítási profil:</String>
+    <String key="SettingsProfile">Beállítási profil</String>
     <String key="ProfileApply">Alkalmaz</String>
     <String key="ProfileSaveAs">Mentés másként…</String>
     <String key="ProfileNamePrompt">Profil neve</String>
     <String key="AutoCloseStarter">A starter automatikus bezárása</String>
     <String key="LargeThumbnails">Nagy előnézetek</String>
     <String key="AutoExpandSceneryTree">Pályafa automatikus kibontása</String>
-    <String key="BatteryDefault">Akkumulátor indításkor:</String>
+    <String key="BatteryDefault">Akkumulátor indításkor</String>
     <String key="BatteryDefaultScenario">Forgatókönyv szerint</String>
     <String key="BatteryDefaultOff">Mindig ki</String>
     <String key="BatteryDefaultOn">Mindig be</String>
@@ -455,6 +469,7 @@
     <String key="Save">Mentés</String>
     <String key="Reset">Visszaállítás</String>
     <String key="SettingsSaved">A beállítások elmentve</String>
+    <String key="UnsavedChanges">Nem mentett módosítások</String>
 
     <!-- Errors / diagnostics -->
     <String key="FaultTitle">Hiba</String>
@@ -482,6 +497,7 @@
     <String key="GeneralInfo">Általános</String>
     <String key="Model">Modell</String>
     <String key="VMax">VMax</String>
+    <String key="Name">Név</String>
     <String key="Texture">Textúra</String>
 
     <!-- Scenery tab -->
@@ -509,9 +525,9 @@
     <String key="WarehouseImportFile">Szerelvények hozzáadása fájlból...</String>
     <String key="StartWithoutSaving">Indítás a beállítások mentése nélkül</String>
     <String key="StartFreeFly">Indítás jármű nélkül</String>
-    <String key="VolumePaused">Hangerő szünet alatt:</String>
+    <String key="VolumePaused">Hangerő szünet alatt</String>
     <String key="DebugLogVisible">Szimuláció menetének megjelenítése</String>
-    <String key="PyScreenPriority">Kiegészítő képernyők frissítési gyakorisága:</String>
+    <String key="PyScreenPriority">Kiegészítő képernyők frissítési gyakorisága</String>
     <String key="PyPriorityNormal">Normál</String>
     <String key="PyPriorityLower">Alacsony</String>
     <String key="PyPriorityLowest">Nagyon alacsony</String>
@@ -531,7 +547,7 @@
     <String key="TexWorks">Felújítás:</String>
     <String key="RevisionFrom">Felújítás ettől:</String>
     <String key="RevisionTo">Felújítás eddig:</String>
-    <String key="CrewLabel">Személyzet:</String>
+    <String key="CrewLabel">Személyzet</String>
     <String key="RuleAdd">Hozzáadás a szabályhoz</String>
     <String key="RuleNew">— új szabály —</String>
     <String key="RuleRemove">Eltávolítás a szabályból</String>
@@ -551,4 +567,18 @@
     <String key="AdvLogPage">Eseménynapló</String>
     <String key="AdvClearLog">Napló törlése</String>
     <String key="ConsistSchedule">Összeállítás</String>
+
+    <!-- Billentyűparancsok -->
+    <String key="ShortcutsTitle">Billentyűparancsok</String>
+    <String key="ShortcutsGlobal">Általános</String>
+    <String key="ShortcutsTabHint">A Tab a panelek között lép, a nyilak a listákon belül. A szerelvénysávban a Tab a kijelölt járműre ugrik.</String>
+    <String key="ShortcutShowHelp">Ez a lista</String>
+    <String key="ShortcutFocusSearch">Ugrás a járműkeresőre</String>
+    <String key="ShortcutAddVehicle">A kiválasztott jármű hozzáadása</String>
+    <String key="ShortcutSetNumber">Kocsiszám beállítása</String>
+    <String key="ShortcutPrevNext">Előző / következő jármű</String>
+    <String key="ShortcutFirstLast">Első / utolsó jármű</String>
+    <String key="ShortcutMember">Tag kiválasztása kapcsolt egységen belül</String>
+    <String key="ShortcutMoveVehicle">Jármű mozgatása a szerelvényben</String>
+    <String key="ShortcutCardMenu">Jármű menüjének megnyitása</String>
 </Language>
