@@ -314,8 +314,7 @@ public sealed class VehicleBrowser
 
         var matched = _db.Textures
             .Where(t => PassesFilters(t, search, hasSearch))
-            .OrderBy(BrowserName, StringComparer.OrdinalIgnoreCase)
-            .ThenBy(t => t.Skinfile, StringComparer.OrdinalIgnoreCase)
+            .OrderBy(t => Consist.Base(t.Skinfile), TextureOrder)
             .Take(MaxListRows)
             .ToList();
 
@@ -471,8 +470,7 @@ public sealed class VehicleBrowser
 
         return _db.Textures
             .Where(t => PassesFilters(t, search, hasSearch))
-            .OrderBy(BrowserName, StringComparer.OrdinalIgnoreCase)
-            .ThenBy(t => t.Skinfile, StringComparer.OrdinalIgnoreCase)
+            .OrderBy(t => Consist.Base(t.Skinfile), TextureOrder)
             .ToList();
     }
 
@@ -505,10 +503,12 @@ public sealed class VehicleBrowser
                || C(t.Meta?.Vehicle) || C(t.Meta?.Operator) || C(VehicleInfo.ClassOf(t));
     }
 
-    /// <summary>
-    /// The name the list row carries, and the key it is sorted on - the two have
-    /// to be the same string or the list reads as unordered.
-    /// </summary>
+    // The old starter listed textures by file name and left the ordering to
+    // Delphi's Sorted, which is AnsiCompareText: case-insensitive and locale
+    // aware. Ordinal comparison puts digits, underscores and accented letters
+    // somewhere else entirely, which is why the list looked reshuffled.
+    private static readonly StringComparer TextureOrder = StringComparer.CurrentCultureIgnoreCase;
+
     private static string BrowserName(VehicleTexture texture)
     {
         if (!string.IsNullOrEmpty(texture.TextureMini) &&
