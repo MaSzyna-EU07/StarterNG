@@ -314,7 +314,8 @@ public sealed class VehicleBrowser
 
         var matched = _db.Textures
             .Where(t => PassesFilters(t, search, hasSearch))
-            .OrderBy(t => t.TextureMini ?? t.Skinfile, StringComparer.OrdinalIgnoreCase)
+            .OrderBy(BrowserName, StringComparer.OrdinalIgnoreCase)
+            .ThenBy(t => t.Skinfile, StringComparer.OrdinalIgnoreCase)
             .Take(MaxListRows)
             .ToList();
 
@@ -470,7 +471,8 @@ public sealed class VehicleBrowser
 
         return _db.Textures
             .Where(t => PassesFilters(t, search, hasSearch))
-            .OrderBy(t => t.TextureMini ?? t.Skinfile, StringComparer.OrdinalIgnoreCase)
+            .OrderBy(BrowserName, StringComparer.OrdinalIgnoreCase)
+            .ThenBy(t => t.Skinfile, StringComparer.OrdinalIgnoreCase)
             .ToList();
     }
 
@@ -503,6 +505,10 @@ public sealed class VehicleBrowser
                || C(t.Meta?.Vehicle) || C(t.Meta?.Operator) || C(VehicleInfo.ClassOf(t));
     }
 
+    /// <summary>
+    /// The name the list row carries, and the key it is sorted on - the two have
+    /// to be the same string or the list reads as unordered.
+    /// </summary>
     private static string BrowserName(VehicleTexture texture)
     {
         if (!string.IsNullOrEmpty(texture.TextureMini) &&
