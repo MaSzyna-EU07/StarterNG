@@ -509,13 +509,10 @@ public sealed class VehicleBrowser
     // somewhere else entirely, which is why the list looked reshuffled.
     private static readonly StringComparer TextureOrder = StringComparer.CurrentCultureIgnoreCase;
 
-    private static string BrowserName(VehicleTexture texture)
-    {
-        if (!string.IsNullOrEmpty(texture.TextureMini) &&
-            !string.Equals(texture.TextureMini, texture.ResolvedClass, StringComparison.OrdinalIgnoreCase))
-            return texture.TextureMini!;
-        return Consist.Base(texture.Skinfile);
-    }
+    // The texture's own file name, as the old starter listed it and as the detail
+    // panel names it. The thumbnail name went here before, which meant the list
+    // called a vehicle something none of the other panels did.
+    private static string BrowserName(VehicleTexture texture) => Consist.Base(texture.Skinfile);
 
     private string BrowserLabel(VehicleTexture texture, IReadOnlyList<VehicleTexture>? set)
     {
