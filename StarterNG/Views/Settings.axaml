@@ -79,29 +79,29 @@
                                        Text="{Binding [General], Source={x:Static starterNg:App.Loc}}" />
                             <ctl:SettingsSection Header="{Binding [General], Source={x:Static starterNg:App.Loc}}">
                                 <StackPanel>
-                                    <ctl:SettingRow Label="{Binding [Language], Source={x:Static starterNg:App.Loc}}">
+                                    <ctl:SettingRow ConfigKey="lang" Label="{Binding [Language], Source={x:Static starterNg:App.Loc}}">
                                         <ComboBox x:Name="ChangeLanguageCb"
                                                   SelectionChanged="LanguageComboBox_OnSelectionChanged" />
                                     </ctl:SettingRow>
-                                    <ctl:SettingRow>
+                                    <ctl:SettingRow ConfigKey="fullscreen">
                                         <CheckBox x:Name="FullscreenCb" Content="{Binding [Fullscreen], Source={x:Static starterNg:App.Loc}}" />
                                     </ctl:SettingRow>
-                                    <ctl:SettingRow>
+                                    <ctl:SettingRow ConfigKey="inactivepause">
                                         <CheckBox x:Name="PauseInactiveCb" Content="{Binding [PauseSimInactive], Source={x:Static starterNg:App.Loc}}" />
                                     </ctl:SettingRow>
-                                    <ctl:SettingRow>
+                                    <ctl:SettingRow ConfigKey="pause">
                                         <CheckBox x:Name="PauseStartCb" Content="{Binding [PauseSimStart], Source={x:Static starterNg:App.Loc}}" />
                                     </ctl:SettingRow>
-                                    <ctl:SettingRow x:Name="CursorSensitivityRow"
+                                    <ctl:SettingRow ConfigKey="mousescale" x:Name="CursorSensitivityRow"
                                                     Label="{Binding [CursorSensitivity], Source={x:Static starterNg:App.Loc}}">
                                         <Slider x:Name="CursorSensitivitySlider" Minimum="1" Maximum="5" TickFrequency="1"
                                                 IsSnapToTickEnabled="True" Value="3"
                                                 ValueChanged="QualitySlider_OnValueChanged" />
                                     </ctl:SettingRow>
-                                    <ctl:SettingRow>
+                                    <ctl:SettingRow ConfigKey="mousescale">
                                         <CheckBox x:Name="MouseHorInvertCb" Content="{Binding [MouseHorInvert], Source={x:Static starterNg:App.Loc}}" />
                                     </ctl:SettingRow>
-                                    <ctl:SettingRow>
+                                    <ctl:SettingRow ConfigKey="mousescale">
                                         <CheckBox x:Name="MouseVertInvertCb" Content="{Binding [MouseVertInvert], Source={x:Static starterNg:App.Loc}}" />
                                     </ctl:SettingRow>
                                 </StackPanel>
@@ -109,16 +109,16 @@
 
                             <ctl:SettingsSection Header="{Binding [Starter], Source={x:Static starterNg:App.Loc}}">
                                 <StackPanel>
-                                    <ctl:SettingRow>
+                                    <ctl:SettingRow ConfigKey="starter.autoclose">
                                         <CheckBox x:Name="AutoCloseStarterCb" Content="{Binding [AutoCloseStarter], Source={x:Static starterNg:App.Loc}}" />
                                     </ctl:SettingRow>
-                                    <ctl:SettingRow>
+                                    <ctl:SettingRow ConfigKey="starter.largethumbnails">
                                         <CheckBox x:Name="LargeThumbnailsCb" Content="{Binding [LargeThumbnails], Source={x:Static starterNg:App.Loc}}" />
                                     </ctl:SettingRow>
-                                    <ctl:SettingRow>
+                                    <ctl:SettingRow ConfigKey="starter.expandtree">
                                         <CheckBox x:Name="AutoExpandTreeCb" Content="{Binding [AutoExpandSceneryTree], Source={x:Static starterNg:App.Loc}}" />
                                     </ctl:SettingRow>
-                                    <ctl:SettingRow Label="{Binding [BatteryDefault], Source={x:Static starterNg:App.Loc}}"
+                                    <ctl:SettingRow ConfigKey="starter.batterydefault" Label="{Binding [BatteryDefault], Source={x:Static starterNg:App.Loc}}"
                                                     Description="{Binding [BatteryDefaultDesc], Source={x:Static starterNg:App.Loc}}">
                                         <ComboBox x:Name="BatteryDefaultCb" SelectedIndex="0">
                                             <ComboBoxItem Content="{Binding [BatteryDefaultScenario], Source={x:Static starterNg:App.Loc}}" />
@@ -131,16 +131,16 @@
 
                             <ctl:SettingsSection Header="{Binding [Others], Source={x:Static starterNg:App.Loc}}">
                                 <StackPanel>
-                                    <ctl:SettingRow Label="{Binding [SelectEXE], Source={x:Static starterNg:App.Loc}}">
+                                    <ctl:SettingRow ConfigKey="starter.exe.path" Label="{Binding [SelectEXE], Source={x:Static starterNg:App.Loc}}">
                                         <ComboBox x:Name="SelectExeCb" SelectedIndex="0" />
                                     </ctl:SettingRow>
-                                    <ctl:SettingRow>
+                                    <ctl:SettingRow ConfigKey="debugmode">
                                         <CheckBox x:Name="DebugModeCb" Content="{Binding [DebugMode], Source={x:Static starterNg:App.Loc}}" />
                                     </ctl:SettingRow>
-                                    <ctl:SettingRow Description="{Binding [VirtualShuntingDesc], Source={x:Static starterNg:App.Loc}}">
+                                    <ctl:SettingRow ConfigKey="ai.trainman" Description="{Binding [VirtualShuntingDesc], Source={x:Static starterNg:App.Loc}}">
                                         <CheckBox x:Name="VirtualShuntingCb" Content="{Binding [VirtualShunting], Source={x:Static starterNg:App.Loc}}" />
                                     </ctl:SettingRow>
-                                    <ctl:SettingRow Description="{Binding [LogMissingVehicleFilesDesc], Source={x:Static starterNg:App.Loc}}">
+                                    <ctl:SettingRow ConfigKey="starter.logmissingvehicles" Description="{Binding [LogMissingVehicleFilesDesc], Source={x:Static starterNg:App.Loc}}">
                                         <CheckBox x:Name="LogMissingVehicleFilesCb" Content="{Binding [LogMissingVehicleFiles], Source={x:Static starterNg:App.Loc}}" />
                                     </ctl:SettingRow>
                                 </StackPanel>
@@ -153,7 +153,7 @@
                                        Text="{Binding [Graphic], Source={x:Static starterNg:App.Loc}}" />
                             <ctl:SettingsSection Header="{Binding [GfxColResolution], Source={x:Static starterNg:App.Loc}}">
                                 <StackPanel>
-                                    <ctl:SettingRow Label="{Binding [Resolution], Source={x:Static starterNg:App.Loc}}">
+                                    <ctl:SettingRow ConfigKey="width, height" Label="{Binding [Resolution], Source={x:Static starterNg:App.Loc}}">
                                         <ComboBox x:Name="ResolutionCb" SelectedIndex="0">
                                             <ComboBoxItem>3840x2160</ComboBoxItem>
                                             <ComboBoxItem>2560x1440</ComboBoxItem>
@@ -163,49 +163,49 @@
                                             <ComboBoxItem>1280x720</ComboBoxItem>
                                         </ComboBox>
                                     </ctl:SettingRow>
-                                    <ctl:SettingRow>
+                                    <ctl:SettingRow ConfigKey="fullscreenwindowed">
                                         <CheckBox x:Name="FullscreenWindowedCb" Content="{Binding [FullscreenWindowed], Source={x:Static starterNg:App.Loc}}" />
                                     </ctl:SettingRow>
-                                    <ctl:SettingRow Label="{Binding [BufforResolution], Source={x:Static starterNg:App.Loc}}"
+                                    <ctl:SettingRow ConfigKey="starter.bufferscale" Label="{Binding [BufforResolution], Source={x:Static starterNg:App.Loc}}"
                                                     Description="{Binding [BufforResolutionDesc], Source={x:Static starterNg:App.Loc}}"
                                                     ValueText="{Binding #bufferScale.Value, StringFormat='{}{0:0}%'}">
                                         <Slider Name="bufferScale" Minimum="50" Maximum="200" TickFrequency="1"
                                                 IsSnapToTickEnabled="True" Value="100" />
                                     </ctl:SettingRow>
-                                    <ctl:SettingRow x:Name="TexResolutionRow"
+                                    <ctl:SettingRow ConfigKey="maxtexturesize" x:Name="TexResolutionRow"
                                                     Label="{Binding [MaxTexResolution], Source={x:Static starterNg:App.Loc}}">
                                         <Slider Name="textureResolutionSlider" Minimum="9" Maximum="14" TickFrequency="1"
                                                 IsSnapToTickEnabled="True" Value="12"
                                                 ValueChanged="TextureResolutionSlider_OnValueChanged" />
                                     </ctl:SettingRow>
-                                    <ctl:SettingRow x:Name="CabTexResolutionRow"
+                                    <ctl:SettingRow ConfigKey="maxcabtexturesize" x:Name="CabTexResolutionRow"
                                                     Label="{Binding [MaxTexCabResolution], Source={x:Static starterNg:App.Loc}}">
                                         <Slider Name="cabTextureResolutionSlider" Minimum="9" Maximum="14" TickFrequency="1"
                                                 IsSnapToTickEnabled="True" Value="12"
                                                 ValueChanged="CabTextureResolutionSlider_OnValueChanged" />
                                     </ctl:SettingRow>
-                                    <ctl:SettingRow x:Name="TexFilteringRow"
+                                    <ctl:SettingRow ConfigKey="anisotropicfiltering" x:Name="TexFilteringRow"
                                                     Label="{Binding [TexFilteringQuality], Source={x:Static starterNg:App.Loc}}"
                                                     Description="{Binding [TexFilteringQualityDesc], Source={x:Static starterNg:App.Loc}}">
                                         <Slider x:Name="TexFilteringSlider" Minimum="1" Maximum="5" TickFrequency="1"
                                                 IsSnapToTickEnabled="True" Value="4"
                                                 ValueChanged="QualitySlider_OnValueChanged" />
                                     </ctl:SettingRow>
-                                    <ctl:SettingRow x:Name="MultisamplingRow"
+                                    <ctl:SettingRow ConfigKey="multisampling" x:Name="MultisamplingRow"
                                                     Label="{Binding [Multisampling], Source={x:Static starterNg:App.Loc}}"
                                                     Description="{Binding [MultisamplingDesc], Source={x:Static starterNg:App.Loc}}">
                                         <Slider x:Name="MultisamplingSlider" Minimum="1" Maximum="4" TickFrequency="1"
                                                 IsSnapToTickEnabled="True" Value="3"
                                                 ValueChanged="QualitySlider_OnValueChanged" />
                                     </ctl:SettingRow>
-                                    <ctl:SettingRow x:Name="TrackCurvesRow"
+                                    <ctl:SettingRow ConfigKey="splinefidelity" x:Name="TrackCurvesRow"
                                                     Label="{Binding [TrackCurvesQuality], Source={x:Static starterNg:App.Loc}}"
                                                     Description="{Binding [TrackCurvesQualityDesc], Source={x:Static starterNg:App.Loc}}">
                                         <Slider x:Name="TrackCurvesSlider" Minimum="1" Maximum="4" TickFrequency="1"
                                                 IsSnapToTickEnabled="True" Value="4"
                                                 ValueChanged="QualitySlider_OnValueChanged" />
                                     </ctl:SettingRow>
-                                    <ctl:SettingRow x:Name="RenderRangeRow"
+                                    <ctl:SettingRow ConfigKey="gfx.drawrange.factor.max" x:Name="RenderRangeRow"
                                                     Label="{Binding [RenderRange], Source={x:Static starterNg:App.Loc}}"
                                                     Description="{Binding [RenderRangeDesc], Source={x:Static starterNg:App.Loc}}">
                                         <Slider x:Name="RenderRangeSlider" Minimum="1" Maximum="3" TickFrequency="1"
@@ -217,7 +217,7 @@
 
                             <ctl:SettingsSection Header="{Binding [GfxColRendering], Source={x:Static starterNg:App.Loc}}">
                                 <StackPanel>
-                                    <ctl:SettingRow Label="{Binding [RenderEngine], Source={x:Static starterNg:App.Loc}}"
+                                    <ctl:SettingRow ConfigKey="gfxrenderer" Label="{Binding [RenderEngine], Source={x:Static starterNg:App.Loc}}"
                                                     Description="{Binding [RenderEngineDesc], Source={x:Static starterNg:App.Loc}}">
                                         <ComboBox x:Name="RenderEngineCb" SelectedIndex="0">
                                             <ComboBoxItem Content="{Binding [REFull], Source={x:Static starterNg:App.Loc}}" />
@@ -228,42 +228,42 @@
                                             <ComboBoxItem Content="{Binding [REExperimental], Source={x:Static starterNg:App.Loc}}" />
                                         </ComboBox>
                                     </ctl:SettingRow>
-                                    <ctl:SettingRow Description="{Binding [RenderAngleVulkanDesc], Source={x:Static starterNg:App.Loc}}">
+                                    <ctl:SettingRow ConfigKey="gfx.angleplatform" Description="{Binding [RenderAngleVulkanDesc], Source={x:Static starterNg:App.Loc}}">
                                         <CheckBox x:Name="RenderAngleVulkanCb" Content="{Binding [RenderAngleVulkan], Source={x:Static starterNg:App.Loc}}" />
                                     </ctl:SettingRow>
-                                    <ctl:SettingRow>
+                                    <ctl:SettingRow ConfigKey="gfx.extraeffects">
                                         <CheckBox x:Name="AdditionalShadersCb" Content="{Binding [AdditionalShadersEffects], Source={x:Static starterNg:App.Loc}}" />
                                     </ctl:SettingRow>
-                                    <ctl:SettingRow>
+                                    <ctl:SettingRow ConfigKey="gfx.postfx.chromaticaberration.enabled">
                                         <CheckBox x:Name="ChromaticAberrationCb" Content="{Binding [ChromaticAberration], Source={x:Static starterNg:App.Loc}}" />
                                     </ctl:SettingRow>
-                                    <ctl:SettingRow>
+                                    <ctl:SettingRow ConfigKey="gfx.postfx.motionblur.enabled">
                                         <CheckBox x:Name="MotionBlurCb" Content="{Binding [MotionBlur], Source={x:Static starterNg:App.Loc}}" />
                                     </ctl:SettingRow>
-                                    <ctl:SettingRow Description="{Binding [SkipPipelineDesc], Source={x:Static starterNg:App.Loc}}">
+                                    <ctl:SettingRow ConfigKey="gfx.skippipeline" Description="{Binding [SkipPipelineDesc], Source={x:Static starterNg:App.Loc}}">
                                         <CheckBox x:Name="SkipPipelineCb" Content="{Binding [SkipPipeline], Source={x:Static starterNg:App.Loc}}" />
                                     </ctl:SettingRow>
-                                    <ctl:SettingRow Description="{Binding [RenderVBODesc], Source={x:Static starterNg:App.Loc}}">
+                                    <ctl:SettingRow ConfigKey="usevbo" Description="{Binding [RenderVBODesc], Source={x:Static starterNg:App.Loc}}">
                                         <CheckBox x:Name="RenderVBOCb" Content="{Binding [RenderVBO], Source={x:Static starterNg:App.Loc}}" />
                                     </ctl:SettingRow>
-                                    <ctl:SettingRow Description="{Binding [VSyncDesc], Source={x:Static starterNg:App.Loc}}">
+                                    <ctl:SettingRow ConfigKey="vsync" Description="{Binding [VSyncDesc], Source={x:Static starterNg:App.Loc}}">
                                         <CheckBox x:Name="VSyncCb" Content="{Binding [VSync], Source={x:Static starterNg:App.Loc}}" />
                                     </ctl:SettingRow>
 
-                                    <ctl:SettingRow Margin="0,0,0,4"
+                                    <ctl:SettingRow ConfigKey="fpslimit" Margin="0,0,0,4"
                                                     ValueText="{Binding #FpsLimitSlider.Value, StringFormat='{}{0:0} FPS'}">
                                         <CheckBox x:Name="FpsLimitEnableCb" Content="{Binding [FpsLimitEnable], Source={x:Static starterNg:App.Loc}}" />
                                     </ctl:SettingRow>
-                                    <ctl:SettingRow>
+                                    <ctl:SettingRow ConfigKey="fpslimit">
                                         <Slider x:Name="FpsLimitSlider" Minimum="1" Maximum="100" TickFrequency="1"
                                                 IsSnapToTickEnabled="True" Value="30"
                                                 IsEnabled="{Binding #FpsLimitEnableCb.IsChecked}" />
                                     </ctl:SettingRow>
 
-                                    <ctl:SettingRow Margin="0,0,0,4">
+                                    <ctl:SettingRow ConfigKey="gfx.smoke" Margin="0,0,0,4">
                                         <CheckBox x:Name="SmokeDisplayCb" Content="{Binding [SmokeDisplay], Source={x:Static starterNg:App.Loc}}" />
                                     </ctl:SettingRow>
-                                    <ctl:SettingRow x:Name="SmokeParticlesRow"
+                                    <ctl:SettingRow ConfigKey="gfx.smoke.fidelity" x:Name="SmokeParticlesRow"
                                                     Label="{Binding [SmokeParticlesMultiplier], Source={x:Static starterNg:App.Loc}}"
                                                     IsEnabled="{Binding #SmokeDisplayCb.IsChecked}">
                                         <Slider x:Name="SmokeParticlesSlider" Minimum="1" Maximum="4" TickFrequency="1"
@@ -271,12 +271,12 @@
                                                 ValueChanged="QualitySlider_OnValueChanged" />
                                     </ctl:SettingRow>
 
-                                    <ctl:SettingRow Label="{Binding [DynamicLights], Source={x:Static starterNg:App.Loc}}"
+                                    <ctl:SettingRow ConfigKey="dynamiclights" Label="{Binding [DynamicLights], Source={x:Static starterNg:App.Loc}}"
                                                     ValueText="{Binding #DynamicLightsSlider.Value, StringFormat='{}{0:0}'}">
                                         <Slider x:Name="DynamicLightsSlider" Minimum="0" Maximum="7" TickFrequency="1"
                                                 IsSnapToTickEnabled="True" Value="7" />
                                     </ctl:SettingRow>
-                                    <ctl:SettingRow Label="{Binding [FieldOfView], Source={x:Static starterNg:App.Loc}}"
+                                    <ctl:SettingRow ConfigKey="fieldofview" Label="{Binding [FieldOfView], Source={x:Static starterNg:App.Loc}}"
                                                     Description="{Binding [FieldOfViewDesc], Source={x:Static starterNg:App.Loc}}"
                                                     ValueText="{Binding #fovSlider.Value, StringFormat='{}{0:0}°'}">
                                         <Slider Name="fovSlider" Minimum="15" Maximum="75" TickFrequency="5"
@@ -291,33 +291,33 @@
                                               Content="{Binding [RenderShadows], Source={x:Static starterNg:App.Loc}}" />
                                 </ctl:SettingsSection.Toggle>
                                 <StackPanel IsEnabled="{Binding #RenderShadowsCb.IsChecked}">
-                                    <ctl:SettingRow Label="{Binding [ShadowDisplay], Source={x:Static starterNg:App.Loc}}">
+                                    <ctl:SettingRow ConfigKey="gfx.shadow.rank.cutoff" Label="{Binding [ShadowDisplay], Source={x:Static starterNg:App.Loc}}">
                                         <ComboBox x:Name="ShadowDisplayCb" SelectedIndex="0">
                                             <ComboBoxItem Content="{Binding [CSROnlyImportant], Source={x:Static starterNg:App.Loc}}" />
                                             <ComboBoxItem Content="{Binding [CSRLimited], Source={x:Static starterNg:App.Loc}}" />
                                             <ComboBoxItem Content="{Binding [CSRAll], Source={x:Static starterNg:App.Loc}}" />
                                         </ComboBox>
                                     </ctl:SettingRow>
-                                    <ctl:SettingRow x:Name="ShadowResolutionRow"
+                                    <ctl:SettingRow ConfigKey="shadowtune" x:Name="ShadowResolutionRow"
                                                     Label="{Binding [ShadowsResolution], Source={x:Static starterNg:App.Loc}}">
                                         <Slider Name="shaderResolutionSlider" Minimum="9" Maximum="14" TickFrequency="1"
                                                 IsSnapToTickEnabled="True" Value="12"
                                                 ValueChanged="shaderResolutionSlider_OnValueChanged" />
                                     </ctl:SettingRow>
-                                    <ctl:SettingRow x:Name="ShadowRangeRow"
+                                    <ctl:SettingRow ConfigKey="shadowtune" x:Name="ShadowRangeRow"
                                                     Label="{Binding [ShaderRange], Source={x:Static starterNg:App.Loc}}">
                                         <Slider Name="shaderRange" Minimum="25" Maximum="400" TickFrequency="5"
                                                 IsSnapToTickEnabled="True" Value="150"
                                                 ValueChanged="QualitySlider_OnValueChanged" />
                                     </ctl:SettingRow>
-                                    <ctl:SettingRow x:Name="CabShadowRangeRow"
+                                    <ctl:SettingRow ConfigKey="gfx.shadows.cab.range" x:Name="CabShadowRangeRow"
                                                     Label="{Binding [CabShadowsRange], Source={x:Static starterNg:App.Loc}}"
                                                     Description="{Binding [CabShadowsRangeDesc], Source={x:Static starterNg:App.Loc}}">
                                         <Slider Name="cabShaderSourceRange" Minimum="0" Maximum="100" TickFrequency="10"
                                                 IsSnapToTickEnabled="True" Value="30"
                                                 ValueChanged="QualitySlider_OnValueChanged" />
                                     </ctl:SettingRow>
-                                    <ctl:SettingRow Label="{Binding [ShadowAngleLimit], Source={x:Static starterNg:App.Loc}}"
+                                    <ctl:SettingRow ConfigKey="gfx.shadow.angle.min" Label="{Binding [ShadowAngleLimit], Source={x:Static starterNg:App.Loc}}"
                                                     Description="{Binding [ShadowAngleLimitDesc], Source={x:Static starterNg:App.Loc}}"
                                                     ValueText="{Binding #ShadowAngleLimitSlider.Value, StringFormat='{}{0:0.0}'}">
                                         <StackPanel>
@@ -336,10 +336,10 @@
 
                             <ctl:SettingsSection Header="{Binding [GfxColReflections], Source={x:Static starterNg:App.Loc}}">
                                 <StackPanel>
-                                    <ctl:SettingRow Description="{Binding [ReflectionsCubeMapDesc], Source={x:Static starterNg:App.Loc}}">
+                                    <ctl:SettingRow ConfigKey="gfx.envmap.enabled" Description="{Binding [ReflectionsCubeMapDesc], Source={x:Static starterNg:App.Loc}}">
                                         <CheckBox x:Name="ReflectionsCubeMapCb" Content="{Binding [ReflectionsCubeMap], Source={x:Static starterNg:App.Loc}}" />
                                     </ctl:SettingRow>
-                                    <ctl:SettingRow Label="{Binding [ReflectionsDetails], Source={x:Static starterNg:App.Loc}}"
+                                    <ctl:SettingRow ConfigKey="gfx.reflections.fidelity" Label="{Binding [ReflectionsDetails], Source={x:Static starterNg:App.Loc}}"
                                                     Description="{Binding [ReflectionsDetailsDesc], Source={x:Static starterNg:App.Loc}}">
                                         <ComboBox x:Name="ReflectionsDetailsCb" SelectedIndex="0">
                                             <ComboBoxItem Content="{Binding [RDTerrain], Source={x:Static starterNg:App.Loc}}" />
@@ -347,7 +347,7 @@
                                             <ComboBoxItem Content="{Binding [RDTerrainModelsVehicles], Source={x:Static starterNg:App.Loc}}" />
                                         </ComboBox>
                                     </ctl:SettingRow>
-                                    <ctl:SettingRow x:Name="ReflectionsFramerateRow"
+                                    <ctl:SettingRow ConfigKey="gfx.reflections.framerate" x:Name="ReflectionsFramerateRow"
                                                     Label="{Binding [ReflectionsFramerate], Source={x:Static starterNg:App.Loc}}">
                                         <Slider Name="reflectionsFramerate" Minimum="5" Maximum="120" TickFrequency="5"
                                                 IsSnapToTickEnabled="True" Value="30"
@@ -358,13 +358,13 @@
 
                             <ctl:SettingsSection Header="{Binding [GfxColScripts], Source={x:Static starterNg:App.Loc}}">
                                 <StackPanel>
-                                    <ctl:SettingRow Description="{Binding [RenderScreensDesc], Source={x:Static starterNg:App.Loc}}">
+                                    <ctl:SettingRow ConfigKey="python.enabled" Description="{Binding [RenderScreensDesc], Source={x:Static starterNg:App.Loc}}">
                                         <CheckBox x:Name="RenderScreensCb" Content="{Binding [RenderScreens], Source={x:Static starterNg:App.Loc}}" />
                                     </ctl:SettingRow>
-                                    <ctl:SettingRow>
+                                    <ctl:SettingRow ConfigKey="python.threadedupload">
                                         <CheckBox x:Name="RenderScreensThreadCb" Content="{Binding [RenderScreensThread], Source={x:Static starterNg:App.Loc}}" />
                                     </ctl:SettingRow>
-                                    <ctl:SettingRow Label="{Binding [PyScreenPriority], Source={x:Static starterNg:App.Loc}}"
+                                    <ctl:SettingRow ConfigKey="python.updatetime" Label="{Binding [PyScreenPriority], Source={x:Static starterNg:App.Loc}}"
                                                     Description="{Binding [PyScreenPriorityDesc], Source={x:Static starterNg:App.Loc}}">
                                         <ComboBox x:Name="PyScreenPriorityCb">
                                             <ComboBoxItem Tag="200" Content="{Binding [PyPriorityNormal], Source={x:Static starterNg:App.Loc}}" />
@@ -387,27 +387,27 @@
                                               Content="{Binding [EnableSounds], Source={x:Static starterNg:App.Loc}}" />
                                 </ctl:SettingsSection.Toggle>
                                 <StackPanel IsEnabled="{Binding #EnableSoundsCb.IsChecked}">
-                                    <ctl:SettingRow Label="{Binding [Volume], Source={x:Static starterNg:App.Loc}}"
+                                    <ctl:SettingRow ConfigKey="sound.volume" Label="{Binding [Volume], Source={x:Static starterNg:App.Loc}}"
                                                     ValueText="{Binding #VolumeSlider.Value, StringFormat='{}{0:0}%'}">
                                         <Slider x:Name="VolumeSlider" Minimum="1" Maximum="100" TickFrequency="5"
                                                 IsSnapToTickEnabled="True" Value="100" />
                                     </ctl:SettingRow>
-                                    <ctl:SettingRow Label="{Binding [RadiophoneVolume], Source={x:Static starterNg:App.Loc}}"
+                                    <ctl:SettingRow ConfigKey="sound.volume.radio" Label="{Binding [RadiophoneVolume], Source={x:Static starterNg:App.Loc}}"
                                                     ValueText="{Binding #RadioVolumeSlider.Value, StringFormat='{}{0:0}%'}">
                                         <Slider x:Name="RadioVolumeSlider" Minimum="1" Maximum="100" TickFrequency="5"
                                                 IsSnapToTickEnabled="True" Value="100" />
                                     </ctl:SettingRow>
-                                    <ctl:SettingRow Label="{Binding [VehiclesVolume], Source={x:Static starterNg:App.Loc}}"
+                                    <ctl:SettingRow ConfigKey="sound.volume.vehicle" Label="{Binding [VehiclesVolume], Source={x:Static starterNg:App.Loc}}"
                                                     ValueText="{Binding #VehiclesVolumeSlider.Value, StringFormat='{}{0:0}%'}">
                                         <Slider x:Name="VehiclesVolumeSlider" Minimum="1" Maximum="100" TickFrequency="5"
                                                 IsSnapToTickEnabled="True" Value="100" />
                                     </ctl:SettingRow>
-                                    <ctl:SettingRow Label="{Binding [PositionedSoundsVolume], Source={x:Static starterNg:App.Loc}}"
+                                    <ctl:SettingRow ConfigKey="sound.volume.positional" Label="{Binding [PositionedSoundsVolume], Source={x:Static starterNg:App.Loc}}"
                                                     ValueText="{Binding #PositionalVolumeSlider.Value, StringFormat='{}{0:0}%'}">
                                         <Slider x:Name="PositionalVolumeSlider" Minimum="1" Maximum="100" TickFrequency="5"
                                                 IsSnapToTickEnabled="True" Value="100" />
                                     </ctl:SettingRow>
-                                    <ctl:SettingRow Label="{Binding [AmbientVolume], Source={x:Static starterNg:App.Loc}}"
+                                    <ctl:SettingRow ConfigKey="sound.volume.ambient" Label="{Binding [AmbientVolume], Source={x:Static starterNg:App.Loc}}"
                                                     ValueText="{Binding #AmbientVolumeSlider.Value, StringFormat='{}{0:0}%'}">
                                         <Slider x:Name="AmbientVolumeSlider" Minimum="1" Maximum="100" TickFrequency="5"
                                                 IsSnapToTickEnabled="True" Value="100" />
@@ -422,45 +422,45 @@
                                        Text="{Binding [Physics], Source={x:Static starterNg:App.Loc}}" />
                             <ctl:SettingsSection Header="{Binding [Physics], Source={x:Static starterNg:App.Loc}}">
                                 <StackPanel>
-                                    <ctl:SettingRow Description="{Binding [PhysicsAccuracyIncreasedDesc], Source={x:Static starterNg:App.Loc}}">
+                                    <ctl:SettingRow ConfigKey="fullphysics" Description="{Binding [PhysicsAccuracyIncreasedDesc], Source={x:Static starterNg:App.Loc}}">
                                         <CheckBox x:Name="PhysicsAccuracyCb" Content="{Binding [PhysicsAccuracyIncreased], Source={x:Static starterNg:App.Loc}}" />
                                     </ctl:SettingRow>
-                                    <ctl:SettingRow Description="{Binding [BreakingPantographPossibilityDesc], Source={x:Static starterNg:App.Loc}}">
+                                    <ctl:SettingRow ConfigKey="enabletraction" Description="{Binding [BreakingPantographPossibilityDesc], Source={x:Static starterNg:App.Loc}}">
                                         <CheckBox x:Name="PantographBreakCb" Content="{Binding [BreakingPantographPossibility], Source={x:Static starterNg:App.Loc}}" />
                                     </ctl:SettingRow>
-                                    <ctl:SettingRow Description="{Binding [PowerOverheadLineOnlyDesc], Source={x:Static starterNg:App.Loc}}">
+                                    <ctl:SettingRow ConfigKey="livetraction" Description="{Binding [PowerOverheadLineOnlyDesc], Source={x:Static starterNg:App.Loc}}">
                                         <CheckBox x:Name="OverheadOnlyCb" Content="{Binding [PowerOverheadLineOnly], Source={x:Static starterNg:App.Loc}}" />
                                     </ctl:SettingRow>
-                                    <ctl:SettingRow>
+                                    <ctl:SettingRow ConfigKey="physicslog">
                                         <CheckBox x:Name="SpeedometerTapesCb" Content="{Binding [SaveSpeedometerTapes], Source={x:Static starterNg:App.Loc}}" />
                                     </ctl:SettingRow>
-                                    <ctl:SettingRow>
+                                    <ctl:SettingRow ConfigKey="debuglog">
                                         <CheckBox x:Name="SimLogsCb" Content="{Binding [SaveSimLogs], Source={x:Static starterNg:App.Loc}}" />
                                     </ctl:SettingRow>
-                                    <ctl:SettingRow>
+                                    <ctl:SettingRow ConfigKey="multiplelogs">
                                         <CheckBox x:Name="KeepLogsCb" Content="{Binding [KeepPrevLogs], Source={x:Static starterNg:App.Loc}}" />
                                     </ctl:SettingRow>
-                                    <ctl:SettingRow>
+                                    <ctl:SettingRow ConfigKey="gfx.skiprendering">
                                         <CheckBox x:Name="DisplaySimulationCb" Content="{Binding [DisplaySimulation], Source={x:Static starterNg:App.Loc}}" />
                                     </ctl:SettingRow>
-                                    <ctl:SettingRow>
+                                    <ctl:SettingRow ConfigKey="debuglog">
                                         <CheckBox x:Name="DebugLogVisibleCb" Content="{Binding [DebugLogVisible], Source={x:Static starterNg:App.Loc}}" />
                                     </ctl:SettingRow>
-                                    <ctl:SettingRow>
+                                    <ctl:SettingRow ConfigKey="crashdamage">
                                         <CheckBox x:Name="CrashDamageCb" Content="{Binding [CrashDamage], Source={x:Static starterNg:App.Loc}}" />
                                     </ctl:SettingRow>
 
-                                    <ctl:SettingRow Label="{Binding [Friction], Source={x:Static starterNg:App.Loc}}"
+                                    <ctl:SettingRow ConfigKey="friction" Label="{Binding [Friction], Source={x:Static starterNg:App.Loc}}"
                                                     Description="{Binding [FrictionDesc], Source={x:Static starterNg:App.Loc}}"
                                                     ValueText="{Binding #FrictionSlider.Value, StringFormat='{}{0:0.00}'}">
                                         <Slider x:Name="FrictionSlider" Minimum="0.1" Maximum="3.0" TickFrequency="0.1" Value="1.0" />
                                     </ctl:SettingRow>
-                                    <ctl:SettingRow Label="{Binding [BrakeStep], Source={x:Static starterNg:App.Loc}}"
+                                    <ctl:SettingRow ConfigKey="brakestep" Label="{Binding [BrakeStep], Source={x:Static starterNg:App.Loc}}"
                                                     Description="{Binding [BrakeStepDesc], Source={x:Static starterNg:App.Loc}}"
                                                     ValueText="{Binding #BrakeStepSlider.Value, StringFormat='{}{0:0.00}'}">
                                         <Slider x:Name="BrakeStepSlider" Minimum="0.4" Maximum="3.0" TickFrequency="0.1" Value="1.0" />
                                     </ctl:SettingRow>
-                                    <ctl:SettingRow Label="{Binding [BrakeSpeed], Source={x:Static starterNg:App.Loc}}"
+                                    <ctl:SettingRow ConfigKey="brakespeed" Label="{Binding [BrakeSpeed], Source={x:Static starterNg:App.Loc}}"
                                                     Description="{Binding [BrakeSpeedDesc], Source={x:Static starterNg:App.Loc}}"
                                                     ValueText="{Binding #BrakeSpeedSlider.Value, StringFormat='{}{0:0.00}'}">
                                         <Slider x:Name="BrakeSpeedSlider" Minimum="0.4" Maximum="3.0" TickFrequency="0.1" Value="1.0" />
@@ -475,10 +475,10 @@
                                        Text="{Binding [Communication], Source={x:Static starterNg:App.Loc}}" />
                             <ctl:SettingsSection Header="{Binding [Communication], Source={x:Static starterNg:App.Loc}}">
                                 <StackPanel>
-                                    <ctl:SettingRow Description="{Binding [GamepadSignalIgnoreDesc], Source={x:Static starterNg:App.Loc}}">
+                                    <ctl:SettingRow ConfigKey="input.gamepad" Description="{Binding [GamepadSignalIgnoreDesc], Source={x:Static starterNg:App.Loc}}">
                                         <CheckBox x:Name="GamepadIgnoreCb" Content="{Binding [GamepadSignalIgnore], Source={x:Static starterNg:App.Loc}}" />
                                     </ctl:SettingRow>
-                                    <ctl:SettingRow Label="{Binding [Feedback], Source={x:Static starterNg:App.Loc}}"
+                                    <ctl:SettingRow ConfigKey="feedbackmode" Label="{Binding [Feedback], Source={x:Static starterNg:App.Loc}}"
                                                     Description="{Binding [FeedbackDesc], Source={x:Static starterNg:App.Loc}}">
                                         <ComboBox x:Name="FeedbackCb" SelectedIndex="0">
                                             <ComboBoxItem Tag="0" Content="{Binding [FeedbackOff], Source={x:Static starterNg:App.Loc}}" />
@@ -489,13 +489,13 @@
                                             <ComboBoxItem Tag="5" Content="{Binding [FeedbackSP], Source={x:Static starterNg:App.Loc}}" />
                                         </ComboBox>
                                     </ctl:SettingRow>
-                                    <ctl:SettingRow x:Name="FeedbackPortRow" IsVisible="False"
+                                    <ctl:SettingRow ConfigKey="feedbackport" x:Name="FeedbackPortRow" IsVisible="False"
                                                     Label="{Binding [FeedbackPort], Source={x:Static starterNg:App.Loc}}"
                                                     Description="{Binding [FeedbackPortDesc], Source={x:Static starterNg:App.Loc}}">
                                         <NumericUpDown x:Name="FeedbackPortNud" Minimum="0" Maximum="65535" Value="888"
                                                        Increment="1" FormatString="0" />
                                     </ctl:SettingRow>
-                                    <ctl:SettingRow x:Name="ComButtonRow" IsVisible="False">
+                                    <ctl:SettingRow ConfigKey="uart" x:Name="ComButtonRow" IsVisible="False">
                                         <Button x:Name="ComButton" Classes="Flat" Cursor="Hand"
                                                 HorizontalContentAlignment="Center"
                                                 Click="ComButton_OnClick"

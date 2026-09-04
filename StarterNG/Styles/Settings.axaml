@@ -53,18 +53,33 @@
                                    VerticalAlignment="Center"
                                    Margin="12,0,0,0" />
 
-                        <TextBlock Name="PART_Description"
-                                   Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="3"
-                                   Text="{TemplateBinding Description}"
-                                   FontSize="12"
-                                   Foreground="{StaticResource CarbonFgDim}"
-                                   TextWrapping="Wrap"
-                                   Margin="0,3,0,0" />
+                        <!-- Second line: the eu07.ini key this row writes, then the
+                             explanation. The key is monospaced and selectable so it
+                             can be matched against the file itself. -->
+                        <StackPanel Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="3"
+                                    Orientation="Horizontal" Spacing="8" Margin="0,3,0,0">
+                            <SelectableTextBlock Name="PART_ConfigKey"
+                                                 Text="{TemplateBinding ConfigKey}"
+                                                 FontFamily="Consolas, DejaVu Sans Mono, Liberation Mono, Menlo, Courier New"
+                                                 FontSize="11"
+                                                 Foreground="{StaticResource CarbonAccentBright}"
+                                                 Opacity="0.75"
+                                                 VerticalAlignment="Top" />
+                            <TextBlock Name="PART_Description"
+                                       Text="{TemplateBinding Description}"
+                                       FontSize="12"
+                                       Foreground="{StaticResource CarbonFgDim}"
+                                       TextWrapping="Wrap"
+                                       VerticalAlignment="Top" />
+                        </StackPanel>
                     </Grid>
                 </ControlTemplate>
             </Setter>
 
             <Style Selector="^:no-description /template/ TextBlock#PART_Description">
+                <Setter Property="IsVisible" Value="False" />
+            </Style>
+            <Style Selector="^:no-key /template/ SelectableTextBlock#PART_ConfigKey">
                 <Setter Property="IsVisible" Value="False" />
             </Style>
             <Style Selector="^:no-value /template/ TextBlock#PART_Value">

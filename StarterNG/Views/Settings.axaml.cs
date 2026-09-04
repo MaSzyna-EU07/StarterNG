@@ -15,6 +15,7 @@ using Avalonia.Markup.Xaml.Styling;
 using Avalonia.Media;
 using StarterNG.Classes;
 using StarterNG.Controls;
+using StarterNG.Infrastructure.Settings;
 using StarterNG.Infrastructure;
 using StarterNG.Services;
 
@@ -64,6 +65,7 @@ public partial class Settings : UserControl, ISettingsCapture
 
         AppServices.Current.SettingsStore.RegisterCapture(this);
 
+        AnnotateConfigKeys();
         PopulateProfileCombo();
         ApplyToUi();
 
@@ -159,6 +161,19 @@ public partial class Settings : UserControl, ISettingsCapture
     }
 
     public void ReloadFromSettings() => ApplyToUi();
+
+    /// <summary>
+    /// Expands each row's eu07.ini key into "key = default (range)", so the line
+    /// under a setting says what the file holds rather than paraphrasing what the
+    /// setting does.
+    /// </summary>
+    private void AnnotateConfigKeys()
+    {
+        // Logical, not visual: the rows exist as soon as the XAML is loaded,
+        // while categories that are not on screen yet have no visual tree.
+        foreach (var row in this.GetLogicalDescendants().OfType<SettingRow>())
+            row.ConfigKey = SettingKeyCatalog.Annotate(row.ConfigKey);
+    }
 
     private void ApplyToUi()
     {
