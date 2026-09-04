@@ -19,13 +19,11 @@
         <!-- The vehicle panel keeps its old height on a roomy window (MaxHeight)
              but shrinks with everything else towards the 666 px floor instead of
              being clipped. The consist row measures itself, so a whole card fits
-             whether the thumbnails are the small ones or the large ones.
-             Row 1's cap is set by the texture tab: skin, operator, depot, revision
-             date and place, texture and photo author, some of which wrap onto a
-             second line in this width. -->
+             whether the thumbnails are the small ones or the large ones. Row 1's
+             cap fits the seven lines of the texture tab. -->
         <Grid.RowDefinitions>
             <RowDefinition Height="*" MinHeight="150" />
-            <RowDefinition Height="1.57*" MinHeight="120" MaxHeight="248" />
+            <RowDefinition Height="1.57*" MinHeight="120" MaxHeight="207" />
             <RowDefinition Height="Auto" MinHeight="140" MaxHeight="230" />
         </Grid.RowDefinitions>
 
@@ -158,16 +156,16 @@
         <Border Grid.Row="1" Grid.Column="0" TabIndex="4"
                 Background="{StaticResource CarbonPanelBg}"
                 BorderBrush="{StaticResource CarbonBorderLight}"
-                BorderThickness="1" CornerRadius="2" Padding="4">
+                BorderThickness="1" CornerRadius="2" Padding="6">
             <TabControl>
                 <TabItem Header="{Binding [GeneralInfo], Source={x:Static starterNg:App.Loc}}">
                     <ScrollViewer VerticalScrollBarVisibility="Auto">
-                        <StackPanel Name="generalPanel" Margin="4,2" Grid.IsSharedSizeScope="True" />
+                        <StackPanel Name="generalPanel" Margin="4" Grid.IsSharedSizeScope="True" />
                     </ScrollViewer>
                 </TabItem>
                 <TabItem Header="{Binding [AboutTexture], Source={x:Static starterNg:App.Loc}}">
                     <ScrollViewer VerticalScrollBarVisibility="Auto">
-                        <StackPanel Name="consistTexturePanel" Margin="4,2" Grid.IsSharedSizeScope="True" />
+                        <StackPanel Name="consistTexturePanel" Margin="4" Grid.IsSharedSizeScope="True" />
                     </ScrollViewer>
                 </TabItem>
             </TabControl>
