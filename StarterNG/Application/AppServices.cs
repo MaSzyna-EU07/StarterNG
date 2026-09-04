@@ -57,6 +57,7 @@ public sealed class AppServices
         SettingsStore = new SettingsStore(files, clock, log, settingsPaths, new SettingsSerializer(), Executables);
         SettingsPaths = settingsPaths;
         MissingVehicleLog = new MissingVehicleLog(SettingsStore.Settings, MissingAssets, Library, log);
+        StartSimulation = new StartSimulation(State, SettingsStore, files, Processes, Random, log);
     }
 
     /// <summary>
@@ -127,6 +128,9 @@ public sealed class AppServices
     public SettingsPaths SettingsPaths { get; }
 
     public MissingVehicleLog MissingVehicleLog { get; }
+
+    /// <summary>Starts the simulator on the current selection.</summary>
+    public StartSimulation StartSimulation { get; }
 
     /// <summary>
     /// Exposed as the concrete service rather than <see cref="ILocalizedStrings"/>

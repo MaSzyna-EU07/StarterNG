@@ -17,6 +17,7 @@ using StarterNG.Infrastructure;
 using StarterNG.Services;
 using StarterNG.Views;
 using StarterNG.Application;
+using StarterNG.Application.Abstractions;
 using StarterNG.Domain.Sceneries;
 using StarterNG.Domain.Settings;
 
@@ -413,13 +414,15 @@ public partial class MainWindow : Window
         menu.Open(startButton);
     }
 
+    /// <summary>
+    /// Runs the start use case and turns whatever it reports into something the
+    /// user sees. Everything that is not a dialog lives in <see cref="StartSimulation"/>.
+    /// </summary>
     private async Task LaunchAsync(bool saveSettings, bool freeFly)
     {
         var scenery = AppServices.Current.State.CurrentScenery;
-        if (scenery is null)
-            return;
         var trainset = AppServices.Current.State.CurrentTrainset;
-        if (trainset is null)
+        if (scenery is null || trainset is null)
             return;
 
         if (!freeFly && !HasStartableVehicle(trainset) &&
@@ -427,65 +430,28 @@ public partial class MainWindow : Window
                                    App.Loc["StartNoStaffTitle"], MessageBoxButtons.YesNo))
             return;
 
-        if (trainset.Vehicles.Count > 0)
-        {
-            trainset.Velocity = AppServices.Current.Settings.BatteryDefault switch
-            {
-                BatteryDefault.AlwaysOff => 0f,
-                BatteryDefault.AlwaysOn  => MathF.Abs(trainset.OriginalVelocity) < 0.01f ? 0.1f : trainset.OriginalVelocity,
-                _                        => trainset.OriginalVelocity
-            };
-        }
-
-        string? vehicle = TrainsetDisplay.UniquifyForLaunch(
-            trainset, scenery, AppServices.Current.State.StartingVehicleName);
-        if (string.IsNullOrEmpty(vehicle))
-            vehicle = ResolveStartVehicle(trainset);
-        AppServices.Current.State.StartingVehicleName = vehicle;
-
         LoadingScreen.Prepare(trainset.Logo, Path.GetFileNameWithoutExtension(scenery.Path));
 
-        scenery.Weather.Dirty = true;
+        var result = AppServices.Current.StartSimulation.Execute(freeFly, saveSettings);
+        switch (result.Outcome)
+        {
+            case SimulationStartOutcome.NothingSelected:
+                return;
 
-        string dir = Path.GetDirectoryName(scenery.Path) ?? "scenery";
-        string exportName = "$" + Path.GetFileName(scenery.Path);
-        string exportPath = Path.Combine(dir, exportName);
-        try
-        {
-            File.WriteAllText(exportPath, scenery.BuildExportContent(AppServices.Current.Settings.IgnoreIrrelevantTrains, AppServices.Current.Random), Encoding.GetEncoding(1250));
-        }
-        catch (Exception ex)
-        {
-            await Diagnostics.ReportAsync($"{exportPath}", ex, App.Loc["FaultTitle"]);
-            return;
-        }
+            case SimulationStartOutcome.ExportFailed:
+                await Diagnostics.ReportAsync(
+                    $"{result.ExecutablePath}{Environment.NewLine}{Environment.NewLine}{result.Detail}",
+                    App.Loc["FaultTitle"]);
+                return;
 
-        if (saveSettings)
-            AppServices.Current.SettingsStore.CaptureAndSave();
+            case SimulationStartOutcome.ExecutableProblem:
+                await ShowExeProblem(result.Problem, result.ExecutablePath);
+                return;
 
-        string exe = Path.GetFullPath(AppServices.Current.SettingsStore.ResolveExecutable(out var exeProblem));
-        if (exeProblem != ExeProblem.None)
-        {
-            await ShowExeProblem(exeProblem, exe);
-            return;
-        }
-
-        Process? sim;
-        try
-        {
-            sim = Process.Start(new ProcessStartInfo
-            {
-                FileName = exe,
-                Arguments = freeFly ? $"-s {exportName}" : $"-s {exportName} -v {vehicle}",
-                WorkingDirectory = Path.GetDirectoryName(exe) ?? Directory.GetCurrentDirectory(),
-                UseShellExecute = false
-            });
-        }
-        catch (Exception ex)
-        {
-            await MessageBox.Show(this, $"{exe}\n\n{ex.Message}",
-                App.Loc["ExeLaunchFailed"], MessageBoxButtons.Ok);
-            return;
+            case SimulationStartOutcome.LaunchFailed:
+                await MessageBox.Show(this, $"{result.ExecutablePath}\n\n{result.Detail}",
+                                      App.Loc["ExeLaunchFailed"], MessageBoxButtons.Ok);
+                return;
         }
 
         if (AppServices.Current.Settings.AutoCloseStarter)
@@ -494,61 +460,30 @@ public partial class MainWindow : Window
             return;
         }
 
+        // The starter sits idle while the simulator runs; give the memory back.
         GC.Collect();
         GC.WaitForPendingFinalizers();
 
-        WatchSimulator(sim);
+        WatchSimulator(result.Process);
     }
 
-    private static string? ResolveStartVehicle(Trainset? trainset)
+    /// <summary>
+    /// Brings the starter back when the simulator exits. Adopts an already
+    /// running simulator when we did not start it ourselves.
+    /// </summary>
+    private void WatchSimulator(IProcessHandle? simulator)
     {
-        if (trainset is null || trainset.Vehicles.Count == 0)
-            return null;
+        simulator ??= AppServices.Current.Processes.FindRunning(
+            Path.GetFileNameWithoutExtension(AppServices.Current.SettingsStore.ResolveExecutable()));
 
-        static bool CanStart(Dynamic v) =>
-            v.DriverType is eDriverType.Headdriver or eDriverType.Reardriver or eDriverType.Passenger;
-
-        string? selected = AppServices.Current.State.StartingVehicleName;
-        if (!string.IsNullOrEmpty(selected))
+        if (simulator is null)
         {
-            var pick = trainset.Vehicles.FirstOrDefault(v =>
-                string.Equals(v.Name, selected, StringComparison.OrdinalIgnoreCase));
-            if (pick != null && CanStart(pick))
-                return pick.Name;
-        }
-
-        return trainset.Vehicles.FirstOrDefault(CanStart)?.Name
-               ?? trainset.Vehicles.FirstOrDefault()?.Name;
-    }
-
-    private void WatchSimulator(Process? sim)
-    {
-        if (sim is null)
-        {
-            string name = Path.GetFileNameWithoutExtension(AppServices.Current.SettingsStore.ResolveExecutable());
-            sim = Process.GetProcessesByName(name).FirstOrDefault();
-        }
-
-        if (sim is null)
-        {
-
             Dispatcher.UIThread.Post(RestoreFromSimulator);
             return;
         }
 
-        var watcher = new Thread(() =>
-        {
-            try { sim.WaitForExit(); }
-            catch
-            {
-            }
-            Dispatcher.UIThread.Post(RestoreFromSimulator);
-        })
-        {
-            IsBackground = true,
-            Name = "SimulatorWatcher"
-        };
-        watcher.Start();
+        _ = simulator.WaitForExitAsync().ContinueWith(
+            _ => Dispatcher.UIThread.Post(RestoreFromSimulator), TaskScheduler.Default);
     }
 
     private async void CheckExternalSettings()
