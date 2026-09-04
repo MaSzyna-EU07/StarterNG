@@ -8,16 +8,22 @@ using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
 using Avalonia.Threading;
+using StarterNG.Application;
 using StarterNG.Classes;
 using StarterNG.Infrastructure;
 using StarterNG.Services;
 
 namespace StarterNG;
 
-public partial class App : Application
+public partial class App : Avalonia.Application
 {
 
-    public static LocalizationService Loc { get; } = new();
+    /// <summary>
+    /// The translation table, as a static source for the XAML bindings. Code
+    /// should take <see cref="Application.Abstractions.ILocalizedStrings"/>
+    /// through its constructor rather than reading this.
+    /// </summary>
+    public static LocalizationService Loc => AppServices.Current.Localization;
 
     public override void Initialize()
     {

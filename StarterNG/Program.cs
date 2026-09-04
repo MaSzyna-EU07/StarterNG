@@ -1,6 +1,7 @@
 using Avalonia;
 using System;
 using System.Threading.Tasks;
+using StarterNG.Application;
 using StarterNG.Infrastructure;
 
 namespace StarterNG;
@@ -11,6 +12,10 @@ static class Program
     [STAThread]
     public static void Main(string[] args)
     {
+        // Composition root first: everything below, including the crash handlers,
+        // resolves its collaborators from this graph.
+        AppServices.Initialize();
+
         AppDomain.CurrentDomain.UnhandledException += (_, e) =>
         {
             if (e.ExceptionObject is Exception ex)

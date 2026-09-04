@@ -3,15 +3,28 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.IO;
 using System.Xml;
+using StarterNG.Application.Abstractions;
 
 namespace StarterNG.Services;
 
-public class LocalizationService : INotifyPropertyChanged
+/// <summary>
+/// Loads the translation table from startercfg/lang/*.xml and exposes it as
+/// <see cref="ILocalizedStrings"/>. Stays a change-notifying class because the
+/// XAML binds to it directly as a static source.
+/// </summary>
+public class LocalizationService : INotifyPropertyChanged, ILocalizedStrings
 {
     public static string LangDirectory =>
         Path.Combine(AppContext.BaseDirectory, "startercfg", "lang");
 
+    private readonly IDiagnosticsLog _log;
+
     private Dictionary<string, string> _strings = new();
+
+    public LocalizationService(IDiagnosticsLog log)
+    {
+        _log = log;
+    }
 
     public event PropertyChangedEventHandler? PropertyChanged;
 
@@ -43,7 +56,7 @@ public class LocalizationService : INotifyPropertyChanged
 
             lock (_reportedMisses)
                 if (_reportedMisses.Add(key))
-                    Infrastructure.Diagnostics.Log($"lang/{CurrentLangCode}: missing key \"{key}\"");
+                    _log.Log($"lang/{CurrentLangCode}: missing key \"{key}\"");
 
             return key;
         }
@@ -58,7 +71,7 @@ public class LocalizationService : INotifyPropertyChanged
 
     public readonly record struct LanguageInfo(string Code, string Name, string Path);
 
-    public static IReadOnlyList<LanguageInfo> AvailableLanguages()
+    public static IReadOnlyList<LanguageInfo> AvailableLanguages(IDiagnosticsLog? log = null)
     {
         var list = new List<LanguageInfo>();
         if (!Directory.Exists(LangDirectory))
@@ -74,7 +87,7 @@ public class LocalizationService : INotifyPropertyChanged
             }
             catch (Exception ex)
             {
-                StarterNG.Infrastructure.Diagnostics.Log($"lang/{Path.GetFileName(path)}", ex);
+                log?.Log($"lang/{Path.GetFileName(path)}", ex);
             }
         }
         return list;
@@ -82,7 +95,7 @@ public class LocalizationService : INotifyPropertyChanged
 
     public string Load(string codeOrName)
     {
-        var languages = AvailableLanguages();
+        var languages = AvailableLanguages(_log);
 
         LanguageInfo? match = null;
         foreach (var lang in languages)
