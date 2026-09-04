@@ -38,7 +38,7 @@ public partial class Scenarios : UserControl
     {
         InitializeComponent();
 
-        Sceneries = GameData.Instance.Sceneries;
+        Sceneries = AppServices.Current.Library.Sceneries;
 
         _loadingFilters = true;
         archivalSwitch.IsChecked = !StarterNG.Classes.Settings.Instance.ShowArchivalSceneries;
@@ -339,7 +339,7 @@ public partial class Scenarios : UserControl
         var lines = new List<string>();
         lines.AddRange(scenery.Faults);
 
-        var db = GameData.Instance.Vehicles;
+        var db = AppServices.Current.Library.Vehicles;
         foreach (var ts in scenery.Trainsets)
         {
             if (!ts.Parsed)
@@ -423,8 +423,8 @@ public partial class Scenarios : UserControl
         try
         {
             string? selected = AppState.Instance.CurrentScenery?.Path;
-            await Task.Run(() => GameData.Instance.ReloadSceneries());
-            Sceneries = GameData.Instance.Sceneries;
+            await Task.Run(() => AppServices.Current.Library.ReloadSceneries());
+            Sceneries = AppServices.Current.Library.Sceneries;
             BuildSceneryTree();
             if (!string.IsNullOrEmpty(selected))
             {
@@ -486,7 +486,7 @@ public partial class Scenarios : UserControl
             return cached;
 
         Bitmap? bmp = null;
-        string? path = VehicleDatabase.MiniPath(name);
+        string? path = AppServices.Current.MiniTextures.PathFor(name);
         if (path != null)
         {
             try
@@ -888,12 +888,12 @@ public partial class Scenarios : UserControl
                 UpdateTrainStats(trainset);
             });
 
-        var db = GameData.Instance.Vehicles;
+        var db = AppServices.Current.Library.Vehicles;
         foreach (var train in trainset.Vehicles)
         {
 
             string miniName = db.MiniForSkin(train.SkinFile) ?? train.SkinFile;
-            if (!VehicleDatabase.HasMini(miniName) && VehicleDatabase.HasMini(train.SkinFile))
+            if (!AppServices.Current.MiniTextures.Has(miniName) && AppServices.Current.MiniTextures.Has(train.SkinFile))
                 miniName = train.SkinFile;
             int thumbH = StarterNG.Classes.Settings.Instance.LargeThumbnails ? 64 : 32;
 
@@ -1193,12 +1193,12 @@ public partial class Scenarios : UserControl
             return;
         }
 
-        var db = GameData.Instance.Vehicles;
+        var db = AppServices.Current.Library.Vehicles;
         StarterNG.Infrastructure.StatsBar.Fill(trainStats, TrainsetDisplay.StatsFields(
             trainset,
-            car => Physics.For(car.DataFolder, db.TextureForSkin(car.SkinFile)?.Model)
-                   ?? Physics.For(car.DataFolder, car.MmdFile)
-                   ?? Physics.For(car.DataFolder, car.SkinFile),
+            car => AppServices.Current.Physics.For(car.DataFolder, db.TextureForSkin(car.SkinFile)?.Model)
+                   ?? AppServices.Current.Physics.For(car.DataFolder, car.MmdFile)
+                   ?? AppServices.Current.Physics.For(car.DataFolder, car.SkinFile),
             car => db.TextureForSkin(car.SkinFile)?.ResolvedCategory));
     }
 

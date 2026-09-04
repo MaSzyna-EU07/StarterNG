@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using StarterNG.Classes;
+using StarterNG.Domain.Vehicles;
 
 namespace StarterNG.Domain;
 
@@ -9,7 +10,7 @@ public static class UData
 {
     public readonly record struct TrainParams(double Length, double Mass, double LoadMass, int CountVehicles);
 
-    public static int GetMaxCoupler(Dynamic v, Func<Dynamic, Physics?> physicsFor, bool leftCoupler = true)
+    public static int GetMaxCoupler(Dynamic v, Func<Dynamic, VehiclePhysics?> physicsFor, bool leftCoupler = true)
     {
         var fiz = physicsFor(v);
         if (fiz == null) return 3;
@@ -18,7 +19,7 @@ public static class UData
             : (v.Offset >= 0 ? fiz.AllowedFlagB : fiz.AllowedFlagA);
     }
 
-    public static string GetControlType(Dynamic v, Func<Dynamic, Physics?> physicsFor, bool leftCoupler = true)
+    public static string GetControlType(Dynamic v, Func<Dynamic, VehiclePhysics?> physicsFor, bool leftCoupler = true)
     {
         var fiz = physicsFor(v);
         if (fiz == null) return "";
@@ -43,7 +44,7 @@ public static class UData
     }
 
     public static void AutoConnect(IList<Dynamic> vehicles, int leftVehicle,
-        Func<Dynamic, Physics?> physicsFor)
+        Func<Dynamic, VehiclePhysics?> physicsFor)
     {
         if (leftVehicle < 0 || vehicles.Count - 1 <= leftVehicle) return;
 
@@ -98,7 +99,7 @@ public static class UData
         d is eDriverType.Headdriver or eDriverType.Reardriver;
 
     public static bool IncludeVehicleToMass(Dynamic v, bool allVehicles,
-        Func<Dynamic, Physics?> physicsFor, Func<Dynamic, string?> categoryOf)
+        Func<Dynamic, VehiclePhysics?> physicsFor, Func<Dynamic, string?> categoryOf)
     {
         if (physicsFor(v) == null) return false;
         if (allVehicles) return true;
@@ -109,7 +110,7 @@ public static class UData
     }
 
     public static TrainParams RecalcTrainParams(Trainset? train, bool allVehicles,
-        Func<Dynamic, Physics?> physicsFor, Func<Dynamic, string?> categoryOf,
+        Func<Dynamic, VehiclePhysics?> physicsFor, Func<Dynamic, string?> categoryOf,
         Func<string?, int> loadWeight)
     {
         double length = 0, mass = 0, loadMass = 0;
@@ -138,7 +139,7 @@ public static class UData
     }
 
     public static void RandomLoad(IEnumerable<Dynamic> vehicles,
-        Func<Dynamic, Physics?> physicsFor, Random rng)
+        Func<Dynamic, VehiclePhysics?> physicsFor, Random rng)
     {
         foreach (var v in vehicles)
         {
@@ -157,7 +158,7 @@ public static class UData
     }
 
     public static void ReverseMultiple(IList<Dynamic> vehicles, int position,
-        Func<Dynamic, string?> setIdOf, Func<Dynamic, Physics?> physicsFor)
+        Func<Dynamic, string?> setIdOf, Func<Dynamic, VehiclePhysics?> physicsFor)
     {
         var indexes = GetMultiple(vehicles, position, setIdOf);
 

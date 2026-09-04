@@ -8,12 +8,14 @@ using Avalonia.Input;
 using Avalonia.Input.Platform;
 using Avalonia.Interactivity;
 using StarterNG.Classes;
+using StarterNG.Domain.Vehicles;
+using StarterNG.Application;
 
 namespace StarterNG.Views;
 
 public partial class TextureBaseWindow : Window
 {
-    private readonly VehicleDatabase _db = GameData.Instance.Vehicles;
+    private readonly VehicleCatalog _db = AppServices.Current.Library.Vehicles;
     private readonly List<TextureRow> _all = new();
 
     public VehicleTexture? Picked { get; private set; }
@@ -193,7 +195,7 @@ internal sealed class TextureRow
     public string Directory { get; }
     public DateTime? RevisionDate { get; }
 
-    public TextureRow(VehicleTexture t, VehicleDatabase db)
+    public TextureRow(VehicleTexture t, VehicleCatalog db)
     {
         Texture = t;
         Skin = Path.GetFileNameWithoutExtension(t.Skinfile);

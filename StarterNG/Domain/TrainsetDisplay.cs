@@ -6,6 +6,8 @@ using System.Linq;
 using System.Text;
 using StarterNG.Classes;
 using StarterNG.Domain.Sceneries;
+using StarterNG.Domain.Vehicles;
+using StarterNG.Application;
 
 namespace StarterNG.Domain;
 
@@ -65,14 +67,14 @@ public static class TrainsetDisplay
 
     public static string VehicleLabel(Dynamic v, bool head = false)
     {
-        var tex = GameData.Instance.Vehicles.TextureForSkin(v.SkinFile);
+        var tex = AppServices.Current.Library.Vehicles.TextureForSkin(v.SkinFile);
         string? cls = string.IsNullOrEmpty(tex?.ResolvedClass) ? null : tex!.ResolvedClass;
         string? name = string.IsNullOrWhiteSpace(v.Name) ? null : v.Name;
         return (head ? name ?? cls : cls ?? name) ?? BaseSkin(v);
     }
 
     public static bool IsPowered(Dynamic v) =>
-        GameData.Instance.Vehicles.TextureForSkin(v.SkinFile)?.ResolvedCategory
+        AppServices.Current.Library.Vehicles.TextureForSkin(v.SkinFile)?.ResolvedCategory
             is "e" or "s" or "p" or "z" or "a";
 
     private static string BaseSkin(Dynamic v) =>
@@ -94,7 +96,7 @@ public static class TrainsetDisplay
     }
 
     public static List<(string Label, string Value)> StatsFields(
-        Trainset? trainset, Func<Dynamic, Physics?> physicsFor,
+        Trainset? trainset, Func<Dynamic, VehiclePhysics?> physicsFor,
         Func<Dynamic, string?>? categoryOf = null,
         Func<string?, int>? loadWeightKg = null)
     {
@@ -120,7 +122,7 @@ public static class TrainsetDisplay
         return fields;
     }
 
-    public static string FormatStats(Trainset? trainset, Func<Dynamic, Physics?> physicsFor,
+    public static string FormatStats(Trainset? trainset, Func<Dynamic, VehiclePhysics?> physicsFor,
         string lengthLabel, string massLabel, string vehiclesLabel, string trackLabel,
         Func<Dynamic, string?>? categoryOf = null,
         Func<string?, int>? loadWeightKg = null)
@@ -149,7 +151,7 @@ public static class TrainsetDisplay
 
     private static (double lengthM, double massKg, double loadKg) RecalcParams(
         Trainset trainset,
-        Func<Dynamic, Physics?> physicsFor,
+        Func<Dynamic, VehiclePhysics?> physicsFor,
         Func<Dynamic, string?>? categoryOf,
         Func<string?, int>? loadWeightKg,
         bool allVehicles)
@@ -176,7 +178,7 @@ public static class TrainsetDisplay
         return (lengthM, massKg, loadKg);
     }
 
-    private static bool IncludeVehicleToMass(Dynamic car, Physics? p, string? category, bool allVehicles)
+    private static bool IncludeVehicleToMass(Dynamic car, VehiclePhysics? p, string? category, bool allVehicles)
     {
         if (p == null) return false;
         if (allVehicles) return true;
@@ -184,7 +186,7 @@ public static class TrainsetDisplay
         return car.DriverType is eDriverType.Passenger or eDriverType.Nobody;
     }
 
-    private static bool LoadAccepted(Physics? p, string loadType)
+    private static bool LoadAccepted(VehiclePhysics? p, string loadType)
     {
         if (p == null || string.IsNullOrWhiteSpace(p.LoadAccepted))
             return false;
@@ -194,7 +196,7 @@ public static class TrainsetDisplay
     public static string? UniquifyForLaunch(Trainset trainset, Scenery scenery, string? startName)
     {
         var used = CollectNames(scenery);
-        var db = GameData.Instance.Vehicles;
+        var db = AppServices.Current.Library.Vehicles;
 
         bool mu = trainset.Vehicles.Any(v =>
         {
@@ -224,7 +226,7 @@ public static class TrainsetDisplay
 
     public static string PreferredBaseName(Dynamic v)
     {
-        var tex = GameData.Instance.Vehicles.TextureForSkin(v.SkinFile);
+        var tex = AppServices.Current.Library.Vehicles.TextureForSkin(v.SkinFile);
         if (tex != null)
         {
 

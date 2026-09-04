@@ -43,6 +43,11 @@ public sealed class PhysicalFileSystem : IFileSystem
     public IReadOnlyList<string> GetFiles(string path, string searchPattern = "*") =>
         Directory.Exists(path) ? Directory.GetFiles(path, searchPattern) : Array.Empty<string>();
 
+    public IReadOnlyList<string> GetFilesRecursive(string path, string searchPattern) =>
+        Directory.Exists(path)
+            ? Directory.GetFiles(path, searchPattern, SearchOption.AllDirectories)
+            : Array.Empty<string>();
+
     public IReadOnlyList<string> GetDirectories(string path) =>
         Directory.Exists(path) ? Directory.GetDirectories(path) : Array.Empty<string>();
 

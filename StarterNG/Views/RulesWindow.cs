@@ -9,6 +9,8 @@ using Avalonia.Media;
 using StarterNG.Classes;
 using StarterNG.Domain;
 using StarterNG.Infrastructure;
+using StarterNG.Domain.Vehicles;
+using StarterNG.Application;
 
 namespace StarterNG.Views;
 
@@ -19,7 +21,7 @@ public sealed class RulesWindow : Window
     private readonly WrapPanel _members = new() { Orientation = Orientation.Horizontal };
     private readonly ComboBox _category = new();
     private readonly ComboBox _model = new();
-    private readonly VehicleDatabase _db = GameData.Instance.Vehicles;
+    private readonly VehicleCatalog _db = AppServices.Current.Library.Vehicles;
 
     public RulesWindow()
     {

@@ -5,6 +5,7 @@ using Avalonia.Media;
 using Avalonia.Media.Imaging;
 
 using StarterNG.Classes;
+using StarterNG.Application;
 
 namespace StarterNG.Views;
 
@@ -28,7 +29,7 @@ public sealed class MiniTextures
     {
         if (string.IsNullOrEmpty(name))
             return null;
-        if (strict && !VehicleDatabase.HasMini(name))
+        if (strict && !AppServices.Current.MiniTextures.Has(name))
             return null;
 
         string key = $"{(strict ? "!" : "")}{name}@{height}";
@@ -36,7 +37,7 @@ public sealed class MiniTextures
             return cached;
 
         Bitmap? bmp = null;
-        string? path = VehicleDatabase.MiniPath(name);
+        string? path = AppServices.Current.MiniTextures.PathFor(name);
         if (path != null)
         {
             try

@@ -92,6 +92,17 @@ public sealed class InMemoryFileSystem : IFileSystem
             .ToList();
     }
 
+    public IReadOnlyList<string> GetFilesRecursive(string path, string searchPattern)
+    {
+        string prefix = Normalize(path) + "/";
+        var pattern = ToRegex(searchPattern);
+        return _files.Keys
+            .Where(key => key.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
+            .Where(key => pattern.IsMatch(key[(key.LastIndexOf('/') + 1)..]))
+            .OrderBy(key => key, StringComparer.OrdinalIgnoreCase)
+            .ToList();
+    }
+
     public IReadOnlyList<string> GetDirectories(string path)
     {
         string prefix = Normalize(path) + "/";

@@ -2,6 +2,7 @@ using System;
 using StarterNG.Application.Abstractions;
 using StarterNG.Infrastructure.Adapters;
 using StarterNG.Infrastructure.Sceneries;
+using StarterNG.Infrastructure.Vehicles;
 using StarterNG.Services;
 
 namespace StarterNG.Application;
@@ -39,6 +40,11 @@ public sealed class AppServices
         Localization = new LocalizationService(log);
         Sceneries = new SceneryRepository(files, paths, log, new SceneryParser(clock, Random));
         SceneryImages = new SceneryImageLocator(files);
+        MiniTextures = new MiniTextureIndex(files, paths);
+        Vehicles = new TexturesTxtVehicleRepository(files, paths, log, new TexturesTxtParser());
+        Physics = new FizPhysicsRepository(files, paths, log);
+        MissingAssets = new MissingAssetScanner(files, paths);
+        Library = new GameLibrary(Vehicles, Sceneries, MiniTextures, Physics, log);
     }
 
     /// <summary>
@@ -75,6 +81,17 @@ public sealed class AppServices
     public ISceneryRepository Sceneries { get; }
 
     public SceneryImageLocator SceneryImages { get; }
+
+    public IMiniTextureIndex MiniTextures { get; }
+
+    public IVehicleRepository Vehicles { get; }
+
+    public IPhysicsRepository Physics { get; }
+
+    public MissingAssetScanner MissingAssets { get; }
+
+    /// <summary>Everything read out of the installation: rolling stock and scenarios.</summary>
+    public GameLibrary Library { get; }
 
     /// <summary>
     /// Exposed as the concrete service rather than <see cref="ILocalizedStrings"/>

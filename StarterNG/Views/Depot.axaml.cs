@@ -19,14 +19,16 @@ using Avalonia.VisualTree;
 using StarterNG.Classes;
 using StarterNG.Domain;
 using StarterNG.Domain.Sceneries;
+using StarterNG.Domain.Vehicles;
+using StarterNG.Application;
 
 namespace StarterNG.Views;
 
 public partial class Depot : UserControl
 {
 
-    private readonly VehicleDatabase _db = GameData.Instance.Vehicles;
-    private readonly List<Scenery> _sceneries = GameData.Instance.Sceneries;
+    private readonly VehicleCatalog _db = AppServices.Current.Library.Vehicles;
+    private readonly List<Scenery> _sceneries = AppServices.Current.Library.Sceneries;
 
     private readonly VehicleInfo _info;
 

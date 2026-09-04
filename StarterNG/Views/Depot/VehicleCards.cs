@@ -12,6 +12,7 @@ using Material.Icons.Avalonia;
 
 using StarterNG.Classes;
 using StarterNG.Domain;
+using StarterNG.Domain.Vehicles;
 
 namespace StarterNG.Views;
 
@@ -19,7 +20,7 @@ public sealed class VehicleCards
 {
     private readonly Panel consistStack;
 
-    private readonly VehicleDatabase _db;
+    private readonly VehicleCatalog _db;
     private readonly Consist _consist;
     private readonly Cargo _cargo;
     private readonly MiniTextures _minis;
@@ -36,7 +37,7 @@ public sealed class VehicleCards
 
     public Dynamic? PressedCar { get; set; }
 
-    public VehicleCards(Panel consistStack, VehicleDatabase db, Consist consist,
+    public VehicleCards(Panel consistStack, VehicleCatalog db, Consist consist,
                               Cargo cargo, MiniTextures minis, Cursor hand,
                               Action redraw, Action refreshDetails, Action<Dynamic> selectInBrowser,
                               Action<int, PointerPressedEventArgs> armDrag)

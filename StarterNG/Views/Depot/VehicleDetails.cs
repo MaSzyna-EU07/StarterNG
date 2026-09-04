@@ -12,6 +12,7 @@ using Avalonia.Media;
 using StarterNG.Classes;
 using StarterNG.Controls;
 using StarterNG.Domain;
+using StarterNG.Domain.Vehicles;
 
 namespace StarterNG.Views;
 
@@ -26,7 +27,7 @@ public sealed class VehicleDetails
     private readonly StackPanel damagePanel;
     private readonly Button removeVehicleButton;
 
-    private readonly VehicleDatabase _db;
+    private readonly VehicleCatalog _db;
     private readonly VehicleInfo _info;
     private readonly Consist _consist;
     private readonly Cargo _cargo;
@@ -41,7 +42,7 @@ public sealed class VehicleDetails
         Panel couplerActions,
         StackPanel brakesPanel, StackPanel loadsPanel, StackPanel damagePanel,
         Button removeVehicleButton,
-        VehicleDatabase db, VehicleInfo info, Consist consist, Cargo cargo, Cursor hand,
+        VehicleCatalog db, VehicleInfo info, Consist consist, Cargo cargo, Cursor hand,
         Action redraw, Action refreshChrome, Action<VehicleTexture, StackPanel> showTextureInfo)
     {
         this.generalPanel = generalPanel;

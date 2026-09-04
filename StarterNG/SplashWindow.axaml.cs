@@ -1,5 +1,6 @@
-﻿using Avalonia.Controls;
+using Avalonia.Controls;
 using StarterNG.Classes;
+using StarterNG.Application;
 
 namespace StarterNG;
 

@@ -9,6 +9,7 @@ using Avalonia.Media.Imaging;
 using StarterNG.Classes;
 using StarterNG.Domain;
 using StarterNG.Infrastructure;
+using StarterNG.Domain.Vehicles;
 
 namespace StarterNG.Views;
 

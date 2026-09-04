@@ -1,12 +1,14 @@
 using StarterNG.Classes;
+using StarterNG.Domain.Vehicles;
+using StarterNG.Application;
 
 namespace StarterNG.Domain;
 
 public sealed class VehicleInfo
 {
-    private readonly VehicleDatabase _db;
+    private readonly VehicleCatalog _db;
 
-    public VehicleInfo(VehicleDatabase db) => _db = db;
+    public VehicleInfo(VehicleCatalog db) => _db = db;
 
     public static string ClassOf(VehicleTexture t) => t.ResolvedClass;
 
@@ -20,11 +22,11 @@ public sealed class VehicleInfo
     public string? CategoryOf(Dynamic car) =>
         TextureFor(car) is { } t ? CategoryOf(t) : null;
 
-    public Physics? PhysicsFor(Dynamic car)
+    public VehiclePhysics? PhysicsFor(Dynamic car)
     {
         string? dbModel = TextureFor(car)?.Model;
-        return Physics.For(car.DataFolder, dbModel)
-            ?? Physics.For(car.DataFolder, car.MmdFile)
-            ?? Physics.For(car.DataFolder, car.SkinFile);
+        return AppServices.Current.Physics.For(car.DataFolder, dbModel)
+            ?? AppServices.Current.Physics.For(car.DataFolder, car.MmdFile)
+            ?? AppServices.Current.Physics.For(car.DataFolder, car.SkinFile);
     }
 }

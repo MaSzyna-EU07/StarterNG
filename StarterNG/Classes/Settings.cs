@@ -4,6 +4,7 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text;
+using StarterNG.Application;
 
 namespace StarterNG.Classes;
 
@@ -395,7 +396,7 @@ public sealed class Settings
         if (!LogMissingVehicleFiles) return;
         try
         {
-            var lines = GameData.Instance.Vehicles.CollectMissingAssetLines();
+            var lines = AppServices.Current.MissingAssets.Scan(AppServices.Current.Library.Vehicles);
             if (lines.Count == 0) return;
             Infrastructure.Diagnostics.Log(lines);
         }

@@ -51,5 +51,11 @@ public interface IFileSystem
     /// <summary>Top-level directories, empty when the directory does not exist.</summary>
     IReadOnlyList<string> GetDirectories(string path);
 
+    /// <summary>
+    /// Files matching the pattern anywhere below the path. Empty when the
+    /// directory does not exist.
+    /// </summary>
+    IReadOnlyList<string> GetFilesRecursive(string path, string searchPattern);
+
     DateTime GetLastWriteTimeUtc(string path);
 }

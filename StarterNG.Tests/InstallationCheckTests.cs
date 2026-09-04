@@ -9,8 +9,10 @@ public class InstallationCheckTests
     [Fact]
     public void An_empty_folder_reports_every_missing_game_directory()
     {
-        var strings = new FakeStrings().With("FaultNoDir", "missing {0}");
-        var check = new InstallationCheck(new GamePaths("game"), new InMemoryFileSystem(), strings);
+        var installation = new TestInstallation();
+        var strings = installation.Strings.With("FaultNoDir", "missing {0}");
+        var check = new InstallationCheck(installation.Paths, installation.Files, strings,
+                                          installation.Physics, installation.Library);
 
         var faults = check.Run();
 
@@ -29,9 +31,11 @@ public class InstallationCheckTests
             .WithDirectory(Path.Combine("game", "scenery"))
             .WithDirectory(Path.Combine("game", "textures"))
             .WithFile(Path.Combine("game", "data", "load_weights.txt"), "");
-        var strings = new FakeStrings().With("FaultNoDir", "missing {0}");
+        var installation = new TestInstallation(files);
+        var strings = installation.Strings.With("FaultNoDir", "missing {0}");
 
-        var faults = new InstallationCheck(new GamePaths("game"), files, strings).Run();
+        var faults = new InstallationCheck(installation.Paths, files, strings,
+                                           installation.Physics, installation.Library).Run();
 
         Assert.DoesNotContain(faults, fault => fault.StartsWith("missing "));
         Assert.DoesNotContain("FaultNoWeights", faults);

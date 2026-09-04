@@ -5,6 +5,7 @@ using System.Linq;
 
 using StarterNG.Classes;
 using StarterNG.Domain.Sceneries;
+using StarterNG.Domain.Vehicles;
 
 namespace StarterNG.Domain;
 
@@ -12,12 +13,12 @@ public sealed class Consist : IReadOnlyList<ConsistItem>
 {
     private static readonly string[] CarSuffixes = { "sa", "sb", "ra", "rb", "s" };
 
-    private readonly VehicleDatabase _db;
+    private readonly VehicleCatalog _db;
     private readonly VehicleInfo _info;
     private readonly List<ConsistItem> _items = new();
     private int _nameCounter;
 
-    public Consist(VehicleDatabase db, VehicleInfo info)
+    public Consist(VehicleCatalog db, VehicleInfo info)
     {
         _db = db;
         _info = info;

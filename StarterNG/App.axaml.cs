@@ -125,7 +125,7 @@ public partial class App : Avalonia.Application
                     });
                 });
 
-                GameData.Instance.Load(progress);
+                AppServices.Current.Library.Load(progress);
             }).ContinueWith(load =>
             {
                 Dispatcher.UIThread.Post(async () =>

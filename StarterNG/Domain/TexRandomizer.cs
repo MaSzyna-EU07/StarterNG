@@ -3,12 +3,13 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using StarterNG.Classes;
+using StarterNG.Domain.Vehicles;
 
 namespace StarterNG.Domain;
 
 public sealed class TexRandomizer
 {
-    private readonly VehicleDatabase _db;
+    private readonly VehicleCatalog _db;
     private readonly Random _rng;
     private readonly List<string[]> _stock = new();
 
@@ -29,7 +30,7 @@ public sealed class TexRandomizer
         }
     }
 
-    public TexRandomizer(VehicleDatabase db, Random? rng = null)
+    public TexRandomizer(VehicleCatalog db, Random? rng = null)
     {
         _db = db;
         _rng = rng ?? Random.Shared;

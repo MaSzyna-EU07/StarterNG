@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.IO;
 using StarterNG.Application.Abstractions;
 using StarterNG.Classes;
+using StarterNG.Application;
 
 namespace StarterNG.Infrastructure;
 
@@ -20,12 +21,17 @@ public sealed class InstallationCheck
     private readonly IGamePaths _paths;
     private readonly IFileSystem _files;
     private readonly ILocalizedStrings _strings;
+    private readonly IPhysicsRepository _physics;
+    private readonly GameLibrary _library;
 
-    public InstallationCheck(IGamePaths paths, IFileSystem files, ILocalizedStrings strings)
+    public InstallationCheck(IGamePaths paths, IFileSystem files, ILocalizedStrings strings,
+                             IPhysicsRepository physics, GameLibrary library)
     {
         _paths = paths;
         _files = files;
         _strings = strings;
+        _physics = physics;
+        _library = library;
     }
 
     public List<string> Run()
@@ -39,13 +45,13 @@ public sealed class InstallationCheck
         if (!_files.FileExists(Path.Combine(_paths.Data, "load_weights.txt")))
             faults.Add(_strings["FaultNoWeights"]);
 
-        if (GameData.Instance.Sceneries.Count == 0)
+        if (_library.Sceneries.Count == 0)
             faults.Add(_strings["FaultNoScenery"]);
 
-        if (GameData.Instance.Vehicles.Textures.Count == 0)
+        if (_library.Vehicles.Textures.Count == 0)
             faults.Add(_strings["FaultNoVehicles"]);
 
-        if (Physics.IndexedCount == 0)
+        if (_physics.IndexedCount == 0)
             faults.Add(_strings["FaultNoPhysics"]);
 
         if (Settings.Instance.ResolveExecutable(out var problem) is var _ && problem == ExeProblem.NotFound)

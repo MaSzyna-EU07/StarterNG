@@ -15,6 +15,7 @@ using Avalonia.Threading;
 using StarterNG.Classes;
 using StarterNG.Domain;
 using StarterNG.Domain.Sceneries;
+using StarterNG.Domain.Vehicles;
 
 namespace StarterNG.Views;
 
@@ -28,7 +29,7 @@ public sealed class VehicleBrowser
     private readonly Image miniPreview;
     private readonly Button addVehicleButton;
 
-    private readonly VehicleDatabase _db;
+    private readonly VehicleCatalog _db;
     private readonly MiniTextures _minis;
     private readonly Action _openTextureBase;
 
@@ -57,7 +58,7 @@ public sealed class VehicleBrowser
     public VehicleBrowser(
         ComboBox categoryCombo, ComboBox classCombo, ListBox vehicleListBox, TextBox searchBox,
         CheckBox hideArchivalCheck, Image miniPreview, Button addVehicleButton,
-        VehicleDatabase db, MiniTextures minis, Action openTextureBase)
+        VehicleCatalog db, MiniTextures minis, Action openTextureBase)
     {
         this.categoryCombo = categoryCombo;
         this.classCombo = classCombo;

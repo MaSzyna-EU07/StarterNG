@@ -70,6 +70,8 @@ public static class Diagnostics
         new InstallationCheck(
                 AppServices.Current.Paths,
                 AppServices.Current.Files,
-                AppServices.Current.Localization)
+                AppServices.Current.Localization,
+                AppServices.Current.Physics,
+                AppServices.Current.Library)
             .Run();
 }
