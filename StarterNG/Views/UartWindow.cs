@@ -2,7 +2,7 @@ using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
 using Avalonia.Layout;
 using Avalonia.Media;
-using SettingsModel = StarterNG.Classes.Settings;
+using StarterNG.Application;
 
 namespace StarterNG.Views;
 
@@ -99,7 +99,7 @@ public sealed class UartWindow : Window
 
     private void Load()
     {
-        var s = SettingsModel.Instance;
+        var s = AppServices.Current.Settings;
         _enabled.IsChecked = s.UartEnabled;
         _port.Text = s.UartPort;
         _tune.Text = s.UartTune;
@@ -114,7 +114,7 @@ public sealed class UartWindow : Window
 
     private void Store()
     {
-        var s = SettingsModel.Instance;
+        var s = AppServices.Current.Settings;
         s.UartEnabled = _enabled.IsChecked == true;
         s.UartPort = _port.Text ?? "";
         s.UartTune = _tune.Text ?? "";

@@ -1,6 +1,7 @@
 using StarterNG.Application;
 using StarterNG.Infrastructure.Adapters;
 using StarterNG.Infrastructure.Sceneries;
+using StarterNG.Infrastructure.Settings;
 using StarterNG.Infrastructure.Vehicles;
 
 namespace StarterNG.Tests.Fakes;
@@ -28,6 +29,11 @@ public sealed class TestInstallation
         Sceneries = new SceneryRepository(Files, Paths, Log, new SceneryParser(Clock, Random));
         MissingAssets = new MissingAssetScanner(Files, Paths);
         Library = new GameLibrary(Vehicles, Sceneries, MiniTextures, Physics, Log);
+
+        Environment = new FakeEnvironment();
+        SettingsPaths = new SettingsPaths(Environment, Paths);
+        Executables = new ExecutableLocator(Files, Paths, Environment, Log);
+        SettingsStore = new SettingsStore(Files, Clock, Log, SettingsPaths, new SettingsSerializer(), Executables);
     }
 
     public InMemoryFileSystem Files { get; }
@@ -42,6 +48,10 @@ public sealed class TestInstallation
     public SceneryRepository Sceneries { get; }
     public MissingAssetScanner MissingAssets { get; }
     public GameLibrary Library { get; }
+    public FakeEnvironment Environment { get; }
+    public SettingsPaths SettingsPaths { get; }
+    public ExecutableLocator Executables { get; }
+    public SettingsStore SettingsStore { get; }
 
     /// <summary>Path of a file inside the fake installation.</summary>
     public static string At(params string[] segments) => Path.Combine(new[] { Root }.Concat(segments).ToArray());

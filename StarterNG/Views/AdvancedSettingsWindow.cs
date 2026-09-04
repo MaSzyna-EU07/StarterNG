@@ -4,7 +4,7 @@ using Avalonia.Controls.Primitives;
 using Avalonia.Layout;
 using Avalonia.Media;
 using StarterNG.Infrastructure;
-using SettingsModel = StarterNG.Classes.Settings;
+using StarterNG.Application;
 
 namespace StarterNG.Views;
 
@@ -156,7 +156,7 @@ public sealed class AdvancedSettingsWindow : Window
 
     private void Load()
     {
-        var s = SettingsModel.Instance;
+        var s = AppServices.Current.Settings;
         _compressTex.IsChecked = s.CompressTextures;
         _mipmaps.IsChecked = s.ScreenMipmaps;
         _scaleSpeculars.IsChecked = s.ScaleSpeculars;
@@ -172,7 +172,7 @@ public sealed class AdvancedSettingsWindow : Window
 
     private void Store()
     {
-        var s = SettingsModel.Instance;
+        var s = AppServices.Current.Settings;
         s.CompressTextures = _compressTex.IsChecked == true;
         s.ScreenMipmaps = _mipmaps.IsChecked == true;
         s.ScaleSpeculars = _scaleSpeculars.IsChecked == true;

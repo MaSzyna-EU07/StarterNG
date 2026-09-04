@@ -15,6 +15,7 @@ public sealed class InMemoryFileSystem : IFileSystem
 {
     private readonly Dictionary<string, byte[]> _files = new(StringComparer.OrdinalIgnoreCase);
     private readonly HashSet<string> _directories = new(StringComparer.OrdinalIgnoreCase);
+    private readonly HashSet<string> _executable = new(StringComparer.OrdinalIgnoreCase);
 
     public DateTime LastWriteTimeUtc { get; set; } = new(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc);
 
@@ -114,6 +115,16 @@ public sealed class InMemoryFileSystem : IFileSystem
     }
 
     public DateTime GetLastWriteTimeUtc(string path) => LastWriteTimeUtc;
+
+    /// <summary>Files added through <see cref="WithExecutable"/> carry the execute bit.</summary>
+    public bool IsExecutable(string path) => _executable.Contains(Normalize(path));
+
+    public InMemoryFileSystem WithExecutable(string path, string contents = "\u007fELF")
+    {
+        WithFile(path, contents);
+        _executable.Add(Normalize(path));
+        return this;
+    }
 
     private byte[] Bytes(string path) =>
         _files.TryGetValue(Normalize(path), out var bytes)

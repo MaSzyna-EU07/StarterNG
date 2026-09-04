@@ -41,7 +41,7 @@ public partial class Scenarios : UserControl
         Sceneries = AppServices.Current.Library.Sceneries;
 
         _loadingFilters = true;
-        archivalSwitch.IsChecked = !StarterNG.Classes.Settings.Instance.ShowArchivalSceneries;
+        archivalSwitch.IsChecked = !AppServices.Current.Settings.ShowArchivalSceneries;
         _loadingFilters = false;
 
         BuildSceneryTree();
@@ -75,7 +75,7 @@ public partial class Scenarios : UserControl
             if (scenery.Archival && !showArchival)
                 continue;
 
-            bool expand = StarterNG.Classes.Settings.Instance.AutoExpandSceneryTree;
+            bool expand = AppServices.Current.Settings.AutoExpandSceneryTree;
             AppServices.Current.SceneryTexts.LoadFor(scenery, App.Loc.CurrentLangCode);
             string label = scenery.DisplayName;
 
@@ -123,7 +123,7 @@ public partial class Scenarios : UserControl
 
     private void RestoreLastScenery()
     {
-        string last = StarterNG.Classes.Settings.Instance.LastScenery;
+        string last = AppServices.Current.Settings.LastScenery;
         string want = Path.GetFileNameWithoutExtension(last);
 
         TreeViewItem? MatchLeaf(TreeViewItem node)
@@ -193,10 +193,10 @@ public partial class Scenarios : UserControl
     {
 
         string name = scenery.DisplayName;
-        if (string.Equals(StarterNG.Classes.Settings.Instance.LastScenery, name, StringComparison.OrdinalIgnoreCase))
+        if (string.Equals(AppServices.Current.Settings.LastScenery, name, StringComparison.OrdinalIgnoreCase))
             return;
-        StarterNG.Classes.Settings.Instance.LastScenery = name;
-        StarterNG.Classes.Settings.Instance.Save();
+        AppServices.Current.Settings.LastScenery = name;
+        AppServices.Current.SettingsStore.Save();
     }
 
     private static string TrainsetListLabel(Trainset trainset) =>
@@ -215,8 +215,8 @@ public partial class Scenarios : UserControl
     {
         vehicleList.Items.Clear();
 
-        bool showAi = StarterNG.Classes.Settings.Instance.ShowAiVehicles;
-        bool drivableOnly = StarterNG.Classes.Settings.Instance.DrivableOnly;
+        bool showAi = AppServices.Current.Settings.ShowAiVehicles;
+        bool drivableOnly = AppServices.Current.Settings.DrivableOnly;
 
         for (int i = 0; i < scn.Trainsets.Count; i++)
         {
@@ -250,8 +250,8 @@ public partial class Scenarios : UserControl
     {
         if (_loadingFilters) return;
 
-        StarterNG.Classes.Settings.Instance.ShowArchivalSceneries = archivalSwitch.IsChecked != true;
-        StarterNG.Classes.Settings.Instance.Save();
+        AppServices.Current.Settings.ShowArchivalSceneries = archivalSwitch.IsChecked != true;
+        AppServices.Current.SettingsStore.Save();
 
         BuildSceneryTree();
         RestoreLastScenery();
@@ -405,7 +405,7 @@ public partial class Scenarios : UserControl
         BuildSceneryTree();
         if (!string.IsNullOrEmpty(selected))
         {
-            StarterNG.Classes.Settings.Instance.LastScenery =
+            AppServices.Current.Settings.LastScenery =
                 Path.GetFileNameWithoutExtension(selected);
             RestoreLastScenery();
         }
@@ -428,7 +428,7 @@ public partial class Scenarios : UserControl
             BuildSceneryTree();
             if (!string.IsNullOrEmpty(selected))
             {
-                StarterNG.Classes.Settings.Instance.LastScenery =
+                AppServices.Current.Settings.LastScenery =
                     Path.GetFileNameWithoutExtension(selected);
             }
             RestoreLastScenery();
@@ -895,7 +895,7 @@ public partial class Scenarios : UserControl
             string miniName = db.MiniForSkin(train.SkinFile) ?? train.SkinFile;
             if (!AppServices.Current.MiniTextures.Has(miniName) && AppServices.Current.MiniTextures.Has(train.SkinFile))
                 miniName = train.SkinFile;
-            int thumbH = StarterNG.Classes.Settings.Instance.LargeThumbnails ? 64 : 32;
+            int thumbH = AppServices.Current.Settings.LargeThumbnails ? 64 : 32;
 
             var bmp = LoadMini(miniName, thumbH);
             Control visual = bmp is not null

@@ -2,13 +2,14 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using StarterNG.Application;
 
 namespace StarterNG.Classes;
 
 public static class SettingsProfileStore
 {
     public static string DirectoryPath { get; } =
-        Path.Combine(Settings.UserConfigDirectory(), "starter", "profiles");
+        Path.Combine(AppServices.Current.SettingsPaths.UserConfigDirectory(), "starter", "profiles");
 
     public static IReadOnlyList<string> ListProfiles()
     {

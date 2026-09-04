@@ -52,4 +52,14 @@ public sealed class PhysicalFileSystem : IFileSystem
         Directory.Exists(path) ? Directory.GetDirectories(path) : Array.Empty<string>();
 
     public DateTime GetLastWriteTimeUtc(string path) => File.GetLastWriteTimeUtc(path);
+
+    public bool IsExecutable(string path)
+    {
+        if (OperatingSystem.IsWindows())
+            return true;
+
+        const UnixFileMode anyExecute =
+            UnixFileMode.UserExecute | UnixFileMode.GroupExecute | UnixFileMode.OtherExecute;
+        return (File.GetUnixFileMode(path) & anyExecute) != 0;
+    }
 }

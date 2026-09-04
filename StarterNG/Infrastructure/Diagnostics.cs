@@ -72,6 +72,7 @@ public static class Diagnostics
                 AppServices.Current.Files,
                 AppServices.Current.Localization,
                 AppServices.Current.Physics,
-                AppServices.Current.Library)
+                AppServices.Current.Library,
+                AppServices.Current.SettingsStore)
             .Run();
 }

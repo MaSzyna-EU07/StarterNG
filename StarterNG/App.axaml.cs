@@ -29,20 +29,20 @@ public partial class App : Avalonia.Application
     {
         AvaloniaXamlLoader.Load(this);
 
-        Settings.Instance.Load();
+        AppServices.Current.SettingsStore.Load();
 
         KeyboardConfig.Instance.Load();
 
         CultureInfo ci = CultureInfo.InstalledUICulture ;
 
-        var langName = Settings.Instance.LanguageWasSet
-            ? Settings.Instance.Language
+        var langName = AppServices.Current.Settings.LanguageWasSet
+            ? AppServices.Current.Settings.Language
             : ci.Name switch
             {
                 "pl-PL" => "Polski",
                 _ => "English"
             };
-        Settings.Instance.Language = langName;
+        AppServices.Current.Settings.Language = langName;
 
         ApplyLanguage(langName);
     }
@@ -51,7 +51,7 @@ public partial class App : Avalonia.Application
     {
 
         var resolvedName = Loc.Load(langNameOrCode);
-        Settings.Instance.Language = resolvedName;
+        AppServices.Current.Settings.Language = resolvedName;
         ApplyCulture(Loc.CurrentLangCode);
     }
 
@@ -87,10 +87,10 @@ public partial class App : Avalonia.Application
 
             desktop.ShutdownRequested += (_, _) =>
             {
-                try { Settings.Instance.CaptureAndSave(); }
+                try { AppServices.Current.SettingsStore.CaptureAndSave(); }
                 catch (Exception ex) { Diagnostics.Log("Settings save", ex); }
 
-                Settings.Instance.DumpMissingVehicleLog();
+                AppServices.Current.MissingVehicleLog.Dump();
 
                 try
                 {

@@ -58,4 +58,10 @@ public interface IFileSystem
     IReadOnlyList<string> GetFilesRecursive(string path, string searchPattern);
 
     DateTime GetLastWriteTimeUtc(string path);
+
+    /// <summary>
+    /// Whether the file carries an execute bit. Always true on Windows, where
+    /// executability is a property of the file's contents rather than its mode.
+    /// </summary>
+    bool IsExecutable(string path);
 }

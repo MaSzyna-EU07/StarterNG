@@ -12,7 +12,7 @@ public class InstallationCheckTests
         var installation = new TestInstallation();
         var strings = installation.Strings.With("FaultNoDir", "missing {0}");
         var check = new InstallationCheck(installation.Paths, installation.Files, strings,
-                                          installation.Physics, installation.Library);
+                                          installation.Physics, installation.Library, installation.SettingsStore);
 
         var faults = check.Run();
 
@@ -35,7 +35,7 @@ public class InstallationCheckTests
         var strings = installation.Strings.With("FaultNoDir", "missing {0}");
 
         var faults = new InstallationCheck(installation.Paths, files, strings,
-                                           installation.Physics, installation.Library).Run();
+                                           installation.Physics, installation.Library, installation.SettingsStore).Run();
 
         Assert.DoesNotContain(faults, fault => fault.StartsWith("missing "));
         Assert.DoesNotContain("FaultNoWeights", faults);

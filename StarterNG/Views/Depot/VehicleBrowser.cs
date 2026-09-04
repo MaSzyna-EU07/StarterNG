@@ -16,6 +16,7 @@ using StarterNG.Classes;
 using StarterNG.Domain;
 using StarterNG.Domain.Sceneries;
 using StarterNG.Domain.Vehicles;
+using StarterNG.Application;
 
 namespace StarterNG.Views;
 
@@ -35,7 +36,7 @@ public sealed class VehicleBrowser
 
     public void SyncHideArchival()
     {
-        bool hideArchival = Classes.Settings.Instance.HideArchivalVehicles;
+        bool hideArchival = AppServices.Current.Settings.HideArchivalVehicles;
         if (hideArchivalCheck.IsChecked == hideArchival)
             return;
 
@@ -246,7 +247,7 @@ public sealed class VehicleBrowser
         _db.Textures
             .Where(t => category == null || category(VehicleInfo.CategoryOf(t)))
             .Where(t => !_db.IsSetFollower(t))
-            .Where(t => !StarterNG.Classes.Settings.Instance.HideArchivalVehicles || !t.ResolvedArchived)
+            .Where(t => !AppServices.Current.Settings.HideArchivalVehicles || !t.ResolvedArchived)
             .Select(VehicleInfo.ClassOf)
             .Where(s => !string.IsNullOrEmpty(s))
             .Distinct(StringComparer.OrdinalIgnoreCase)
@@ -469,7 +470,7 @@ public sealed class VehicleBrowser
         if (_db.IsSetFollower(t))
             return false;
 
-        if (StarterNG.Classes.Settings.Instance.HideArchivalVehicles && t.ResolvedArchived)
+        if (AppServices.Current.Settings.HideArchivalVehicles && t.ResolvedArchived)
             return false;
 
         if (hasSearch && !Matches(t, search))
@@ -515,8 +516,8 @@ public sealed class VehicleBrowser
     public void HideArchivalCheck_OnChanged(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
     {
         if (_suppress) return;
-        StarterNG.Classes.Settings.Instance.HideArchivalVehicles = hideArchivalCheck.IsChecked ?? true;
-        StarterNG.Classes.Settings.Instance.Save();
+        AppServices.Current.Settings.HideArchivalVehicles = hideArchivalCheck.IsChecked ?? true;
+        AppServices.Current.SettingsStore.Save();
         Rebuild();
     }
 

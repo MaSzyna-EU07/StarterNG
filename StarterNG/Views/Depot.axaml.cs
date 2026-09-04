@@ -91,7 +91,7 @@ public partial class Depot : UserControl
 
         Dispatcher.UIThread.Post(() =>
         {
-            hideArchivalCheck.IsChecked = StarterNG.Classes.Settings.Instance.HideArchivalVehicles;
+            hideArchivalCheck.IsChecked = AppServices.Current.Settings.HideArchivalVehicles;
             _browser.InitClassComboTemplates();
             _browser.PopulateCategoryCombo();
             PopulateSceneryConsists();
@@ -232,8 +232,8 @@ public partial class Depot : UserControl
     private void ConsistFilter_OnChanged(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
     {
         if (_suppress) return;
-        StarterNG.Classes.Settings.Instance.ShowAiVehicles = depotShowAiCheck.IsChecked == true;
-        StarterNG.Classes.Settings.Instance.DrivableOnly = depotDrivableOnlyCheck.IsChecked == true;
+        AppServices.Current.Settings.ShowAiVehicles = depotShowAiCheck.IsChecked == true;
+        AppServices.Current.Settings.DrivableOnly = depotDrivableOnlyCheck.IsChecked == true;
         PopulateSceneryConsists();
     }
 
@@ -242,8 +242,8 @@ public partial class Depot : UserControl
         _suppress = true;
         sceneryConsistList.Items.Clear();
 
-        depotShowAiCheck.IsChecked = StarterNG.Classes.Settings.Instance.ShowAiVehicles;
-        depotDrivableOnlyCheck.IsChecked = StarterNG.Classes.Settings.Instance.DrivableOnly;
+        depotShowAiCheck.IsChecked = AppServices.Current.Settings.ShowAiVehicles;
+        depotDrivableOnlyCheck.IsChecked = AppServices.Current.Settings.DrivableOnly;
 
         _listScenery = AppServices.Current.State.CurrentScenery ?? _sceneries.FirstOrDefault();
         sceneryConsistsTab.Header = App.Loc["SceneryConsists"];
@@ -252,8 +252,8 @@ public partial class Depot : UserControl
 
         if (_listScenery != null)
         {
-            bool showAi = StarterNG.Classes.Settings.Instance.ShowAiVehicles;
-            bool drivableOnly = StarterNG.Classes.Settings.Instance.DrivableOnly;
+            bool showAi = AppServices.Current.Settings.ShowAiVehicles;
+            bool drivableOnly = AppServices.Current.Settings.DrivableOnly;
 
             foreach (var trainset in _listScenery.Trainsets)
             {

@@ -1,4 +1,5 @@
 using Avalonia.Media;
+using StarterNG.Application;
 
 namespace StarterNG.Views;
 
@@ -14,5 +15,5 @@ public static class VehicleCardStyle
     public static readonly IBrush Placeholder = new SolidColorBrush(Color.Parse("#22808080"));
 
     public static int ThumbHeight =>
-        Classes.Settings.Instance.LargeThumbnails ? 68 : 34;
+        AppServices.Current.Settings.LargeThumbnails ? 68 : 34;
 }

@@ -16,9 +16,9 @@ using StarterNG.Domain;
 using StarterNG.Infrastructure;
 using StarterNG.Services;
 using StarterNG.Views;
-using SettingsModel = StarterNG.Classes.Settings;
 using StarterNG.Application;
 using StarterNG.Domain.Sceneries;
+using StarterNG.Domain.Settings;
 
 namespace StarterNG;
 
@@ -37,13 +37,13 @@ public partial class MainWindow : Window
         ExtendClientAreaToDecorationsHint = true;
         ExtendClientAreaTitleBarHeightHint = TitleBarHeight;
 
-        if (SettingsModel.Instance.WindowMaximized)
+        if (AppServices.Current.Settings.WindowMaximized)
             WindowState = WindowState.Maximized;
 
         PropertyChanged += (_, e) =>
         {
             if (e.Property == WindowStateProperty && WindowState != WindowState.Minimized)
-                SettingsModel.Instance.WindowMaximized = WindowState == WindowState.Maximized;
+                AppServices.Current.Settings.WindowMaximized = WindowState == WindowState.Maximized;
         };
 
         if (OperatingSystem.IsWindows())
@@ -429,7 +429,7 @@ public partial class MainWindow : Window
 
         if (trainset.Vehicles.Count > 0)
         {
-            trainset.Velocity = SettingsModel.Instance.BatteryDefault switch
+            trainset.Velocity = AppServices.Current.Settings.BatteryDefault switch
             {
                 BatteryDefault.AlwaysOff => 0f,
                 BatteryDefault.AlwaysOn  => MathF.Abs(trainset.OriginalVelocity) < 0.01f ? 0.1f : trainset.OriginalVelocity,
@@ -452,7 +452,7 @@ public partial class MainWindow : Window
         string exportPath = Path.Combine(dir, exportName);
         try
         {
-            File.WriteAllText(exportPath, scenery.BuildExportContent(SettingsModel.Instance.IgnoreIrrelevantTrains, AppServices.Current.Random), Encoding.GetEncoding(1250));
+            File.WriteAllText(exportPath, scenery.BuildExportContent(AppServices.Current.Settings.IgnoreIrrelevantTrains, AppServices.Current.Random), Encoding.GetEncoding(1250));
         }
         catch (Exception ex)
         {
@@ -461,9 +461,9 @@ public partial class MainWindow : Window
         }
 
         if (saveSettings)
-            SettingsModel.Instance.CaptureAndSave();
+            AppServices.Current.SettingsStore.CaptureAndSave();
 
-        string exe = Path.GetFullPath(SettingsModel.Instance.ResolveExecutable(out var exeProblem));
+        string exe = Path.GetFullPath(AppServices.Current.SettingsStore.ResolveExecutable(out var exeProblem));
         if (exeProblem != ExeProblem.None)
         {
             await ShowExeProblem(exeProblem, exe);
@@ -488,7 +488,7 @@ public partial class MainWindow : Window
             return;
         }
 
-        if (SettingsModel.Instance.AutoCloseStarter)
+        if (AppServices.Current.Settings.AutoCloseStarter)
         {
             Close();
             return;
@@ -525,7 +525,7 @@ public partial class MainWindow : Window
     {
         if (sim is null)
         {
-            string name = Path.GetFileNameWithoutExtension(SettingsModel.Instance.ResolveExecutable());
+            string name = Path.GetFileNameWithoutExtension(AppServices.Current.SettingsStore.ResolveExecutable());
             sim = Process.GetProcessesByName(name).FirstOrDefault();
         }
 
@@ -555,7 +555,7 @@ public partial class MainWindow : Window
     {
         if ((DateTime.UtcNow - _openedUtc).TotalSeconds < 3)
             return;
-        if (!SettingsModel.Instance.IsConfigNewerOnDisk())
+        if (!AppServices.Current.SettingsStore.IsConfigNewerOnDisk())
             return;
 
         var result = await MessageBox.Show(
@@ -565,11 +565,11 @@ public partial class MainWindow : Window
             MessageBoxButtons.YesNo);
         if (result)
         {
-            SettingsModel.Instance.Load();
+            AppServices.Current.SettingsStore.Load();
             SettingsView?.ReloadFromSettings();
         }
         else
-            SettingsModel.Instance.TouchConfigAge();
+            AppServices.Current.SettingsStore.TouchConfigAge();
     }
 
     private void RestoreFromSimulator()

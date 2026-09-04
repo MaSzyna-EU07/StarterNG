@@ -1,7 +1,9 @@
 using System;
 using StarterNG.Application.Abstractions;
+using StarterNG.Domain.Settings;
 using StarterNG.Infrastructure.Adapters;
 using StarterNG.Infrastructure.Sceneries;
+using StarterNG.Infrastructure.Settings;
 using StarterNG.Infrastructure.Vehicles;
 using StarterNG.Services;
 
@@ -27,11 +29,12 @@ public sealed class AppServices
 {
     private static AppServices? _current;
 
-    private AppServices(IGamePaths paths, IFileSystem files, IClock clock)
+    private AppServices(IGamePaths paths, IFileSystem files, IClock clock, IEnvironment environment)
     {
         Paths = paths;
         Files = files;
         Clock = clock;
+        Environment = environment;
 
         var log = new FileDiagnosticsLog(files, clock, paths);
         Log = log;
@@ -48,6 +51,12 @@ public sealed class AppServices
         LoadWeights = new LoadWeightsRepository(files, paths, log);
         Library = new GameLibrary(Vehicles, Sceneries, MiniTextures, Physics, log);
         State = new AppState();
+
+        var settingsPaths = new SettingsPaths(environment, paths);
+        Executables = new ExecutableLocator(files, paths, environment, log);
+        SettingsStore = new SettingsStore(files, clock, log, settingsPaths, new SettingsSerializer(), Executables);
+        SettingsPaths = settingsPaths;
+        MissingVehicleLog = new MissingVehicleLog(SettingsStore.Settings, MissingAssets, Library, log);
     }
 
     /// <summary>
@@ -60,12 +69,14 @@ public sealed class AppServices
             "AppServices.Current read before Initialize(); the composition root must be built first.");
 
     /// <summary>Builds the production graph. Called once, from the entry point.</summary>
-    public static AppServices Initialize(IGamePaths? paths = null, IFileSystem? files = null, IClock? clock = null)
+    public static AppServices Initialize(IGamePaths? paths = null, IFileSystem? files = null, IClock? clock = null,
+                                         IEnvironment? environment = null)
     {
         _current = new AppServices(
             paths ?? GamePaths.ForCurrentDirectory(),
             files ?? new PhysicalFileSystem(),
-            clock ?? new SystemClock());
+            clock ?? new SystemClock(),
+            environment ?? new SystemEnvironment());
         return _current;
     }
 
@@ -74,6 +85,8 @@ public sealed class AppServices
     public IFileSystem Files { get; }
 
     public IClock Clock { get; }
+
+    public IEnvironment Environment { get; }
 
     public IDiagnosticsLog Log { get; }
 
@@ -102,6 +115,18 @@ public sealed class AppServices
 
     /// <summary>What the user currently has selected.</summary>
     public AppState State { get; }
+
+    /// <summary>The settings the starter runs with, and their load/save lifecycle.</summary>
+    public SettingsStore SettingsStore { get; }
+
+    /// <summary>Shorthand for the settings themselves.</summary>
+    public SimulatorSettings Settings => SettingsStore.Settings;
+
+    public ExecutableLocator Executables { get; }
+
+    public SettingsPaths SettingsPaths { get; }
+
+    public MissingVehicleLog MissingVehicleLog { get; }
 
     /// <summary>
     /// Exposed as the concrete service rather than <see cref="ILocalizedStrings"/>

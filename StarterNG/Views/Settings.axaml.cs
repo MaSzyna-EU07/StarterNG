@@ -19,10 +19,12 @@ using StarterNG.Infrastructure;
 using StarterNG.Services;
 
 using KeyBinding = StarterNG.Classes.KeyBinding;
+using StarterNG.Domain.Settings;
+using StarterNG.Application;
 
 namespace StarterNG.Views;
 
-public partial class Settings : UserControl
+public partial class Settings : UserControl, ISettingsCapture
 {
     private bool _loading;
 
@@ -33,14 +35,14 @@ public partial class Settings : UserControl
     public event Action? ThumbnailSizeChanged;
 
     /// <summary>Thumbnail size the other tabs were last drawn at.</summary>
-    private bool _drawnThumbs = StarterNG.Classes.Settings.Instance.LargeThumbnails;
+    private bool _drawnThumbs = AppServices.Current.Settings.LargeThumbnails;
 
     public Settings()
     {
         InitializeComponent();
 
-        SettingsPathText.Text = StarterNG.Classes.Settings.Instance.LoadedFrom;
-        ToolTip.SetTip(SettingsPathText, StarterNG.Classes.Settings.Instance.LoadedFrom);
+        SettingsPathText.Text = AppServices.Current.SettingsStore.LoadedFrom;
+        ToolTip.SetTip(SettingsPathText, AppServices.Current.SettingsStore.LoadedFrom);
 
         this.AttachedToVisualTree += (_, _) =>
         {
@@ -60,7 +62,7 @@ public partial class Settings : UserControl
         FeedbackCb.SelectionChanged += FeedbackCb_OnSelectionChanged;
         FpsLimitEnableCb.IsCheckedChanged += (_, _) => FpsLimitSlider.IsEnabled = IsChecked(FpsLimitEnableCb);
 
-        StarterNG.Classes.Settings.Instance.CaptureFromUi = ReadFromUi;
+        AppServices.Current.SettingsStore.RegisterCapture(this);
 
         PopulateProfileCombo();
         ApplyToUi();
@@ -111,7 +113,7 @@ public partial class Settings : UserControl
             return;
         string path = SettingsProfileStore.PathFor(name);
         if (!File.Exists(path)) return;
-        StarterNG.Classes.Settings.Instance.LoadFrom(path);
+        AppServices.Current.SettingsStore.LoadFrom(path);
         ApplyToUi();
         RedrawThumbnailsIfNeeded();
     }
@@ -129,8 +131,8 @@ public partial class Settings : UserControl
         void Commit()
         {
             if (string.IsNullOrWhiteSpace(nameBox.Text)) return;
-            ReadFromUi();
-            StarterNG.Classes.Settings.Instance.SaveTo(SettingsProfileStore.PathFor(nameBox.Text));
+            CaptureInto(AppServices.Current.Settings);
+            AppServices.Current.SettingsStore.SaveTo(SettingsProfileStore.PathFor(nameBox.Text));
             PopulateProfileCombo();
             int idx = FindComboIndexByContent(ProfileCb, nameBox.Text.Trim());
             if (idx >= 0) ProfileCb.SelectedIndex = idx;
@@ -147,7 +149,7 @@ public partial class Settings : UserControl
         string? current = (SelectExeCb.SelectedItem as ComboBoxItem)?.Content?.ToString();
         SelectExeCb.Items.Clear();
         SelectExeCb.Items.Add(new ComboBoxItem { Content = App.Loc["SelectEXEAuto"] });
-        foreach (string exe in StarterNG.Classes.Settings.ListCandidateExecutables())
+        foreach (string exe in AppServices.Current.Executables.ListCandidates())
             SelectExeCb.Items.Add(new ComboBoxItem { Content = exe });
         if (current is not null)
         {
@@ -160,7 +162,7 @@ public partial class Settings : UserControl
 
     private void ApplyToUi()
     {
-        var s = StarterNG.Classes.Settings.Instance;
+        var s = AppServices.Current.Settings;
         _loading = true;
         try
         {
@@ -268,9 +270,12 @@ public partial class Settings : UserControl
         UpdateQualityCaptions();
     }
 
-    private void ReadFromUi()
+    /// <summary>
+    /// Writes the pending edits on this screen into the settings, so a save from
+    /// anywhere in the application picks them up.
+    /// </summary>
+    public void CaptureInto(SimulatorSettings s)
     {
-        var s = StarterNG.Classes.Settings.Instance;
 
         s.Language = (ChangeLanguageCb.SelectedItem as ComboBoxItem)?.Content?.ToString()
                      ?? App.Loc.CurrentLanguage;
@@ -297,8 +302,8 @@ public partial class Settings : UserControl
         s.BufferScalePercent = (int)bufferScale.Value;
         s.MaxTextureSize = 1 << (int)textureResolutionSlider.Value;
         s.MaxCabTextureSize = 1 << (int)cabTextureResolutionSlider.Value;
-        s.TextureFiltering = StarterNG.Classes.Settings.AnisotropySteps[
-            Clamp((int)TexFilteringSlider.Value - 1, 0, StarterNG.Classes.Settings.AnisotropySteps.Length - 1)];
+        s.TextureFiltering = SimulatorSettings.AnisotropySteps[
+            Clamp((int)TexFilteringSlider.Value - 1, 0, SimulatorSettings.AnisotropySteps.Length - 1)];
         s.Multisampling = Clamp((int)MultisamplingSlider.Value - 1, 0, 3);
         s.DynamicLights = (int)DynamicLightsSlider.Value;
         s.DrawRangeFactor = RenderRangeSlider.Value;
@@ -363,8 +368,8 @@ public partial class Settings : UserControl
 
     private void SaveButton_OnClick(object? sender, RoutedEventArgs e)
     {
-        ReadFromUi();
-        StarterNG.Classes.Settings.Instance.Save();
+        CaptureInto(AppServices.Current.Settings);
+        AppServices.Current.SettingsStore.Save();
         KeyboardConfig.Instance.Save();
         RedrawThumbnailsIfNeeded();
         _dirty = false;
@@ -375,7 +380,7 @@ public partial class Settings : UserControl
 
     private void RedrawThumbnailsIfNeeded()
     {
-        bool large = StarterNG.Classes.Settings.Instance.LargeThumbnails;
+        bool large = AppServices.Current.Settings.LargeThumbnails;
         if (large == _drawnThumbs)
             return;
 
@@ -385,7 +390,7 @@ public partial class Settings : UserControl
 
     private void ResetButton_OnClick(object? sender, RoutedEventArgs e)
     {
-        StarterNG.Classes.Settings.Instance.Load();
+        AppServices.Current.SettingsStore.Load();
         ApplyToUi();
         RedrawThumbnailsIfNeeded();
         CancelCapture();
@@ -413,7 +418,7 @@ public partial class Settings : UserControl
         ResolutionCb.SelectedItem = added;
     }
 
-    private void ReadResolution(Classes.Settings s)
+    private void ReadResolution(SimulatorSettings s)
     {
         var text = (ResolutionCb.SelectedItem as ComboBoxItem)?.Content?.ToString();
         if (string.IsNullOrEmpty(text))
@@ -688,7 +693,7 @@ public partial class Settings : UserControl
 
     private static int AnisotropyToSlider(int anisotropy)
     {
-        var steps = StarterNG.Classes.Settings.AnisotropySteps;
+        var steps = SimulatorSettings.AnisotropySteps;
         for (int i = 0; i < steps.Length; i++)
             if (steps[i] == anisotropy)
                 return i + 1;

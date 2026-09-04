@@ -3,6 +3,7 @@ using System.IO;
 using StarterNG.Application.Abstractions;
 using StarterNG.Classes;
 using StarterNG.Application;
+using StarterNG.Domain.Settings;
 
 namespace StarterNG.Infrastructure;
 
@@ -23,15 +24,17 @@ public sealed class InstallationCheck
     private readonly ILocalizedStrings _strings;
     private readonly IPhysicsRepository _physics;
     private readonly GameLibrary _library;
+    private readonly SettingsStore _settings;
 
     public InstallationCheck(IGamePaths paths, IFileSystem files, ILocalizedStrings strings,
-                             IPhysicsRepository physics, GameLibrary library)
+                             IPhysicsRepository physics, GameLibrary library, SettingsStore settings)
     {
         _paths = paths;
         _files = files;
         _strings = strings;
         _physics = physics;
         _library = library;
+        _settings = settings;
     }
 
     public List<string> Run()
@@ -54,7 +57,8 @@ public sealed class InstallationCheck
         if (_physics.IndexedCount == 0)
             faults.Add(_strings["FaultNoPhysics"]);
 
-        if (Settings.Instance.ResolveExecutable(out var problem) is var _ && problem == ExeProblem.NotFound)
+        _settings.ResolveExecutable(out var problem);
+        if (problem == ExeProblem.NotFound)
             faults.Add(_strings["FaultNoExe"]);
 
         return faults;
