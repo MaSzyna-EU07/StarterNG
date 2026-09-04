@@ -4,30 +4,10 @@ using StarterNG.Domain.Vehicles;
 
 namespace StarterNG.Infrastructure.Vehicles;
 
-/// <summary>
-/// Reads one vehicle folder's textures.txt into a <see cref="VehicleEntry"/>.
-/// </summary>
-/// <remarks>
-/// The format is line oriented and stateful: '$a' marks the rest of the file as
-/// archived, '!=' sets the category letter, and '^n' opens a fixed set of n
-/// vehicles. Everything else with an '=' is a livery. Unknown lines are skipped
-/// rather than rejected, because the files are hand written.
-///
-/// Pure text in, model out: the repository does the reading, so the format can
-/// be tested from a string array.
-/// </remarks>
 public sealed class TexturesTxtParser
 {
-    /// <summary>Category letter meaning "derive it from the thumbnail name".</summary>
     private const string DeriveCategory = "*";
 
-    /// <summary>
-    /// Parses the file's lines. Returns null when the folder declares no liveries.
-    /// </summary>
-    /// <param name="directory">
-    /// The folder path relative to dynamic/, with a trailing slash; it forms the
-    /// livery ids and is what the scenery format writes as the data folder.
-    /// </param>
     public VehicleEntry? Parse(string directory, IReadOnlyList<string> lines)
     {
         var entry = new VehicleEntry { Uuid = "legacy:" + directory };
@@ -120,8 +100,6 @@ public sealed class TexturesTxtParser
         if (skin.Length == 0)
             return null;
 
-        // Every "=" segment is "model, thumbnail[, per-texture thumbnail]"; the
-        // first is the livery proper and the rest are alternative models.
         var specs = new List<(string Model, string Mini, string TextureMini)>();
         for (int i = 1; i < parts.Length; i++)
         {
@@ -170,10 +148,6 @@ public sealed class TexturesTxtParser
         return texture;
     }
 
-    /// <summary>
-    /// The trailing comment is a fixed, comma separated credit line. Underscores
-    /// stand in for spaces, a convention from the era the format comes from.
-    /// </summary>
     private static VehicleMeta? ParseDescription(string description)
     {
         if (string.IsNullOrWhiteSpace(description))

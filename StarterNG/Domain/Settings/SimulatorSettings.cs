@@ -2,43 +2,16 @@ using System;
 
 namespace StarterNG.Domain.Settings;
 
-/// <summary>How the simulator should treat the battery switch when a run starts.</summary>
 public enum BatteryDefault { Default = 0, AlwaysOff = 1, AlwaysOn = 2 }
 
-/// <summary>What is wrong with the executable the starter would launch.</summary>
 public enum ExeProblem { None, NotFound, NotExecutable, WrongPlatform }
 
-/// <summary>
-/// Everything the starter writes into eu07.ini, plus the handful of preferences
-/// it keeps for itself.
-/// </summary>
-/// <remarks>
-/// Plain state with sensible defaults, and nothing else: reading and writing the
-/// ini is <c>Infrastructure.Settings.SettingsSerializer</c>, locating the file
-/// and the executable is the rest of that folder, and the load/save lifecycle is
-/// <c>Application.SettingsStore</c>. Splitting those out is what makes it
-/// possible to test the ini mapping without a disk.
-/// </remarks>
 public sealed class SimulatorSettings
 {
-    /// <summary>
-    /// False until the ini names a language, which is how the first run knows to
-    /// follow the operating system instead.
-    /// </summary>
     public bool LanguageWasSet { get; internal set; }
 
-    /// <summary>
-    /// Display name of the starter's language, as the picker shows it ("Polski",
-    /// "English", "中文"). Resolved from <see cref="LanguageCode"/> at startup.
-    /// </summary>
     public string Language = "English";
 
-    /// <summary>
-    /// The language's code, as its startercfg/lang/*.xml declares it and as
-    /// eu07.ini stores it. This is what the simulator reads, so it has to carry
-    /// whatever language the user actually picked rather than being folded into
-    /// one of two known ones.
-    /// </summary>
     public string LanguageCode = "";
     public bool Fullscreen;
     public bool PauseWhenInactive = true;
@@ -118,10 +91,6 @@ public sealed class SimulatorSettings
     public bool SkipPipeline;
     public int PythonScreenUpdateRate = 200;
     public bool DebugLogVisible;
-    /// <summary>
-    /// Debug log bits beyond the two the UI exposes, carried through a round trip
-    /// so a hand-configured log level is not silently narrowed.
-    /// </summary>
     internal int DebugLogExtraBits { get; set; }
 
     public bool CompressTextures = true;
@@ -146,11 +115,6 @@ public sealed class SimulatorSettings
     public bool HideArchivalVehicles = true;
     public string LastScenery = "";
 
-    /// <summary>
-    /// Starter's own window state, the way the old one kept WindowMaximized in
-    /// starter.ini. Only the maximised flag is remembered - a normal window
-    /// always opens at its design size, centred on the screen.
-    /// </summary>
     public bool WindowMaximized;
 
     public static readonly string[] RenderEngines =
@@ -158,16 +122,7 @@ public sealed class SimulatorSettings
 
     public static readonly int[] AnisotropySteps = { 1, 2, 4, 8, 16 };
 
-    /// <summary>
-    /// Vertical mouse scale as the ini stored it. The UI only exposes one
-    /// sensitivity, so the authored vertical magnitude is carried through a
-    /// round trip rather than being overwritten.
-    /// </summary>
     internal double MouseScaleYMagnitude { get; set; } = 0.2;
 
-    /// <summary>
-    /// Shadow tuning values beyond the two the UI edits, carried through a round
-    /// trip unchanged.
-    /// </summary>
     internal string[] ShadowTuneExtra { get; set; } = { "400", "300" };
 }

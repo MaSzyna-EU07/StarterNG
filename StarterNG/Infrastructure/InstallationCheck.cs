@@ -7,14 +7,6 @@ using StarterNG.Domain.Settings;
 
 namespace StarterNG.Infrastructure;
 
-/// <summary>
-/// Verifies that the folder the starter runs from actually looks like a MaSzyna
-/// installation, and reports what is missing in the user's language.
-/// </summary>
-/// <remarks>
-/// Depends only on ports, so a broken installation can be described in a test by
-/// handing it an empty in-memory file system.
-/// </remarks>
 public sealed class InstallationCheck
 {
     private static readonly string[] RequiredFolders = { "dynamic", "sounds", "models", "scenery", "textures" };

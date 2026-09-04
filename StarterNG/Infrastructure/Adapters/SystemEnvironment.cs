@@ -3,7 +3,6 @@ using StarterNG.Application.Abstractions;
 
 namespace StarterNG.Infrastructure.Adapters;
 
-/// <summary><see cref="IEnvironment"/> backed by the running process.</summary>
 public sealed class SystemEnvironment : IEnvironment
 {
     public bool IsWindows => OperatingSystem.IsWindows();

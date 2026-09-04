@@ -12,17 +12,8 @@ using StarterNG.Infrastructure.Adapters;
 
 namespace StarterNG.Infrastructure.Sceneries;
 
-/// <summary>
-/// Loads scenarios from the installation's scenery folder.
-/// </summary>
-/// <remarks>
-/// Sceneries are code page 1250 text, and a large installation holds hundreds of
-/// them, so the sweep is parallel; each file that throws is logged and dropped
-/// rather than taking the whole load down.
-/// </remarks>
 public sealed class SceneryRepository : ISceneryRepository
 {
-    /// <summary>Files starting with '$' are authoring scratch, not scenarios.</summary>
     private const char ExcludedPrefix = '$';
 
     private readonly IFileSystem _files;
@@ -83,5 +74,4 @@ public sealed class SceneryRepository : ISceneryRepository
     private IEnumerable<string> SceneryFiles() =>
         _files.GetFiles(_paths.Scenery, "*.scn")
               .Where(path => Path.GetFileName(path).FirstOrDefault() != ExcludedPrefix);
-
 }

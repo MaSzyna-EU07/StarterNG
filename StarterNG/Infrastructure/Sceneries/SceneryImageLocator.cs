@@ -5,15 +5,6 @@ using StarterNG.Domain.Sceneries;
 
 namespace StarterNG.Infrastructure.Sceneries;
 
-/// <summary>
-/// Finds the preview image a scenery names, which authors place in any of
-/// several conventional spots relative to the .scn.
-/// </summary>
-/// <remarks>
-/// Was a lazy property on the aggregate; moved out because it is a lookup on
-/// disk. Results are cached per scenery path, which is what the lazy field
-/// bought us before.
-/// </remarks>
 public sealed class SceneryImageLocator
 {
     private readonly IFileSystem _files;
@@ -24,7 +15,6 @@ public sealed class SceneryImageLocator
         _files = files;
     }
 
-    /// <summary>The image file for this scenery, or null when there is none.</summary>
     public string? Resolve(Scenery scenery)
     {
         lock (_cache)

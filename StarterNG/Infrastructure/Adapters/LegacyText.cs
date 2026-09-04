@@ -17,14 +17,8 @@ namespace StarterNG.Infrastructure.Adapters;
 /// </remarks>
 public static class LegacyText
 {
-    /// <summary>The .scn / .fiz / .ini code page, or Latin-1 if it is unavailable.</summary>
     public static Encoding CodePage1250 { get; } = Resolve();
 
-    /// <summary>
-    /// True when the code page could not be loaded and text is being read as
-    /// Latin-1 instead. Polish characters will be wrong; the startup check
-    /// reports it rather than leaving it to be discovered on screen.
-    /// </summary>
     public static bool IsFallback { get; private set; }
 
     private static Encoding Resolve()

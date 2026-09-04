@@ -6,17 +6,6 @@ using StarterNG.Application.Abstractions;
 
 namespace StarterNG.Domain.Vehicles;
 
-/// <summary>
-/// Every livery the installation offers, indexed for the lookups the depot and
-/// the consist editor make: by uuid, by skin file, and by the set a vehicle
-/// belongs to.
-/// </summary>
-/// <remarks>
-/// Was <c>VehicleCatalog</c>, which also owned file enumeration, textures.txt
-/// parsing, a static thumbnail dictionary and a missing-asset scan. Those moved
-/// to Infrastructure; what is left is the model and its resolution rules, filled
-/// by a repository through <see cref="Ingest"/>.
-/// </remarks>
 public sealed class VehicleCatalog
 {
     private readonly IMiniTextureIndex _minis;
@@ -26,7 +15,6 @@ public sealed class VehicleCatalog
         _minis = minis;
     }
 
-    /// <summary>Every livery worth offering (wrecks excluded).</summary>
     public List<VehicleTexture> Textures { get; } = new();
 
     public Dictionary<string, VehicleGroup> GroupsById { get; } = new();
@@ -37,7 +25,6 @@ public sealed class VehicleCatalog
 
     public Dictionary<string, VehicleTexture> TextureByUuid { get; } = new();
 
-    /// <summary>Liveries by skin file name without extension, lower cased.</summary>
     public Dictionary<string, VehicleTexture> TextureBySkin { get; } = new();
 
     public void BeginLoad()
@@ -50,7 +37,6 @@ public sealed class VehicleCatalog
         TextureBySkin.Clear();
     }
 
-    /// <summary>Adds one vehicle folder's liveries to the catalogue.</summary>
     public void Ingest(VehicleEntry entry)
     {
         foreach (var group in entry.Groups)
@@ -74,14 +60,12 @@ public sealed class VehicleCatalog
         Sets.AddRange(entry.Sets);
     }
 
-    /// <summary>Builds the indexes that depend on the catalogue being complete.</summary>
     public void EndLoad()
     {
         BuildSetIndex();
         ResolveGroupInheritance();
     }
 
-    /// <summary>The vehicles of the fixed set this livery leads or belongs to.</summary>
     public List<VehicleTexture>? ResolveSet(VehicleTexture texture)
     {
         if (string.IsNullOrEmpty(texture.Uuid))
@@ -97,10 +81,6 @@ public sealed class VehicleCatalog
         return cars.Count > 0 ? cars : null;
     }
 
-    /// <summary>
-    /// True when the livery is a non-leading member of a set, and so is added
-    /// along with its leader rather than on its own.
-    /// </summary>
     public bool IsSetFollower(VehicleTexture texture)
     {
         if (string.IsNullOrEmpty(texture.Uuid))
@@ -113,10 +93,6 @@ public sealed class VehicleCatalog
         return lead is not null && !string.Equals(lead, texture.Uuid, StringComparison.OrdinalIgnoreCase);
     }
 
-    /// <summary>
-    /// The thumbnail to draw for a livery: its own if we have that bitmap,
-    /// otherwise the one its group declares.
-    /// </summary>
     public string? ResolveMiniName(VehicleTexture texture)
     {
         if (_minis.Has(texture.TextureMini))
@@ -141,7 +117,6 @@ public sealed class VehicleCatalog
         return TextureBySkin.TryGetValue(key, out var texture) ? texture : null;
     }
 
-    /// <summary>Heading shown above a group in the depot browser.</summary>
     public string GroupHeader(string? groupId)
     {
         if (string.IsNullOrEmpty(groupId) || !GroupsById.TryGetValue(groupId, out var group))
@@ -164,10 +139,6 @@ public sealed class VehicleCatalog
         }
     }
 
-    /// <summary>
-    /// Copies thumbnail, category and archived status down from each group onto
-    /// its liveries, so the browser can sort and filter without walking back up.
-    /// </summary>
     private void ResolveGroupInheritance()
     {
         foreach (var texture in Textures)
@@ -182,7 +153,6 @@ public sealed class VehicleCatalog
 
             string? category = group?.Category;
 
-            // "*" means "categorise by the first letter of the thumbnail name".
             if (category == "*")
             {
                 string source = !string.IsNullOrEmpty(mini) ? mini : texture.TextureMini ?? "";

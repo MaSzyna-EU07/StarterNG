@@ -7,21 +7,13 @@ namespace StarterNG.Infrastructure;
 
 public enum ShortcutScope
 {
-    /// <summary>Works anywhere in the window.</summary>
     Global,
 
-    /// <summary>Only while the depot page is on screen.</summary>
     Depot,
 
-    /// <summary>Handled by the consist strip itself, once a vehicle card has focus.</summary>
     Consist
 }
 
-/// <summary>
-/// One row of the shortcut table. <see cref="Key"/> is <see cref="Avalonia.Input.Key.None"/>
-/// for rows that only document a gesture handled elsewhere (the consist strip reads the
-/// arrow keys itself, they are never dispatched from the window).
-/// </summary>
 public sealed record Shortcut(
     string Id,
     string Display,
@@ -36,12 +28,6 @@ public sealed record Shortcut(
         IsDispatched && Key == key && Modifiers == modifiers;
 }
 
-/// <summary>
-/// The single source of truth for the starter's own shortcuts: the window dispatches from
-/// this table and the cheat sheet is printed from it, so the two cannot drift apart. These
-/// are deliberately hardcoded - the configurable key list in Settings belongs to the
-/// simulator's cab controls and mixing the two only confuses people.
-/// </summary>
 public static class Shortcuts
 {
     public const string Start = "start";

@@ -6,15 +6,6 @@ using StarterNG.Domain.Sceneries;
 
 namespace StarterNG.Infrastructure.Sceneries;
 
-/// <summary>
-/// Finds the timetable file a consist names.
-/// </summary>
-/// <remarks>
-/// Timetables live in the shared timetables/ folder, next to the scenery, or in
-/// scenario/ depending on the installation's vintage, and the name may or may
-/// not carry its .txt extension. "none" is the format's way of saying a consist
-/// runs without one.
-/// </remarks>
 public sealed class TimetableLocator
 {
     private const string NoTimetable = "none";

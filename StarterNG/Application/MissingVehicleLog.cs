@@ -5,15 +5,6 @@ using StarterNG.Infrastructure.Vehicles;
 
 namespace StarterNG.Application;
 
-/// <summary>
-/// Writes the "vehicle files that are not there" report into the diagnostics
-/// log, when the user has asked for it.
-/// </summary>
-/// <remarks>
-/// Was a method on the settings object, which had no business scanning the
-/// installation. The setting decides whether it runs; the scan itself belongs to
-/// the vehicle side.
-/// </remarks>
 public sealed class MissingVehicleLog
 {
     private readonly SimulatorSettings _settings;

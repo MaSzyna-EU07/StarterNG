@@ -6,17 +6,8 @@ using StarterNG.Application.Abstractions;
 
 namespace StarterNG.Domain.Sceneries;
 
-/// <summary>
-/// Renders a <see cref="SceneryWeather"/> back into the .scn dialect: strips the
-/// blocks the starter owns and prepends freshly written ones.
-/// </summary>
-/// <remarks>
-/// A pure text transformation, kept out of the aggregate because it is entirely
-/// about the file format rather than about the scenario.
-/// </remarks>
 public static class SceneryWeatherWriter
 {
-    /// <summary>Config lines the starter writes itself and must not carry over.</summary>
     private static readonly Regex ManagedConfigLine = new(
         @"^\s*(movelight|scenario\.weather\.temperature|scenario\.time\.override)\b",
         RegexOptions.IgnoreCase | RegexOptions.Compiled);
@@ -51,14 +42,10 @@ public static class SceneryWeatherWriter
         }
         catch
         {
-            // A scenery we cannot rewrite is still worth starting unmodified.
             return text;
         }
     }
 
-    /// <summary>
-    /// The simulator's parser expects an unpadded hour ("7:30", not "07:30").
-    /// </summary>
     private static string DelphiHourMinute(string hhmm)
     {
         int colon = hhmm.IndexOf(':');
@@ -70,10 +57,6 @@ public static class SceneryWeatherWriter
             : "0" + hhmm[colon..];
     }
 
-    /// <summary>
-    /// Config entries the scenery author wrote that are none of the starter's
-    /// business, preserved verbatim across a rewrite.
-    /// </summary>
     private static string CarriedConfigLines(string text)
     {
         var block = Regex.Match(text, @"(?is)\bconfig\b(.*?)\bendconfig\b");

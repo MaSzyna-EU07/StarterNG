@@ -5,17 +5,8 @@ using StarterNG.Application.Abstractions;
 
 namespace StarterNG.Infrastructure.Vehicles;
 
-/// <summary>
-/// <see cref="IMiniTextureIndex"/> over the installation's textures/mini folder.
-/// </summary>
-/// <remarks>
-/// Replaces the static thumbnail dictionary that used to live on the vehicle
-/// database: an installation-scoped lookup with its own lifetime, which is what
-/// lets a test point the depot at thumbnails that only exist in memory.
-/// </remarks>
 public sealed class MiniTextureIndex : IMiniTextureIndex
 {
-    /// <summary>Thumbnail shown when a vehicle names one we do not have.</summary>
     private const string FallbackName = "other";
 
     private readonly IFileSystem _files;

@@ -6,10 +6,6 @@ using StarterNG.Application.Abstractions;
 
 namespace StarterNG.Infrastructure.Adapters;
 
-/// <summary>
-/// <see cref="IFileSystem"/> backed by the real disk. The only place in the
-/// application allowed to touch <see cref="File"/> and <see cref="Directory"/>.
-/// </summary>
 public sealed class PhysicalFileSystem : IFileSystem
 {
     public bool FileExists(string path) => File.Exists(path);

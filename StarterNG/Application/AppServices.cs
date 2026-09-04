@@ -9,22 +9,9 @@ using StarterNG.Services;
 
 namespace StarterNG.Application;
 
-/// <summary>
-/// The composition root: the single place where concrete adapters are chosen and
-/// wired to the ports the rest of the application depends on.
-/// </summary>
-/// <remarks>
-/// Hand-written on purpose. The starter publishes with <c>PublishAot</c> and
-/// <c>PublishTrimmed</c>, which rules out reflection-based containers; the object
-/// graph is small enough that explicit construction is also the clearest
-/// documentation of what depends on what.
-///
-/// <see cref="Current"/> is a service locator and is used in exactly one kind of
-/// place — the entry point and the view constructors Avalonia creates for us,
-/// which cannot take arguments. Everything below that boundary receives its
-/// dependencies through its constructor; new code must not reach for
-/// <see cref="Current"/>.
-/// </remarks>
+// Skladany recznie: PublishAot i PublishTrimmed wykluczaja kontener oparty na
+// refleksji. Current jest service locatorem i wolno go czytac tylko z entry
+// pointu i z konstruktorow widokow, ktorych Avalonia nie potrafi parametryzowac.
 public sealed class AppServices
 {
     private static AppServices? _current;
@@ -61,16 +48,10 @@ public sealed class AppServices
         StartSimulation = new StartSimulation(State, SettingsStore, files, Processes, Random, log);
     }
 
-    /// <summary>
-    /// The graph built by the entry point. Throws when read before
-    /// <see cref="Initialize"/>, which would mean a static initializer somewhere
-    /// ran ahead of the composition root.
-    /// </summary>
     public static AppServices Current =>
         _current ?? throw new InvalidOperationException(
             "AppServices.Current read before Initialize(); the composition root must be built first.");
 
-    /// <summary>Builds the production graph. Called once, from the entry point.</summary>
     public static AppServices Initialize(IGamePaths? paths = null, IFileSystem? files = null, IClock? clock = null,
                                          IEnvironment? environment = null)
     {
@@ -114,16 +95,12 @@ public sealed class AppServices
 
     public LoadWeightsRepository LoadWeights { get; }
 
-    /// <summary>Everything read out of the installation: rolling stock and scenarios.</summary>
     public GameLibrary Library { get; }
 
-    /// <summary>What the user currently has selected.</summary>
     public AppState State { get; }
 
-    /// <summary>The settings the starter runs with, and their load/save lifecycle.</summary>
     public SettingsStore SettingsStore { get; }
 
-    /// <summary>Shorthand for the settings themselves.</summary>
     public SimulatorSettings Settings => SettingsStore.Settings;
 
     public ExecutableLocator Executables { get; }
@@ -132,13 +109,7 @@ public sealed class AppServices
 
     public MissingVehicleLog MissingVehicleLog { get; }
 
-    /// <summary>Starts the simulator on the current selection.</summary>
     public StartSimulation StartSimulation { get; }
 
-    /// <summary>
-    /// Exposed as the concrete service rather than <see cref="ILocalizedStrings"/>
-    /// because the XAML binds to it as a change-notifying source; code should take
-    /// the port.
-    /// </summary>
     public LocalizationService Localization { get; }
 }

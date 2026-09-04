@@ -9,14 +9,6 @@ using StarterNG.Infrastructure.Adapters;
 
 namespace StarterNG.Infrastructure.Vehicles;
 
-/// <summary>
-/// Reads data/load_weights.txt into a <see cref="LoadWeightsTable"/>.
-/// </summary>
-/// <remarks>
-/// The file is a brace-delimited list of "name : weight" pairs with '#', ';' and
-/// '//' comments. It is read once and kept, since it does not change while the
-/// starter runs.
-/// </remarks>
 public sealed class LoadWeightsRepository
 {
     private const string FileName = "load_weights.txt";
@@ -79,8 +71,6 @@ public sealed class LoadWeightsRepository
             body.Append(line).Append(' ');
         }
 
-        // Colons may be written tight against their neighbours, so space them out
-        // before tokenising.
         string[] tokens = body.Replace(":", " : ").ToString()
                               .Split(new[] { ' ', '\t', '\r' }, StringSplitOptions.RemoveEmptyEntries);
 
@@ -100,5 +90,4 @@ public sealed class LoadWeightsRepository
 
         return weights;
     }
-
 }

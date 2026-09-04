@@ -5,14 +5,6 @@ using StarterNG.Domain.Vehicles;
 
 namespace StarterNG.Infrastructure.Vehicles;
 
-/// <summary>
-/// Reports liveries whose skin or model file is not actually present, for the
-/// optional "log missing vehicle files" diagnostic.
-/// </summary>
-/// <remarks>
-/// Both assets are looked up under several extensions because the simulator
-/// accepts a texture as .mat or .bmp and a model as .t3d or .e3d.
-/// </remarks>
 public sealed class MissingAssetScanner
 {
     private static readonly string[] TextureExtensions = { ".mat", ".bmp" };

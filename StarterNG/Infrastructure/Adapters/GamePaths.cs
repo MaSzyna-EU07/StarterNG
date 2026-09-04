@@ -3,10 +3,6 @@ using StarterNG.Application.Abstractions;
 
 namespace StarterNG.Infrastructure.Adapters;
 
-/// <summary>
-/// The stock MaSzyna layout, rooted at the process working directory (the
-/// starter ships inside the installation folder, next to eu07.exe).
-/// </summary>
 public sealed class GamePaths : IGamePaths
 {
     public GamePaths(string root)
@@ -14,7 +10,6 @@ public sealed class GamePaths : IGamePaths
         Root = root;
     }
 
-    /// <summary>The installation the starter was launched from.</summary>
     public static GamePaths ForCurrentDirectory() => new(Directory.GetCurrentDirectory());
 
     public string Root { get; }

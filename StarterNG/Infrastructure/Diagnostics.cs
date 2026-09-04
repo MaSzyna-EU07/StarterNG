@@ -9,16 +9,6 @@ using StarterNG.Views;
 
 namespace StarterNG.Infrastructure;
 
-/// <summary>
-/// Compatibility facade over <see cref="Application.Abstractions.IDiagnosticsLog"/>
-/// plus the fault dialog.
-/// </summary>
-/// <remarks>
-/// The log itself now lives in <c>Infrastructure.Adapters.FileDiagnosticsLog</c>
-/// and is reached through the composition root. This static shim keeps the
-/// existing call sites compiling while they are migrated to constructor-injected
-/// logging; new code should take <c>IDiagnosticsLog</c> instead.
-/// </remarks>
 public static class Diagnostics
 {
     private static Application.Abstractions.IDiagnosticsLog Log_ => AppServices.Current.Log;
@@ -63,9 +53,6 @@ public static class Diagnostics
             Dispatcher.UIThread.Post(() => _ = ReportAsync(message, title));
     }
 
-    /// <summary>
-    /// Sanity check of the installation the starter was launched from.
-    /// </summary>
     public static List<string> CheckInstallation() =>
         new InstallationCheck(
                 AppServices.Current.Paths,

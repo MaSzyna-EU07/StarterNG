@@ -3,10 +3,6 @@ using StarterNG.Application.Abstractions;
 
 namespace StarterNG.Infrastructure.Settings;
 
-/// <summary>
-/// Where the simulator's eu07.ini lives: per user on each platform, with the
-/// installation's own copy as the template for a first run.
-/// </summary>
 public sealed class SettingsPaths
 {
     private const string ConfigFileName = "eu07.ini";
@@ -21,7 +17,6 @@ public sealed class SettingsPaths
         _paths = paths;
     }
 
-    /// <summary>The user's own settings file, which is what the starter writes.</summary>
     public string UserConfigPath()
     {
         if (_environment.IsWindows)
@@ -46,7 +41,6 @@ public sealed class SettingsPaths
         return Path.Combine(_environment.BaseDirectory, ConfigFileName);
     }
 
-    /// <summary>The ini shipped with the installation, read when the user has none.</summary>
     public string InstallationConfigPath() => _paths.FromRoot(ConfigFileName);
 
     public string UserConfigDirectory() =>

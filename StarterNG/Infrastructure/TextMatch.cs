@@ -4,10 +4,6 @@ using System.Text;
 
 namespace StarterNG.Infrastructure;
 
-/// <summary>
-/// Case- and diacritic-insensitive substring matching, so that typing
-/// "rozdzielczosc" in a search box still finds "Rozdzielczość".
-/// </summary>
 public static class TextMatch
 {
     public static bool Contains(string? haystack, string? needle)
@@ -20,10 +16,6 @@ public static class TextMatch
         return Fold(haystack).Contains(Fold(needle), StringComparison.Ordinal);
     }
 
-    /// <summary>
-    /// Lower-cases and strips combining marks, so "Ż" and "z" compare equal.
-    /// Polish "ł" has no decomposed form, so it is mapped by hand.
-    /// </summary>
     public static string Fold(string text)
     {
         if (string.IsNullOrEmpty(text))

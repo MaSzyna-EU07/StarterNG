@@ -9,10 +9,6 @@ using StarterNG.Infrastructure;
 
 namespace StarterNG.Views;
 
-/// <summary>
-/// The cheat sheet, printed straight from <see cref="Shortcuts.All"/> so it can never
-/// list a gesture the window does not actually dispatch.
-/// </summary>
 public static class ShortcutsWindow
 {
     public static Window Create()

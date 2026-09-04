@@ -8,10 +8,6 @@ using StarterNG.Infrastructure.Adapters;
 
 namespace StarterNG.Infrastructure.Vehicles;
 
-/// <summary>
-/// Loads the catalogue from the dynamic/&lt;maker&gt;/&lt;vehicle&gt;/textures.txt
-/// files an installation ships.
-/// </summary>
 public sealed class TexturesTxtVehicleRepository : IVehicleRepository
 {
     private const string TexturesFileName = "textures.txt";
@@ -55,8 +51,6 @@ public sealed class TexturesTxtVehicleRepository : IVehicleRepository
     {
         try
         {
-            // Read as text so the code page survives: the credit lines carry
-            // Polish characters that ReadAllLines' default encoding would mangle.
             string[] lines = _files.ReadAllText(path, _encoding).Split('\n');
             return _parser.Parse(RelativeDirectory(path), lines);
         }
@@ -67,10 +61,6 @@ public sealed class TexturesTxtVehicleRepository : IVehicleRepository
         }
     }
 
-    /// <summary>
-    /// Rolling stock sits exactly two levels below dynamic/: a maker folder and a
-    /// vehicle folder.
-    /// </summary>
     private IEnumerable<string> TexturesFiles()
     {
         foreach (string maker in _files.GetDirectories(_paths.Dynamic))
@@ -82,10 +72,6 @@ public sealed class TexturesTxtVehicleRepository : IVehicleRepository
         }
     }
 
-    /// <summary>
-    /// The folder as the scenery format spells it: relative to dynamic/, forward
-    /// slashes, trailing slash.
-    /// </summary>
     private string RelativeDirectory(string texturesPath)
     {
         string directory = Path.GetDirectoryName(texturesPath) ?? "";
@@ -98,5 +84,4 @@ public sealed class TexturesTxtVehicleRepository : IVehicleRepository
 
         return relative.Replace('\\', '/').TrimEnd('/') + "/";
     }
-
 }

@@ -5,18 +5,6 @@ using System.Text;
 
 namespace StarterNG.Application.Abstractions;
 
-/// <summary>
-/// Port over the file system. Everything that reads or writes the MaSzyna
-/// installation goes through this interface instead of <see cref="File"/> and
-/// <see cref="Directory"/>, so parsers and use cases can be exercised against an
-/// in-memory installation in tests.
-/// </summary>
-/// <remarks>
-/// Kept deliberately narrow: only the operations the application actually
-/// performs are exposed. Paths are passed through verbatim to the adapter, which
-/// resolves them relative to the process working directory just like the
-/// framework methods it replaces.
-/// </remarks>
 public interface IFileSystem
 {
     bool FileExists(string path);
@@ -45,23 +33,13 @@ public interface IFileSystem
 
     void CopyFile(string sourcePath, string destinationPath, bool overwrite);
 
-    /// <summary>Top-level files, empty when the directory does not exist.</summary>
     IReadOnlyList<string> GetFiles(string path, string searchPattern = "*");
 
-    /// <summary>Top-level directories, empty when the directory does not exist.</summary>
     IReadOnlyList<string> GetDirectories(string path);
 
-    /// <summary>
-    /// Files matching the pattern anywhere below the path. Empty when the
-    /// directory does not exist.
-    /// </summary>
     IReadOnlyList<string> GetFilesRecursive(string path, string searchPattern);
 
     DateTime GetLastWriteTimeUtc(string path);
 
-    /// <summary>
-    /// Whether the file carries an execute bit. Always true on Windows, where
-    /// executability is a property of the file's contents rather than its mode.
-    /// </summary>
     bool IsExecutable(string path);
 }

@@ -8,26 +8,11 @@ using StarterNG.Domain.Settings;
 
 namespace StarterNG.Infrastructure.Settings;
 
-/// <summary>
-/// Maps <see cref="SimulatorSettings"/> onto the simulator's eu07.ini and back.
-/// </summary>
-/// <remarks>
-/// Every key the starter understands is named exactly once, here. Reads clamp
-/// and default so a hand-edited ini cannot put the UI into an impossible state,
-/// and writes preserve the keys the starter does not manage - which is why a
-/// round trip through this class is worth testing on its own.
-/// </remarks>
 public sealed class SettingsSerializer
 {
     public void Read(SimulatorSettings s, ConfigFile c)
     {
-
         s.LanguageWasSet = c.Has("lang");
-        // Kept as the code the file holds. Startup hands it to the localisation
-        // service, which resolves it to a display name and writes that back; the
-        // starter must not decide here that an unrecognised code means English,
-        // because the same key is what tells the simulator which language to run
-        // in.
         s.LanguageCode = c.GetString("lang", "");
         s.Language = s.LanguageCode;
         s.Fullscreen = c.GetBool("fullscreen", false);
@@ -167,11 +152,9 @@ public sealed class SettingsSerializer
 
     public void Write(SimulatorSettings s, ConfigFile c)
     {
-
         foreach (string key in ObsoleteKeys)
             c.Remove(key);
 
-        // Lower case, as the simulator expects and as the old starter wrote it.
         c.Set("lang", string.IsNullOrWhiteSpace(s.LanguageCode)
             ? "en"
             : s.LanguageCode.Trim().ToLowerInvariant());

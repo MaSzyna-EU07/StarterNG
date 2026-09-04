@@ -10,15 +10,6 @@ using StarterNG.Domain.Sceneries;
 
 namespace StarterNG.Infrastructure.Sceneries;
 
-/// <summary>
-/// Turns the text of a .scn file into a <see cref="Scenery"/>.
-/// </summary>
-/// <remarks>
-/// All knowledge of the .scn dialect lives here, so the aggregate stays free of
-/// regular expressions and the parser can be exercised on a string. Anything
-/// malformed is recorded as a fault rather than thrown: a scenery with one bad
-/// consist is still worth listing.
-/// </remarks>
 public sealed class SceneryParser
 {
     private readonly IClock _clock;
@@ -32,8 +23,6 @@ public sealed class SceneryParser
 
     public Scenery Parse(string path, string content)
     {
-        // Directives, attachments and weather are read from the file as written;
-        // the placeholder rewriting below only shapes the export template.
         string original = content;
 
         var faults = new List<string>();
@@ -42,8 +31,6 @@ public sealed class SceneryParser
         var includes = new List<SceneryInclude>();
         content = StripOptionalIncludes(content, includes);
 
-        // Trainsets are lifted out first so the placeholders survive the loose
-        // vehicle sweep below, which would otherwise match nodes inside them.
         var trainsetEntries = new List<string>();
         content = Regex.Replace(content, @"trainset\b[\s\S]*?\bendtrainset\b",
             match =>
@@ -98,7 +85,6 @@ public sealed class SceneryParser
 
             string[] parts = rest.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries);
 
-            // A leading one- or two-character token is a legacy ordering hint.
             if (parts.Length >= 3 && parts[0].Length <= 2)
                 attachments.Add(new SceneryAttachment
                 {
@@ -122,10 +108,6 @@ public sealed class SceneryParser
         return attachments;
     }
 
-    /// <summary>
-    /// Removes the includes the scenery marked <c>$optional</c> from the text and
-    /// records them, so the user can pick which ones the export puts back.
-    /// </summary>
     private static string StripOptionalIncludes(string content, List<SceneryInclude> includes)
     {
         if (content.IndexOf("$optional", StringComparison.OrdinalIgnoreCase) < 0)
@@ -160,10 +142,6 @@ public sealed class SceneryParser
             RegexOptions.IgnoreCase);
     }
 
-    /// <summary>
-    /// Lifts <c>node ... dynamic ... enddynamic</c> entries that sit outside any
-    /// trainset, so the depot can show and reorder them like a consist.
-    /// </summary>
     private static string ExtractLooseVehicles(string content, List<Dynamic> vehicles, List<string> names,
                                                List<string> faults)
     {
@@ -176,7 +154,6 @@ public sealed class SceneryParser
             {
                 string name = m.Groups[3].Value;
 
-                // A placeholder means the node belongs to a trainset already lifted out.
                 if (name.StartsWith("{{", StringComparison.Ordinal))
                     return m.Value;
 
@@ -214,7 +191,6 @@ public sealed class SceneryParser
                 }
                 catch
                 {
-                    // Leave the node in the template so the export stays faithful.
                     faults.Add($"# loose dynamic parse fault: {name}");
                     names.Add(name);
                     return m.Value;
@@ -239,7 +215,6 @@ public sealed class SceneryParser
         }
         else if (!time.Success)
         {
-            // Nothing authored: start the scenario at the player's wall clock.
             var now = _clock.Now;
             weather.ScenarioTimeOverride = $"{now.Hour:D2}:{now.Minute:D2}";
         }

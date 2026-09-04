@@ -11,24 +11,10 @@ using StarterNG.Infrastructure.Adapters;
 
 namespace StarterNG.Infrastructure.Vehicles;
 
-/// <summary>
-/// Reads vehicle physics from the .fiz files under dynamic/.
-/// </summary>
-/// <remarks>
-/// The format is a flat token stream of "section" headings and "key value"
-/// pairs, with an <c>include file p1 p2 end</c> directive whose parameters are
-/// substituted for <c>(1)</c>-style placeholders in the included file. Only the
-/// handful of keys the starter shows are decoded; everything else is skipped.
-///
-/// Both the name index and the parsed results are cached, because the depot asks
-/// for the same model repeatedly while the user scrolls.
-/// </remarks>
 public sealed class FizPhysicsRepository : IPhysicsRepository
 {
-    /// <summary>Guard against an include cycle in hand written files.</summary>
     private const int MaxIncludeDepth = 6;
 
-    /// <summary>Sentinel meaning "the rear coupler was never declared".</summary>
     private const int UndeclaredCoupler = -1;
 
     private static readonly HashSet<string> KnownKeys = new(StringComparer.OrdinalIgnoreCase)
@@ -80,7 +66,6 @@ public sealed class FizPhysicsRepository : IPhysicsRepository
     {
         var index = Index();
 
-        // Unpowered variants are shipped as "<model>dumb.fiz".
         if (!index.TryGetValue(name, out string? path) &&
             !index.TryGetValue(name + "dumb", out path))
             return null;
@@ -95,7 +80,6 @@ public sealed class FizPhysicsRepository : IPhysicsRepository
             _log.Log($"physics/{Path.GetFileName(path)}", ex);
         }
 
-        // A vehicle that only declares one coupler has the same at both ends.
         if (physics.AllowedFlagB == UndeclaredCoupler)
         {
             physics.AllowedFlagB = physics.AllowedFlagA;
@@ -189,7 +173,6 @@ public sealed class FizPhysicsRepository : IPhysicsRepository
             }
             else
             {
-                // Anything else at this level opens a section, e.g. "Param:" or "BuffCoupl1:".
                 section = new string(bare.Where(char.IsLetterOrDigit).ToArray()).ToLowerInvariant();
             }
         }
@@ -228,10 +211,6 @@ public sealed class FizPhysicsRepository : IPhysicsRepository
 
     private static bool Is(string key, string name) => key.Equals(name, StringComparison.OrdinalIgnoreCase);
 
-    /// <summary>
-    /// A negative flag means the coupling is present but disabled; the simulator
-    /// encodes that as its absolute value plus 128.
-    /// </summary>
     private static int ParseFlag(string value, int fallback) =>
         int.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out int flag)
             ? flag < 0 ? -flag + 128 : flag
@@ -242,7 +221,6 @@ public sealed class FizPhysicsRepository : IPhysicsRepository
             ? parsed
             : fallback;
 
-    /// <summary>Substitutes an include's "(n)" placeholder with its n-th parameter.</summary>
     private static string Resolve(string token, string[]? parameters)
     {
         if (parameters is null || token.Length < 3 || token[0] != '(' || token[^1] != ')')
@@ -270,5 +248,4 @@ public sealed class FizPhysicsRepository : IPhysicsRepository
                  .Split(new[] { ' ', '\t', '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries)
                  .ToList();
     }
-
 }

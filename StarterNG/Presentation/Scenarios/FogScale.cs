@@ -4,19 +4,8 @@ using StarterNG.Domain.Sceneries;
 
 namespace StarterNG.Presentation.Scenarios;
 
-/// <summary>
-/// Converts between the weather tab's fog slider and a distance in metres.
-/// </summary>
-/// <remarks>
-/// Visibility runs from 10 m to 10 km, a range no linear slider handles well:
-/// the interesting part - thick fog, where a few metres matter - would be a
-/// couple of pixels wide. The slider is therefore logarithmic over its 0-1000
-/// travel, and the result snaps to a step that grows with the distance, so the
-/// read-out lands on round numbers a driver would recognise.
-/// </remarks>
 public static class FogScale
 {
-    /// <summary>Travel of the slider the scale is spread over.</summary>
     public const double SliderRange = 1000.0;
 
     public static int ToMetres(double sliderPosition)
@@ -37,7 +26,6 @@ public static class FogScale
                Math.Log((double)SceneryWeather.FogMax / SceneryWeather.FogMin);
     }
 
-    /// <summary>Metres below a kilometre, kilometres above it.</summary>
     public static string Format(int metres, CultureInfo culture) =>
         metres < 1000
             ? $"{metres} m"

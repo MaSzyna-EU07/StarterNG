@@ -7,18 +7,8 @@ using StarterNG.Domain.Sceneries;
 
 namespace StarterNG.Infrastructure.Sceneries;
 
-/// <summary>
-/// <see cref="ISceneryTranslations"/> reading the JSON files a scenery may ship
-/// in its i18n folder.
-/// </summary>
-/// <remarks>
-/// English is loaded first and the user's language layered over it, so a partial
-/// translation falls back per key rather than per file. Nested objects are
-/// flattened to dotted keys, which is how the scenery text references them.
-/// </remarks>
 public sealed class SceneryTranslations : ISceneryTranslations
 {
-    /// <summary>Marks a scenery string as a key rather than literal text.</summary>
     private const char ReferencePrefix = '@';
 
     private const string BaseLanguage = "en";
@@ -99,10 +89,6 @@ public sealed class SceneryTranslations : ISceneryTranslations
         }
     }
 
-    /// <summary>
-    /// Sceneries name their files by two-letter code; the starter's language
-    /// setting may carry a display name instead.
-    /// </summary>
     private static string NormalizeLanguage(string language)
     {
         string lower = language.Trim().ToLowerInvariant();

@@ -8,10 +8,6 @@ using StarterNG.Application.Abstractions;
 
 namespace StarterNG.Infrastructure.Adapters;
 
-/// <summary>
-/// <see cref="IProcessLauncher"/> backed by <see cref="Process"/>. The only place
-/// in the application that starts an operating-system process.
-/// </summary>
 public sealed class SystemProcessLauncher : IProcessLauncher
 {
     private readonly IDiagnosticsLog _log;

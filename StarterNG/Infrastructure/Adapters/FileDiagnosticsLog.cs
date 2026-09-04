@@ -6,17 +6,6 @@ using StarterNG.Application.Abstractions;
 
 namespace StarterNG.Infrastructure.Adapters;
 
-/// <summary>
-/// <see cref="IDiagnosticsLog"/> that mirrors every line into starter/bledy.txt.
-/// Writing is best-effort: a read-only or full installation directory degrades to
-/// an in-memory log rather than taking the starter down, and a single retry is
-/// made at <see cref="Flush"/> time.
-/// </summary>
-/// <remarks>
-/// Instance state replaces the previous static <c>Diagnostics</c> accumulator, so
-/// tests can assert on what a use case logged without touching disk (pair it with
-/// an in-memory <see cref="IFileSystem"/>).
-/// </remarks>
 public sealed class FileDiagnosticsLog : IDiagnosticsLog
 {
     private readonly IFileSystem _files;
@@ -75,7 +64,6 @@ public sealed class FileDiagnosticsLog : IDiagnosticsLog
             }
             catch
             {
-                // A log we cannot delete is not worth failing a user action over.
             }
         }
     }
@@ -100,8 +88,6 @@ public sealed class FileDiagnosticsLog : IDiagnosticsLog
             if (!_writerFailed && _writer is not null)
                 return;
 
-            // The streaming writer never came up (or died mid-session): fall back
-            // to one bulk write so the session is not lost entirely.
             try
             {
                 _files.CreateDirectory(Path.GetDirectoryName(_logPath)!);
@@ -109,7 +95,6 @@ public sealed class FileDiagnosticsLog : IDiagnosticsLog
             }
             catch
             {
-                // Nothing left to try; the in-memory log still backs the UI.
             }
         }
     }
@@ -143,7 +128,6 @@ public sealed class FileDiagnosticsLog : IDiagnosticsLog
         }
         catch
         {
-            // Disposing a broken writer is allowed to fail.
         }
         _writer = null;
     }

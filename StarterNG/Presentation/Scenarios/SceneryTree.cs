@@ -6,27 +6,11 @@ using StarterNG.Domain.Sceneries;
 
 namespace StarterNG.Presentation.Scenarios;
 
-/// <summary>
-/// A node of the scenery list: either a scenario, or a group holding scenarios.
-/// </summary>
-/// <param name="Label">Text to show.</param>
-/// <param name="SceneryIndex">Index into the scenery list, or -1 for a group.</param>
-/// <param name="Children">Scenarios under a group; empty for a scenario.</param>
 public sealed record SceneryTreeNode(string Label, int SceneryIndex, IReadOnlyList<SceneryTreeNode> Children)
 {
     public bool IsGroup => SceneryIndex < 0;
 }
 
-/// <summary>
-/// Turns the flat scenery list into the tree the scenario picker shows:
-/// scenarios that declare a group sit under it, the rest stay at the top, and
-/// everything is sorted by name.
-/// </summary>
-/// <remarks>
-/// Pulled out of the view so the grouping and the archival filter can be tested
-/// without a TreeView. The view's job is reduced to turning these nodes into
-/// controls.
-/// </remarks>
 public sealed class SceneryTreeBuilder
 {
     private readonly ISceneryTranslations _translations;
@@ -36,9 +20,6 @@ public sealed class SceneryTreeBuilder
         _translations = translations;
     }
 
-    /// <param name="sceneries">The list the node indices refer to.</param>
-    /// <param name="includeArchival">Whether scenarios marked archival are listed.</param>
-    /// <param name="langCode">Language for resolving each scenery's own translations.</param>
     public IReadOnlyList<SceneryTreeNode> Build(IReadOnlyList<Scenery> sceneries, bool includeArchival,
                                                 string langCode)
     {
@@ -52,8 +33,6 @@ public sealed class SceneryTreeBuilder
             if (scenery.Archival && !includeArchival)
                 continue;
 
-            // The group name may itself be an "@key" reference into the scenery's
-            // own translation files, so the table has to be loaded per scenery.
             _translations.LoadFor(scenery, langCode);
 
             var node = new SceneryTreeNode(scenery.DisplayName, i, Array.Empty<SceneryTreeNode>());
