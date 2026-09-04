@@ -171,7 +171,10 @@ public sealed class SettingsSerializer
         foreach (string key in ObsoleteKeys)
             c.Remove(key);
 
-        c.Set("lang", string.IsNullOrWhiteSpace(s.LanguageCode) ? "en" : s.LanguageCode);
+        // Lower case, as the simulator expects and as the old starter wrote it.
+        c.Set("lang", string.IsNullOrWhiteSpace(s.LanguageCode)
+            ? "en"
+            : s.LanguageCode.Trim().ToLowerInvariant());
         c.SetBool("fullscreen", s.Fullscreen);
         c.SetBool("inactivepause", s.PauseWhenInactive);
         c.SetBool("pause", s.PauseOnStart);

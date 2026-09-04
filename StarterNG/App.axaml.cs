@@ -44,7 +44,18 @@ public partial class App : Avalonia.Application
             };
         AppServices.Current.Settings.Language = langName;
 
+        // What eu07.ini asked for, before the starter picks a language it can
+        // actually display.
+        string requestedCode = AppServices.Current.Settings.LanguageCode;
+
         ApplyLanguage(langName);
+
+        // The starter ships no translation for this code, so its own interface
+        // falls back - but the simulator has one and keeps it. Overwriting the key
+        // here would silently move eu07.exe to English on the next save.
+        if (!string.IsNullOrWhiteSpace(requestedCode) &&
+            !string.Equals(requestedCode, Loc.CurrentLangCode, StringComparison.OrdinalIgnoreCase))
+            AppServices.Current.Settings.LanguageCode = requestedCode;
     }
 
     public static void ApplyLanguage(string langNameOrCode)

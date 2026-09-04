@@ -71,6 +71,18 @@ public class SettingsStoreTests
     }
 
     [Fact]
+    public void The_language_code_is_written_in_lower_case()
+    {
+        var installation = WithHome();
+        installation.SettingsStore.Load();
+        installation.SettingsStore.Settings.LanguageCode = "ZH";
+
+        installation.SettingsStore.Save();
+
+        Assert.Contains("lang zh", installation.Files.ReadAllText(UserIni));
+    }
+
+    [Fact]
     public void A_first_run_falls_back_to_the_ini_shipped_with_the_installation()
     {
         var installation = WithHome(new InMemoryFileSystem()
