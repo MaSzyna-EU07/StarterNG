@@ -16,6 +16,12 @@ public readonly record struct SettingKeyInfo(string Key, string? Default, string
 /// literals that method defaults and clamps with - so the settings screen can
 /// state a fact about each key rather than a description of it. If a default or
 /// a clamp changes in the serializer, it changes here too.
+///
+/// Text-valued keys carry no default. The literal the serializer passes to
+/// GetString is the last step of a chain, not the value the simulator assumes:
+/// an absent <c>lang</c> means the starter follows the operating system, and an
+/// absent <c>starter.exe.path</c> means it goes looking for the binary itself.
+/// Printing "lang = en" beside the language picker would state something untrue.
 /// </remarks>
 public static class SettingKeyCatalog
 {
@@ -61,7 +67,7 @@ public static class SettingKeyCatalog
         ["height"] = new("height", "720", null),
         ["inactivepause"] = new("inactivepause", "true", null),
         ["input.gamepad"] = new("input.gamepad", "true", null),
-        ["lang"] = new("lang", "en", null),
+        ["lang"] = new("lang", null, null),
         ["livetraction"] = new("livetraction", "true", null),
         ["maxcabtexturesize"] = new("maxcabtexturesize", "4096", null),
         ["maxtexturesize"] = new("maxtexturesize", "4096", null),
@@ -87,7 +93,7 @@ public static class SettingKeyCatalog
         ["starter.bufferscale"] = new("starter.bufferscale", "100", "50-200"),
         ["starter.drivableonly"] = new("starter.drivableonly", "true", null),
         ["starter.exe.auto"] = new("starter.exe.auto", "true", null),
-        ["starter.exe.path"] = new("starter.exe.path", "eu07.exe", null),
+        ["starter.exe.path"] = new("starter.exe.path", null, null),
         ["starter.expandtree"] = new("starter.expandtree", "false", null),
         ["starter.hide.archivalvehicles"] = new("starter.hide.archivalvehicles", "true", null),
         ["starter.ignoreirrelevant"] = new("starter.ignoreirrelevant", "false", null),

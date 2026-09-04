@@ -19,6 +19,16 @@ public class SettingKeyCatalogTests
     }
 
     [Fact]
+    public void A_text_valued_key_is_shown_without_a_default()
+    {
+        // An absent lang means "follow the operating system", not "English", and an
+        // absent exe path means "go and find the binary" - neither has a default
+        // worth printing.
+        Assert.Equal("lang", SettingKeyCatalog.Annotate("lang"));
+        Assert.Equal("starter.exe.path", SettingKeyCatalog.Annotate("starter.exe.path"));
+    }
+
+    [Fact]
     public void A_composite_or_unknown_key_is_shown_as_written()
     {
         Assert.Equal("shadowtune", SettingKeyCatalog.Annotate("shadowtune"));
