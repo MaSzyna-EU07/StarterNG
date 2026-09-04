@@ -57,6 +57,10 @@
                              key under the label, the explanation under the control.
                              Laying them out as one run instead made every
                              explanation start wherever its key happened to end. -->
+                        <!-- Pinned to the same width as the label above it. A row
+                             with no label hides PART_Label, and without this the
+                             column would collapse onto the key and every
+                             explanation would start at a different place again. -->
                         <SelectableTextBlock Name="PART_ConfigKey"
                                              Grid.Row="1" Grid.Column="0"
                                              Text="{TemplateBinding ConfigKey}"
@@ -64,6 +68,7 @@
                                              FontSize="11"
                                              Foreground="{StaticResource CarbonFgDim}"
                                              TextWrapping="Wrap"
+                                             MinWidth="286" MaxWidth="286"
                                              Margin="0,3,14,0" />
 
                         <TextBlock Name="PART_Description"
@@ -233,6 +238,10 @@
         <Setter Property="IsVisible" Value="True" />
         <Setter Property="MinWidth" Value="26" />
         <Setter Property="Margin" Value="6,0,0,0" />
+    </Style>
+    <Style Selector="ctl|SettingRow.Compact /template/ SelectableTextBlock#PART_ConfigKey">
+        <Setter Property="MinWidth" Value="0" />
+        <Setter Property="MaxWidth" Value="Infinity" />
     </Style>
     <Style Selector="ctl|SettingRow.Compact /template/ TextBlock#PART_Description">
         <Setter Property="Margin" Value="0,2,0,0" />
