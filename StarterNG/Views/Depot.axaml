@@ -164,7 +164,7 @@
                 </TabItem>
                 <TabItem Header="{Binding [AboutTexture], Source={x:Static starterNg:App.Loc}}">
                     <ScrollViewer VerticalScrollBarVisibility="Auto">
-                        <StackPanel Name="consistTexturePanel" Margin="4" Spacing="3" />
+                        <StackPanel Name="consistTexturePanel" Margin="4" Grid.IsSharedSizeScope="True" />
                     </ScrollViewer>
                 </TabItem>
             </TabControl>

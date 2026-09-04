@@ -55,15 +55,15 @@
 
                         <!-- Second line: the eu07.ini key this row writes, then the
                              explanation. The key is monospaced and selectable so it
-                             can be matched against the file itself. -->
+                             can be copied straight into the file, and dimmed so it
+                             stays out of the way of the setting itself. -->
                         <StackPanel Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="3"
                                     Orientation="Horizontal" Spacing="8" Margin="0,3,0,0">
                             <SelectableTextBlock Name="PART_ConfigKey"
                                                  Text="{TemplateBinding ConfigKey}"
                                                  FontFamily="Consolas, DejaVu Sans Mono, Liberation Mono, Menlo, Courier New"
                                                  FontSize="11"
-                                                 Foreground="{StaticResource CarbonAccentBright}"
-                                                 Opacity="0.75"
+                                                 Foreground="{StaticResource CarbonFgDim}"
                                                  VerticalAlignment="Top" />
                             <TextBlock Name="PART_Description"
                                        Text="{TemplateBinding Description}"

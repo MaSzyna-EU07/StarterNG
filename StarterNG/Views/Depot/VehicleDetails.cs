@@ -147,10 +147,6 @@ public sealed class VehicleDetails
         generalPanel.Children.Add(Reading($"{App.Loc["VMax"]} [km/h]",
             vmax?.ToString("0", inv)));
 
-        if (unit)
-            generalPanel.Children.Add(Reading(App.Loc["VehicleCount"],
-                item.Cars.Count.ToString(inv)));
-
         generalPanel.Children.Add(Reading(App.Loc["Model"], car.MmdFile));
         generalPanel.Children.Add(Reading(App.Loc["Texture"], car.SkinFile));
     }
@@ -347,39 +343,12 @@ public sealed class VehicleDetails
             .Any(s => s.Equals("passengers", StringComparison.OrdinalIgnoreCase));
     }
 
-    /// <summary>
-    /// The one row shape every detail tab uses. The label column negotiates its width
-    /// through the shared-size group on the host panel, so all rows in a panel line up
-    /// without anyone naming a pixel count - see the Compact styles in Settings.axaml.
-    /// Omitting <paramref name="content"/> makes it a read-only line; omitting
-    /// <paramref name="label"/> indents a bare widget to the control column.
-    /// </summary>
     private static SettingRow Row(string? label = null, Control? content = null,
                                   string? value = null, string? description = null,
-                                  string? tip = null)
-    {
-        var row = new SettingRow
-        {
-            Label = label,
-            Description = description,
-            ValueText = value,
-            Content = content
-        };
-        row.Classes.Add("Compact");
-        if (!string.IsNullOrWhiteSpace(tip))
-            ToolTip.SetTip(row, tip);
-        return row;
-    }
+                                  string? tip = null) =>
+        DetailRows.Row(label, content, value, description, tip);
 
-    /// <summary>
-    /// A read-only label/value line. The dash keeps the row from collapsing when a
-    /// vehicle has no reading for the field.
-    /// </summary>
-    private static SettingRow Reading(string label, string? value)
-    {
-        bool empty = string.IsNullOrWhiteSpace(value);
-        return Row(label, value: empty ? "\u2013" : value, tip: empty ? null : value);
-    }
+    private static SettingRow Reading(string label, string? value) => DetailRows.Reading(label, value);
 
     private static SettingsSection Section(string header, Control content, Control? meta = null)
     {

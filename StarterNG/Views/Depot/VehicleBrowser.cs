@@ -17,6 +17,7 @@ using StarterNG.Domain;
 using StarterNG.Domain.Sceneries;
 using StarterNG.Domain.Vehicles;
 using StarterNG.Application;
+using StarterNG.Controls;
 
 namespace StarterNG.Views;
 
@@ -411,37 +412,44 @@ public sealed class VehicleBrowser
         return menu;
     }
 
+    /// <summary>
+    /// Fills a detail panel with what is known about a livery: the skin itself,
+    /// then whatever its credit line carries.
+    /// </summary>
+    /// <remarks>
+    /// Built from the same <see cref="DetailRows"/> as the general tab, so the
+    /// labels line up in a column instead of each line being its own sentence.
+    /// Fields the credit line leaves out are dropped rather than shown as
+    /// blanks - most liveries fill in only a few.
+    /// </remarks>
     public void ShowTextureInfo(VehicleTexture texture, StackPanel target)
     {
         target.Children.Clear();
 
-        var full = new List<string>();
-        void Row(string label, string? value)
+        var tooltip = new List<string>();
+
+        void Reading(string label, string? value)
         {
-            if (string.IsNullOrWhiteSpace(value)) return;
-            string line = $"{label}: {value}";
-            full.Add(line);
-            target.Children.Add(new TextBlock
-            {
-                Text = line,
-                FontSize = 12,
-                Opacity = 0.85,
-                TextTrimming = TextTrimming.CharacterEllipsis
-            });
+            if (string.IsNullOrWhiteSpace(value))
+                return;
+
+            target.Children.Add(DetailRows.Reading(label, value));
+            tooltip.Add($"{label}: {value}");
         }
 
-        Row(App.Loc["TextureInfo"], Consist.Base(texture.Skinfile));
-        var meta = texture.Meta;
-        if (meta != null)
+        Reading(App.Loc["TextureInfo"], Consist.Base(texture.Skinfile));
+
+        if (texture.Meta is { } meta)
         {
-            Row(App.Loc["TexOperator"], meta.Operator);
-            Row(App.Loc["TexStation"], meta.Depot);
-            Row(App.Loc["TexRevision"], meta.RevisionDate);
-            Row(App.Loc["TexWorks"], meta.RevisionPlace);
-            Row(App.Loc["TexAuthor"], meta.TextureAuthor);
-            Row(App.Loc["TexPhoto"], meta.PhotoAuthor);
+            Reading(App.Loc["TexOperator"], meta.Operator);
+            Reading(App.Loc["TexStation"], meta.Depot);
+            Reading(App.Loc["TexRevision"], meta.RevisionDate);
+            Reading(App.Loc["TexWorks"], meta.RevisionPlace);
+            Reading(App.Loc["TexAuthor"], meta.TextureAuthor);
+            Reading(App.Loc["TexPhoto"], meta.PhotoAuthor);
         }
-        ToolTip.SetTip(target, string.Join("\n", full));
+
+        ToolTip.SetTip(target, string.Join("\n", tooltip));
     }
 
     public List<VehicleTexture> CurrentTextures()
