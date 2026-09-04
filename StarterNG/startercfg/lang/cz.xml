@@ -223,7 +223,6 @@
     <String key="ReadyOverrideReady">Always ready</String>
     <String key="ConsistReadyOverridden">Overridden by "Force the consist state on launch" in Settings.</String>
     <String key="ConsistRandomType">Náhodný druh</String>
-    <String key="ConsistMaxAmount">Maximální množství</String>
     <String key="ConsistRandomAmount">Náhodné množství</String>
     <String key="Set">Nastavit</String>
     <String key="Length">Délka</String>

@@ -223,7 +223,6 @@
     <String key="ReadyOverrideReady">Zawsze gotowy</String>
     <String key="ConsistReadyOverridden">Nadpisane opcją „Wymuś stan składu przy starcie” w Ustawieniach.</String>
     <String key="ConsistRandomType">Losowy rodzaj</String>
-    <String key="ConsistMaxAmount">Maksymalna ilość</String>
     <String key="ConsistRandomAmount">Losowa ilość</String>
     <String key="Set">Ustaw</String>
     <String key="Length">Długość</String>

@@ -559,12 +559,10 @@ public sealed class VehicleDetails
         var tools = Stack(
             LoadToolButton(App.Loc["ConsistRandomType"],
                 () => { _cargo.RandomTypes(_consist); _redraw(); }, secondary: true),
-            LoadToolButton(App.Loc["ConsistMaxAmount"],
-                () => { _cargo.MaxAmounts(_consist); _redraw(); }, secondary: true),
             LoadToolButton(App.Loc["ConsistRandomAmount"],
                 () => { _cargo.RandomAmounts(_consist); _redraw(); }, secondary: true));
 
-        var buttons = Stack(ReadyToGoRow(), tools);
+        var buttons = tools;
 
         var count = new TextBlock
         {
@@ -574,7 +572,8 @@ public sealed class VehicleDetails
             VerticalAlignment = VerticalAlignment.Center
         };
 
-        loadsPanel.Children.Add(Section(App.Loc["ConsistLoadTools"], buttons, count));
+        loadsPanel.Children.Add(Section(App.Loc["Consist"], ReadyToGoRow(), count));
+        loadsPanel.Children.Add(Section(App.Loc["ConsistLoadTools"], buttons));
     }
 
     private Control ReadyToGoRow()

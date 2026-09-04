@@ -223,7 +223,6 @@
     <String key="ReadyOverrideReady">Always ready</String>
     <String key="ConsistReadyOverridden">Overridden by "Force the consist state on launch" in Settings.</String>
     <String key="ConsistRandomType">Случайный тип</String>
-    <String key="ConsistMaxAmount">Максимальное количество</String>
     <String key="ConsistRandomAmount">Случайное количество</String>
     <String key="Set">Задать</String>
     <String key="Length">Длина</String>

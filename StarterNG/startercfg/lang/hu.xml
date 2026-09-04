@@ -223,7 +223,6 @@
     <String key="ReadyOverrideReady">Always ready</String>
     <String key="ConsistReadyOverridden">Overridden by "Force the consist state on launch" in Settings.</String>
     <String key="ConsistRandomType">Véletlen típus</String>
-    <String key="ConsistMaxAmount">Legnagyobb mennyiség</String>
     <String key="ConsistRandomAmount">Véletlen mennyiség</String>
     <String key="Set">Beállítás</String>
     <String key="Length">Hossz</String>
