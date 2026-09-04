@@ -212,7 +212,7 @@
          longest label in whichever panel it lands in, so no pixel count is picked
          here and it follows the translation. -->
     <Style Selector="ctl|SettingRow.Compact">
-        <Setter Property="Margin" Value="0,0,0,5" />
+        <Setter Property="Margin" Value="0,0,0,3" />
     </Style>
     <!-- Right-aligned: an Auto column hugs the longest label, so anything shorter
          would otherwise hang in space away from its own control. MaxWidth stops one
