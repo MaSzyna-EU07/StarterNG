@@ -8,9 +8,10 @@
         <Nullable>enable</Nullable>
         <BuiltInComInteropSupport>true</BuiltInComInteropSupport>
         <ApplicationManifest>app.manifest</ApplicationManifest>
+        <ApplicationIcon>Assets\starter.ico</ApplicationIcon>
         <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
-        <AssemblyVersion>1.2.0.4</AssemblyVersion>
-        <FileVersion>1.2.0.4</FileVersion>
+        <AssemblyVersion>1.4.0.0</AssemblyVersion>
+        <FileVersion>1.4.0.0</FileVersion>
         <AssemblyName>Starter</AssemblyName>
         <Company>eu07.pl</Company>
     </PropertyGroup>
@@ -48,6 +49,8 @@
       <AvaloniaResource Include="Assets\Logo\*.png" />
       <None Remove="Assets\Test\ep07p.bmp" />
       <AvaloniaResource Include="Assets\Test\ep07p.bmp" />
+      <None Remove="Assets\starter.ico" />
+      <AvaloniaResource Include="Assets\starter.ico" />
     </ItemGroup>
 
     <ItemGroup>

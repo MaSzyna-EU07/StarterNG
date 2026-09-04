@@ -1,0 +1,587 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- StarterNG language file (Magyar). Full translation. -->
+<!-- Add a new language by copying this file and changing the code/name attributes below. -->
+<Language code="hu" name="Magyar">
+
+    <!-- Nav menu -->
+    <String key="NavScenarios">Forgatókönyvek</String>
+    <String key="NavDepot">Fűtőház</String>
+    <String key="NavSettings">Beállítások</String>
+    <String key="NavControls">Irányítás</String>
+    <String key="Help">Súgó</String>
+    <String key="HelpWiki">MaSzyna wiki</String>
+    <String key="HelpReadme">Readme</String>
+    <String key="PresetSort">Raktár rendezése</String>
+    <String key="PresetSortName">Név szerint</String>
+    <String key="PresetSortTrack">Vágány szerint</String>
+    <String key="PresetImportMagazyn">magazyn.ini importálása</String>
+    <String key="Version">Verzió:</String>
+
+    <!-- General view -->
+    <String key="Sceneries">Pályák</String>
+    <String key="Vehicles">Járművek</String>
+    <String key="ShowAiVehicles">AI járművek</String>
+    <String key="ShowDrivableOnly">Csak vezethető</String>
+    <String key="ShowArchival">Archív pályák</String>
+    <String key="ScenarioDescription">Forgatókönyv leírása</String>
+    <String key="SceneryDescription">Pálya leírása</String>
+    <String key="TabDescription">Leírás</String>
+    <String key="Weather">Időjárás</String>
+    <String key="Timetable">Menetrend</String>
+    <String key="NoWeatherData">A pályán nincs időjárási adat.</String>
+    <String key="NoTimetable">A kiválasztott szerelvényhez nincs menetrend.</String>
+    <String key="Time">Idő</String>
+    <String key="CurrentTime">Most</String>
+    <String key="Day">Az év napja</String>
+    <String key="Date">Dátum</String>
+    <String key="DayOfYear">{0}. nap</String>
+    <String key="Sky">Égbolt</String>
+    <String key="Fog">Köd / látótávolság</String>
+    <String key="Season">Évszak</String>
+    <String key="Temperature">Hőmérséklet</String>
+    <String key="Visibility">Látótávolság (köd)</String>
+    <String key="Overcast">Felhőzet</String>
+    <String key="SeasonNow">Ma</String>
+    <String key="SeasonSpring">Tavasz</String>
+    <String key="SeasonSummer">Nyár</String>
+    <String key="SeasonAutumn">Ősz</String>
+    <String key="SeasonWinter">Tél</String>
+    <String key="OvercastRandom">Véletlenszerű</String>
+    <String key="OvercastClear">Derült</String>
+    <String key="OvercastFair">Gyengén felhős</String>
+    <String key="OvercastLight">Kevés felhő</String>
+    <String key="OvercastModerate">Közepes felhőzet</String>
+    <String key="OvercastHeavy">Erős felhőzet</String>
+    <String key="OvercastCloudy">Borult</String>
+    <String key="OvercastStorm">Vihar</String>
+    <String key="WeatherDateTime">Dátum és idő</String>
+    <String key="WeatherConditions">Időjárási viszonyok</String>
+    <String key="Consist">Szerelvény</String>
+    <String key="Start">Indítás</String>
+    <String key="StartNoScenery">Válasszon pályát</String>
+    <String key="StartNoTrain">Válasszon szerelvényt</String>
+    <String key="StartNoStaff">Nincs személyzet / utas</String>
+    <String key="StartNoStaffTitle">Szerelvény személyzet nélkül</String>
+    <String key="StartNoStaffConfirm">Ebben a szerelvényben nincs személyzet és utas sem — nem lesz mit vezetni. Mégis elindítja?</String>
+    <String key="RestoreWeather">Időjárás visszaállítása</String>
+    <String key="ReloadSceneries">Újratöltés</String>
+    <String key="OpenSceneryFolder">Mappa megnyitása</String>
+    <String key="OptionalIncludes">Opcionális elemek</String>
+    <String key="OpenTextureFolder">Textúramappa megnyitása</String>
+    <String key="CopyTextureName">Név másolása</String>
+    <String key="CopyCoupler">Másolás az előzőről</String>
+    <String key="ThermoAmbient">Hűtőfolyadék környezeti hőmérsékleten</String>
+    <String key="TextureInfo">Textúra</String>
+    <String key="TexOperator">Üzemeltető</String>
+    <String key="TexStation">Fűtőház</String>
+    <String key="TexRevision">Revízió</String>
+    <String key="TexAuthor">Szerző</String>
+    <String key="TexPhoto">Fényképek</String>
+    <String key="ShowLatestLogTooltip">Legutóbbi szimulációs napló megnyitása</String>
+
+    <!-- Depot / consist creation -->
+    <String key="VehicleDatabase">Járműadatbázis</String>
+    <String key="TextureBaseTitle">Járműpark-adatbázis</String>
+    <String key="OpenTextureBase">Járműadatbázis…</String>
+    <String key="Search">Keresés...</String>
+    <String key="LoadFromScenery">Szerelvény betöltése pályáról</String>
+    <String key="NewConsist">Új szerelvény</String>
+    <String key="SelectedVehicle">Kiválasztott jármű</String>
+    <String key="Vehicle">Jármű</String>
+    <String key="Crew">személyzettel</String>
+    <String key="Reversed">megfordítva</String>
+    <String key="NoVehicles">A dynamic/**/textures.txt fájlokban nem található jármű.</String>
+    <String key="ConsistEmpty">Adjon hozzá járműveket a bal oldali adatbázisból, vagy töltsön be meglévő szerelvényt egy pályafájlból.</String>
+    <String key="TipMoveLeft">Mozgatás balra</String>
+    <String key="TipMoveRight">Mozgatás jobbra</String>
+    <String key="TipFlip">Jármű megfordítása</String>
+    <String key="TipRemove">Eltávolítás a szerelvényből</String>
+    <String key="TipDriver">Személyzet módosítása (1. vezetőállás / 2. vezetőállás / utas / nincs)</String>
+    <String key="Scenery">Pálya</String>
+    <String key="Category">Kategória</String>
+    <String key="Class">Osztály</String>
+    <String key="All">Mind</String>
+    <String key="CatDiesel">Dízel</String>
+    <String key="CatElectric">Villamos</String>
+    <String key="CatEMU">Villamos motorvonat</String>
+    <String key="CatDMU">Dízel motorvonat</String>
+    <String key="CatCarriagesA">Kocsik A</String>
+    <String key="CatCarriagesB">Kocsik B</String>
+    <String key="CatElectricLoco">Villamos mozdony</String>
+    <String key="CatDieselLoco">Dízelmozdony</String>
+    <String key="CatSteamLoco">Gőzmozdony</String>
+    <String key="CatRailbus">Motorkocsi</String>
+    <String key="CatDraisine">Hajtány</String>
+    <String key="CatWork">Munkagépek</String>
+    <String key="CatPrototype">Prototípus</String>
+    <String key="CatTram">Villamos</String>
+    <String key="CatCar">Autó</String>
+    <String key="CatBus">Autóbusz</String>
+    <String key="CatTruck">Tehergépkocsi</String>
+    <String key="CatPeople">Emberek</String>
+    <String key="CatAnimals">Állatok</String>
+    <String key="CatWagonsA">Vagonok A</String>
+    <String key="CatWagonsB">Vagonok B</String>
+    <String key="CatWagonsC">Vagonok C</String>
+    <String key="CatWagonsD">Vagonok D</String>
+    <String key="CatWagonsE">Vagonok E</String>
+    <String key="CatWagonsF">Vagonok F</String>
+    <String key="CatWagonsG">Vagonok G</String>
+    <String key="CatWagonsH">Vagonok H</String>
+    <String key="CatWagonsI">Vagonok I</String>
+    <String key="CatWagonsJ">Vagonok J</String>
+    <String key="CatWagonsK">Vagonok K</String>
+    <String key="CatWagonsL">Vagonok L</String>
+    <String key="CatWagonsM">Vagonok M</String>
+    <String key="CatWagonsN">Vagonok N</String>
+    <String key="CatWagonsO">Vagonok O</String>
+    <String key="CatWagonsP">Vagonok P</String>
+    <String key="CatWagonsQ">Vagonok Q</String>
+    <String key="CatWagonsR">Vagonok R</String>
+    <String key="CatWagonsS">Vagonok S</String>
+    <String key="CatWagonsT">Vagonok T</String>
+    <String key="CatWagonsU">Vagonok U</String>
+    <String key="CatWagonsV">Vagonok V</String>
+    <String key="CatWagonsW">Vagonok W</String>
+    <String key="CatWagonsX">Vagonok X</String>
+    <String key="CatWagonsY">Vagonok Y</String>
+    <String key="CatWagonsZ">Vagonok Z</String>
+    <String key="CatOther">Egyéb</String>
+    <String key="Brakes">Fékek</String>
+    <String key="Loads">Rakomány</String>
+    <String key="Coupling">Kapcsolókészülék</String>
+    <String key="MapConsists">A pálya szerelvényei</String>
+    <String key="NoSceneryConsists">Válasszon pályát a Forgatókönyvek fülön.</String>
+    <String key="BrakeMode">Fékbeállítás</String>
+    <String key="BrakeLoad">Terhelésbeállítás</String>
+    <String key="BrakeSwitch">Fékkapcsoló</String>
+    <String key="None">—</String>
+
+    <!-- Coupling mask bits -->
+    <String key="CplMechanical">Mechanikus</String>
+    <String key="CplBrake">Fék</String>
+    <String key="CplControl">Vezérlés</String>
+    <String key="CplHighVoltage">Nagyfeszültség</String>
+    <String key="CplGangway">Átjáró</String>
+    <String key="CplAuxPneumatic">Levegő 8atm</String>
+    <String key="CplHeating">Fűtés</String>
+    <String key="CplWorkshop">Zár</String>
+
+    <!-- Brake modes -->
+    <String key="BrakeActingNone">Nincs</String>
+    <String key="BrakeFreight">G - teher</String>
+    <String key="BrakePassenger">P - személy</String>
+    <String key="BrakeExpress">R - gyors</String>
+    <String key="BrakeExpressMg">R + mágneses sínfék</String>
+    <String key="BrakeNoAir">Q - levegő nélkül</String>
+
+    <!-- Load adaptation -->
+    <String key="LoadNeutral">N - semleges</String>
+    <String key="LoadEmpty">T - üres</String>
+    <String key="LoadMedium">H - terhelt I</String>
+    <String key="LoadFull">F - terhelt II</String>
+
+    <!-- Brake switch -->
+    <String key="SwitchNormal">N - fék bekapcsolva</String>
+    <String key="SwitchOff">0 - kikapcsolva, oldva</String>
+    <String key="SwitchOff10">1 - kikapcsolva, oldva (10%)</String>
+    <String key="SwitchEmergencyTest">&lt;&gt; - kikapcsolva gyorsfékpróbához</String>
+    <String key="SwitchAgonal">X - elhasználódott (20% ki, véletlen)</String>
+    <String key="SwitchEmptied">E - kiürítve (vezetékek 0-n)</String>
+
+    <!-- Damage (wheel parameters) -->
+    <String key="Damage">Sérülés</String>
+    <String key="DamageSway">Imbolygás — valószínűség (%)</String>
+    <String key="DamageFlatness">Laposodás (mm)</String>
+    <String key="DamageFlatnessRand">Véletlen laposodás (0–x mm)</String>
+    <String key="DamageFlatnessProb">Laposodás valószínűsége (%)</String>
+    <String key="LoadType">Rakomány típusa</String>
+    <String key="LoadCount">Mennyiség</String>
+    <String key="LoadUnitPieces">db</String>
+    <String key="LoadUnitTons">t</String>
+    <String key="LoadUnitGeneric">egys.</String>
+    <String key="LoadHint">A jármű megrakásához adjon meg 0-nál nagyobb mennyiséget.</String>
+    <String key="LoadNotLoadable">Ez a jármű nem fogad rakományt.</String>
+    <String key="LoadPantState">Felemelt áramszedő induláskor</String>
+    <String key="LoadPantStateHint">A mennyiség az áramszedőt választja ki: 1 — A, 2 — B, 3 — mindkettő.</String>
+    <String key="Pantograph">Áramszedő</String>
+    <String key="PantStateNone">Egyik sem</String>
+    <String key="PantStateBoth">Mindkettő</String>
+    <String key="WagonNumber">Kocsiszám</String>
+    <String key="LoadCopyPrev">Rakomány másolása az előző járműről</String>
+    <String key="LoadMax">Legnagyobb lehetséges rakomány</String>
+    <String key="LoadPrevShort">Az előzőről</String>
+    <String key="LoadToAllShort">A következőkre</String>
+    <String key="LoadMaxShort">Legnagyobb</String>
+    <String key="ConsistLoadTools">A teljes szerelvény rakománya</String>
+    <String key="ConsistReady">Consist ready to go</String>
+    <String key="ConsistReadyDesc">The consist starts prepared: brake pipe charged, driver’s brake valve set, batteries closed. Unchecked it starts cold and braked.</String>
+    <String key="ReadyOverride">Force the consist state on launch</String>
+    <String key="ReadyOverrideDesc">Overrides the depot’s "consist ready to go" box for every scenario you start.</String>
+    <String key="ReadyOverrideScenery">As authored</String>
+    <String key="ReadyOverrideCold">Always cold</String>
+    <String key="ReadyOverrideReady">Always ready</String>
+    <String key="ConsistReadyOverridden">Overridden by "Force the consist state on launch" in Settings.</String>
+    <String key="ConsistRandomType">Véletlen típus</String>
+    <String key="ConsistRandomAmount">Véletlen mennyiség</String>
+    <String key="Set">Beállítás</String>
+    <String key="Length">Hossz</String>
+    <String key="Mass">Tömeg</String>
+    <String key="Load">Rakomány</String>
+    <String key="VehicleCount">Járművek</String>
+    <String key="Track">Vágány</String>
+    <String key="EmptyTrainset">Nincs jármű. (Vágány: {0})</String>
+    <String key="HideArchivalVehicles">Archivált járművek elrejtése</String>
+    <String key="RemoveSelectedVehicle">Jármű eltávolítása</String>
+    <String key="RandomizeTextures">Textúrák sorsolása</String>
+    <String key="TipRandomizeTextures">Hasonló textúrák választása osztály / szabályok szerint</String>
+    <String key="RandomizeTexturesTitle">Textúrák cseréje</String>
+    <String key="RandomizeTexturesApply">Illesztés</String>
+    <String key="RandomizeTexturesRevDiff">Revíziókülönbség legfeljebb</String>
+    <String key="RandomizeTexturesVsCurrent">a jelenlegi textúra revíziójához képest</String>
+    <String key="RandomizeTexturesVsYear">a következő évhez képest:</String>
+    <String key="RandomizeTexturesNoArchival">Ne válasszon archív textúrákat</String>
+    <String key="RandomizeTexturesRules">Sorsolási szabályok szerkesztése</String>
+    <String key="RandomizeTexturesRulesHint">Soronként egy szabály, a mini nevek vesszővel elválasztva. A # jellel kezdődő sorok megjegyzések.</String>
+    <String key="RandomizeTexturesRulesSave">Mentés</String>
+    <String key="Cancel">Mégse</String>
+    <String key="Yes">Igen</String>
+    <String key="No">Nem</String>
+    <String key="Ok">OK</String>
+    <String key="ExeLaunchFailed">A szimulátor indítása sikertelen</String>
+    <String key="ExeNotFound">A szimulátor futtatható fájlja nem található.</String>
+    <String key="ExeNotExecutable">A fájl nincs futtathatóként megjelölve (chmod +x).</String>
+    <String key="ExeWrongPlatform">Ez a bináris másik operációs rendszerhez készült.</String>
+    <String key="TabInfo">Információ</String>
+    <String key="SettingsFileChangedTitle">Beállítások</String>
+    <String key="SettingsFileChanged">Az eu07.ini fájl a starteren kívül módosult. Újratölti?</String>
+    <String key="AddAllCategory">Teljes kategória hozzáadása</String>
+    <String key="TipAddAllCategory">A böngészőben most listázott összes textúra hozzáadása</String>
+    <String key="AddUniqueMmd">Egyedi MMD-k hozzáadása</String>
+    <String key="TipAddUniqueMmd">Modellenként (MMD) egy textúra hozzáadása</String>
+    <String key="RandomizeOrder">Sorrend sorsolása</String>
+    <String key="RandomizeOrientation">Irány sorsolása</String>
+    <String key="TipRandomizeOrder">A kocsik sorrendjének keverése a kiválasztott járműtől a végéig</String>
+    <String key="TipRandomizeOrientation">Járművek véletlenszerű megfordítása a kiválasztottól a végéig</String>
+    <String key="SelectVehicleHint">A szerkesztéshez válasszon járművet a szerelvényben.</String>
+    <String key="ComingSoon">A szerkesztési lehetőségek hamarosan elérhetők.</String>
+    <String key="Split">Szétbontás</String>
+    <String key="TipSplit">Az egység szétbontása külön kocsikra</String>
+    <String key="AppliesToUnit">Az egész egységre közös</String>
+    <String key="CouplingUnitRear">Az egység végén lévő kapcsolókészülék</String>
+    <String key="Join">Összekapcsolás</String>
+    <String key="TipJoin">A jármű összekapcsolása a következővel egy egységgé</String>
+    <String key="TipReorder">Húzza az átrendezéshez</String>
+    <String key="AddVehicle">Hozzáadás</String>
+    <String key="TipAddVehicle">Jármű hozzáadása a szerelvényhez</String>
+    <String key="TipAddUnit">A teljes egység hozzáadása a szerelvényhez</String>
+
+    <!-- Consist warehouse / clipboard (right-click menu) -->
+    <String key="PresetSave">Szerelvény mentése</String>
+    <String key="PresetLoad">Szerelvény betöltése a raktárból</String>
+    <String key="PresetEmpty">(a raktár üres)</String>
+    <String key="PresetDelete">Eltávolítás a raktárból</String>
+    <String key="PresetNamePrompt">Szerelvény neve</String>
+    <String key="ConsistCopy">Szerelvény másolása a vágólapra</String>
+    <String key="ConsistPaste">Szerelvény beillesztése a vágólapról</String>
+    <String key="ConsistRemoveAll">Minden jármű eltávolítása</String>
+
+    <!-- Loading splash -->
+    <String key="LoadingVehicles">Járműadatbázis betöltése</String>
+    <String key="LoadingSceneries">Pályák betöltése</String>
+    <String key="LoadingDone">Indítás…</String>
+
+    <!-- Settings -->
+    <String key="General">Általános</String>
+
+    <String key="Language">Nyelv</String>
+    <String key="Fullscreen">Teljes képernyő</String>
+    <String key="PauseSimInactive">Szimuláció szüneteltetése inaktív ablaknál</String>
+    <String key="PauseSimStart">Szüneteltetés indításkor</String>
+    <String key="CursorSensitivity">Kurzorérzékenység</String>
+    <String key="MouseHorInvert">Egér vízszintes megfordítása</String>
+    <String key="MouseVertInvert">Egér függőleges megfordítása</String>
+
+    <String key="Communication">Kommunikáció</String>
+
+    <String key="GamepadSignalIgnore">Gamepad bemenet mellőzése</String>
+
+    <String key="Feedback">Visszajelzés</String>
+    <String key="FeedbackOff">Ki</String>
+    <String key="FeedbackCASHP">Caps: CA/SHP; ScrollLock: indítóellenállások</String>
+    <String key="FeedbackCA">Caps: CA; ScrollLock: SHP</String>
+    <String key="FeedbackLPT">LPT</String>
+    <String key="FeedbackPoKeys">PoKeys55</String>
+    <String key="FeedbackSP">Soros port (COM)</String>
+
+    <String key="FeedbackPort">LPT port címe</String>
+
+    <String key="UartSection">UART beállítása</String>
+    <String key="UartEnable">UART kommunikáció engedélyezése</String>
+    <String key="UartPort">Soros port</String>
+    <String key="UartTune">Hangolási paraméter</String>
+    <String key="UartDebug">Hibakeresési adatok kiírása a konzolra</String>
+    <String key="UartMain">Fő kontroller</String>
+    <String key="UartScnd">Segéd/tolatókontroller</String>
+    <String key="UartTrain">Vonatfék</String>
+    <String key="UartLocal">Mozdonyfék</String>
+    <String key="UartRadioVolume">Rádió hangereje</String>
+    <String key="UartRadioChannel">Rádiócsatorna</String>
+
+    <String key="Others">Egyéb</String>
+    <String key="SelectEXE">Exe kiválasztása</String>
+    <String key="SelectEXEAuto">Automatikus kiválasztás</String>
+    <String key="DebugMode">Hibakeresési mód (teszt mód)</String>
+    <String key="VirtualShunting">Virtuális tolatás</String>
+    <String key="LogMissingVehicleFiles">Hiányzó járműfájlok naplózása exportáláskor</String>
+
+    <String key="Graphic">Grafika</String>
+    <String key="RenderEngine">Megjelenítő motor</String>
+    <String key="REFull">Teljes</String>
+    <String key="REOld">Régi</String>
+    <String key="RESimpShader">Egyszerűsített shader</String>
+    <String key="RESimp">Egyszerűsített</String>
+    <String key="REOff">Vizuális réteg kikapcsolása</String>
+    <String key="REExperimental">Kísérleti</String>
+
+    <String key="Resolution">Felbontás</String>
+    <String key="BufforResolution">Puffer felbontása</String>
+    <String key="MaxTexResolution">Textúrák legnagyobb felbontása</String>
+    <String key="MaxTexCabResolution">Vezetőállás-textúrák legnagyobb felbontása</String>
+    <String key="TexFilteringQuality">Textúraszűrés minősége</String>
+    <String key="Multisampling">Multisampling</String>
+    <String key="QualityVeryLow">Nagyon alacsony</String>
+    <String key="QualityLow">Alacsony</String>
+    <String key="QualityNormal">Normál</String>
+    <String key="QualityHigh">Magas</String>
+    <String key="QualityVeryHigh">Nagyon magas</String>
+    <String key="MsaaNone">Nincs</String>
+    <String key="QualityModerate">Közepes</String>
+    <String key="QualityStandard">Standard</String>
+    <String key="RangeVeryLow">Nagyon alacsony</String>
+    <String key="RangeLow">Alacsony</String>
+    <String key="RangeNormal">Normál</String>
+    <String key="RangeModerate">Közepes</String>
+    <String key="RangeStandard">Standard</String>
+    <String key="RangeHigh">Magas</String>
+    <String key="RangeVeryHigh">Nagyon magas</String>
+    <String key="RangeDisabled">Kikapcsolva</String>
+    <String key="DynamicLights">Dinamikus fényforrások</String>
+    <String key="RenderRange">Megjelenítési távolság</String>
+    <String key="FpsLimitEnable">Képkockaszám korlátozása</String>
+    <String key="ShadowAngleLimit">Árnyékhossz korlátozása</String>
+    <String key="ShadowLimitNone">Nincs korlát</String>
+    <String key="ShadowLimitShort">Rövidített</String>
+    <String key="FullscreenWindowed">Automatikus felbontás (keret nélküli teljes képernyő)</String>
+    <String key="RenderAngleVulkan">ANGLE Vulkan megjelenítő használata</String>
+    <String key="VSync">VSync</String>
+    <String key="SmokeDisplay">Füst megjelenítése</String>
+    <String key="SmokeParticlesMultiplier">Füstrészecskék szorzója</String>
+
+    <String key="ChromaticAberration">Kromatikus aberráció</String>
+    <String key="MotionBlur">Mozgási elmosás</String>
+    <String key="AdditionalShadersEffects">További shader-effektek</String>
+    <String key="ReflectionsCubeMap">Tükröződések cubemapként</String>
+    <String key="SkipPipeline">SkipPipeline</String>
+    <String key="RenderVBO">VBO megjelenítés</String>
+    <String key="RenderShadows">Árnyékok megjelenítése</String>
+    <String key="ReflectionsFramerate">Tükröződések frissítési gyakorisága</String>
+    <String key="ShadowsResolution">Árnyékok felbontása</String>
+    <String key="ShaderRange">Árnyékok hatótávolsága</String>
+    <String key="CabShadowsRange">Vezetőállás árnyékforrásainak hatótávolsága</String>
+
+    <String key="ShadowDisplay">Árnyékok megjelenítése</String>
+    <String key="CSROnlyImportant">Csak a fontosak</String>
+    <String key="CSRLimited">Korlátozott</String>
+    <String key="CSRAll">Mind</String>
+
+    <String key="ReflectionsDetails">Tükröződések részletessége</String>
+    <String key="RDTerrain">Csak a terep geometriája</String>
+    <String key="RDTerrainModels">Terep geometriája és statikus modellek</String>
+    <String key="RDTerrainModelsVehicles">Terep geometriája, statikus modellek és járművek</String>
+
+    <String key="FieldOfView">Látószög</String>
+    <String key="RenderScreens">Fedélzeti kijelzők megjelenítése</String>
+    <String key="RenderScreensThread">Kijelzők megjelenítése külön szálon</String>
+
+    <String key="Physics">Fizika</String>
+
+    <String key="TrackCurvesQuality">Vágányívek minősége</String>
+    <String key="PhysicsAccuracyIncreased">Növelt fizikai pontosság</String>
+    <String key="BreakingPantographPossibility">Áramszedő törésének lehetősége</String>
+    <String key="PowerOverheadLineOnly">Táplálás csak felsővezeték alatt</String>
+    <String key="SaveSpeedometerTapes">Sebességmérő-szalagok mentése</String>
+    <String key="SaveSimLogs">Szimulációs napló mentése</String>
+    <String key="KeepPrevLogs">Korábbi naplók megtartása</String>
+    <String key="DisplaySimulation">Szimuláció megjelenítése</String>
+    <String key="CrashDamage">Ütközési sérülés</String>
+    <String key="Friction">Súrlódás szorzója</String>
+    <String key="BrakeStep">Fékszelep érzékenysége</String>
+    <String key="BrakeSpeed">FV4a szelep érzékenysége</String>
+
+    <String key="Sounds">Hang</String>
+    <String key="EnableSounds">Hang bekapcsolása</String>
+    <String key="Volume">Hangerő</String>
+    <String key="RadiophoneVolume">Rádió hangereje</String>
+    <String key="VehiclesVolume">Járművek hangereje</String>
+    <String key="PositionedSoundsVolume">Térbeli hangok hangereje</String>
+    <String key="AmbientVolume">Környezeti hangok hangereje</String>
+
+    <String key="Advanced">Speciális</String>
+    <String key="CompressTextures">TGA textúrák tömörítése</String>
+    <String key="ScaleSpeculars">Csillanások skálázása (régi modellek kompatibilitása)</String>
+    <String key="UseGLES">OpenGL ES használata</String>
+    <String key="ShaderGamma">Gammakorrekció a shaderekben</String>
+    <String key="ScreenMipmaps">Mipmapok készítése a vezetőállás (Python) kijelzőtextúráihoz</String>
+    <String key="ExtendedModelConversion">Kiterjesztett E3D modellkonverzió (kísérleti)</String>
+    <String key="GfxResourceMove">Óvatos textúramemória-kezelés</String>
+    <String key="GfxResourceSweep">Nem használt textúrák törlése a GPU memóriájából</String>
+    <String key="TrainPhysicsThreads">Járműfizika szálai (0 = fő szál)</String>
+    <String key="IgnoreIrrelevantTrains">Dekorációs szerelvények kihagyása indításkor</String>
+
+    <String key="Starter">Starter</String>
+    <String key="SettingsProfile">Beállítási profil</String>
+    <String key="ProfileApply">Alkalmaz</String>
+    <String key="ProfileSaveAs">Mentés másként…</String>
+    <String key="ProfileNamePrompt">Profil neve</String>
+    <String key="AutoCloseStarter">A starter automatikus bezárása</String>
+    <String key="LargeThumbnails">Nagy előnézetek</String>
+    <String key="AutoExpandSceneryTree">Pályafa automatikus kibontása</String>
+
+    <!-- Controls / key bindings -->
+    <String key="Controls">Irányítás</String>
+    <String key="BindingsHint">Kattintson egy hozzárendelésre, majd nyomja le a billentyűt (kombinációhoz tartsa a Shift / Ctrl gombot):</String>
+    <String key="RestoreDefaults">Alapértelmezések visszaállítása</String>
+    <String key="PressKey">Nyomjon meg egy billentyűt…</String>
+    <String key="ClearBinding">Hozzárendelés törlése</String>
+    <String key="ConflictTooltip">Ütközés: ezt a gyorsbillentyűt több parancs is használja</String>
+    <String key="KbUnassigned">Nincs hozzárendelve</String>
+    <String key="KbAssigned">Hozzárendelve</String>
+    <String key="KbShift">Shift-tel</String>
+    <String key="KbCtrl">Ctrl-lal</String>
+    <String key="KbReserved">A szimulátor számára fenntartva</String>
+    <String key="BindKeyTitle">Billentyű:</String>
+    <String key="BindKeyHint">Rendeljen parancsot a billentyű minden módosító-kombinációjához.</String>
+    <String key="BindNone">— nincs —</String>
+    <String key="BindNoMod">Módosító nélkül</String>
+    <String key="BindShift">Shift</String>
+    <String key="BindCtrl">Ctrl</String>
+    <String key="BindShiftCtrl">Shift + Ctrl</String>
+
+    <!-- Settings actions -->
+    <String key="Save">Mentés</String>
+    <String key="Reset">Visszaállítás</String>
+    <String key="SettingsSaved">A beállítások elmentve</String>
+    <String key="UnsavedChanges">Nem mentett módosítások</String>
+
+    <!-- Errors / diagnostics -->
+    <String key="FaultTitle">Hiba</String>
+    <String key="FaultDetail">Hiba részletei:</String>
+    <String key="FaultFileNotFound">A fájl nem található: {0}</String>
+    <String key="FaultLoadData">A szimulátor adatainak betöltése sikertelen.</String>
+    <String key="FaultBadInstall">A szimulátor telepítése hiányos lehet.</String>
+    <String key="FaultNoDir">Hiányzó mappa: {0}</String>
+    <String key="FaultNoWeights">Nincs rakománysúly-információ.</String>
+    <String key="FaultNoScenery">Nem található forgatókönyv.</String>
+    <String key="FaultNoVehicles">Nem található jármű.</String>
+    <String key="FaultNoPhysics">Nem található járműadat.</String>
+    <String key="FaultNoExe">A szimulátor futtatható fájlja nem található.</String>
+
+    <!-- About -->
+    <String key="AboutTitle">Névjegy</String>
+    <String key="AboutForSimulator">a MaSzyna szimulátorhoz</String>
+    <String key="AboutChangelog">Változásnapló:</String>
+    <String key="AboutNoChangelog">Nem található változásnapló fájl.</String>
+    <String key="About">Névjegy</String>
+    <String key="Close">Bezárás</String>
+    <String key="SettingsPath">Beállítások betöltve innen:</String>
+
+    <!-- Vehicle info -->
+    <String key="GeneralInfo">Általános</String>
+    <String key="Model">Modell</String>
+    <String key="VMax">VMax</String>
+    <String key="Name">Név</String>
+    <String key="Texture">Textúra</String>
+
+    <!-- Scenery tab -->
+    <String key="SceneryConsists">Szerelvények a pályán</String>
+    <String key="SceneryFaults">Hibák a forgatókönyvben:</String>
+
+    <!-- Warehouse / vehicle panels -->
+    <String key="WarehouseConsists">Szerelvények a raktárban</String>
+    <String key="AddToWarehouse">Hozzáadás a raktárhoz</String>
+    <String key="RemoveFromWarehouse">Eltávolítás a raktárból</String>
+    <String key="WarehouseApply">Csere raktári szerelvényre</String>
+    <String key="WarehouseImportNothing">Nem található importálható szerelvény.</String>
+    <String key="AboutTexture">A textúráról</String>
+    <String key="NoTextureInfo">Nincs textúrainformáció.</String>
+
+    <!-- Vehicle configuration / coupler -->
+    <String key="Configuration">Konfiguráció</String>
+    <String key="RemoveVehicle">Jármű eltávolítása</String>
+    <String key="AutoCoupler">Auto</String>
+    <String key="TipAutoCoupler">Kapcsolatok automatikus beállítása az egész szerelvényre</String>
+    <String key="CouplingLastVehicle">A szerelvény végén lévő kapcsolókészülék — nincs mögötte jármű.</String>
+    <String key="ChangeName">Átnevezés...</String>
+    <String key="LoadCopyToAll">A rakomány alkalmazása minden további járműre, amely elfogadja</String>
+    <String key="WarehouseAppend">Raktári szerelvény hozzáfűzése</String>
+    <String key="WarehouseImportFile">Szerelvények hozzáadása fájlból...</String>
+    <String key="StartWithoutSaving">Indítás a beállítások mentése nélkül</String>
+    <String key="StartFreeFly">Indítás jármű nélkül</String>
+    <String key="VolumePaused">Hangerő szünet alatt</String>
+    <String key="DebugLogVisible">Szimuláció menetének megjelenítése</String>
+    <String key="PyScreenPriority">Kiegészítő képernyők frissítési gyakorisága</String>
+    <String key="PyPriorityNormal">Normál</String>
+    <String key="PyPriorityLower">Alacsony</String>
+    <String key="PyPriorityLowest">Nagyon alacsony</String>
+    <String key="PyPriorityIdle">Nincs</String>
+    <String key="PyPriorityOff">Kikapcsolva</String>
+
+    <String key="MassBrutto">Bruttó tömeg</String>
+    <String key="VisibilityGood">Jó</String>
+    <String key="VisibilityBad">Rossz</String>
+    <String key="SoundPhysics">Hang | Fizika</String>
+    <String key="DriverHead">Mozdonyvezető (A fülke)</String>
+    <String key="DriverRear">Mozdonyvezető (B fülke)</String>
+    <String key="DriverPassenger">Utas</String>
+    <String key="DriverNobody">Senki</String>
+    <String key="RemoveAllTrains">Az összes szerelvény eltávolítása a pályáról</String>
+    <String key="RemoveAllTrainsConfirm">Eltávolítod a járműveket a pálya minden szerelvényéből?</String>
+    <String key="TexWorks">Felújítás:</String>
+    <String key="RevisionFrom">Felújítás ettől:</String>
+    <String key="RevisionTo">Felújítás eddig:</String>
+    <String key="CrewLabel">Személyzet</String>
+    <String key="RuleAdd">Hozzáadás a szabályhoz</String>
+    <String key="RuleNew">— új szabály —</String>
+    <String key="RuleRemove">Eltávolítás a szabályból</String>
+    <String key="CatAll">Összes</String>
+    <String key="GfxColResolution">Felbontás és textúrák</String>
+    <String key="GfxColRendering">Megjelenítés</String>
+    <String key="GfxColShadows">Árnyékok</String>
+    <String key="GfxColReflections">Tükröződés és nézet</String>
+    <String key="GfxColScripts">Python szkriptek</String>
+    <String key="UartHint">Port neve / ne módosítsd / adatküldés gyakorisága</String>
+    <String key="UartFeature">UARTfeature:</String>
+    <String key="UartSaveClose">Mentés és bezárás</String>
+    <String key="PickCategoryFirst">Előbb válassz járműkategóriát vagy osztályt.</String>
+    <String key="HideArchivalSceneries">Archivált forgatókönyvek elrejtése</String>
+    <String key="Tools">Eszközök</String>
+    <String key="AdvancedSettings">Speciális beállítások</String>
+    <String key="AdvLogPage">Eseménynapló</String>
+    <String key="AdvClearLog">Napló törlése</String>
+    <String key="ConsistSchedule">Összeállítás</String>
+
+    <!-- Billentyűparancsok -->
+    <String key="ShortcutsTitle">Billentyűparancsok</String>
+    <String key="ShortcutsGlobal">Általános</String>
+    <String key="ShortcutsTabHint">A Tab a panelek között lép, a nyilak a listákon belül. A szerelvénysávban a Tab a kijelölt járműre ugrik.</String>
+    <String key="ShortcutShowHelp">Ez a lista</String>
+    <String key="ShortcutFocusSearch">Ugrás a járműkeresőre</String>
+    <String key="ShortcutAddVehicle">A kiválasztott jármű hozzáadása</String>
+    <String key="ShortcutSetNumber">Kocsiszám beállítása</String>
+    <String key="ShortcutPrevNext">Előző / következő jármű</String>
+    <String key="ShortcutFirstLast">Első / utolsó jármű</String>
+    <String key="ShortcutMember">Tag kiválasztása kapcsolt egységen belül</String>
+    <String key="ShortcutMoveVehicle">Jármű mozgatása a szerelvényben</String>
+    <String key="ShortcutCardMenu">Jármű menüjének megnyitása</String>
+</Language>

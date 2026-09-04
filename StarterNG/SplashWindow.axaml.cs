@@ -1,5 +1,6 @@
-﻿using Avalonia.Controls;
+using Avalonia.Controls;
 using StarterNG.Classes;
+using StarterNG.Application;
 
 namespace StarterNG;
 
@@ -10,7 +11,6 @@ public partial class SplashWindow : Window
         InitializeComponent();
     }
 
-    /// <summary>Updates the bar and status line. Must be called on the UI thread.</summary>
     public void Report(LoadStatus status)
     {
         progressBar.Value = status.Fraction;

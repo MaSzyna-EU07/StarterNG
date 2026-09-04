@@ -3,52 +3,75 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.IO;
 using System.Xml;
+using StarterNG.Application.Abstractions;
 
 namespace StarterNG.Services;
 
 /// <summary>
-/// Loads UI translations from plain XML files shipped in a <c>lang/</c> folder next
-/// to the executable (instead of dictionaries compiled into the assembly). The files
-/// are parsed with <see cref="XmlReader"/>, which works under Native AOT — unlike the
-/// Avalonia XAML loader, which has no runtime parser in AOT builds.
-///
-/// File format (lang/en.xml):
-/// <code>
-/// &lt;Language code="en" name="English"&gt;
-///     &lt;String key="NavScenarios"&gt;Scenarios&lt;/String&gt;
-/// &lt;/Language&gt;
-/// </code>
+/// Loads the translation table from startercfg/lang/*.xml and exposes it as
+/// <see cref="ILocalizedStrings"/>. Stays a change-notifying class because the
+/// XAML binds to it directly as a static source.
 /// </summary>
-public class LocalizationService : INotifyPropertyChanged
+public class LocalizationService : INotifyPropertyChanged, ILocalizedStrings
 {
-    /// <summary>Folder holding the language files, resolved as starter/lang next to the executable.</summary>
     public static string LangDirectory =>
         Path.Combine(AppContext.BaseDirectory, "startercfg", "lang");
 
+    private readonly IDiagnosticsLog _log;
+
     private Dictionary<string, string> _strings = new();
+
+    public LocalizationService(IDiagnosticsLog log)
+    {
+        _log = log;
+    }
 
     public event PropertyChangedEventHandler? PropertyChanged;
 
-    /// <summary>Display name of the active language (e.g. "English", "Polski").</summary>
+    public event Action? LanguageChanged;
+
     public string CurrentLanguage { get; private set; } = "English";
 
-    /// <summary>Short ISO code of the active language (e.g. "en", "pl").</summary>
     public string CurrentLangCode { get; private set; } = "en";
 
-    /// <summary>Indexer used by the XAML bindings: returns the key itself when missing.</summary>
-    public string this[string key] =>
-        _strings.TryGetValue(key, out var value) ? value : key;
+    private readonly HashSet<string> _reportedMisses = new(StringComparer.Ordinal);
 
     /// <summary>
-    /// Metadata for one discovered language file.
+    /// Keys with this suffix hold the optional one-line explanation shown under a
+    /// setting. They are only authored in en/pl, so a miss yields an empty string
+    /// (which collapses the description line) instead of the raw key, and is not
+    /// reported as a translation gap.
     /// </summary>
+    private const string OptionalSuffix = "Desc";
+
+    public string this[string key]
+    {
+        get
+        {
+            if (_strings.TryGetValue(key, out var value))
+                return value;
+
+            if (key.EndsWith(OptionalSuffix, StringComparison.Ordinal))
+                return string.Empty;
+
+            lock (_reportedMisses)
+                if (_reportedMisses.Add(key))
+                    _log.Log($"lang/{CurrentLangCode}: missing key \"{key}\"");
+
+            return key;
+        }
+    }
+
+    /// <summary>
+    /// Looks up a key that may legitimately be absent, without logging a miss.
+    /// Returns an empty string when the current language does not define it.
+    /// </summary>
+    public string Opt(string key) =>
+        _strings.TryGetValue(key, out var value) ? value : string.Empty;
+
     public readonly record struct LanguageInfo(string Code, string Name, string Path);
 
-    /// <summary>
-    /// Scans the lang/ folder and returns the header metadata of every *.xml file
-    /// without loading all of its strings. Used to populate the language selector.
-    /// </summary>
-    public static IReadOnlyList<LanguageInfo> AvailableLanguages()
+    public static IReadOnlyList<LanguageInfo> AvailableLanguages(IDiagnosticsLog? log = null)
     {
         var list = new List<LanguageInfo>();
         if (!Directory.Exists(LangDirectory))
@@ -62,22 +85,17 @@ public class LocalizationService : INotifyPropertyChanged
                 if (!string.IsNullOrEmpty(code))
                     list.Add(new LanguageInfo(code, string.IsNullOrEmpty(name) ? code : name, path));
             }
-            catch
+            catch (Exception ex)
             {
-                // Skip malformed files rather than crashing the launcher.
+                log?.Log($"lang/{Path.GetFileName(path)}", ex);
             }
         }
         return list;
     }
 
-    /// <summary>
-    /// Loads the language whose code or display name matches <paramref name="codeOrName"/>.
-    /// Falls back to English ("en") when no match is found. Returns the resolved
-    /// display name so callers can keep their stored setting consistent.
-    /// </summary>
     public string Load(string codeOrName)
     {
-        var languages = AvailableLanguages();
+        var languages = AvailableLanguages(_log);
 
         LanguageInfo? match = null;
         foreach (var lang in languages)
@@ -90,7 +108,6 @@ public class LocalizationService : INotifyPropertyChanged
             }
         }
 
-        // Fall back to English, then to whatever is available first.
         if (match is null)
         {
             foreach (var lang in languages)
@@ -107,13 +124,15 @@ public class LocalizationService : INotifyPropertyChanged
             LoadFile(info.Path, info.Code, info.Name);
         else
         {
-            // No files at all: keep keys visible instead of blank UI.
+
             _strings = new Dictionary<string, string>();
             CurrentLangCode = "en";
             CurrentLanguage = "English";
         }
 
-        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs("Item"));
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs("Item[]"));
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(string.Empty));
+        LanguageChanged?.Invoke();
         return CurrentLanguage;
     }
 
@@ -124,16 +143,12 @@ public class LocalizationService : INotifyPropertyChanged
         var settings = new XmlReaderSettings { IgnoreComments = true, IgnoreWhitespace = true };
         using var reader = XmlReader.Create(path, settings);
 
-        // NOTE: ReadElementContentAsString() already advances the reader past the
-        // element's end tag onto the *next* node, so we must NOT call Read() again
-        // in that case - doing so would skip every second <String> entry. We only
-        // advance explicitly for nodes we don't consume here.
         while (!reader.EOF)
         {
             if (reader.NodeType == XmlNodeType.Element && reader.Name == "String")
             {
                 var key = reader.GetAttribute("key");
-                var value = reader.ReadElementContentAsString(); // advances the reader
+                var value = reader.ReadElementContentAsString();
                 if (!string.IsNullOrEmpty(key))
                     dict[key] = value;
             }
@@ -144,6 +159,8 @@ public class LocalizationService : INotifyPropertyChanged
         }
 
         _strings = dict;
+        lock (_reportedMisses)
+            _reportedMisses.Clear();
         CurrentLangCode = code;
         CurrentLanguage = name;
     }

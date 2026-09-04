@@ -1,37 +1,35 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Text.Json.Serialization.Metadata;
+using System.Text.RegularExpressions;
+using StarterNG.Infrastructure.Adapters;
 
 namespace StarterNG.Classes;
 
-/// <summary>One saved consist in the user's vehicle warehouse.</summary>
+public enum PresetSort
+{
+    Name,
+    Track
+}
+
 public sealed class TrainsetPreset
 {
-    /// <summary>Display name shown in the "load from warehouse" menu.</summary>
     public string Name { get; set; } = "";
 
-    /// <summary>Complete "trainset … endtrainset" scenery entry (self-contained).</summary>
     public string Entry { get; set; } = "";
 }
 
-/// <summary>Root object persisted to userpresets.json.</summary>
 public sealed class PresetCollection
 {
     public List<TrainsetPreset> Presets { get; set; } = new();
 }
 
-/// <summary>
-/// The user's vehicle/consist "warehouse": named trainset presets persisted as JSON.
-/// Stored under the per-user config directory so it survives reinstalls:
-///   Windows: %APPDATA%\MaSzyna\starter\userpresets.json
-///   macOS:   ~/Library/Application Support/MaSzyna/starter/userpresets.json
-///   Linux:   ~/.config/MaSzyna/starter/userpresets.json
-/// All operations are best-effort and never throw.
-/// </summary>
 public static class PresetStore
 {
     private static string ResolvePath()
@@ -54,8 +52,8 @@ public static class PresetStore
 
     public static string FilePath { get; } = ResolvePath();
 
-    // Source-generated metadata keeps (de)serialisation AOT/trim-safe, matching the
-    // approach used for the vehicle database.
+    public static PresetSort SortMode { get; set; } = PresetSort.Name;
+
     private static readonly JsonSerializerOptions Options = new()
     {
         WriteIndented = true,
@@ -65,13 +63,16 @@ public static class PresetStore
     private static JsonTypeInfo<PresetCollection> TypeInfo =>
         (JsonTypeInfo<PresetCollection>)Options.GetTypeInfo(typeof(PresetCollection));
 
-    /// <summary>All saved presets, sorted by name. Empty when none / unreadable.</summary>
-    public static IReadOnlyList<TrainsetPreset> All() => Load().Presets;
+    public static IReadOnlyList<TrainsetPreset> All()
+    {
+        var list = Load().Presets.ToList();
+        if (SortMode == PresetSort.Track)
+            list.Sort((a, b) => string.Compare(TrackOf(a), TrackOf(b), StringComparison.OrdinalIgnoreCase));
+        else
+            list.Sort((a, b) => string.Compare(a.Name, b.Name, StringComparison.OrdinalIgnoreCase));
+        return list;
+    }
 
-    /// <summary>
-    /// Saves (or overwrites, by name) a consist preset. No-op on a blank name or
-    /// empty entry.
-    /// </summary>
     public static void Save(string? name, string? entry)
     {
         name = name?.Trim() ?? "";
@@ -85,13 +86,82 @@ public static class PresetStore
         Persist(col);
     }
 
-    /// <summary>Removes a preset by name (case-insensitive).</summary>
     public static void Delete(string name)
     {
         var col = Load();
         if (col.Presets.RemoveAll(p => string.Equals(p.Name, name, StringComparison.OrdinalIgnoreCase)) > 0)
             Persist(col);
     }
+
+    public static int ImportMagazyn(string? path = null)
+    {
+        path ??= FindMagazynPath();
+        if (path is null || !File.Exists(path)) return 0;
+
+        int added = 0;
+        try
+        {
+            string text = File.ReadAllText(path, LegacyText.CodePage1250);
+            var section = Regex.Matches(text,
+                @"\[TRAINSET\d+\s*=\s*([^\]]*)\](.*?)(?=\[TRAINSET|\z)",
+                RegexOptions.IgnoreCase | RegexOptions.Singleline);
+
+            foreach (Match m in section)
+            {
+                string name = m.Groups[1].Value.Trim();
+                if (name.Length == 0) name = $"import_{added + 1}";
+
+                var nodes = new List<string>();
+                foreach (Match line in Regex.Matches(m.Groups[2].Value, @"(?m)^\s*\d+\s*=\s*(.+)$"))
+                {
+                    string body = line.Groups[1].Value.Trim();
+                    if (!body.Contains("enddynamic", StringComparison.OrdinalIgnoreCase))
+                        body += " enddynamic";
+                    nodes.Add(body);
+                }
+                if (nodes.Count == 0) continue;
+
+                var sb = new StringBuilder();
+                sb.Append("trainset ").Append(Sanitize(name)).Append(" none 0 0\n");
+                foreach (string n in nodes)
+                    sb.Append(n).Append('\n');
+                sb.Append("endtrainset\n");
+
+                Save(name, sb.ToString());
+                added++;
+            }
+        }
+        catch (Exception ex)
+        {
+            Infrastructure.Diagnostics.Log($"Import {path}", ex);
+        }
+        return added;
+    }
+
+    private static string? FindMagazynPath()
+    {
+        string cwd = Directory.GetCurrentDirectory();
+        foreach (string rel in new[]
+                 {
+                     Path.Combine("starter", "magazyn.ini"),
+                     "starter.ini",
+                     "RAINSTED.INI"
+                 })
+        {
+            string p = Path.Combine(cwd, rel);
+            if (File.Exists(p)) return p;
+        }
+        return null;
+    }
+
+    private static string TrackOf(TrainsetPreset p)
+    {
+        var m = Regex.Match(p.Entry ?? "", @"^\s*trainset\s+\S+\s+(\S+)", RegexOptions.Multiline | RegexOptions.IgnoreCase);
+        return m.Success ? m.Groups[1].Value : "";
+    }
+
+    private static string Sanitize(string name) =>
+        string.IsNullOrWhiteSpace(name) ? "preset" : name.Replace(' ', '_');
 
     private static PresetCollection Load()
     {
@@ -104,9 +174,9 @@ public static class PresetStore
                     return col;
             }
         }
-        catch
+        catch (Exception ex)
         {
-            // unreadable / malformed - start from an empty warehouse
+            StarterNG.Infrastructure.Diagnostics.Log($"reading {FilePath}", ex);
         }
         return new PresetCollection();
     }
@@ -118,26 +188,17 @@ public static class PresetStore
             Directory.CreateDirectory(Path.GetDirectoryName(FilePath)!);
             File.WriteAllText(FilePath, JsonSerializer.Serialize(col, TypeInfo));
         }
-        catch
+        catch (Exception ex)
         {
-            // best-effort: a failed save just means the warehouse isn't updated
+            StarterNG.Infrastructure.Diagnostics.Log($"saving {FilePath}", ex);
         }
     }
 }
 
-/// <summary>
-/// Helpers to convert a consist to/from its canonical scenery text - the full
-/// "trainset … endtrainset" block, exactly what is placed on the clipboard.
-/// </summary>
 public static class ConsistText
 {
-    /// <summary>The complete scenery entry for a trainset (incl. endtrainset).</summary>
     public static string Serialize(Trainset trainset) => trainset.ToSceneryEntry();
 
-    /// <summary>
-    /// Parses the vehicles out of a complete trainset entry. Returns null when the
-    /// text holds no usable node::dynamic vehicles.
-    /// </summary>
     public static List<Dynamic>? VehiclesFrom(string? text)
     {
         if (string.IsNullOrWhiteSpace(text))
@@ -154,7 +215,6 @@ public static class ConsistText
     }
 }
 
-// Source-generated JSON metadata (AOT/trim-safe; no runtime reflection).
 [JsonSerializable(typeof(PresetCollection))]
 [JsonSerializable(typeof(TrainsetPreset))]
 internal partial class PresetJsonContext : JsonSerializerContext

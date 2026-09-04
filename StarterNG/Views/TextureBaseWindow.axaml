@@ -1,0 +1,76 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:starterNg="clr-namespace:StarterNG"
+        xmlns:views="clr-namespace:StarterNG.Views"
+        x:Class="StarterNG.Views.TextureBaseWindow"
+        x:CompileBindings="True"
+        Title="{Binding [TextureBaseTitle], Source={x:Static starterNg:App.Loc}}"
+        Width="980" Height="560"
+        WindowStartupLocation="CenterOwner"
+        MinWidth="720" MinHeight="400">
+    <DockPanel Margin="10">
+        <Grid DockPanel.Dock="Top" ColumnDefinitions="*,*,*,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto"
+              ColumnSpacing="8" RowSpacing="6" Margin="0,0,0,8">
+            <CheckBox Name="fNameOn" Grid.Row="0" Grid.Column="0" Content="{Binding [TextureInfo], Source={x:Static starterNg:App.Loc}}" />
+            <TextBox Name="fName" Grid.Row="0" Grid.Column="1" PlaceholderText="{Binding [Search], Source={x:Static starterNg:App.Loc}}" />
+            <CheckBox Name="fOpOn" Grid.Row="0" Grid.Column="2" Content="{Binding [TexOperator], Source={x:Static starterNg:App.Loc}}" />
+            <TextBox Name="fOp" Grid.Row="0" Grid.Column="3" />
+
+            <CheckBox Name="fMiniOn" Grid.Row="1" Grid.Column="0" Content="{Binding [Class], Source={x:Static starterNg:App.Loc}}" />
+            <TextBox Name="fMini" Grid.Row="1" Grid.Column="1" />
+            <CheckBox Name="fAuthorOn" Grid.Row="1" Grid.Column="2" Content="{Binding [TexAuthor], Source={x:Static starterNg:App.Loc}}" />
+            <TextBox Name="fAuthor" Grid.Row="1" Grid.Column="3" />
+
+            <CheckBox Name="fStationOn" Grid.Row="2" Grid.Column="0" Content="{Binding [TexStation], Source={x:Static starterNg:App.Loc}}" />
+            <TextBox Name="fStation" Grid.Row="2" Grid.Column="1" />
+            <CheckBox Name="fPhotoOn" Grid.Row="2" Grid.Column="2" Content="{Binding [TexPhoto], Source={x:Static starterNg:App.Loc}}" />
+            <TextBox Name="fPhoto" Grid.Row="2" Grid.Column="3" />
+
+            <CheckBox Name="fModelOn" Grid.Row="3" Grid.Column="0" Content="{Binding [Model], Source={x:Static starterNg:App.Loc}}" />
+            <TextBox Name="fModel" Grid.Row="3" Grid.Column="1" />
+
+            <CheckBox Name="fRevFromOn" Grid.Row="4" Grid.Column="0" Content="{Binding [RevisionFrom], Source={x:Static starterNg:App.Loc}}" />
+            <TextBox Name="fRevFrom" Grid.Row="4" Grid.Column="1" PlaceholderText="RRRR-MM-DD" />
+            <CheckBox Name="fRevToOn" Grid.Row="4" Grid.Column="2" Content="{Binding [RevisionTo], Source={x:Static starterNg:App.Loc}}" />
+            <TextBox Name="fRevTo" Grid.Row="4" Grid.Column="3" PlaceholderText="RRRR-MM-DD" />
+        </Grid>
+
+        <TextBlock Name="statusText" DockPanel.Dock="Bottom" Margin="0,6,0,0"
+                   FontSize="12" Opacity="0.75" />
+
+        <Grid DockPanel.Dock="Left" Width="260" RowDefinitions="*,4,*">
+            <ListBox Name="typeList" Grid.Row="0" Classes="Compact" />
+            <GridSplitter Grid.Row="1" Height="4" HorizontalAlignment="Stretch"
+                          Background="Transparent" ResizeDirection="Rows" />
+            <ListBox Name="modelList" Grid.Row="2" Classes="Compact">
+                <ListBox.ItemTemplate>
+                    <DataTemplate x:DataType="views:TextureModelRow">
+                        <Grid ColumnDefinitions="28,90,*" ColumnSpacing="4">
+                            <TextBlock Grid.Column="0" Text="{Binding No}" Opacity="0.6" />
+                            <TextBlock Grid.Column="1" Text="{Binding Klasa}" TextTrimming="CharacterEllipsis" />
+                            <TextBlock Grid.Column="2" Text="{Binding Sciezka}" Opacity="0.75"
+                                       TextTrimming="CharacterEllipsis" />
+                        </Grid>
+                    </DataTemplate>
+                </ListBox.ItemTemplate>
+            </ListBox>
+        </Grid>
+
+        <GridSplitter Name="spSplitter" DockPanel.Dock="Left" Width="4"
+                      Background="Transparent" ResizeDirection="Columns" />
+
+        <ListBox Name="textureList" DoubleTapped="TextureList_OnDoubleTapped">
+            <ListBox.ItemTemplate>
+                <DataTemplate x:DataType="views:TextureRow">
+                    <Grid ColumnDefinitions="1.4*,0.9*,1.2*,90,*" ColumnSpacing="8">
+                        <TextBlock Grid.Column="0" Text="{Binding Skin}" TextTrimming="CharacterEllipsis" />
+                        <TextBlock Grid.Column="1" Text="{Binding Mini}" Opacity="0.85" TextTrimming="CharacterEllipsis" />
+                        <TextBlock Grid.Column="2" Text="{Binding Operator}" Opacity="0.85" TextTrimming="CharacterEllipsis" />
+                        <TextBlock Grid.Column="3" Text="{Binding Revision}" Opacity="0.85" />
+                        <TextBlock Grid.Column="4" Text="{Binding Author}" Opacity="0.75" TextTrimming="CharacterEllipsis" />
+                    </Grid>
+                </DataTemplate>
+            </ListBox.ItemTemplate>
+        </ListBox>
+    </DockPanel>
+</Window>

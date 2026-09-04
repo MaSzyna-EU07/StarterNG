@@ -3,115 +3,227 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:starterNg="clr-namespace:StarterNG"
+             xmlns:materialIcons="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
              xmlns:views="clr-namespace:StarterNG.Views"
              x:CompileBindings="True"
              mc:Ignorable="d" d:DesignWidth="1000" d:DesignHeight="700"
              x:Class="StarterNG.Views.Depot">
-    <Grid Margin="0" ColumnSpacing="8" RowSpacing="8">
+    <!-- TabIndex follows the workflow - pick a consist, browse, build the train,
+         then the editors - not the column order the grid happens to have. -->
+    <Grid Name="depotGrid" Margin="0" ColumnSpacing="3" RowSpacing="3">
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="340" />
+            <ColumnDefinition Width="270" MinWidth="220" />
             <ColumnDefinition />
+            <ColumnDefinition Width="340" MinWidth="300" />
         </Grid.ColumnDefinitions>
+        <!-- The vehicle panel keeps its old height on a roomy window (MaxHeight)
+             but shrinks with everything else towards the 666 px floor instead of
+             being clipped. The consist row measures itself, so a whole card fits
+             whether the thumbnails are the small ones or the large ones. Row 1's
+             cap fits the seven lines of the texture tab. -->
         <Grid.RowDefinitions>
-            <!-- Consists list and the brakes/loads editor share the upper area
-                 evenly, so the editor has room for all its controls. -->
-            <RowDefinition Height="*" />
-            <RowDefinition Height="*" MinHeight="210" />
-            <RowDefinition Height="190" />
+            <RowDefinition Height="*" MinHeight="150" />
+            <RowDefinition Height="1.57*" MinHeight="120" MaxHeight="240" />
+            <RowDefinition Height="Auto" MinHeight="140" MaxHeight="230" />
         </Grid.RowDefinitions>
 
-        <!-- Vehicle database browser (left, rows 0-1) -->
-        <HeaderedContentControl Grid.RowSpan="2" Theme="{StaticResource GroupBox}"
-                                Header="{Binding [VehicleDatabase], Source={x:Static starterNg:App.Loc}}">
-            <DockPanel LastChildFill="True">
-                <Grid DockPanel.Dock="Top" ColumnDefinitions="*,*" ColumnSpacing="6" Margin="0,0,0,6">
-                    <ComboBox Name="categoryCombo" Grid.Column="0" HorizontalAlignment="Stretch"
-                              PlaceholderText="{Binding [Category], Source={x:Static starterNg:App.Loc}}"
-                              PointerWheelChanged="Combo_OnPointerWheel"
-                              SelectionChanged="CategoryCombo_OnSelectionChanged" />
-                    <ComboBox Name="classCombo" Grid.Column="1" HorizontalAlignment="Stretch"
+        <Border Grid.Column="0" Grid.Row="0" TabIndex="2" Background="{StaticResource CarbonPanelBg}"
+                BorderBrush="{StaticResource CarbonBorderLight}" BorderThickness="1"
+                CornerRadius="2" Padding="6">
+            <Grid RowDefinitions="Auto,Auto,*,Auto,Auto">
+                <DockPanel Grid.Row="0" Margin="0,0,0,6" LastChildFill="True">
+                    <CheckBox Name="hideArchivalCheck" DockPanel.Dock="Right" FontSize="12"
+                              VerticalAlignment="Center" Margin="8,0,0,0"
+                              Content="{Binding [HideArchivalVehicles], Source={x:Static starterNg:App.Loc}}"
+                              IsCheckedChanged="HideArchivalCheck_OnChanged" />
+                    <TextBox Name="searchBox" VerticalAlignment="Center"
+                             PlaceholderText="{Binding [Search], Source={x:Static starterNg:App.Loc}}"
+                             TextChanged="SearchBox_OnTextChanged" />
+                </DockPanel>
+                <Grid Grid.Row="1" RowDefinitions="Auto,Auto" RowSpacing="6" Margin="0,0,0,6">
+                    <DockPanel Grid.Row="0" LastChildFill="True">
+                        <Button Name="textureBaseButton" DockPanel.Dock="Right" Classes="Flat"
+                                Width="30" Margin="4,0,0,0" Cursor="Hand"
+                                HorizontalContentAlignment="Center"
+                                Click="TextureBaseButton_OnClick"
+                                ToolTip.Tip="{Binding [OpenTextureBase], Source={x:Static starterNg:App.Loc}}">
+                            <materialIcons:MaterialIcon Kind="Magnify" Width="15" Height="15" />
+                        </Button>
+                        <ComboBox Name="categoryCombo" HorizontalAlignment="Stretch"
+                                  PlaceholderText="{Binding [Category], Source={x:Static starterNg:App.Loc}}"
+                                  PointerWheelChanged="Combo_OnPointerWheel"
+                                  SelectionChanged="CategoryCombo_OnSelectionChanged" />
+                    </DockPanel>
+                    <ComboBox Name="classCombo" Grid.Row="1" HorizontalAlignment="Stretch"
                               PlaceholderText="{Binding [Class], Source={x:Static starterNg:App.Loc}}"
                               PointerWheelChanged="Combo_OnPointerWheel"
                               SelectionChanged="ClassCombo_OnSelectionChanged" />
                 </Grid>
-                <TextBox Name="searchBox" DockPanel.Dock="Top" Margin="0,0,0,8"
-                         Watermark="{Binding [Search], Source={x:Static starterNg:App.Loc}}"
-                         TextChanged="SearchBox_OnTextChanged" />
 
-                <!-- Mini preview of the selected entry + the single Add button.
-                     Both are docked at the bottom, under the flat vehicle list. -->
-                <Button Name="addVehicleButton" DockPanel.Dock="Bottom" Classes="Flat Accent"
-                        HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
-                        Margin="0,8,0,0" IsEnabled="False" Cursor="Hand"
-                        Click="AddVehicleButton_OnClick"
-                        Content="{Binding [AddVehicle], Source={x:Static starterNg:App.Loc}}" />
-                <Border Name="miniPreviewPanel" DockPanel.Dock="Bottom" Height="62" Margin="0,6,0,0"
+                <Border Name="miniPreviewPanel" Grid.Row="3" Height="46"
+                        Margin="0,6,0,0"
                         Background="{StaticResource CarbonInputBg}"
                         BorderBrush="{StaticResource CarbonBorderLight}" BorderThickness="1"
-                        CornerRadius="2">
+                        CornerRadius="2" Cursor="Hand"
+                        PointerPressed="MiniPreview_OnPointerPressed">
                     <Image Name="miniPreview" Stretch="Uniform" Margin="6" />
                 </Border>
 
-                <!-- Flat list of vehicle entries (plain text, no expanders).
-                     Selecting one shows its mini and enables Add; double-click
-                     replaces the selected consist vehicle. -->
-                <ListBox Name="vehicleListBox" Classes="Compact"
+                <Button Name="addVehicleButton" Grid.Row="4" Classes="Flat Accent"
+                        Margin="0,8,0,0" Cursor="Hand" IsEnabled="False"
+                        HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
+                        Click="AddVehicleButton_OnClick"
+                        Content="{Binding [AddVehicle], Source={x:Static starterNg:App.Loc}}" />
+
+                <ListBox Name="vehicleListBox" Grid.Row="2" Classes="Compact"
                          SelectionChanged="VehicleListBox_OnSelectionChanged"
-                         DoubleTapped="VehicleListBox_OnDoubleTapped" />
-            </DockPanel>
-        </HeaderedContentControl>
+                         DoubleTapped="VehicleListBox_OnDoubleTapped"
+                         PointerPressed="VehicleListBox_OnPointerPressed" />
+            </Grid>
+        </Border>
 
-        <!-- Consists present on the scenery selected in the Scenarios tab.
-             Selecting one loads it into the editor below. -->
-        <HeaderedContentControl Grid.Column="1" Grid.Row="0" Theme="{StaticResource GroupBox}"
-                                Header="{Binding [MapConsists], Source={x:Static starterNg:App.Loc}}">
+        <!-- No group header here: the tab strip already names the list, and the
+             scenery it belongs to is written into the tab itself. -->
+        <Border Grid.Column="1" Grid.Row="0" TabIndex="1"
+                Background="{StaticResource CarbonPanelBg}"
+                BorderBrush="{StaticResource CarbonBorderLight}"
+                BorderThickness="1" CornerRadius="2" Padding="6">
+            <TabControl>
+                <TabItem Name="sceneryConsistsTab"
+                         Header="{Binding [SceneryConsists], Source={x:Static starterNg:App.Loc}}">
+                    <DockPanel LastChildFill="True">
+                        <Button Name="addToWarehouseButton" DockPanel.Dock="Bottom" Classes="Flat"
+                                Margin="0,6,0,0" HorizontalAlignment="Stretch" Cursor="Hand"
+                                HorizontalContentAlignment="Center"
+                                Click="AddToWarehouseButton_OnClick"
+                                Content="{Binding [AddToWarehouse], Source={x:Static starterNg:App.Loc}}" />
+                        <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal" Spacing="16"
+                                    Margin="2,6,0,0">
+                            <CheckBox Name="depotDrivableOnlyCheck" FontSize="12"
+                                      IsCheckedChanged="ConsistFilter_OnChanged"
+                                      Content="{Binding [ShowDrivableOnly], Source={x:Static starterNg:App.Loc}}" />
+                            <CheckBox Name="depotShowAiCheck" FontSize="12"
+                                      IsCheckedChanged="ConsistFilter_OnChanged"
+                                      Content="{Binding [ShowAiVehicles], Source={x:Static starterNg:App.Loc}}" />
+                        </StackPanel>
+                        <ListBox Name="sceneryConsistList" Classes="Compact"
+                                 SelectionChanged="SceneryConsistList_OnSelectionChanged"
+                                 KeyDown="SceneryConsistList_OnKeyDown" />
+                    </DockPanel>
+                </TabItem>
+                <TabItem Header="{Binding [WarehouseConsists], Source={x:Static starterNg:App.Loc}}">
+                    <DockPanel LastChildFill="True">
+                        <Button Name="removeFromWarehouseButton" DockPanel.Dock="Bottom" Classes="Flat"
+                                Margin="0,6,0,0" HorizontalAlignment="Stretch" Cursor="Hand"
+                                HorizontalContentAlignment="Center"
+                                Click="RemoveFromWarehouseButton_OnClick"
+                                Content="{Binding [RemoveFromWarehouse], Source={x:Static starterNg:App.Loc}}" />
+                        <ListBox Name="warehouseList" Classes="Compact"
+                                 DoubleTapped="WarehouseList_OnDoubleTapped" />
+                    </DockPanel>
+                </TabItem>
+            </TabControl>
+        </Border>
+
+        <!-- The configuration is the one panel here that is actually edited, so it
+             gets a column of its own spanning both rows - from the top edge down to
+             the consist. No tab strip: it was a single tab naming the only thing
+             the column could hold. -->
+        <Border Grid.Column="2" Grid.Row="0" Grid.RowSpan="2" TabIndex="6"
+                Background="{StaticResource CarbonPanelBg}"
+                BorderBrush="{StaticResource CarbonBorderLight}"
+                BorderThickness="1" CornerRadius="2" Padding="6">
             <DockPanel LastChildFill="True">
-                <TextBlock Name="mapSceneryLabel" DockPanel.Dock="Top" FontSize="12"
-                           Opacity="0.8" Margin="0,0,0,6" TextTrimming="CharacterEllipsis" />
-                <ListBox Name="sceneryConsistList" Classes="Compact"
-                         SelectionChanged="SceneryConsistList_OnSelectionChanged"
-                         KeyDown="SceneryConsistList_OnKeyDown" />
+                <Button Name="removeVehicleButton" DockPanel.Dock="Bottom" Classes="Flat"
+                        Margin="0,6,0,0" HorizontalAlignment="Stretch" Cursor="Hand"
+                        HorizontalContentAlignment="Center"
+                        Click="RemoveVehicleButton_OnClick"
+                        Content="{Binding [RemoveVehicle], Source={x:Static starterNg:App.Loc}}" />
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel Name="loadsPanel" Margin="4" Grid.IsSharedSizeScope="True" />
+                </ScrollViewer>
             </DockPanel>
-        </HeaderedContentControl>
+        </Border>
 
-        <!-- Brakes / Loads editor (middle-right) -->
-        <HeaderedContentControl Grid.Column="1" Grid.Row="1" Theme="{StaticResource GroupBox}"
-                                Header="{Binding [SelectedVehicle], Source={x:Static starterNg:App.Loc}}">
-            <DockPanel LastChildFill="True">
-                <TabControl>
-                    <TabItem Header="{Binding [Brakes], Source={x:Static starterNg:App.Loc}}">
-                        <ScrollViewer VerticalScrollBarVisibility="Auto">
-                            <StackPanel Name="brakesPanel" Margin="4" Spacing="8" />
-                        </ScrollViewer>
-                    </TabItem>
-                    <TabItem Header="{Binding [Loads], Source={x:Static starterNg:App.Loc}}">
-                        <ScrollViewer VerticalScrollBarVisibility="Auto">
-                            <StackPanel Name="loadsPanel" Margin="4" Spacing="8" />
-                        </ScrollViewer>
-                    </TabItem>
-                    <TabItem Header="{Binding [Damage], Source={x:Static starterNg:App.Loc}}">
-                        <ScrollViewer VerticalScrollBarVisibility="Auto">
-                            <StackPanel Name="damagePanel" Margin="4" Spacing="8" />
-                        </ScrollViewer>
-                    </TabItem>
-                </TabControl>
-            </DockPanel>
-        </HeaderedContentControl>
+        <!-- No title band either: the tab strips start straight away, and the
+             vehicle being edited is the highlighted card in the consist below.
+             Two cards, not one: the read-only pair (general info / texture) is
+             visually separate from the editors (coupling / damage / brakes), and
+             each lines up with the panel above it. -->
+        <Border Grid.Row="1" Grid.Column="0" TabIndex="4"
+                Background="{StaticResource CarbonPanelBg}"
+                BorderBrush="{StaticResource CarbonBorderLight}"
+                BorderThickness="1" CornerRadius="2" Padding="6">
+            <TabControl>
+                <TabItem Header="{Binding [GeneralInfo], Source={x:Static starterNg:App.Loc}}">
+                    <ScrollViewer VerticalScrollBarVisibility="Auto">
+                        <StackPanel Name="generalPanel" Margin="4" Grid.IsSharedSizeScope="True" />
+                    </ScrollViewer>
+                </TabItem>
+                <TabItem Header="{Binding [AboutTexture], Source={x:Static starterNg:App.Loc}}">
+                    <ScrollViewer VerticalScrollBarVisibility="Auto">
+                        <StackPanel Name="consistTexturePanel" Margin="4" Grid.IsSharedSizeScope="True" />
+                    </ScrollViewer>
+                </TabItem>
+            </TabControl>
+        </Border>
 
-        <!-- Consist (full-width bottom, horizontally scrollable) -->
-        <HeaderedContentControl Grid.Row="2" Grid.ColumnSpan="2" Theme="{StaticResource GroupBox}"
+        <Border Grid.Row="1" Grid.Column="1" TabIndex="5"
+                Background="{StaticResource CarbonPanelBg}"
+                BorderBrush="{StaticResource CarbonBorderLight}"
+                BorderThickness="1" CornerRadius="2" Padding="6">
+            <TabControl>
+                <TabItem Header="{Binding [Coupling], Source={x:Static starterNg:App.Loc}}">
+                    <!-- The coupling grid now uses the full tab width. The two
+                         actions sit underneath, so they do not steal horizontal
+                         space from the checkbox columns. -->
+                    <DockPanel LastChildFill="True" Margin="4">
+                        <Panel Name="couplerActions" DockPanel.Dock="Bottom" />
+                        <ScrollViewer VerticalScrollBarVisibility="Auto">
+                            <StackPanel Name="couplerPanel" />
+                        </ScrollViewer>
+                    </DockPanel>
+                </TabItem>
+                <TabItem Header="{Binding [Damage], Source={x:Static starterNg:App.Loc}}">
+                    <ScrollViewer VerticalScrollBarVisibility="Auto">
+                        <StackPanel Name="damagePanel" Margin="4" Grid.IsSharedSizeScope="True" />
+                    </ScrollViewer>
+                </TabItem>
+                <TabItem Header="{Binding [Brakes], Source={x:Static starterNg:App.Loc}}">
+                    <ScrollViewer VerticalScrollBarVisibility="Auto">
+                        <!-- The scope is what makes every row's label column in this
+                             panel settle on one width. -->
+                        <StackPanel Name="brakesPanel" Margin="4"
+                                    Grid.IsSharedSizeScope="True" />
+                    </ScrollViewer>
+                </TabItem>
+            </TabControl>
+        </Border>
+
+        <HeaderedContentControl Grid.Row="2" Grid.ColumnSpan="3" TabIndex="3" Theme="{StaticResource GroupBox}"
                                 Header="{Binding [Consist], Source={x:Static starterNg:App.Loc}}">
+            <!-- Mass, length and the rest ride in the title bar instead of taking
+                 a row of their own above the cards. -->
+            <HeaderedContentControl.Tag>
+                <StackPanel Name="trainStats" Orientation="Horizontal"
+                            VerticalAlignment="Center" />
+            </HeaderedContentControl.Tag>
             <DockPanel LastChildFill="True">
-                <!-- Train totals computed from the .fiz files -->
-                <TextBlock Name="trainStats" DockPanel.Dock="Top" FontSize="12"
-                           Opacity="0.85" Margin="0,0,0,6" />
-                <Panel>
+                <Panel Name="consistDropTarget">
                     <TextBlock Name="emptyHint" VerticalAlignment="Center" HorizontalAlignment="Center"
                                TextWrapping="Wrap" MaxWidth="520" Opacity="0.6" TextAlignment="Center"
                                Text="{Binding [ConsistEmpty], Source={x:Static starterNg:App.Loc}}" />
-                    <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
-                        <StackPanel Name="consistStack" Orientation="Horizontal"
-                                    VerticalAlignment="Center" Spacing="0" />
+                    <ScrollViewer Name="consistScroll"
+                                  HorizontalScrollBarVisibility="Visible" VerticalScrollBarVisibility="Disabled"
+                                  Padding="0,0,0,4">
+                        <Panel>
+                            <!-- Tab reaches the strip once and lands on the selected
+                                 card; the arrow keys walk it from there. -->
+                            <StackPanel Name="consistStack" Orientation="Horizontal"
+                                        KeyboardNavigation.TabNavigation="Once"
+                                        VerticalAlignment="Center" Spacing="0" />
+                            <Canvas Name="consistOverlay" IsHitTestVisible="False" />
+                        </Panel>
                     </ScrollViewer>
                 </Panel>
             </DockPanel>
