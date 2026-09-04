@@ -44,7 +44,10 @@ public sealed class AppServices
         Vehicles = new TexturesTxtVehicleRepository(files, paths, log, new TexturesTxtParser());
         Physics = new FizPhysicsRepository(files, paths, log);
         MissingAssets = new MissingAssetScanner(files, paths);
+        SceneryTexts = new SceneryTranslations(files, log);
+        LoadWeights = new LoadWeightsRepository(files, paths, log);
         Library = new GameLibrary(Vehicles, Sceneries, MiniTextures, Physics, log);
+        State = new AppState();
     }
 
     /// <summary>
@@ -90,8 +93,15 @@ public sealed class AppServices
 
     public MissingAssetScanner MissingAssets { get; }
 
+    public ISceneryTranslations SceneryTexts { get; }
+
+    public LoadWeightsRepository LoadWeights { get; }
+
     /// <summary>Everything read out of the installation: rolling stock and scenarios.</summary>
     public GameLibrary Library { get; }
+
+    /// <summary>What the user currently has selected.</summary>
+    public AppState State { get; }
 
     /// <summary>
     /// Exposed as the concrete service rather than <see cref="ILocalizedStrings"/>

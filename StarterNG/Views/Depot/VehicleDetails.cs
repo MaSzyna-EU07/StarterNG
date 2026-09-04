@@ -13,6 +13,7 @@ using StarterNG.Classes;
 using StarterNG.Controls;
 using StarterNG.Domain;
 using StarterNG.Domain.Vehicles;
+using StarterNG.Application;
 
 namespace StarterNG.Views;
 
@@ -277,7 +278,7 @@ public sealed class VehicleDetails
             if (ReferenceEquals(_consist.Selected, item))
                 _consist.SyncStartingVehicle();
             _redraw();
-            AppState.Instance.NotifyChanged();
+            AppServices.Current.State.NotifyChanged();
         };
         driver.MinWidth = 0;
         driver.HorizontalAlignment = HorizontalAlignment.Stretch;
@@ -617,7 +618,7 @@ public sealed class VehicleDetails
         var typeCombo = new ComboBox { FontSize = 12, MinWidth = 120 };
         typeCombo.Items.Add(new ComboBoxItem { Content = App.Loc["None"], Tag = null });
         foreach (var name in available)
-            typeCombo.Items.Add(new ComboBoxItem { Content = LoadWeights.Describe(name), Tag = name });
+            typeCombo.Items.Add(new ComboBoxItem { Content = DescribeLoad(name), Tag = name });
 
         typeCombo.SelectedIndex = 0;
         if (!string.IsNullOrEmpty(lead.LoadType))
@@ -754,4 +755,14 @@ public sealed class VehicleDetails
             countRow,
             BuildVehicleLoadTools(item));
     }
+
+    /// <summary>
+    /// Label for a cargo type. The pantograph state is carried as a pseudo load
+    /// and gets a translated name rather than its raw token.
+    /// </summary>
+    private static string DescribeLoad(string name) =>
+        string.Equals(name, Dynamic.PantState, StringComparison.OrdinalIgnoreCase)
+            ? App.Loc["LoadPantState"]
+            : name;
+
 }

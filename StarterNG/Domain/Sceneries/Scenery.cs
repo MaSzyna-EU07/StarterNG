@@ -96,10 +96,14 @@ public sealed class Scenery
 
     public string DisplayName => System.IO.Path.GetFileNameWithoutExtension(Path);
 
-    public string LocalizedDescription =>
+    /// <summary>
+    /// The description with any "@key" references resolved against the scenery's
+    /// own translation files.
+    /// </summary>
+    public string LocalizedDescription(ISceneryTranslations translations) =>
         string.IsNullOrEmpty(Description)
             ? ""
-            : string.Join("\n", Description.Split('\n').Select(SceneryI18n.T));
+            : string.Join("\n", Description.Split('\n').Select(translations.Translate));
 
     /// <summary>
     /// Renders the scenario the simulator should load: the original file with the

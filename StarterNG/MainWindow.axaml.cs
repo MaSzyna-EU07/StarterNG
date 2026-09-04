@@ -76,7 +76,7 @@ public partial class MainWindow : Window
         // why OnShortcutKey has to be careful about text entry and key capture.
         AddHandler(KeyDownEvent, OnShortcutKey, RoutingStrategies.Tunnel);
 
-        AppState.Instance.Changed += UpdateStartButton;
+        AppServices.Current.State.Changed += UpdateStartButton;
         Opened += (_, _) =>
         {
 
@@ -342,8 +342,8 @@ public partial class MainWindow : Window
     {
         if (startButton is null) return;
 
-        var scenery = AppState.Instance.CurrentScenery;
-        var trainset = AppState.Instance.CurrentTrainset;
+        var scenery = AppServices.Current.State.CurrentScenery;
+        var trainset = AppServices.Current.State.CurrentTrainset;
 
         if (scenery is null)
         {
@@ -369,7 +369,7 @@ public partial class MainWindow : Window
         static bool CanStart(Dynamic v) =>
             v.DriverType is eDriverType.Headdriver or eDriverType.Reardriver or eDriverType.Passenger;
 
-        string? selected = AppState.Instance.StartingVehicleName;
+        string? selected = AppServices.Current.State.StartingVehicleName;
         if (!string.IsNullOrEmpty(selected))
         {
             var pick = trainset.Vehicles.FirstOrDefault(v =>
@@ -415,10 +415,10 @@ public partial class MainWindow : Window
 
     private async Task LaunchAsync(bool saveSettings, bool freeFly)
     {
-        var scenery = AppState.Instance.CurrentScenery;
+        var scenery = AppServices.Current.State.CurrentScenery;
         if (scenery is null)
             return;
-        var trainset = AppState.Instance.CurrentTrainset;
+        var trainset = AppServices.Current.State.CurrentTrainset;
         if (trainset is null)
             return;
 
@@ -438,10 +438,10 @@ public partial class MainWindow : Window
         }
 
         string? vehicle = TrainsetDisplay.UniquifyForLaunch(
-            trainset, scenery, AppState.Instance.StartingVehicleName);
+            trainset, scenery, AppServices.Current.State.StartingVehicleName);
         if (string.IsNullOrEmpty(vehicle))
             vehicle = ResolveStartVehicle(trainset);
-        AppState.Instance.StartingVehicleName = vehicle;
+        AppServices.Current.State.StartingVehicleName = vehicle;
 
         LoadingScreen.Prepare(trainset.Logo, Path.GetFileNameWithoutExtension(scenery.Path));
 
@@ -508,7 +508,7 @@ public partial class MainWindow : Window
         static bool CanStart(Dynamic v) =>
             v.DriverType is eDriverType.Headdriver or eDriverType.Reardriver or eDriverType.Passenger;
 
-        string? selected = AppState.Instance.StartingVehicleName;
+        string? selected = AppServices.Current.State.StartingVehicleName;
         if (!string.IsNullOrEmpty(selected))
         {
             var pick = trainset.Vehicles.FirstOrDefault(v =>

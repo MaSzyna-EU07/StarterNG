@@ -146,7 +146,7 @@ public partial class Depot : UserControl
         _drag.VehicleListPressed(sender, e);
 
     private Dynamic NewVehicle(VehicleTexture texture) =>
-        _consist.MakeDynamic(texture, _listScenery ?? AppState.Instance.CurrentScenery);
+        _consist.MakeDynamic(texture, _listScenery ?? AppServices.Current.State.CurrentScenery);
 
     private void SyncFromSelection()
     {
@@ -155,7 +155,7 @@ public partial class Depot : UserControl
 
         PopulateSceneryConsists();
 
-        var trainset = AppState.Instance.CurrentTrainset;
+        var trainset = AppServices.Current.State.CurrentTrainset;
         if (trainset != null && !ReferenceEquals(trainset, _consist.EditingTrainset))
             _consist.LoadFrom(trainset);
         else if (_consist.EditingTrainset != null)
@@ -220,7 +220,7 @@ public partial class Depot : UserControl
             _consist.EditingTrainset,
             _info.PhysicsFor,
             car => _db.TextureForSkin(car.SkinFile) is { } t ? VehicleInfo.CategoryOf(t) : null,
-            LoadWeights.WeightOf));
+            AppServices.Current.LoadWeights.Table.WeightOf));
     }
 
     private void RemoveVehicleButton_OnClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
@@ -245,7 +245,7 @@ public partial class Depot : UserControl
         depotShowAiCheck.IsChecked = StarterNG.Classes.Settings.Instance.ShowAiVehicles;
         depotDrivableOnlyCheck.IsChecked = StarterNG.Classes.Settings.Instance.DrivableOnly;
 
-        _listScenery = AppState.Instance.CurrentScenery ?? _sceneries.FirstOrDefault();
+        _listScenery = AppServices.Current.State.CurrentScenery ?? _sceneries.FirstOrDefault();
         sceneryConsistsTab.Header = App.Loc["SceneryConsists"];
         ToolTip.SetTip(sceneryConsistsTab,
             _listScenery != null ? Path.GetFileNameWithoutExtension(_listScenery.Path) : App.Loc["NoSceneryConsists"]);
@@ -276,7 +276,7 @@ public partial class Depot : UserControl
                     randomTurn: ToolRandomOrientation);
                 sceneryConsistList.Items.Add(entry);
 
-                if (ReferenceEquals(trainset, AppState.Instance.CurrentTrainset))
+                if (ReferenceEquals(trainset, AppServices.Current.State.CurrentTrainset))
                     sceneryConsistList.SelectedItem = entry;
             }
         }
@@ -289,9 +289,9 @@ public partial class Depot : UserControl
         if (sceneryConsistList.SelectedItem is not ListBoxItem { Tag: Trainset trainset })
             return;
 
-        AppState.Instance.CurrentScenery = _listScenery;
-        AppState.Instance.CurrentTrainset = trainset;
-        AppState.Instance.StartingVehicleName = TrainsetDisplay.DefaultStartingVehicle(trainset);
+        AppServices.Current.State.CurrentScenery = _listScenery;
+        AppServices.Current.State.CurrentTrainset = trainset;
+        AppServices.Current.State.StartingVehicleName = TrainsetDisplay.DefaultStartingVehicle(trainset);
         _consist.LoadFrom(trainset);
     }
 
@@ -313,8 +313,8 @@ public partial class Depot : UserControl
     private void ApplyConsist(Trainset target, List<Dynamic> vehicles)
     {
         target.Vehicles = vehicles;
-        AppState.Instance.CurrentScenery = _listScenery;
-        AppState.Instance.CurrentTrainset = target;
+        AppServices.Current.State.CurrentScenery = _listScenery;
+        AppServices.Current.State.CurrentTrainset = target;
         _consist.LoadFrom(target);
         PopulateSceneryConsists();
     }
@@ -322,8 +322,8 @@ public partial class Depot : UserControl
     private void RemoveAllVehicles(Trainset target)
     {
         target.Vehicles = new List<Dynamic>();
-        AppState.Instance.CurrentScenery = _listScenery;
-        AppState.Instance.CurrentTrainset = target;
+        AppServices.Current.State.CurrentScenery = _listScenery;
+        AppServices.Current.State.CurrentTrainset = target;
         _consist.LoadFrom(target);
         PopulateSceneryConsists();
     }
@@ -355,7 +355,7 @@ public partial class Depot : UserControl
 
     public async Task RandomizeCurrentTrainsetAsync()
     {
-        if (AppState.Instance.CurrentTrainset is not { } trainset)
+        if (AppServices.Current.State.CurrentTrainset is not { } trainset)
             return;
 
         if (!ReferenceEquals(trainset, _consist.EditingTrainset))

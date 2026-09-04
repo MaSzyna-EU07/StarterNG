@@ -6,6 +6,7 @@ using System.Linq;
 using StarterNG.Classes;
 using StarterNG.Domain.Sceneries;
 using StarterNG.Domain.Vehicles;
+using StarterNG.Application;
 
 namespace StarterNG.Domain;
 
@@ -170,7 +171,7 @@ public sealed class Consist : IReadOnlyList<ConsistItem>
 
         var driven = item.Cars.FirstOrDefault(c =>
             c.DriverType is eDriverType.Headdriver or eDriverType.Reardriver);
-        AppState.Instance.StartingVehicleName = (driven ?? item.Cars[0]).Name;
+        AppServices.Current.State.StartingVehicleName = (driven ?? item.Cars[0]).Name;
     }
 
     public Dynamic MakeDynamic(VehicleTexture texture, Scenery? scenery)
@@ -324,7 +325,7 @@ public sealed class Consist : IReadOnlyList<ConsistItem>
         if (ReferenceEquals(Selected, item))
             SyncStartingVehicle();
         Raise();
-        AppState.Instance.NotifyChanged();
+        AppServices.Current.State.NotifyChanged();
     }
 
     public void Split(ConsistItem item)

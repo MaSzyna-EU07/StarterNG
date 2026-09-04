@@ -76,7 +76,7 @@ public partial class Scenarios : UserControl
                 continue;
 
             bool expand = StarterNG.Classes.Settings.Instance.AutoExpandSceneryTree;
-            SceneryI18n.LoadFor(scenery, App.Loc.CurrentLangCode);
+            AppServices.Current.SceneryTexts.LoadFor(scenery, App.Loc.CurrentLangCode);
             string label = scenery.DisplayName;
 
             if (string.IsNullOrEmpty(scenery.Group))
@@ -93,7 +93,7 @@ public partial class Scenarios : UserControl
             {
                 groupNode = new TreeViewItem
                 {
-                    Header = SceneryI18n.T(scenery.Group),
+                    Header = AppServices.Current.SceneryTexts.Translate(scenery.Group),
                     IsExpanded = expand
                 };
                 groupNodes[scenery.Group] = groupNode;
@@ -261,7 +261,7 @@ public partial class Scenarios : UserControl
     {
         trainset.Vehicles = vehicles;
         item.Content = TrainsetListContent(trainset);
-        if (ReferenceEquals(AppState.Instance.CurrentTrainset, trainset))
+        if (ReferenceEquals(AppServices.Current.State.CurrentTrainset, trainset))
             ShowConsist(trainset);
     }
 
@@ -309,8 +309,8 @@ public partial class Scenarios : UserControl
 
     private void ShowSceneryInfo(Scenery scenery)
     {
-        SceneryI18n.LoadFor(scenery, App.Loc.CurrentLangCode);
-        sceneryDescription.Text = scenery.LocalizedDescription;
+        AppServices.Current.SceneryTexts.LoadFor(scenery, App.Loc.CurrentLangCode);
+        sceneryDescription.Text = scenery.LocalizedDescription(AppServices.Current.SceneryTexts);
 
         string? imagePath = AppServices.Current.SceneryImages.Resolve(scenery);
         if (imagePath is not null)
@@ -401,7 +401,7 @@ public partial class Scenarios : UserControl
 
     public void RebuildAfterLanguageChange()
     {
-        string? selected = AppState.Instance.CurrentScenery?.Path;
+        string? selected = AppServices.Current.State.CurrentScenery?.Path;
         BuildSceneryTree();
         if (!string.IsNullOrEmpty(selected))
         {
@@ -409,8 +409,8 @@ public partial class Scenarios : UserControl
                 Path.GetFileNameWithoutExtension(selected);
             RestoreLastScenery();
         }
-        if (AppState.Instance.CurrentScenery != null)
-            ShowSceneryInfo(AppState.Instance.CurrentScenery);
+        if (AppServices.Current.State.CurrentScenery != null)
+            ShowSceneryInfo(AppServices.Current.State.CurrentScenery);
         RefreshSelectedConsist();
     }
 
@@ -422,7 +422,7 @@ public partial class Scenarios : UserControl
         _reloading = true;
         try
         {
-            string? selected = AppState.Instance.CurrentScenery?.Path;
+            string? selected = AppServices.Current.State.CurrentScenery?.Path;
             await Task.Run(() => AppServices.Current.Library.ReloadSceneries());
             Sceneries = AppServices.Current.Library.Sceneries;
             BuildSceneryTree();
@@ -443,14 +443,14 @@ public partial class Scenarios : UserControl
 
     private void RandomTexturesButton_OnClick(object? sender, RoutedEventArgs e)
     {
-        if (AppState.Instance.CurrentScenery is { } scenery)
+        if (AppServices.Current.State.CurrentScenery is { } scenery)
             RandomizeTexturesRequested?.Invoke(scenery);
     }
 
     public void RefreshConsistView()
     {
         RefreshVehicleLabels();
-        if (AppState.Instance.CurrentTrainset is { } trainset)
+        if (AppServices.Current.State.CurrentTrainset is { } trainset)
             ShowConsist(trainset);
     }
 
@@ -505,7 +505,7 @@ public partial class Scenarios : UserControl
 
     private void OpenSceneryDir_OnClick(object? sender, RoutedEventArgs e)
     {
-        var scn = AppState.Instance.CurrentScenery;
+        var scn = AppServices.Current.State.CurrentScenery;
         string dir = scn != null
             ? (Path.GetDirectoryName(Path.GetFullPath(scn.Path)) ?? "scenery")
             : Path.GetFullPath("scenery");
@@ -538,9 +538,9 @@ public partial class Scenarios : UserControl
             return;
         Trainset selectedTrainset = selectedScn.Trainsets[vTag];
 
-        AppState.Instance.CurrentScenery = selectedScn;
-        AppState.Instance.CurrentTrainset = selectedTrainset;
-        AppState.Instance.StartingVehicleName = TrainsetDisplay.DefaultStartingVehicle(selectedTrainset);
+        AppServices.Current.State.CurrentScenery = selectedScn;
+        AppServices.Current.State.CurrentTrainset = selectedTrainset;
+        AppServices.Current.State.StartingVehicleName = TrainsetDisplay.DefaultStartingVehicle(selectedTrainset);
 
         ShowConsist(selectedTrainset);
         ShowTimetable(selectedScn, selectedTrainset);
@@ -874,13 +874,13 @@ public partial class Scenarios : UserControl
                 trainset.Vehicles.Remove(v);
 
                 bool wasPicked = !string.IsNullOrEmpty(v.Name) &&
-                    string.Equals(v.Name, AppState.Instance.StartingVehicleName,
+                    string.Equals(v.Name, AppServices.Current.State.StartingVehicleName,
                                   StringComparison.OrdinalIgnoreCase);
                 if (wasPicked && trainset.Vehicles.Count > 0)
                 {
                     int next = Math.Clamp(gap, 0, trainset.Vehicles.Count - 1);
-                    AppState.Instance.StartingVehicleName = trainset.Vehicles[next].Name;
-                    AppState.Instance.NotifyChanged();
+                    AppServices.Current.State.StartingVehicleName = trainset.Vehicles[next].Name;
+                    AppServices.Current.State.NotifyChanged();
                 }
 
                 RefreshVehicleLabels();
@@ -909,7 +909,7 @@ public partial class Scenarios : UserControl
                 : MissingMiniBox(train.SkinFile, thumbH);
 
             bool selected = !string.IsNullOrEmpty(train.Name) &&
-                string.Equals(train.Name, AppState.Instance.StartingVehicleName,
+                string.Equals(train.Name, AppServices.Current.State.StartingVehicleName,
                               StringComparison.OrdinalIgnoreCase);
 
             var slot = new Border
@@ -946,7 +946,7 @@ public partial class Scenarios : UserControl
         string desc = trainset.Description ?? "";
         if (desc.TrimStart().StartsWith('-'))
             desc = desc.TrimStart()[1..].TrimStart();
-        missionDescription.Text = SceneryI18n.T(desc);
+        missionDescription.Text = AppServices.Current.SceneryTexts.Translate(desc);
         UpdateTrainStats(trainset);
     }
 
@@ -995,8 +995,8 @@ public partial class Scenarios : UserControl
                 index >= clicked.Vehicles.Count)
                 return;
 
-            AppState.Instance.StartingVehicleName = clicked.Vehicles[index].Name;
-            AppState.Instance.NotifyChanged();
+            AppServices.Current.State.StartingVehicleName = clicked.Vehicles[index].Name;
+            AppServices.Current.State.NotifyChanged();
             ShowConsist(clicked);
             return;
         }
@@ -1204,7 +1204,7 @@ public partial class Scenarios : UserControl
 
     private void RefreshSelectedConsist()
     {
-        if (AppState.Instance.CurrentTrainset is { } trainset)
+        if (AppServices.Current.State.CurrentTrainset is { } trainset)
             ShowConsist(trainset);
     }
 }
