@@ -4,16 +4,11 @@ using Avalonia.Input;
 
 namespace StarterNG.Classes;
 
-/// <summary>
-/// One cap on the on-screen keyboard. <see cref="Token"/> is the simulator key
-/// token a binding would reference; when null the cap is a non-bindable filler
-/// (Shift, Ctrl, Tab …) drawn only to keep the layout recognisable.
-/// </summary>
 public sealed class KeyCap
 {
     public string Label = string.Empty;
-    public string? Token;       // null => filler / not bindable
-    public double Width = 1.0;  // relative width (1 == a standard key)
+    public string? Token;
+    public double Width = 1.0;
 
     public KeyCap(string label, string? token = null, double width = 1.0)
     {
@@ -23,20 +18,12 @@ public sealed class KeyCap
     }
 }
 
-/// <summary>
-/// Translates between physical keyboard input, simulator key tokens and the
-/// on-screen keyboard layout used by the controls visualisation.
-/// </summary>
 public static class KeyMap
 {
-    /// <summary>
-    /// Resolves a pressed key to its simulator token, using the physical key to
-    /// disambiguate the numeric keypad. Returns null for keys with no token
-    /// (e.g. bare modifiers).
-    /// </summary>
+
     public static string? FromInput(Key key, PhysicalKey physical)
     {
-        // Numeric keypad first - distinguished only by the physical key.
+
         switch (physical)
         {
             case PhysicalKey.NumPad0: return "num_0";
@@ -57,15 +44,12 @@ public static class KeyMap
             case PhysicalKey.NumPadEnter: return "num_enter";
         }
 
-        // Numeric keypad via the virtual key (fallback when PhysicalKey is Unknown).
         if (key >= Key.NumPad0 && key <= Key.NumPad9)
             return "num_" + (char)('0' + (key - Key.NumPad0));
 
-        // Letters.
         if (key >= Key.A && key <= Key.Z)
             return ((char)('a' + (key - Key.A))).ToString();
 
-        // Top-row digits.
         if (key >= Key.D0 && key <= Key.D9)
             return ((char)('0' + (key - Key.D0))).ToString();
 
@@ -98,14 +82,12 @@ public static class KeyMap
         };
     }
 
-    /// <summary>True for keys that only act as modifiers and never form a binding alone.</summary>
     public static bool IsModifierKey(Key key) => key is
         Key.LeftShift or Key.RightShift or
         Key.LeftCtrl or Key.RightCtrl or
         Key.LeftAlt or Key.RightAlt or
         Key.LWin or Key.RWin;
 
-    /// <summary>Friendly, explicit name for a token, used in the binding list text.</summary>
     public static string DisplayName(string? token)
     {
         if (string.IsNullOrEmpty(token) ||
@@ -144,14 +126,9 @@ public static class KeyMap
         };
     }
 
-    // ── On-screen keyboard layout ──────────────────────────────────────────
-    // Filler caps (Token == null) keep the shape familiar; only caps with a
-    // token are coloured by assignment state.
-
-    /// <summary>Rows of the main (alphanumeric) keyboard block.</summary>
     public static readonly KeyCap[][] MainBlock =
     {
-        // F-row keys are reserved by the simulator, so they carry no token.
+
         new[]
         {
             new KeyCap("Esc", null, 1.4),
@@ -205,7 +182,6 @@ public static class KeyMap
         },
     };
 
-    /// <summary>Rows of the numeric-keypad block, drawn to the right of the main block.</summary>
     public static readonly KeyCap[][] NumpadBlock =
     {
         new[]
@@ -234,10 +210,9 @@ public static class KeyMap
         },
     };
 
-    /// <summary>Navigation cluster (Insert/Home/PageUp · Delete/End/PageDown), drawn between the blocks.</summary>
     public static readonly KeyCap[][] NavBlock =
     {
-        // PgUp / PgDn are reserved by the simulator (no token), like [ ] and Enter.
+
         new[]
         {
             new KeyCap("Ins", "insert"), new KeyCap("Home", "home"), new KeyCap("PgUp"),

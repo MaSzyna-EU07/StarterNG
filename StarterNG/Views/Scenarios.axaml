@@ -3,94 +3,109 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:starterNg="clr-namespace:StarterNG"
+             xmlns:infra="clr-namespace:StarterNG.Infrastructure"
              mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
              x:Class="StarterNG.Views.Scenarios"
              x:CompileBindings="True">
-    <Grid Margin="0" ColumnSpacing="8" RowSpacing="8">
+    <Grid Margin="0" ColumnSpacing="0" RowSpacing="3">
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="280" />
-            <ColumnDefinition />
-            <ColumnDefinition Width="280" />
+            <ColumnDefinition Width="*" MinWidth="200" MaxWidth="460" />
+            <ColumnDefinition Width="Auto" />
+            <ColumnDefinition Width="3.2*" />
         </Grid.ColumnDefinitions>
         <Grid.RowDefinitions>
             <RowDefinition />
-            <RowDefinition Height="78" />
+            <!-- Measures itself, so a whole card fits at either thumbnail size. -->
+            <RowDefinition Height="Auto" MinHeight="120" MaxHeight="200" />
         </Grid.RowDefinitions>
 
-        <!-- Scenery tree (left) -->
         <HeaderedContentControl Grid.Column="0" Grid.Row="0" Theme="{StaticResource GroupBox}"
                                 Classes="Compact"
                                 Header="{Binding [Sceneries], Source={x:Static starterNg:App.Loc}}">
             <DockPanel LastChildFill="True">
-                <ToggleSwitch DockPanel.Dock="Bottom" Name="archivalSwitch"
-                              Margin="2,4,0,0" FontSize="11"
-                              IsCheckedChanged="ArchivalSwitch_OnChanged"
-                              OnContent="{Binding [ShowArchival], Source={x:Static starterNg:App.Loc}}"
-                              OffContent="{Binding [ShowArchival], Source={x:Static starterNg:App.Loc}}" />
+                <CheckBox DockPanel.Dock="Bottom" Name="archivalSwitch"
+                          Margin="2,4,0,0" FontSize="12"
+                          IsCheckedChanged="ArchivalSwitch_OnChanged"
+                          Content="{Binding [HideArchivalSceneries], Source={x:Static starterNg:App.Loc}}" />
                 <TreeView Name="sceneryList" Classes="Compact"
-                          SelectionChanged="SceneryList_OnSelectionChanged" />
+                          SelectionChanged="SceneryList_OnSelectionChanged">
+                    <TreeView.ContextMenu>
+                        <ContextMenu>
+                            <MenuItem Click="ReloadSceneries_OnClick"
+                                      Header="{Binding [ReloadSceneries], Source={x:Static starterNg:App.Loc}}" />
+                            <MenuItem Click="OpenSceneryDir_OnClick"
+                                      Header="{Binding [OpenSceneryFolder], Source={x:Static starterNg:App.Loc}}" />
+                        </ContextMenu>
+                    </TreeView.ContextMenu>
+                </TreeView>
             </DockPanel>
         </HeaderedContentControl>
 
-        <!-- Centre: trainsets list (compact, fills) + description/weather/timetable tabs -->
-        <Grid Grid.Column="1" Grid.Row="0" RowSpacing="8">
+        <GridSplitter Grid.Column="1" Grid.Row="0" Width="6"
+                      Background="Transparent" ResizeDirection="Columns" />
+
+        <Grid Grid.Column="2" Grid.Row="0">
             <Grid.RowDefinitions>
-                <RowDefinition Height="2*" />
-                <RowDefinition Height="3*" />
+                <RowDefinition Height="2*" MinHeight="90" />
+                <RowDefinition Height="4" />
+                <RowDefinition Height="3*" MinHeight="140" />
             </Grid.RowDefinitions>
 
             <HeaderedContentControl Grid.Row="0" Theme="{StaticResource GroupBox}"
-                                    Header="{Binding [Vehicles], Source={x:Static starterNg:App.Loc}}">
-                <DockPanel LastChildFill="True">
-                    <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal" Spacing="16"
-                                Margin="2,4,0,0">
-                        <CheckBox Name="showAiCheck" FontSize="11"
-                                  IsCheckedChanged="VehicleFilter_OnChanged"
-                                  Content="{Binding [ShowAiVehicles], Source={x:Static starterNg:App.Loc}}" />
-                        <CheckBox Name="drivableOnlyCheck" FontSize="11"
-                                  IsCheckedChanged="VehicleFilter_OnChanged"
-                                  Content="{Binding [ShowDrivableOnly], Source={x:Static starterNg:App.Loc}}" />
-                    </StackPanel>
-                    <ListBox Name="vehicleList" Classes="Compact"
-                             SelectionChanged="VehicleList_OnSelectionChanged" />
-                </DockPanel>
+                                    Header="{Binding [SceneryConsists], Source={x:Static starterNg:App.Loc}}">
+            <HeaderedContentControl.Tag>
+                <Button Name="randomTexturesButton" Classes="Flat" Cursor="Hand"
+                        FontSize="12" MinHeight="0" Padding="10,1"
+                        Click="RandomTexturesButton_OnClick"
+                        Content="{Binding [RandomizeTextures], Source={x:Static starterNg:App.Loc}}"
+                        ToolTip.Tip="{Binding [TipRandomizeTextures], Source={x:Static starterNg:App.Loc}}" />
+            </HeaderedContentControl.Tag>
+
+                <ListBox Name="vehicleList" Classes="Compact"
+                         SelectionChanged="VehicleList_OnSelectionChanged" />
             </HeaderedContentControl>
 
-            <TabControl Grid.Row="1">
+            <GridSplitter Grid.Row="1" Height="4" HorizontalAlignment="Stretch"
+                          Background="Transparent" ResizeDirection="Rows" />
+
+            <TabControl Grid.Row="2">
                 <TabItem Header="{Binding [TabDescription], Source={x:Static starterNg:App.Loc}}">
-                    <ScrollViewer VerticalScrollBarVisibility="Auto">
-                        <TextBlock TextWrapping="Wrap" Name="missionDescription" Margin="4" />
-                    </ScrollViewer>
+                    <Grid RowDefinitions="2*,6,*" Margin="4">
+                        <Grid Grid.Row="0" ColumnDefinitions="*,3,225">
+                            <HeaderedContentControl Grid.Column="0" Theme="{StaticResource GroupBox}"
+                                                    Header="{Binding [SceneryDescription], Source={x:Static starterNg:App.Loc}}">
+                                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                                    <TextBlock TextWrapping="Wrap" Name="sceneryDescription" />
+                                </ScrollViewer>
+                            </HeaderedContentControl>
+
+                            <Border Grid.Column="2" ClipToBounds="True"
+                                    Background="{StaticResource CarbonPanelBg}"
+                                    BorderBrush="{StaticResource CarbonBorderLight}" BorderThickness="1">
+                                <Image Name="sceneryImage" Stretch="Uniform" Margin="2" />
+                            </Border>
+                        </Grid>
+
+                        <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto">
+                            <TextBlock TextWrapping="Wrap" Name="missionDescription" />
+                        </ScrollViewer>
+                    </Grid>
                 </TabItem>
                 <TabItem Header="{Binding [Weather], Source={x:Static starterNg:App.Loc}}">
-                    <ScrollViewer VerticalScrollBarVisibility="Auto">
-                        <StackPanel Name="weatherForm" Margin="8" Spacing="8" IsEnabled="False">
-                            <Grid ColumnDefinitions="130,*" RowSpacing="8">
-                                <Grid.RowDefinitions>
-                                    <RowDefinition Height="Auto" />
-                                    <RowDefinition Height="Auto" />
-                                    <RowDefinition Height="Auto" />
-                                    <RowDefinition Height="Auto" />
-                                    <RowDefinition Height="Auto" />
-                                    <RowDefinition Height="Auto" />
-                                </Grid.RowDefinitions>
+                    <StackPanel Name="weatherForm" Margin="8,6" Spacing="8" IsEnabled="False">
+                        <Grid ColumnDefinitions="Auto,12,380,8,70"
+                              RowDefinitions="Auto,6,Auto,14,Auto,Auto,8,Auto,Auto,14,Auto,14,Auto">
 
-                                <TextBlock Grid.Row="0" Grid.Column="0" VerticalAlignment="Center"
-                                           Text="{Binding [Time], Source={x:Static starterNg:App.Loc}}" />
-                                <StackPanel Grid.Row="0" Grid.Column="1" Orientation="Horizontal" Spacing="8">
-                                    <TimePicker Name="weatherTime" ClockIdentifier="24HourClock"
-                                                MinuteIncrement="1" VerticalAlignment="Center"
-                                                SelectedTimeChanged="WeatherTime_OnChanged" />
-                                    <Button Name="weatherTimeNow" Classes="Flat" Cursor="Hand"
-                                            VerticalAlignment="Center" Padding="10,4"
-                                            Click="WeatherTimeNow_OnClick"
-                                            Content="{Binding [CurrentTime], Source={x:Static starterNg:App.Loc}}" />
-                                </StackPanel>
-
-                                <TextBlock Grid.Row="1" Grid.Column="0" VerticalAlignment="Center"
-                                           Text="{Binding [Season], Source={x:Static starterNg:App.Loc}}" />
-                                <ComboBox Grid.Row="1" Grid.Column="1" Name="weatherSeason" Width="180"
-                                          HorizontalAlignment="Left"
+                            <TextBlock Grid.Row="0" Grid.Column="0" VerticalAlignment="Center"
+                                       Foreground="{StaticResource CarbonFgDim}"
+                                       Text="{Binding [Date], Source={x:Static starterNg:App.Loc}}" />
+                            <Grid Grid.Row="0" Grid.Column="2" ColumnDefinitions="150,10,150,10,*">
+                                <DatePicker Grid.Column="0" Name="weatherDate"
+                                            YearVisible="False" MinWidth="0"
+                                            VerticalAlignment="Center" HorizontalAlignment="Stretch"
+                                            SelectedDateChanged="WeatherDate_OnChanged" />
+                                <ComboBox Grid.Column="2" Name="weatherSeason"
+                                          HorizontalAlignment="Stretch" VerticalAlignment="Center"
                                           SelectionChanged="WeatherSeason_OnChanged">
                                     <ComboBoxItem Tag="0" Content="{Binding [SeasonNow], Source={x:Static starterNg:App.Loc}}" />
                                     <ComboBoxItem Tag="113" Content="{Binding [SeasonSpring], Source={x:Static starterNg:App.Loc}}" />
@@ -98,89 +113,127 @@
                                     <ComboBoxItem Tag="297" Content="{Binding [SeasonAutumn], Source={x:Static starterNg:App.Loc}}" />
                                     <ComboBoxItem Tag="15" Content="{Binding [SeasonWinter], Source={x:Static starterNg:App.Loc}}" />
                                 </ComboBox>
-
-                                <TextBlock Grid.Row="2" Grid.Column="0" VerticalAlignment="Center"
-                                           Text="{Binding [Day], Source={x:Static starterNg:App.Loc}}" />
-                                <NumericUpDown Grid.Row="2" Grid.Column="1" Name="weatherDay" Width="140"
-                                               HorizontalAlignment="Left" Minimum="0" Maximum="366"
-                                               Increment="1" FormatString="0"
-                                               ValueChanged="WeatherDay_OnChanged" />
-
-                                <TextBlock Grid.Row="3" Grid.Column="0" VerticalAlignment="Center"
-                                           Text="{Binding [Temperature], Source={x:Static starterNg:App.Loc}}" />
-                                <StackPanel Grid.Row="3" Grid.Column="1" Orientation="Horizontal" Spacing="8">
-                                    <Slider Name="weatherTemp" Minimum="-20" Maximum="40" Width="220"
-                                            TickFrequency="1" IsSnapToTickEnabled="True"
-                                            ValueChanged="Weather_OnSliderChanged" />
-                                    <TextBlock Name="weatherTempLabel" VerticalAlignment="Center" MinWidth="48" />
-                                </StackPanel>
-
-                                <TextBlock Grid.Row="4" Grid.Column="0" VerticalAlignment="Center"
-                                           Text="{Binding [Visibility], Source={x:Static starterNg:App.Loc}}" />
-                                <StackPanel Grid.Row="4" Grid.Column="1" Orientation="Horizontal" Spacing="8">
-                                    <Slider Name="weatherFog" Minimum="0" Maximum="10000" Width="220"
-                                            TickFrequency="250" IsSnapToTickEnabled="True"
-                                            ValueChanged="Weather_OnSliderChanged" />
-                                    <TextBlock Name="weatherFogLabel" VerticalAlignment="Center" MinWidth="56" />
-                                </StackPanel>
-
-                                <TextBlock Grid.Row="5" Grid.Column="0" VerticalAlignment="Center"
-                                           Text="{Binding [Overcast], Source={x:Static starterNg:App.Loc}}" />
-                                <ComboBox Grid.Row="5" Grid.Column="1" Name="weatherOvercast" Width="220"
-                                          HorizontalAlignment="Left"
-                                          SelectionChanged="Weather_OnSelectionChanged">
-                                    <ComboBoxItem Tag="-1.5" Content="{Binding [OvercastClear], Source={x:Static starterNg:App.Loc}}" />
-                                    <ComboBoxItem Tag="0" Content="{Binding [OvercastFair], Source={x:Static starterNg:App.Loc}}" />
-                                    <ComboBoxItem Tag="0.3" Content="{Binding [OvercastLight], Source={x:Static starterNg:App.Loc}}" />
-                                    <ComboBoxItem Tag="0.7" Content="{Binding [OvercastModerate], Source={x:Static starterNg:App.Loc}}" />
-                                    <ComboBoxItem Tag="1" Content="{Binding [OvercastHeavy], Source={x:Static starterNg:App.Loc}}" />
-                                    <ComboBoxItem Tag="1.1" Content="{Binding [OvercastCloudy], Source={x:Static starterNg:App.Loc}}" />
-                                    <ComboBoxItem Tag="1.5" Content="{Binding [OvercastStorm], Source={x:Static starterNg:App.Loc}}" />
-                                </ComboBox>
+                                <TextBlock Grid.Column="4" Name="weatherDayDate"
+                                           VerticalAlignment="Center"
+                                           Foreground="{StaticResource CarbonFgDim}" />
                             </Grid>
 
-                            <TextBlock Name="weatherHint" Opacity="0.6" FontSize="11" TextWrapping="Wrap"
-                                       Text="{Binding [WeatherHint], Source={x:Static starterNg:App.Loc}}" />
-                        </StackPanel>
-                    </ScrollViewer>
+                            <TextBlock Grid.Row="2" Grid.Column="0" VerticalAlignment="Center"
+                                       Foreground="{StaticResource CarbonFgDim}"
+                                       Text="{Binding [Time], Source={x:Static starterNg:App.Loc}}" />
+                            <Grid Grid.Row="2" Grid.Column="2" ColumnDefinitions="150,8,*">
+                                <TimePicker Grid.Column="0" Name="weatherTime"
+                                            ClockIdentifier="24HourClock" MinuteIncrement="1"
+                                            MinWidth="0" VerticalAlignment="Center"
+                                            HorizontalAlignment="Stretch"
+                                            SelectedTimeChanged="WeatherTime_OnChanged" />
+                                <Button Grid.Column="2" Name="weatherTimeNow"
+                                        Classes="Flat" Cursor="Hand" VerticalAlignment="Center"
+                                        HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
+                                        Click="WeatherTimeNow_OnClick"
+                                        Content="{Binding [CurrentTime], Source={x:Static starterNg:App.Loc}}" />
+                            </Grid>
+
+                            <TextBlock Grid.Row="4" Grid.Column="0" VerticalAlignment="Center"
+                                       Foreground="{StaticResource CarbonFgDim}"
+                                       Text="{Binding [Temperature], Source={x:Static starterNg:App.Loc}}" />
+                            <Slider Grid.Row="4" Grid.Column="2" Name="weatherTemp"
+                                    Minimum="-50" Maximum="50"
+                                    TickFrequency="1" IsSnapToTickEnabled="True"
+                                    ValueChanged="Weather_OnSliderChanged" />
+                            <TextBlock Grid.Row="4" Grid.Column="4" Name="weatherTempLabel"
+                                       VerticalAlignment="Center" TextAlignment="Right"
+                                       FontWeight="SemiBold" />
+                            <DockPanel Grid.Row="5" Grid.Column="2" Margin="0,-6,0,0">
+                                <TextBlock DockPanel.Dock="Right" FontSize="12"
+                                           Foreground="{StaticResource CarbonFgDim}" Text="+50 °C" />
+                                <TextBlock FontSize="12"
+                                           Foreground="{StaticResource CarbonFgDim}" Text="-50 °C" />
+                            </DockPanel>
+
+                            <TextBlock Grid.Row="7" Grid.Column="0" VerticalAlignment="Center"
+                                       Foreground="{StaticResource CarbonFgDim}"
+                                       Text="{Binding [Visibility], Source={x:Static starterNg:App.Loc}}" />
+                            <Slider Grid.Row="7" Grid.Column="2" Name="weatherFog"
+                                    Minimum="0" Maximum="1000"
+                                    TickFrequency="1" IsSnapToTickEnabled="True"
+                                    ValueChanged="Weather_OnSliderChanged" />
+                            <TextBlock Grid.Row="7" Grid.Column="4" Name="weatherFogLabel"
+                                       VerticalAlignment="Center" TextAlignment="Right"
+                                       FontWeight="SemiBold" />
+                            <DockPanel Grid.Row="8" Grid.Column="2" Margin="0,-6,0,0">
+                                <TextBlock DockPanel.Dock="Right" FontSize="12"
+                                           Foreground="{StaticResource CarbonFgDim}"
+                                           Text="{Binding [VisibilityGood], Source={x:Static starterNg:App.Loc}}" />
+                                <TextBlock FontSize="12" Foreground="{StaticResource CarbonFgDim}"
+                                           Text="{Binding [VisibilityBad], Source={x:Static starterNg:App.Loc}}" />
+                            </DockPanel>
+
+                            <TextBlock Grid.Row="10" Grid.Column="0" VerticalAlignment="Center"
+                                       Foreground="{StaticResource CarbonFgDim}"
+                                       Text="{Binding [Overcast], Source={x:Static starterNg:App.Loc}}" />
+                            <ComboBox Grid.Row="10" Grid.Column="2" Name="weatherOvercast"
+                                      HorizontalAlignment="Stretch"
+                                      SelectionChanged="Weather_OnSelectionChanged">
+                                <ComboBoxItem Tag="random" Content="{Binding [OvercastRandom], Source={x:Static starterNg:App.Loc}}" />
+                                <ComboBoxItem Tag="-1.5" Content="{Binding [OvercastClear], Source={x:Static starterNg:App.Loc}}" />
+                                <ComboBoxItem Tag="0" Content="{Binding [OvercastFair], Source={x:Static starterNg:App.Loc}}" />
+                                <ComboBoxItem Tag="0.3" Content="{Binding [OvercastLight], Source={x:Static starterNg:App.Loc}}" />
+                                <ComboBoxItem Tag="0.7" Content="{Binding [OvercastModerate], Source={x:Static starterNg:App.Loc}}" />
+                                <ComboBoxItem Tag="1" Content="{Binding [OvercastHeavy], Source={x:Static starterNg:App.Loc}}" />
+                                <ComboBoxItem Tag="1.1" Content="{Binding [OvercastCloudy], Source={x:Static starterNg:App.Loc}}" />
+                                <ComboBoxItem Tag="1.5" Content="{Binding [OvercastStorm], Source={x:Static starterNg:App.Loc}}" />
+                            </ComboBox>
+
+                            <Border Grid.Row="11" Grid.Column="0" Grid.ColumnSpan="5"
+                                    Height="1" VerticalAlignment="Center"
+                                    Background="{StaticResource CarbonBorderLight}" />
+
+                            <Button Grid.Row="12" Grid.Column="2" Grid.ColumnSpan="3"
+                                    Name="weatherRestore" Classes="Flat" Cursor="Hand"
+                                    HorizontalAlignment="Right" MinWidth="180"
+                                    HorizontalContentAlignment="Center"
+                                    Click="WeatherRestore_OnClick"
+                                    Content="{Binding [RestoreWeather], Source={x:Static starterNg:App.Loc}}" />
+                        </Grid>
+
+                    </StackPanel>
                 </TabItem>
-                <TabItem Header="{Binding [Timetable], Source={x:Static starterNg:App.Loc}}">
-                    <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto">
-                        <TextBlock Name="timetableContent" Margin="4" FontFamily="Consolas, monospace"
-                                   FontSize="12" />
-                    </ScrollViewer>
+                <TabItem Name="timetableTab" ToolTip.ShowOnDisabled="True"
+                         Header="{Binding [Timetable], Source={x:Static starterNg:App.Loc}}">
+                    <DockPanel LastChildFill="True" Margin="4">
+                        <ScrollViewer DockPanel.Dock="Bottom" HorizontalScrollBarVisibility="Auto"
+                                      VerticalScrollBarVisibility="Disabled" MaxHeight="72">
+                            <StackPanel Name="attachmentsPanel" Orientation="Horizontal" Spacing="6" />
+                        </ScrollViewer>
+                        <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto">
+                            <TextBlock Name="timetableContent"
+                                       FontFamily="{x:Static infra:MonoFont.Family}"
+                                       FontSize="12" TextWrapping="NoWrap" />
+                        </ScrollViewer>
+                    </DockPanel>
                 </TabItem>
             </TabControl>
         </Grid>
 
-        <!-- Right: scenery image (//$i) + scenery description (//$d) -->
-        <Grid Grid.Column="2" Grid.Row="0" RowSpacing="8">
-            <Grid.RowDefinitions>
-                <RowDefinition Height="Auto" />
-                <RowDefinition />
-            </Grid.RowDefinitions>
-
-            <Border Grid.Row="0" ClipToBounds="True" VerticalAlignment="Top"
-                    Background="{StaticResource CarbonPanelBg}"
-                    BorderBrush="{StaticResource CarbonBorderLight}" BorderThickness="1"
-                    Height="{Binding $self.Bounds.Width}">
-                <Image Name="sceneryImage" Stretch="Uniform" Margin="2" />
-            </Border>
-
-            <HeaderedContentControl Grid.Row="1" Theme="{StaticResource GroupBox}"
-                                    Header="{Binding [SceneryDescription], Source={x:Static starterNg:App.Loc}}">
-                <ScrollViewer VerticalScrollBarVisibility="Auto">
-                    <TextBlock TextWrapping="Wrap" Name="sceneryDescription" />
-                </ScrollViewer>
-            </HeaderedContentControl>
-        </Grid>
-
-        <!-- Consist preview (full-width bottom, horizontally scrollable) -->
         <HeaderedContentControl Grid.Row="1" Grid.ColumnSpan="3" Theme="{StaticResource GroupBox}"
                                 Header="{Binding [Consist], Source={x:Static starterNg:App.Loc}}">
-            <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
-                <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Name="consistStack" />
-            </ScrollViewer>
+            <!-- Mass, length and the rest ride in the title bar, same as in the
+                 depot, instead of taking a row of their own above the cards. -->
+            <HeaderedContentControl.Tag>
+                <StackPanel Name="trainStats" Orientation="Horizontal"
+                            VerticalAlignment="Center" />
+            </HeaderedContentControl.Tag>
+            <DockPanel LastChildFill="True">
+                <ScrollViewer Name="consistScroll"
+                              HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
+                    <Panel>
+                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center"
+                                    Name="consistStack" />
+                        <Canvas Name="consistOverlay" IsHitTestVisible="False" />
+                    </Panel>
+                </ScrollViewer>
+            </DockPanel>
         </HeaderedContentControl>
     </Grid>
 </UserControl>

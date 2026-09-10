@@ -5,35 +5,17 @@ using System.Text;
 
 namespace StarterNG.Classes;
 
-/// <summary>
-/// A line-oriented reader/writer for the EU07 <c>eu07.ini</c> configuration
-/// file.
-///
-/// The file is not a classic INI: it is a flat list of <c>key value [value…]</c>
-/// entries, one per line, with <c>//</c> comments (either trailing a line or
-/// commenting the whole line out). The simulator parses it as a stream of
-/// whitespace-separated tokens.
-///
-/// This class keeps every line verbatim and only rewrites the value of a key
-/// when <see cref="Set"/> is called. Comments, blank lines, commented-out
-/// entries and — crucially — any keys the launcher does not understand are
-/// preserved on save, so editing a handful of settings never drops the rest of
-/// the user's configuration.
-/// </summary>
 public sealed class ConfigFile
 {
     private readonly List<string> _lines = new();
 
-    // Active (uncommented) setting key -> index into _lines. Last occurrence wins,
-    // matching the simulator which lets later entries override earlier ones.
     private readonly Dictionary<string, int> _index =
         new(StringComparer.OrdinalIgnoreCase);
 
-    /// <summary>Parses raw file text, preserving line breaks and content.</summary>
     public static ConfigFile Parse(string text)
     {
         var cfg = new ConfigFile();
-        // Normalise CRLF/CR to LF for splitting; output uses Environment.NewLine.
+
         text = text.Replace("\r\n", "\n").Replace('\r', '\n');
         foreach (var line in text.Split('\n'))
             cfg.AddLine(line);
@@ -45,13 +27,11 @@ public sealed class ConfigFile
         int idx = _lines.Count;
         _lines.Add(raw);
         if (TryParseKey(raw, out string key))
-            _index[key] = idx; // later duplicates override earlier ones
+            _index[key] = idx;
     }
 
-    /// <summary>True if the key is present as an active (uncommented) entry.</summary>
     public bool Has(string key) => _index.ContainsKey(key);
 
-    /// <summary>Raw value (all tokens after the key, comment stripped), or null.</summary>
     public string? GetRaw(string key)
     {
         if (!_index.TryGetValue(key, out int i))
@@ -89,7 +69,6 @@ public sealed class ConfigFile
             CultureInfo.InvariantCulture, out double d) ? d : fallback;
     }
 
-    /// <summary>All whitespace-separated value tokens for a key (never null).</summary>
     public string[] GetTokens(string key)
     {
         var v = GetRaw(key);
@@ -98,11 +77,6 @@ public sealed class ConfigFile
             : v.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries);
     }
 
-    /// <summary>
-    /// Sets the value of <paramref name="key"/>. If the key already exists its
-    /// line is rewritten in place, preserving original indentation and any
-    /// trailing comment. Otherwise a new line is appended.
-    /// </summary>
     public void Set(string key, string value)
     {
         value ??= string.Empty;
@@ -125,11 +99,6 @@ public sealed class ConfigFile
         }
     }
 
-    /// <summary>
-    /// Deactivates <paramref name="key"/> by turning its line into a comment,
-    /// preserving indentation, the key/value that was there and any trailing
-    /// comment. No-op if the key is not currently active.
-    /// </summary>
     public void Remove(string key)
     {
         if (!_index.TryGetValue(key, out int i))
@@ -153,10 +122,7 @@ public sealed class ConfigFile
     public void SetDouble(string key, double value) =>
         Set(key, value.ToString("0.###", CultureInfo.InvariantCulture));
 
-    /// <summary>Serialises back to text using the platform newline.</summary>
     public string ToText() => string.Join(Environment.NewLine, _lines);
-
-    // --- line parsing helpers -------------------------------------------------
 
     private static bool TryParseKey(string raw, out string key)
     {
@@ -164,17 +130,11 @@ public sealed class ConfigFile
         return key.Length > 0;
     }
 
-    /// <summary>
-    /// Decomposes a raw line into leading whitespace, key, value (tokens after
-    /// the key) and trailing comment (including the <c>//</c>). For blank or
-    /// fully commented-out lines, key is empty.
-    /// </summary>
     private static void SplitLine(string raw, out string indent, out string key,
         out string value, out string comment)
     {
         indent = key = value = comment = string.Empty;
 
-        // leading whitespace
         int start = 0;
         while (start < raw.Length && char.IsWhiteSpace(raw[start]))
             start++;
@@ -182,7 +142,6 @@ public sealed class ConfigFile
 
         string body = raw.Substring(start);
 
-        // A line whose first non-space content is "//" is a pure comment.
         if (body.StartsWith("//"))
         {
             comment = body;
@@ -191,8 +150,6 @@ public sealed class ConfigFile
         if (body.Length == 0)
             return;
 
-        // Split off a trailing comment: the first "//" preceded by whitespace
-        // (so URLs such as tcp://… inside a value are not mistaken for one).
         int commentAt = FindCommentStart(body);
         string content = commentAt >= 0 ? body.Substring(0, commentAt) : body;
         if (commentAt >= 0)

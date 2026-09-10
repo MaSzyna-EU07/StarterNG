@@ -9,6 +9,12 @@
     <String key="NavSettings">Settings</String>
     <String key="NavControls">Controls</String>
     <String key="Help">Help</String>
+    <String key="HelpWiki">MaSzyna wiki</String>
+    <String key="HelpReadme">Readme</String>
+    <String key="PresetSort">Sort warehouse</String>
+    <String key="PresetSortName">By name</String>
+    <String key="PresetSortTrack">By track</String>
+    <String key="PresetImportMagazyn">Import magazyn.ini</String>
     <String key="Version">Version:</String>
 
     <!-- General view -->
@@ -27,6 +33,8 @@
     <String key="Time">Time</String>
     <String key="CurrentTime">Now</String>
     <String key="Day">Day of year</String>
+    <String key="Date">Date</String>
+    <String key="DayOfYear">day {0}</String>
     <String key="Sky">Sky</String>
     <String key="Fog">Fog / visibility</String>
     <String key="Season">Season</String>
@@ -38,6 +46,7 @@
     <String key="SeasonSummer">Summer</String>
     <String key="SeasonAutumn">Autumn</String>
     <String key="SeasonWinter">Winter</String>
+    <String key="OvercastRandom">Random</String>
     <String key="OvercastClear">Clear</String>
     <String key="OvercastFair">Fair</String>
     <String key="OvercastLight">Light clouds</String>
@@ -45,13 +54,35 @@
     <String key="OvercastHeavy">Heavy clouds</String>
     <String key="OvercastCloudy">Cloudy</String>
     <String key="OvercastStorm">Storm</String>
-    <String key="WeatherHint">Weather changes are written to the scenery on launch.</String>
+    <String key="WeatherDateTime">Date and time</String>
+    <String key="WeatherConditions">Conditions</String>
     <String key="Consist">Consist</String>
     <String key="Start">Start</String>
+    <String key="StartNoScenery">Select a scenery</String>
+    <String key="StartNoTrain">Select a consist</String>
+    <String key="StartNoStaff">No crew / passenger</String>
+    <String key="StartNoStaffTitle">Consist without crew</String>
+    <String key="StartNoStaffConfirm">This consist has no crew and no passenger — there will be nothing to drive. Start anyway?</String>
+    <String key="RestoreWeather">Restore weather</String>
+    <String key="ReloadSceneries">Reload</String>
+    <String key="OpenSceneryFolder">Open folder</String>
+    <String key="OptionalIncludes">Optional elements</String>
+    <String key="OpenTextureFolder">Open texture folder</String>
+    <String key="CopyTextureName">Copy name</String>
+    <String key="CopyCoupler">Copy from previous</String>
+    <String key="ThermoAmbient">Coolant at ambient temperature</String>
+    <String key="TextureInfo">Texture</String>
+    <String key="TexOperator">Operator</String>
+    <String key="TexStation">Depot</String>
+    <String key="TexRevision">Revision</String>
+    <String key="TexAuthor">Author</String>
+    <String key="TexPhoto">Photos</String>
     <String key="ShowLatestLogTooltip">Open latest simulation log</String>
 
     <!-- Depot / consist creation -->
     <String key="VehicleDatabase">Vehicle database</String>
+    <String key="TextureBaseTitle">Rolling stock database</String>
+    <String key="OpenTextureBase">Stock database…</String>
     <String key="Search">Search...</String>
     <String key="LoadFromScenery">Load consist from scenery</String>
     <String key="NewConsist">New consist</String>
@@ -59,7 +90,7 @@
     <String key="Vehicle">Vehicle</String>
     <String key="Crew">with crew</String>
     <String key="Reversed">reversed</String>
-    <String key="NoVehicles">No vehicles found in databases/vehicles/.</String>
+    <String key="NoVehicles">No vehicles found in dynamic/**/textures.txt.</String>
     <String key="ConsistEmpty">Add vehicles from the database on the left, or load an existing consist from a scenery file.</String>
     <String key="TipMoveLeft">Move left</String>
     <String key="TipMoveRight">Move right</String>
@@ -121,40 +152,42 @@
     <String key="Coupling">Coupling</String>
     <String key="MapConsists">Consists on the scenery</String>
     <String key="NoSceneryConsists">Select a scenery in the Scenarios tab.</String>
-    <String key="BrakeMode">Brake mode</String>
-    <String key="BrakeLoad">Load setting</String>
+    <String key="BrakeMode">Brake setting</String>
+    <String key="BrakeLoad">Brake adjustment</String>
     <String key="BrakeSwitch">Brake switch</String>
     <String key="None">—</String>
 
     <!-- Coupling mask bits -->
     <String key="CplMechanical">Mechanical</String>
-    <String key="CplBrake">Pneumatic 5 atm (brakes)</String>
-    <String key="CplControl">Multiple-unit control</String>
+    <String key="CplBrake">Brake</String>
+    <String key="CplControl">Connector</String>
     <String key="CplHighVoltage">High voltage</String>
-    <String key="CplGangway">Gangway between vehicles</String>
-    <String key="CplAuxPneumatic">Auxiliary pneumatic 8 atm</String>
+    <String key="CplGangway">Passage</String>
+    <String key="CplAuxPneumatic">Air 8atm</String>
     <String key="CplHeating">Heating</String>
-    <String key="CplWorkshop">Workshop coupling (uncouple lock)</String>
+    <String key="CplWorkshop">Lock</String>
 
     <!-- Brake modes -->
-    <String key="BrakeFreight">Freight (G)</String>
-    <String key="BrakePassenger">Passenger (P)</String>
-    <String key="BrakeExpress">Express (R)</String>
-    <String key="BrakeExpressMg">Express + magnetic rail (R+Mg)</String>
-    <String key="BrakeNoAir">Start without air (Q)</String>
-    <String key="BrakeOff">Brakes disconnected (O)</String>
-    <String key="BrakeAuto">Automatic (A)</String>
+    <String key="BrakeActingNone">None</String>
+    <String key="BrakeFreight">G - Cargo</String>
+    <String key="BrakePassenger">P - Passenger</String>
+    <String key="BrakeExpress">R - Rapid</String>
+    <String key="BrakeExpressMg">R + magn. rail brake</String>
+    <String key="BrakeNoAir">Q - without air</String>
 
     <!-- Load adaptation -->
-    <String key="LoadEmpty">Empty (T)</String>
-    <String key="LoadMedium">Loaded I — medium (H)</String>
-    <String key="LoadFull">Loaded II (F)</String>
-    <String key="LoadAuto">Automatic (A)</String>
+    <String key="LoadNeutral">N - neutral</String>
+    <String key="LoadEmpty">T - empty</String>
+    <String key="LoadMedium">H - loaded I</String>
+    <String key="LoadFull">F - loaded II</String>
 
     <!-- Brake switch -->
-    <String key="SwitchOff">Off (0)</String>
-    <String key="SwitchOff10">Off with 10% chance (1)</String>
-    <String key="SwitchOn">On (A)</String>
+    <String key="SwitchNormal">N - On</String>
+    <String key="SwitchOff">0 - Off, slack</String>
+    <String key="SwitchOff10">1 - Off, slack (10% chance)</String>
+    <String key="SwitchEmergencyTest">&lt;&gt; - off for emergency brake test</String>
+    <String key="SwitchAgonal">X - worn out (20% off, random)</String>
+    <String key="SwitchEmptied">E - emptied (pipes at 0)</String>
 
     <!-- Damage (wheel parameters) -->
     <String key="Damage">Damage</String>
@@ -164,22 +197,81 @@
     <String key="DamageFlatnessProb">Flat-spot probability (%)</String>
     <String key="LoadType">Load type</String>
     <String key="LoadCount">Amount</String>
+    <String key="LoadUnitPieces">pcs</String>
+    <String key="LoadUnitTons">t</String>
+    <String key="LoadUnitGeneric">u.</String>
     <String key="LoadHint">Set an amount above 0 to load the vehicle.</String>
+    <String key="LoadNotLoadable">This vehicle accepts no load.</String>
+    <String key="LoadPantState">Pantograph raised at start</String>
+    <String key="LoadPantStateHint">The amount selects the pantograph: 1 — A, 2 — B, 3 — both.</String>
+    <String key="Pantograph">Pantograph</String>
+    <String key="PantStateNone">None</String>
+    <String key="PantStateBoth">Both</String>
     <String key="WagonNumber">Wagon number</String>
     <String key="LoadCopyPrev">Copy load from previous vehicle</String>
     <String key="LoadMax">Maximum possible load</String>
+    <String key="LoadPrevShort">From previous</String>
+    <String key="LoadToAllShort">To following</String>
+    <String key="LoadMaxShort">Maximum</String>
     <String key="ConsistLoadTools">Whole-consist load</String>
-    <String key="ConsistRandomType">Random load</String>
-    <String key="ConsistMaxAmount">Maximum amount</String>
+    <String key="ConsistReady">Consist ready to go</String>
+    <String key="ConsistReadyDesc">The consist starts prepared: brake pipe charged, driver’s brake valve set, batteries closed. Unchecked it starts cold and braked.</String>
+    <String key="ReadyOverride">Force the consist state on launch</String>
+    <String key="ReadyOverrideDesc">Overrides the depot’s "consist ready to go" box for every scenario you start.</String>
+    <String key="ReadyOverrideScenery">As authored</String>
+    <String key="ReadyOverrideCold">Always cold</String>
+    <String key="ReadyOverrideReady">Always ready</String>
+    <String key="ConsistReadyOverridden">Overridden by "Force the consist state on launch" in Settings.</String>
+    <String key="ConsistRandomType">Random type</String>
     <String key="ConsistRandomAmount">Random amount</String>
     <String key="Set">Set</String>
     <String key="Length">Length</String>
     <String key="Mass">Mass</String>
     <String key="Load">Load</String>
+    <String key="VehicleCount">Vehicles</String>
+    <String key="Track">Track</String>
+    <String key="EmptyTrainset">No vehicles. (Track: {0})</String>
+    <String key="HideArchivalVehicles">Hide archived vehicles</String>
+    <String key="RemoveSelectedVehicle">Remove vehicle</String>
+    <String key="RandomizeTextures">Randomize textures</String>
+    <String key="TipRandomizeTextures">Pick similar textures by class / rules</String>
+    <String key="RandomizeTexturesTitle">Change textures</String>
+    <String key="RandomizeTexturesApply">Match</String>
+    <String key="RandomizeTexturesRevDiff">Revision difference at most</String>
+    <String key="RandomizeTexturesVsCurrent">relative to the current texture revision</String>
+    <String key="RandomizeTexturesVsYear">relative to year:</String>
+    <String key="RandomizeTexturesNoArchival">Do not pick archival textures</String>
+    <String key="RandomizeTexturesRules">Edit randomization rules</String>
+    <String key="RandomizeTexturesRulesHint">One rule per line, mini names separated by commas. Lines starting with # are comments.</String>
+    <String key="RandomizeTexturesRulesSave">Save</String>
+    <String key="Cancel">Cancel</String>
+    <String key="Yes">Yes</String>
+    <String key="No">No</String>
+    <String key="Ok">OK</String>
+    <String key="ExeLaunchFailed">Could not start the simulator</String>
+    <String key="ExeNotFound">The simulator executable was not found.</String>
+    <String key="ExeNotExecutable">The file is not marked as executable (chmod +x).</String>
+    <String key="ExeWrongPlatform">This binary is built for a different operating system.</String>
+    <String key="TabInfo">Info</String>
+    <String key="SettingsFileChangedTitle">Settings</String>
+    <String key="SettingsFileChanged">eu07.ini was changed outside the starter. Reload it?</String>
+    <String key="AddAllCategory">Add whole category</String>
+    <String key="TipAddAllCategory">Add every texture currently listed in the browser</String>
+    <String key="AddUniqueMmd">Add unique MMDs</String>
+    <String key="TipAddUniqueMmd">Add one texture per distinct model (MMD)</String>
+    <String key="RandomizeOrder">Randomize order</String>
+    <String key="RandomizeOrientation">Randomize orientation</String>
+    <String key="TipRandomizeOrder">Shuffle wagon order from the selected vehicle to the end</String>
+    <String key="TipRandomizeOrientation">Randomly reverse vehicles from the selected one to the end</String>
     <String key="SelectVehicleHint">Select a vehicle in the consist to edit it.</String>
     <String key="ComingSoon">Editing options coming soon.</String>
     <String key="Split">Split</String>
     <String key="TipSplit">Split the unit into individual cars</String>
+    <String key="AppliesToUnit">Shared by the whole unit</String>
+    <String key="CouplingUnitRear">Coupler at the rear of the unit</String>
+    <String key="Join">Join</String>
+    <String key="TipJoin">Couple this vehicle with the next one into a single unit</String>
+    <String key="TipReorder">Drag to reorder</String>
     <String key="AddVehicle">Add</String>
     <String key="TipAddVehicle">Add this vehicle to the consist</String>
     <String key="TipAddUnit">Add the whole unit to the consist</String>
@@ -206,23 +298,26 @@
     <String key="Fullscreen">Fullscreen</String>
     <String key="PauseSimInactive">Pause simulation when window is inactive</String>
     <String key="PauseSimStart">Pause on start</String>
-    <String key="CursorSensitivity">Cursor sensitivity:</String>
+    <String key="CursorSensitivity">Camera rotation sensitivity (horizontal)</String>
     <String key="MouseHorInvert">Invert mouse horizontally</String>
     <String key="MouseVertInvert">Invert mouse vertically</String>
 
-    <String key="Communication">Communication</String>
+    <String key="Communication">External devices</String>
 
-    <String key="GamepadSignalIgnore">Ignore gamepad input</String>
+    <String key="GamepadSignalIgnore">Ignore gamepad control</String>
+    <String key="GamepadSignalIgnoreDesc">Disables gamepad input even when one is connected.</String>
 
     <String key="Feedback">Feedback</String>
+    <String key="FeedbackDesc">How cab feedback signals are delivered to an external panel. Keyboard modes flash LEDs: (1) Caps Lock = CA or SHP, Scroll Lock = starting resistances; (2) Caps Lock = CA, Scroll Lock = SHP. Other modes require an LPT, PoKeys55 or serial interface.</String>
     <String key="FeedbackOff">Off</String>
-    <String key="FeedbackCASHP">Caps: CA/SHP; ScrollLock: starting resistances</String>
-    <String key="FeedbackCA">Caps: CA; ScrollLock: SHP</String>
-    <String key="FeedbackLPT">LPT</String>
-    <String key="FeedbackPoKeys">PoKeys55</String>
-    <String key="FeedbackSP">Serial port (COM)</String>
+    <String key="FeedbackCASHP">Keyboard: Caps = CA+SHP, Scroll = starting resistances</String>
+    <String key="FeedbackCA">Keyboard: Caps = CA, Scroll = SHP</String>
+    <String key="FeedbackLPT">LPT (inpout32)</String>
+    <String key="FeedbackPoKeys">PoKeys55 (USB)</String>
+    <String key="FeedbackSP">COM / serial port</String>
 
     <String key="FeedbackPort">LPT port address</String>
+    <String key="FeedbackPortDesc">LPT port address used by the selected feedback mode.</String>
 
     <String key="UartSection">UART configuration</String>
     <String key="UartEnable">Enable UART communication</String>
@@ -237,34 +332,64 @@
     <String key="UartRadioChannel">Radio channel</String>
 
     <String key="Others">Other</String>
-    <String key="SelectEXE">Select exe:</String>
+    <String key="SelectEXE">Select exe</String>
     <String key="SelectEXEAuto">Select automatically</String>
-    <String key="DebugMode">Debug mode (test mode)</String>
+    <String key="DebugMode">Debug mode</String>
+    <String key="DebugModeDesc">Unlocks debug menus, extra panels and test shortcuts.</String>
     <String key="VirtualShunting">Virtual shunting</String>
+    <String key="VirtualShuntingDesc">Enables an AI assistant for coupling, uncoupling and simple shunting moves while the vehicle is stopped.</String>
     <String key="LogMissingVehicleFiles">Log missing vehicle files during export</String>
+    <String key="LogMissingVehicleFilesDesc">Writes vehicles the starter could not find into the log.</String>
 
     <String key="Graphic">Graphics</String>
     <String key="RenderEngine">Render engine</String>
+    <String key="RenderEngineDesc">OpenGL rendering path. 'Simplified' and 'Old' use the legacy renderer.</String>
     <String key="REFull">Full</String>
     <String key="REOld">Old</String>
-    <String key="RESimpShader">Simplified shader</String>
+    <String key="RESimpShader">Simplified (legacy)</String>
     <String key="RESimp">Simplified</String>
     <String key="REOff">Disable visual layer</String>
     <String key="REExperimental">Experimental</String>
 
-    <String key="Resolution">Resolution:</String>
-    <String key="BufforResolution">Buffer resolution:</String>
-    <String key="MaxTexResolution">Maximum texture resolution:</String>
-    <String key="MaxTexCabResolution">Maximum cabin texture resolution:</String>
-    <String key="TexFilteringQuality">Texture filtering quality:</String>
-    <String key="Multisampling">Multisampling:</String>
-    <String key="DynamicLights">Dynamic light sources:</String>
-    <String key="RenderRange">Rendering range:</String>
+    <String key="Resolution">Resolution</String>
+    <String key="BufforResolution">Buffer resolution</String>
+    <String key="BufforResolutionDesc">Scales the internal render buffer relative to the window resolution.</String>
+    <String key="MaxTexResolution">Maximum texture resolution</String>
+    <String key="MaxTexCabResolution">Maximum cabin texture resolution</String>
+    <String key="TexFilteringQuality">Texture filtering quality</String>
+    <String key="TexFilteringQualityDesc">Anisotropic texture filtering level.</String>
+    <String key="Multisampling">Multisampling</String>
+    <String key="MultisamplingDesc">Anti-aliasing of object edges. Higher settings cost more GPU time.</String>
+    <String key="QualityVeryLow">Very low</String>
+    <String key="QualityLow">Low</String>
+    <String key="QualityNormal">Normal</String>
+    <String key="QualityHigh">High</String>
+    <String key="QualityVeryHigh">Very high</String>
+    <String key="MsaaNone">None</String>
+    <String key="QualityModerate">Moderate</String>
+    <String key="QualityStandard">Standard</String>
+    <String key="RangeVeryLow">Very low</String>
+    <String key="RangeLow">Low</String>
+    <String key="RangeNormal">Normal</String>
+    <String key="RangeModerate">Moderate</String>
+    <String key="RangeStandard">Standard</String>
+    <String key="RangeHigh">High</String>
+    <String key="RangeVeryHigh">Very high</String>
+    <String key="RangeDisabled">Disabled</String>
+    <String key="DynamicLights">Dynamic light sources</String>
+    <String key="DynamicLightsDesc">Maximum number of simultaneous dynamic light sources.</String>
+    <String key="RenderRange">Rendering range</String>
+    <String key="RenderRangeDesc">Maximum draw-distance multiplier; the engine lowers it automatically when the FPS drops.</String>
     <String key="FpsLimitEnable">Limit frame rate</String>
     <String key="ShadowAngleLimit">Shadow length limit</String>
+    <String key="ShadowAngleLimitDesc">Shortens the long shadows cast by a low sun. Higher values cut them sooner.</String>
+    <String key="ShadowLimitNone">No limit</String>
+    <String key="ShadowLimitShort">Shortened</String>
     <String key="FullscreenWindowed">Automatic resolution (borderless fullscreen)</String>
     <String key="RenderAngleVulkan">Use ANGLE Vulkan renderer</String>
+    <String key="RenderAngleVulkanDesc">Runs the ANGLE renderer on Vulkan instead of the default backend. Useful when OpenGL misbehaves.</String>
     <String key="VSync">VSync</String>
+    <String key="VSyncDesc">Synchronizes frame rate with the monitor refresh rate.</String>
     <String key="SmokeDisplay">Smoke display</String>
     <String key="SmokeParticlesMultiplier">Smoke particles multiplier</String>
 
@@ -272,41 +397,61 @@
     <String key="MotionBlur">Motion blur</String>
     <String key="AdditionalShadersEffects">Additional shader effects</String>
     <String key="ReflectionsCubeMap">Reflections as cubemap</String>
+    <String key="ReflectionsCubeMapDesc">Renders reflections into a cube map, so surfaces mirror the surroundings from every direction.</String>
+    <String key="SkipPipeline">Simplified depth read (compatibility)</String>
+    <String key="SkipPipelineDesc">Alternative depth-buffer read path with MSAA; enable it if your GPU has compatibility issues.</String>
     <String key="RenderVBO">Render VBO</String>
+    <String key="RenderVBODesc">Keeps geometry in GPU buffers (faster). Disable only if you have problems with an old GPU.</String>
     <String key="RenderShadows">Render shadows</String>
     <String key="ReflectionsFramerate">Reflections refresh rate</String>
     <String key="ShadowsResolution">Shadows resolution</String>
     <String key="ShaderRange">Shadow range</String>
     <String key="CabShadowsRange">Cabin shadow sources range</String>
+    <String key="CabShadowsRangeDesc">Distance at which light sources still cast shadows inside the cab. Zero turns cab shadows off.</String>
 
     <String key="ShadowDisplay">Display shadows</String>
+    <String key="ShadowDisplayDesc">Sets which objects cast shadows based on material priority. Lower value = fewer shadows, higher performance.</String>
     <String key="CSROnlyImportant">Only important</String>
     <String key="CSRLimited">Limited</String>
     <String key="CSRAll">All</String>
 
     <String key="ReflectionsDetails">Reflections detail level</String>
+    <String key="ReflectionsDetailsDesc">Which objects are rendered into the reflection cubemap.</String>
     <String key="RDTerrain">Terrain geometry only</String>
     <String key="RDTerrainModels">Terrain geometry and static models</String>
     <String key="RDTerrainModelsVehicles">Terrain geometry, static models and vehicles</String>
 
     <String key="FieldOfView">View angle</String>
+    <String key="FieldOfViewDesc">Vertical camera field of view in degrees (15–75).</String>
     <String key="RenderScreens">Render onboard computer screens</String>
+    <String key="RenderScreensDesc">Enables cab screens driven by Python scripts.</String>
     <String key="RenderScreensThread">Render screens in a separate thread</String>
 
     <String key="Physics">Physics</String>
 
     <String key="TrackCurvesQuality">Track curves quality</String>
+    <String key="TrackCurvesQualityDesc">How finely curved track is subdivided. Higher values are smoother but cost more CPU/GPU when loading.</String>
     <String key="PhysicsAccuracyIncreased">Increased physics accuracy</String>
+    <String key="PhysicsAccuracyIncreasedDesc">Runs the full physics model with smaller time steps. More faithful, but heavier CPU load on large consists.</String>
     <String key="BreakingPantographPossibility">Possibility of pantograph breaking</String>
+    <String key="BreakingPantographPossibilityDesc">Disabling protects the pantograph from breaking on faulty overhead line geometry.</String>
     <String key="PowerOverheadLineOnly">Powered only under overhead line</String>
-    <String key="SaveSpeedometerTapes">Save speedometer tapes</String>
+    <String key="PowerOverheadLineOnlyDesc">When disabled, a raised pantograph can power the vehicle even without touching the wire.</String>
+    <String key="SaveSpeedometerTapes">Save physics parameters log</String>
+    <String key="SaveSpeedometerTapesDesc">Writes a detailed trip log to the physicslog/ folder.</String>
     <String key="SaveSimLogs">Save simulation log</String>
     <String key="KeepPrevLogs">Keep previous logs</String>
-    <String key="DisplaySimulation">Display simulation</String>
+    <String key="KeepPrevLogsDesc">Creates a separate log file for each scenery instead of overwriting errors.txt.</String>
+    <String key="DisplaySimulation">Render 3D image</String>
+    <String key="DisplaySimulationDesc">When disabled, the scenery is not drawn (black screen), but the simulation keeps running.</String>
     <String key="CrashDamage">Collision damage</String>
+    <String key="CrashDamageDesc">Damages couplers and consists during collisions and sharp jerks.</String>
     <String key="Friction">Friction multiplier</String>
-    <String key="BrakeStep">Brake valve sensitivity</String>
-    <String key="BrakeSpeed">FV4a valve sensitivity</String>
+    <String key="FrictionDesc">Multiplies wheel-to-rail friction. 1.00 leaves it unchanged.</String>
+    <String key="BrakeStep">Train brake step size (Num3/Num9)</String>
+    <String key="BrakeStepDesc">Multiplies the size of a single step of the train brake handle controlled with Num3 and Num9. 1.00 leaves it unchanged.</String>
+    <String key="BrakeSpeed">FV4a valve speed</String>
+    <String key="BrakeSpeedDesc">Multiplies how fast the locomotive brake handle (FV4a) and the local brake move. 1.00 leaves it unchanged.</String>
 
     <String key="Sounds">Sound</String>
     <String key="EnableSounds">Enable sound</String>
@@ -329,17 +474,13 @@
     <String key="IgnoreIrrelevantTrains">Skip decorative consists when starting</String>
 
     <String key="Starter">Starter</String>
-    <String key="SettingsProfile">Settings profile:</String>
+    <String key="SettingsProfile">Settings profile</String>
     <String key="ProfileApply">Apply</String>
     <String key="ProfileSaveAs">Save as…</String>
     <String key="ProfileNamePrompt">Profile name</String>
     <String key="AutoCloseStarter">Automatically close starter</String>
     <String key="LargeThumbnails">Large thumbnails</String>
     <String key="AutoExpandSceneryTree">Automatically expand scenery tree</String>
-    <String key="BatteryDefault">Battery on launch:</String>
-    <String key="BatteryDefaultScenario">Scenario default</String>
-    <String key="BatteryDefaultOff">Always off</String>
-    <String key="BatteryDefaultOn">Always on</String>
 
     <!-- Controls / key bindings -->
     <String key="Controls">Controls</String>
@@ -365,4 +506,117 @@
     <String key="Save">Save</String>
     <String key="Reset">Reset</String>
     <String key="SettingsSaved">Settings saved</String>
+    <String key="UnsavedChanges">Unsaved changes</String>
+
+    <!-- Errors / diagnostics -->
+    <String key="FaultTitle">Error</String>
+    <String key="FaultDetail">Error details:</String>
+    <String key="FaultFileNotFound">File not found: {0}</String>
+    <String key="FaultLoadData">Failed to load simulator data.</String>
+    <String key="FaultBadInstall">The simulator installation may be incomplete.</String>
+    <String key="FaultNoDir">Missing folder {0}</String>
+    <String key="FaultNoWeights">No load weight information.</String>
+    <String key="FaultNoScenery">No scenarios found.</String>
+    <String key="FaultNoVehicles">No vehicles found.</String>
+    <String key="FaultNoPhysics">No rolling stock data found.</String>
+    <String key="FaultNoExe">Simulator executable not found.</String>
+
+    <!-- About -->
+    <String key="AboutTitle">About</String>
+    <String key="AboutForSimulator">for the MaSzyna simulator</String>
+    <String key="AboutChangelog">Changelog:</String>
+    <String key="AboutNoChangelog">No changelog file found.</String>
+    <String key="About">About</String>
+    <String key="Close">Close</String>
+    <String key="SettingsPath">Settings loaded from:</String>
+
+    <!-- Vehicle info -->
+    <String key="GeneralInfo">General</String>
+    <String key="Model">Model</String>
+    <String key="VMax">VMax</String>
+    <String key="Name">Name</String>
+    <String key="Texture">Texture</String>
+
+    <!-- Scenery tab -->
+    <String key="SceneryConsists">Consists on the scenery</String>
+    <String key="SceneryFaults">Scenario faults:</String>
+
+    <!-- Warehouse / vehicle panels -->
+    <String key="WarehouseConsists">Consists in the warehouse</String>
+    <String key="AddToWarehouse">Add to warehouse</String>
+    <String key="RemoveFromWarehouse">Remove from warehouse</String>
+    <String key="WarehouseApply">Replace with warehouse consist</String>
+    <String key="WarehouseImportNothing">No consists found to import.</String>
+    <String key="AboutTexture">About texture</String>
+    <String key="NoTextureInfo">No texture information.</String>
+
+    <!-- Vehicle configuration / coupler -->
+    <String key="Configuration">Configuration</String>
+    <String key="RemoveVehicle">Remove vehicle</String>
+    <String key="AutoCoupler">Auto</String>
+    <String key="TipAutoCoupler">Pick couplings automatically for the whole consist</String>
+    <String key="CouplingLastVehicle">Rear coupler of the train — no vehicle behind it.</String>
+    <String key="ChangeName">Rename...</String>
+    <String key="LoadCopyToAll">Apply this load to every following vehicle that accepts it</String>
+    <String key="WarehouseAppend">Append warehouse consist</String>
+    <String key="WarehouseImportFile">Add consists from file...</String>
+    <String key="StartWithoutSaving">Start without saving settings</String>
+    <String key="StartFreeFly">Start with no vehicle</String>
+    <String key="VolumePaused">Volume while paused</String>
+    <String key="DebugLogVisible">Show log in console</String>
+    <String key="PyScreenPriority">Extra screen update delay</String>
+    <String key="PyScreenPriorityDesc">Minimum time between Python cab screen updates in milliseconds. Higher value = less frequent updates.</String>
+    <String key="PyPriorityNormal">Standard (200 ms)</String>
+    <String key="PyPriorityLower">Slower (400 ms)</String>
+    <String key="PyPriorityLowest">Very slow (800 ms)</String>
+    <String key="PyPriorityIdle">Only when idle (1600 ms)</String>
+    <String key="PyPriorityOff">Off</String>
+
+    <String key="MassBrutto">Gross mass</String>
+    <String key="VisibilityGood">Good</String>
+    <String key="VisibilityBad">Poor</String>
+    <String key="SoundPhysics">Sound | Physics</String>
+    <String key="DriverHead">Driver (cab A)</String>
+    <String key="DriverRear">Driver (cab B)</String>
+    <String key="DriverPassenger">Passenger</String>
+    <String key="DriverNobody">Nobody</String>
+    <String key="RemoveAllTrains">Remove all consists from the scenery</String>
+    <String key="RemoveAllTrainsConfirm">Remove the vehicles from every consist on this scenery?</String>
+    <String key="TexWorks">Overhaul:</String>
+    <String key="RevisionFrom">Overhaul from:</String>
+    <String key="RevisionTo">Overhaul to:</String>
+    <String key="CrewLabel">Crew</String>
+    <String key="RuleAdd">Add to rule</String>
+    <String key="RuleNew">— new rule —</String>
+    <String key="RuleRemove">Remove from rule</String>
+    <String key="CatAll">All</String>
+    <String key="GfxColResolution">Resolution and textures</String>
+    <String key="GfxColRendering">Rendering</String>
+    <String key="GfxColShadows">Shadows</String>
+    <String key="GfxColReflections">Reflections and view</String>
+    <String key="GfxColScripts">Python scripts</String>
+    <String key="UartHint">Port name / leave alone / data send rate</String>
+    <String key="UartFeature">UARTfeature:</String>
+    <String key="UartSaveClose">Save and close</String>
+    <String key="PickCategoryFirst">Pick a vehicle category or class first.</String>
+    <String key="HideArchivalSceneries">Hide archived scenarios</String>
+    <String key="Tools">Tools</String>
+    <String key="AdvancedSettings">Advanced settings</String>
+    <String key="AdvLogPage">Event log</String>
+    <String key="AdvClearLog">Clear log</String>
+    <String key="ConsistSchedule">Composition</String>
+
+    <!-- Keyboard shortcuts -->
+    <String key="ShortcutsTitle">Keyboard shortcuts</String>
+    <String key="ShortcutsGlobal">General</String>
+    <String key="ShortcutsTabHint">Tab moves between panels, arrow keys inside lists. In the consist strip Tab lands on the selected vehicle.</String>
+    <String key="ShortcutShowHelp">This list</String>
+    <String key="ShortcutFocusSearch">Jump to the vehicle search box</String>
+    <String key="ShortcutAddVehicle">Add the browsed vehicle to the consist</String>
+    <String key="ShortcutSetNumber">Set the wagon number</String>
+    <String key="ShortcutPrevNext">Previous / next vehicle</String>
+    <String key="ShortcutFirstLast">First / last vehicle</String>
+    <String key="ShortcutMember">Pick a car inside a coupled unit</String>
+    <String key="ShortcutMoveVehicle">Move the vehicle along the consist</String>
+    <String key="ShortcutCardMenu">Open the vehicle menu</String>
 </Language>

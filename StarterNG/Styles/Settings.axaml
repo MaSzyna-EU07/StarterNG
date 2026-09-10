@@ -1,0 +1,288 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:ctl="clr-namespace:StarterNG.Controls">
+    <Styles.Resources>
+
+        <!-- One setting: [ label | control | value ] with the description on a
+             second line spanning the whole row. Empty parts collapse, driven by
+             the pseudo-classes SettingRow sets. -->
+        <ControlTheme x:Key="{x:Type ctl:SettingRow}" TargetType="ctl:SettingRow">
+            <Setter Property="Margin" Value="0,0,0,11" />
+            <Setter Property="HorizontalAlignment" Value="Stretch" />
+            <Setter Property="Template">
+                <ControlTemplate>
+                    <Grid RowDefinitions="Auto,Auto">
+                        <Grid.ColumnDefinitions>
+                            <!-- Every row is its own Grid, so the label column only
+                                 lines up across rows when a shared-size scope makes
+                                 them negotiate one width. The group is inert unless
+                                 an ancestor declares Grid.IsSharedSizeScope, which is
+                                 why this is safe to leave on for the settings page:
+                                 there the pin on PART_Label below fixes the width
+                                 instead. -->
+                            <ColumnDefinition Width="Auto" SharedSizeGroup="SettingRowLabel" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Name="PART_Label"
+                                   Grid.Row="0" Grid.Column="0"
+                                   Text="{TemplateBinding Label}"
+                                   FontSize="12"
+                                   Foreground="{StaticResource CarbonFg}"
+                                   TextWrapping="Wrap"
+                                   VerticalAlignment="Center"
+                                   MinWidth="286" MaxWidth="286"
+                                   Margin="0,0,14,0" />
+
+                        <ContentPresenter Name="PART_Content"
+                                          Grid.Row="0" Grid.Column="1"
+                                          Content="{TemplateBinding Content}"
+                                          HorizontalAlignment="Stretch"
+                                          VerticalAlignment="Center" />
+
+                        <TextBlock Name="PART_Value"
+                                   Grid.Row="0" Grid.Column="2"
+                                   Text="{TemplateBinding ValueText}"
+                                   FontSize="12"
+                                   FontWeight="SemiBold"
+                                   Foreground="{StaticResource CarbonFg}"
+                                   MinWidth="72"
+                                   TextAlignment="Right"
+                                   TextWrapping="NoWrap"
+                                   TextTrimming="CharacterEllipsis"
+                                   VerticalAlignment="Center"
+                                   Margin="12,0,0,0" />
+
+                        <!-- Second line sits in the same columns as the first: the
+                             key under the label, the explanation under the control.
+                             Laying them out as one run instead made every
+                             explanation start wherever its key happened to end. -->
+                        <!-- Pinned to the same width as the label above it. A row
+                             with no label hides PART_Label, and without this the
+                             column would collapse onto the key and every
+                             explanation would start at a different place again. -->
+                        <SelectableTextBlock Name="PART_ConfigKey"
+                                             Grid.Row="1" Grid.Column="0"
+                                             Text="{TemplateBinding ConfigKey}"
+                                             FontFamily="Consolas, DejaVu Sans Mono, Liberation Mono, Menlo, Courier New"
+                                             FontSize="11"
+                                             Foreground="{StaticResource CarbonFgDim}"
+                                             TextWrapping="Wrap"
+                                             MinWidth="286" MaxWidth="286"
+                                             Margin="0,3,14,0" />
+
+                        <TextBlock Name="PART_Description"
+                                   Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="2"
+                                   Text="{TemplateBinding Description}"
+                                   FontSize="12"
+                                   Foreground="{StaticResource CarbonFgDim}"
+                                   TextWrapping="Wrap"
+                                   Margin="0,3,0,0" />
+
+                    </Grid>
+                </ControlTemplate>
+            </Setter>
+
+            <Style Selector="^:no-description /template/ TextBlock#PART_Description">
+                <Setter Property="IsVisible" Value="False" />
+            </Style>
+            <Style Selector="^:no-key /template/ SelectableTextBlock#PART_ConfigKey">
+                <Setter Property="IsVisible" Value="False" />
+            </Style>
+            <Style Selector="^:no-value /template/ TextBlock#PART_Value">
+                <Setter Property="IsVisible" Value="False" />
+            </Style>
+            <Style Selector="^:no-label /template/ TextBlock#PART_Label">
+                <Setter Property="IsVisible" Value="False" />
+            </Style>
+            <Style Selector="^:no-content /template/ TextBlock#PART_Value">
+                <Setter Property="Grid.Column" Value="1" />
+                <Setter Property="Grid.ColumnSpan" Value="2" />
+            </Style>
+            <!-- A checkbox is its own label, so let it take the label column too.
+                 Alignment stays Stretch: a bare slider in a labelless row still
+                 wants the full width. -->
+            <Style Selector="^:no-label /template/ ContentPresenter#PART_Content">
+                <Setter Property="Grid.Column" Value="0" />
+                <Setter Property="Grid.ColumnSpan" Value="2" />
+            </Style>
+        </ControlTheme>
+
+        <!-- Flat section: title, accent rule, content. No border, no filled header. -->
+        <ControlTheme x:Key="{x:Type ctl:SettingsSection}" TargetType="ctl:SettingsSection">
+            <Setter Property="Margin" Value="0,0,0,24" />
+            <Setter Property="Template">
+                <ControlTemplate>
+                    <StackPanel>
+                        <DockPanel LastChildFill="True">
+                            <ContentPresenter DockPanel.Dock="Right"
+                                              Content="{TemplateBinding Toggle}"
+                                              VerticalAlignment="Center" />
+                            <TextBlock Text="{TemplateBinding Header}"
+                                       FontSize="12"
+                                       FontWeight="SemiBold"
+                                       Foreground="{StaticResource CarbonFg}"
+                                       VerticalAlignment="Center" />
+                        </DockPanel>
+
+                        <Grid Name="PART_Rule" ColumnDefinitions="28,*" Height="1" Margin="0,6,0,0">
+                            <Border Grid.Column="0" Background="{StaticResource CarbonAccentBright}" />
+                            <Border Grid.Column="1" Background="{StaticResource CarbonBorderLight}" />
+                        </Grid>
+
+                        <ContentPresenter Name="PART_Content"
+                                          Content="{TemplateBinding Content}"
+                                          Margin="0,14,0,0" />
+                    </StackPanel>
+                </ControlTemplate>
+            </Setter>
+        </ControlTheme>
+
+        <!-- Category list on the left of the settings panel. -->
+        <ControlTheme x:Key="SettingsNavItem" TargetType="ListBoxItem">
+            <Setter Property="Foreground" Value="{StaticResource CarbonFgDim}" />
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="Padding" Value="12,7" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Template">
+                <ControlTemplate>
+                    <Border Name="root"
+                            Background="Transparent"
+                            BorderBrush="Transparent"
+                            BorderThickness="3,0,0,0">
+                        <ContentPresenter Content="{TemplateBinding Content}"
+                                          Margin="{TemplateBinding Padding}"
+                                          VerticalAlignment="Center" />
+                    </Border>
+                </ControlTemplate>
+            </Setter>
+            <Style Selector="^:pointerover /template/ Border#root">
+                <Setter Property="Background" Value="{StaticResource CarbonHoverBg}" />
+            </Style>
+            <Style Selector="^:selected /template/ Border#root">
+                <Setter Property="Background" Value="{StaticResource CarbonHoverBg}" />
+                <Setter Property="BorderBrush" Value="{StaticResource CarbonAccentBright}" />
+            </Style>
+            <Style Selector="^:selected">
+                <Setter Property="Foreground" Value="{StaticResource CarbonFg}" />
+                <Setter Property="FontWeight" Value="SemiBold" />
+            </Style>
+        </ControlTheme>
+
+    </Styles.Resources>
+
+    <!-- Dimmed while a search finds nothing in this category. Still clickable:
+         selecting it clears the search and opens the category. -->
+    <Style Selector="ListBoxItem.NoHits">
+        <Setter Property="Opacity" Value="0.3" />
+    </Style>
+
+    <!-- Names the category above stacked search results. -->
+    <Style Selector="TextBlock.CategoryCaption">
+        <Setter Property="Foreground" Value="{StaticResource CarbonAccentBright}" />
+        <Setter Property="FontSize" Value="12" />
+        <Setter Property="FontWeight" Value="Bold" />
+        <Setter Property="Margin" Value="0,0,0,8" />
+    </Style>
+
+    <Style Selector="ListBox.SettingsNav">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="Padding" Value="0" />
+    </Style>
+
+    <!-- Controls inside a row: keep them from stretching to absurd widths in the
+         single-column layout, and give the row a predictable height. -->
+    <Style Selector="ctl|SettingRow:not(.Compact) > ComboBox">
+        <Setter Property="HorizontalAlignment" Value="Stretch" />
+        <Setter Property="MaxWidth" Value="360" />
+    </Style>
+    <Style Selector="ctl|SettingRow:not(.Compact) > NumericUpDown">
+        <Setter Property="HorizontalAlignment" Value="Left" />
+        <Setter Property="Width" Value="140" />
+    </Style>
+    <Style Selector="ctl|SettingRow:not(.Compact) > Slider">
+        <Setter Property="HorizontalAlignment" Value="Stretch" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+    </Style>
+    <Style Selector="ctl|SettingRow:not(.Compact) > CheckBox">
+        <Setter Property="HorizontalAlignment" Value="Left" />
+    </Style>
+    <Style Selector="ctl|SettingRow:not(.Compact) > Button">
+        <Setter Property="HorizontalAlignment" Value="Left" />
+        <Setter Property="MinWidth" Value="180" />
+    </Style>
+
+    <!-- Compact variant. The depot's detail panels are 250-390 px wide, where the
+         settings page's rigid 300 px label column and 72 px value slot do not fit.
+         Releasing the pin lets the shared-size group do its job: the column hugs the
+         longest label in whichever panel it lands in, so no pixel count is picked
+         here and it follows the translation. -->
+    <Style Selector="ctl|SettingRow.Compact">
+        <Setter Property="Margin" Value="0,0,0,2" />
+    </Style>
+    <!-- Right-aligned: an Auto column hugs the longest label, so anything shorter
+         would otherwise hang in space away from its own control. MaxWidth stops one
+         long translation from eating the panel - the label already wraps. -->
+    <Style Selector="ctl|SettingRow.Compact /template/ TextBlock#PART_Label">
+        <Setter Property="MinWidth" Value="96" />
+        <Setter Property="MaxWidth" Value="170" />
+        <Setter Property="TextAlignment" Value="Right" />
+        <Setter Property="Margin" Value="0,0,10,0" />
+    </Style>
+    <!-- Reserved, not collapsed: keeping the unit gutter on every row means the
+         controls share one right edge, and nothing shifts sideways when the unit
+         disappears in pantograph mode. IsVisible deliberately overrides the theme's
+         :no-value setter, which a file-level style is allowed to do. -->
+    <Style Selector="ctl|SettingRow.Compact /template/ TextBlock#PART_Value">
+        <Setter Property="IsVisible" Value="True" />
+        <Setter Property="MinWidth" Value="26" />
+        <Setter Property="Margin" Value="6,0,0,0" />
+    </Style>
+    <Style Selector="ctl|SettingRow.Compact /template/ SelectableTextBlock#PART_ConfigKey">
+        <Setter Property="MinWidth" Value="0" />
+        <Setter Property="MaxWidth" Value="Infinity" />
+    </Style>
+    <Style Selector="ctl|SettingRow.Compact /template/ TextBlock#PART_Description">
+        <Setter Property="Margin" Value="0,2,0,0" />
+    </Style>
+    <!-- A checkbox lines up with the other controls here rather than escaping to the
+         left edge the way it does on the wide settings page: in a narrow column the
+         label edge reads as a rule, and a stray checkbox breaks it. Keeping the
+         content out of column 0 also keeps a spanning child away from the
+         shared-size column, which spares us the question of how the two interact. -->
+    <Style Selector="ctl|SettingRow.Compact:no-label /template/ ContentPresenter#PART_Content">
+        <Setter Property="Grid.Column" Value="1" />
+        <Setter Property="Grid.ColumnSpan" Value="2" />
+    </Style>
+
+    <Style Selector="ctl|SettingRow.Compact > ComboBox">
+        <Setter Property="HorizontalAlignment" Value="Stretch" />
+    </Style>
+    <Style Selector="ctl|SettingRow.Compact > NumericUpDown">
+        <Setter Property="HorizontalAlignment" Value="Stretch" />
+    </Style>
+    <Style Selector="ctl|SettingRow.Compact > CheckBox">
+        <Setter Property="HorizontalAlignment" Value="Left" />
+    </Style>
+    <Style Selector="ctl|SettingRow.Compact > Button">
+        <Setter Property="HorizontalAlignment" Value="Stretch" />
+        <Setter Property="MinWidth" Value="0" />
+    </Style>
+    <Style Selector="ctl|SettingRow.Compact > StackPanel">
+        <Setter Property="HorizontalAlignment" Value="Stretch" />
+    </Style>
+    <Style Selector="ctl|SettingRow.Compact > Grid">
+        <Setter Property="HorizontalAlignment" Value="Stretch" />
+    </Style>
+
+    <Style Selector="ctl|SettingsSection.Compact">
+        <Setter Property="Margin" Value="0,0,0,9" />
+    </Style>
+    <Style Selector="ctl|SettingsSection.Compact /template/ ContentPresenter#PART_Content">
+        <Setter Property="Margin" Value="0,6,0,0" />
+    </Style>
+    <Style Selector="ctl|SettingsSection.Compact /template/ Grid#PART_Rule">
+        <Setter Property="Margin" Value="0,4,0,0" />
+    </Style>
+</Styles>

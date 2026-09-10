@@ -1,15 +1,6 @@
 <Styles xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
-    <!--
-      Carbon theme for StarterNG.
-
-      Recreates the dark "Carbon" VCL look of the original Delphi Starter without
-      SukiUI: a flat charcoal palette, square bordered group panels, top tab-style
-      navigation and a full-width START button. Plain Avalonia controls only, so
-      every view's code-behind keeps working unchanged.
-    -->
     <Styles.Resources>
-        <!-- ── Palette ──────────────────────────────────────────────────── -->
         <Color x:Key="CarbonAppBgColor">#15171B</Color>
         <Color x:Key="CarbonPanelBgColor">#1E2327</Color>
         <Color x:Key="CarbonHeaderBgColor">#2A3036</Color>
@@ -20,19 +11,19 @@
         <SolidColorBrush x:Key="CarbonPanelBg" Color="#1E2327" />
         <SolidColorBrush x:Key="CarbonHeaderBg" Color="#2A3036" />
         <SolidColorBrush x:Key="CarbonHoverBg" Color="#2A3036" />
+        <!-- Control metrics live here, not in the views. -->
+        <x:Double x:Key="CarbonControlHeight">24</x:Double>
+        <x:Double x:Key="CarbonCheckSize">16</x:Double>
+
         <SolidColorBrush x:Key="CarbonInputBg" Color="#262C31" />
         <SolidColorBrush x:Key="CarbonBorderLight" Color="#3A424A" />
         <SolidColorBrush x:Key="CarbonBorderDark" Color="#0E0F12" />
         <SolidColorBrush x:Key="CarbonFg" Color="#E6E8EA" />
         <SolidColorBrush x:Key="CarbonFgDim" Color="#9098A0" />
-        <!-- Accents in MaSzyna green: a readable dark green for fills, bright green
-             for hover/highlights. -->
         <SolidColorBrush x:Key="CarbonAccent" Color="#177f00" />
         <SolidColorBrush x:Key="CarbonAccentHover" Color="#41c400" />
         <SolidColorBrush x:Key="CarbonAccentBright" Color="#41c400" />
 
-        <!-- ── GroupBox (replaces SukiUI GroupBox) ──────────────────────────
-             Use on a HeaderedContentControl via Theme="{StaticResource GroupBox}". -->
         <ControlTheme x:Key="GroupBox" TargetType="HeaderedContentControl">
             <Setter Property="Foreground" Value="{StaticResource CarbonFg}" />
             <Setter Property="Template">
@@ -45,26 +36,183 @@
                                     Background="{StaticResource CarbonHeaderBg}"
                                     BorderBrush="{StaticResource CarbonBorderLight}"
                                     BorderThickness="0,0,0,1"
-                                    Padding="8,5">
-                                <TextBlock Text="{TemplateBinding Header}"
-                                           FontWeight="SemiBold"
-                                           Foreground="{StaticResource CarbonFg}" />
+                                    Padding="8,3">
+                                <DockPanel LastChildFill="True">
+                                    <ContentPresenter DockPanel.Dock="Right"
+                                                      Content="{TemplateBinding Tag}"
+                                                      VerticalAlignment="Center" />
+                                    <TextBlock Text="{TemplateBinding Header}"
+                                               FontWeight="SemiBold"
+                                               VerticalAlignment="Center"
+                                               Foreground="{StaticResource CarbonFg}" />
+                                </DockPanel>
                             </Border>
                             <ContentPresenter Content="{TemplateBinding Content}"
-                                              Margin="8" />
+                                              Margin="6" />
                         </DockPanel>
                     </Border>
                 </ControlTemplate>
             </Setter>
         </ControlTheme>
 
-        <!-- ── Top navigation tab (RadioButton) ─────────────────────────────
-             Use via Theme="{StaticResource NavTab}". Single GroupName = one active. -->
+        <ControlTheme x:Key="{x:Type CheckBox}" TargetType="CheckBox">
+            <Setter Property="Foreground" Value="{StaticResource CarbonFg}" />
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="MinHeight" Value="0" />
+            <Setter Property="Padding" Value="8,0,0,0" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Template">
+                <ControlTemplate>
+                    <Grid ColumnDefinitions="Auto,*" Background="Transparent">
+                        <Border Name="box"
+                                Width="{StaticResource CarbonCheckSize}"
+                                Height="{StaticResource CarbonCheckSize}"
+                                VerticalAlignment="Center"
+                                Background="{StaticResource CarbonInputBg}"
+                                BorderBrush="{StaticResource CarbonBorderLight}"
+                                BorderThickness="1" CornerRadius="2">
+                            <Path Name="glyph" Margin="3" Stretch="Uniform"
+                                  Data="M 0,4 L 3,7 L 9,0"
+                                  Stroke="White" StrokeThickness="2"
+                                  StrokeLineCap="Round" StrokeJoin="Round"
+                                  IsVisible="False" />
+                        </Border>
+                        <ContentPresenter Name="PART_ContentPresenter" Grid.Column="1"
+                                          Margin="{TemplateBinding Padding}"
+                                          Content="{TemplateBinding Content}"
+                                          ContentTemplate="{TemplateBinding ContentTemplate}"
+                                          VerticalAlignment="Center" />
+                    </Grid>
+                </ControlTemplate>
+            </Setter>
+
+            <Style Selector="^:pointerover /template/ Border#box">
+                <Setter Property="BorderBrush" Value="{StaticResource CarbonAccentHover}" />
+            </Style>
+            <Style Selector="^:checked /template/ Border#box">
+                <Setter Property="Background" Value="{StaticResource CarbonAccent}" />
+                <Setter Property="BorderBrush" Value="{StaticResource CarbonAccent}" />
+            </Style>
+            <Style Selector="^:checked /template/ Path#glyph">
+                <Setter Property="IsVisible" Value="True" />
+            </Style>
+            <Style Selector="^:indeterminate /template/ Border#box">
+                <Setter Property="Background" Value="{StaticResource CarbonAccent}" />
+                <Setter Property="BorderBrush" Value="{StaticResource CarbonAccent}" />
+            </Style>
+            <Style Selector="^:disabled">
+                <Setter Property="Opacity" Value="0.45" />
+            </Style>
+        </ControlTheme>
+
+        <ControlTheme x:Key="SpinnerButton" TargetType="RepeatButton">
+            <Setter Property="Width" Value="20" />
+            <Setter Property="MinWidth" Value="0" />
+            <Setter Property="MinHeight" Value="0" />
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="HorizontalContentAlignment" Value="Center" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+            <Setter Property="Template">
+                <ControlTemplate>
+                    <Border Name="root" Background="Transparent">
+                        <ContentPresenter Content="{TemplateBinding Content}"
+                                          HorizontalAlignment="Center"
+                                          VerticalAlignment="Center" />
+                    </Border>
+                </ControlTemplate>
+            </Setter>
+            <Style Selector="^:pointerover /template/ Border#root">
+                <Setter Property="Background" Value="{StaticResource CarbonBorderLight}" />
+            </Style>
+        </ControlTheme>
+
+        <!-- The spinner frame, so the field and its two buttons read as one control
+             the same shape and height as a combo box. -->
+        <ControlTheme x:Key="{x:Type ButtonSpinner}" TargetType="ButtonSpinner">
+            <Setter Property="Background" Value="{StaticResource CarbonInputBg}" />
+            <Setter Property="BorderBrush" Value="{StaticResource CarbonBorderLight}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="2" />
+            <Setter Property="MinHeight" Value="{StaticResource CarbonControlHeight}" />
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="Template">
+                <ControlTemplate>
+                    <Border Background="{TemplateBinding Background}"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}"
+                            CornerRadius="{TemplateBinding CornerRadius}"
+                            MinHeight="{TemplateBinding MinHeight}">
+                        <Grid ColumnDefinitions="*,Auto,Auto">
+                            <ContentPresenter Name="PART_ContentPresenter" Grid.Column="0"
+                                              Content="{TemplateBinding Content}"
+                                              VerticalContentAlignment="Center"
+                                              HorizontalContentAlignment="Stretch" />
+                            <RepeatButton Name="PART_IncreaseButton" Grid.Column="1"
+                                          Theme="{StaticResource SpinnerButton}"
+                                          IsVisible="{TemplateBinding ShowButtonSpinner}">
+                                <Path Data="M 0,4 L 4,0 L 8,4" Stroke="{StaticResource CarbonFgDim}"
+                                      StrokeThickness="1.4" />
+                            </RepeatButton>
+                            <RepeatButton Name="PART_DecreaseButton" Grid.Column="2"
+                                          Theme="{StaticResource SpinnerButton}"
+                                          IsVisible="{TemplateBinding ShowButtonSpinner}">
+                                <Path Data="M 0,0 L 4,4 L 8,0" Stroke="{StaticResource CarbonFgDim}"
+                                      StrokeThickness="1.4" />
+                            </RepeatButton>
+                        </Grid>
+                    </Border>
+                </ControlTemplate>
+            </Setter>
+        </ControlTheme>
+
+        <ControlTheme x:Key="{x:Type NumericUpDown}" TargetType="NumericUpDown">
+            <Setter Property="MinHeight" Value="0" />
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+            <Setter Property="Template">
+                <ControlTemplate>
+                    <DataValidationErrors>
+                        <!-- The spinner draws the frame, the text box sits inside it
+                             borderless - same shape as a combo box. -->
+                        <ButtonSpinner Name="PART_Spinner"
+                                       MinHeight="{StaticResource CarbonControlHeight}"
+                                       Padding="0"
+                                       BorderThickness="1"
+                                       BorderBrush="{StaticResource CarbonBorderLight}"
+                                       Background="{StaticResource CarbonInputBg}"
+                                       CornerRadius="2"
+                                       HorizontalAlignment="Stretch"
+                                       HorizontalContentAlignment="Stretch"
+                                       VerticalContentAlignment="Center"
+                                       AllowSpin="{TemplateBinding AllowSpin}"
+                                       ShowButtonSpinner="{TemplateBinding ShowButtonSpinner}"
+                                       ButtonSpinnerLocation="{TemplateBinding ButtonSpinnerLocation}">
+                            <TextBox Name="PART_TextBox"
+                                     MinHeight="0"
+                                     Padding="6,0"
+                                     BorderThickness="0"
+                                     Background="Transparent"
+                                     HorizontalAlignment="Stretch"
+                                     VerticalContentAlignment="Center"
+                                     Text="{TemplateBinding Text, Mode=TwoWay}"
+                                     Watermark="{TemplateBinding Watermark}"
+                                     IsReadOnly="{TemplateBinding IsReadOnly}"
+                                     AcceptsReturn="False"
+                                     TextWrapping="NoWrap" />
+                        </ButtonSpinner>
+                    </DataValidationErrors>
+                </ControlTemplate>
+            </Setter>
+        </ControlTheme>
+
         <ControlTheme x:Key="NavTab" TargetType="RadioButton">
             <Setter Property="Foreground" Value="{StaticResource CarbonFgDim}" />
             <Setter Property="FontWeight" Value="SemiBold" />
             <Setter Property="FontSize" Value="14" />
             <Setter Property="MinWidth" Value="150" />
+            <Setter Property="MinHeight" Value="44" />
             <Setter Property="Cursor" Value="Hand" />
             <Setter Property="Template">
                 <ControlTemplate>
@@ -87,16 +235,104 @@
                 <Setter Property="Foreground" Value="{StaticResource CarbonFg}" />
             </Style>
         </ControlTheme>
+        <ControlTheme x:Key="{x:Type TabItem}" TargetType="TabItem">
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="MinHeight" Value="22" />
+            <Setter Property="Padding" Value="14,2" />
+            <Setter Property="Margin" Value="0" />
+            <Setter Property="Foreground" Value="{StaticResource CarbonFgDim}" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+            <Setter Property="Template">
+                <ControlTemplate>
+                    <Border Name="tab"
+                            Background="{StaticResource CarbonAppBg}"
+                            BorderBrush="{StaticResource CarbonBorderLight}"
+                            BorderThickness="0,0,1,0">
+                        <Border Name="root" Background="Transparent"
+                                BorderBrush="Transparent" BorderThickness="0,2,0,0"
+                                Padding="{TemplateBinding Padding}">
+                            <ContentPresenter Name="PART_ContentPresenter"
+                                              Content="{TemplateBinding Header}"
+                                              ContentTemplate="{TemplateBinding HeaderTemplate}"
+                                              HorizontalAlignment="Center"
+                                              VerticalAlignment="Center" />
+                        </Border>
+                    </Border>
+                </ControlTemplate>
+            </Setter>
+
+            <Style Selector="^:pointerover /template/ Border#root">
+                <Setter Property="Background" Value="{StaticResource CarbonHoverBg}" />
+            </Style>
+
+            <Style Selector="^:selected /template/ Border#tab">
+                <Setter Property="Background" Value="{StaticResource CarbonPanelBg}" />
+                <Setter Property="BorderThickness" Value="0" />
+            </Style>
+            <Style Selector="^:selected /template/ Border#root">
+                <Setter Property="Background" Value="{StaticResource CarbonPanelBg}" />
+                <Setter Property="BorderBrush" Value="{StaticResource CarbonAccentBright}" />
+            </Style>
+            <Style Selector="^:selected">
+                <Setter Property="Foreground" Value="{StaticResource CarbonFg}" />
+                <Setter Property="FontWeight" Value="SemiBold" />
+            </Style>
+        </ControlTheme>
     </Styles.Resources>
 
-    <!-- ── Window / page surfaces ─────────────────────────────────────────── -->
     <Style Selector="Window">
         <Setter Property="Background" Value="{StaticResource CarbonAppBg}" />
         <Setter Property="Foreground" Value="{StaticResource CarbonFg}" />
         <Setter Property="FontFamily" Value="Tahoma, Segoe UI, Inter" />
+        <Setter Property="FontSize" Value="12" />
     </Style>
 
-    <!-- ── START button (full-width, bold) ────────────────────────────────── -->
+    <Style Selector="TabControl">
+        <Setter Property="Background" Value="{StaticResource CarbonPanelBg}" />
+        <Setter Property="Padding" Value="0" />
+    </Style>
+
+    <Style Selector="ComboBox">
+        <Setter Property="MinHeight" Value="{StaticResource CarbonControlHeight}" />
+        <Setter Property="FontSize" Value="12" />
+        <Setter Property="Padding" Value="8,1" />
+        <Setter Property="CornerRadius" Value="2" />
+    </Style>
+    <Style Selector="TextBox">
+        <Setter Property="MinHeight" Value="{StaticResource CarbonControlHeight}" />
+        <Setter Property="FontSize" Value="12" />
+        <Setter Property="Padding" Value="6,1" />
+        <Setter Property="CornerRadius" Value="2" />
+    </Style>
+    <!-- Fluent gives the spinner and the check controls a 32 px floor of their own,
+         inside the template, so setting MinHeight on the control alone does nothing. -->
+    <!-- Height comes from the templated TextBox, like every other input. -->
+    <Style Selector="Button">
+        <Setter Property="MinHeight" Value="25" />
+        <Setter Property="FontSize" Value="12" />
+        <Setter Property="Padding" Value="10,2" />
+        <Setter Property="CornerRadius" Value="2" />
+    </Style>
+    <!-- Checklist rows only sit tighter; the size comes from the theme above. -->
+    <Style Selector="CheckBox.Checklist">
+        <Setter Property="Padding" Value="6,0,0,0" />
+        <Setter Property="Margin" Value="0,1" />
+    </Style>
+    <Style Selector="CheckBox /template/ ContentPresenter">
+        <Setter Property="TextBlock.TextWrapping" Value="Wrap" />
+    </Style>
+    <Style Selector="RadioButton">
+        <Setter Property="MinHeight" Value="0" />
+        <Setter Property="FontSize" Value="12" />
+    </Style>
+    <Style Selector="RadioButton /template/ Grid:not(#RootGrid)">
+        <Setter Property="Height" Value="20" />
+    </Style>
+    <Style Selector="Label">
+        <Setter Property="FontSize" Value="12" />
+        <Setter Property="Padding" Value="0,2" />
+    </Style>
+
     <Style Selector="Button.Start">
         <Setter Property="Background" Value="{StaticResource CarbonAccent}" />
         <Setter Property="Foreground" Value="White" />
@@ -118,7 +354,6 @@
         <Setter Property="Background" Value="{StaticResource CarbonAccent}" />
     </Style>
 
-    <!-- ── Accent button (Save etc.) ──────────────────────────────────────── -->
     <Style Selector="Button.Accent /template/ ContentPresenter#PART_ContentPresenter">
         <Setter Property="Background" Value="{StaticResource CarbonAccent}" />
         <Setter Property="TextBlock.Foreground" Value="White" />
@@ -128,7 +363,6 @@
         <Setter Property="TextBlock.Foreground" Value="White" />
     </Style>
 
-    <!-- ── Flat button (toolbar/secondary) ────────────────────────────────── -->
     <Style Selector="Button.Flat">
         <Setter Property="Background" Value="{StaticResource CarbonInputBg}" />
         <Setter Property="BorderBrush" Value="{StaticResource CarbonBorderLight}" />
@@ -136,11 +370,10 @@
         <Setter Property="CornerRadius" Value="2" />
     </Style>
 
-    <!-- ── Basic button (borderless icon buttons) ─────────────────────────── -->
     <Style Selector="Button.Basic">
         <Setter Property="Background" Value="Transparent" />
         <Setter Property="BorderThickness" Value="0" />
-        <Setter Property="Padding" Value="6" />
+        <Setter Property="Padding" Value="4" />
         <Setter Property="Foreground" Value="{StaticResource CarbonFgDim}" />
     </Style>
     <Style Selector="Button.Basic /template/ ContentPresenter#PART_ContentPresenter">
@@ -151,7 +384,63 @@
         <Setter Property="TextBlock.Foreground" Value="{StaticResource CarbonFg}" />
     </Style>
 
-    <!-- ── Selection highlight in MaSzyna green (not the OS accent) ────────── -->
+    <!-- Secondary button: says "this is here, but it is not the main move". Used for
+         actions whose scope is wider than the thing you have selected. The state rules
+         have to target the presenter, not the button - Fluent paints PART_ContentPresenter
+         on hover/press/disable and would otherwise fill an outline button solid. That is
+         why Accent and Basic are written this way too, while Flat gets away with setting
+         Background on the control itself. -->
+    <Style Selector="Button.Outline">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderBrush" Value="{StaticResource CarbonBorderLight}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="CornerRadius" Value="2" />
+        <Setter Property="Foreground" Value="{StaticResource CarbonFgDim}" />
+    </Style>
+    <Style Selector="Button.Outline /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="Transparent" />
+    </Style>
+    <Style Selector="Button.Outline:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="{StaticResource CarbonHoverBg}" />
+        <Setter Property="TextBlock.Foreground" Value="{StaticResource CarbonFg}" />
+    </Style>
+    <Style Selector="Button.Outline:pressed /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="{StaticResource CarbonInputBg}" />
+    </Style>
+    <Style Selector="Button.Outline:disabled /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="Transparent" />
+    </Style>
+
+    <Style Selector="StackPanel.Field">
+        <Setter Property="Spacing" Value="2" />
+    </Style>
+    <Style Selector="TextBlock.FieldLabel">
+        <Setter Property="Foreground" Value="{StaticResource CarbonFgDim}" />
+        <Setter Property="FontSize" Value="12" />
+        <Setter Property="TextWrapping" Value="Wrap" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+    </Style>
+    <!-- Accent is reserved for interactive state (checked box, slider fill,
+         selected category, primary button). Read-outs are plain foreground. -->
+    <Style Selector="TextBlock.FieldValue">
+        <Setter Property="Foreground" Value="{StaticResource CarbonFg}" />
+        <Setter Property="FontSize" Value="12" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+        <Setter Property="TextAlignment" Value="Right" />
+        <Setter Property="Margin" Value="8,0,0,0" />
+    </Style>
+    <Style Selector="TextBlock.FieldHint">
+        <Setter Property="Foreground" Value="{StaticResource CarbonFgDim}" />
+        <Setter Property="FontSize" Value="12" />
+        <Setter Property="FontStyle" Value="Italic" />
+    </Style>
+    <Style Selector="Separator">
+        <Setter Property="Background" Value="{StaticResource CarbonBorderLight}" />
+        <Setter Property="Height" Value="1" />
+        <Setter Property="Margin" Value="0,2" />
+    </Style>
+
     <Style Selector="ListBoxItem:selected /template/ ContentPresenter#PART_ContentPresenter">
         <Setter Property="Background" Value="{StaticResource CarbonAccent}" />
     </Style>
@@ -171,36 +460,55 @@
         <Setter Property="Background" Value="{StaticResource CarbonAccent}" />
     </Style>
 
-    <!-- ── Tabs: smaller headers than Fluent's default, but tall enough that the
-         green selection pipe at the bottom doesn't touch the label. ─────────── -->
-    <Style Selector="TabItem">
-        <Setter Property="FontSize" Value="14" />
-        <Setter Property="MinHeight" Value="38" />
-        <Setter Property="Padding" Value="12,4,12,8" />
-        <Setter Property="VerticalContentAlignment" Value="Center" />
-    </Style>
-
-    <!-- ── Compact list (tight rows that fill the available space) ─────────── -->
-    <!-- Transparent surface so the list blends into the GroupBox panel instead
-         of showing the Fluent theme's default light-grey ListBox background. -->
     <Style Selector="ListBox.Compact">
         <Setter Property="Padding" Value="0" />
         <Setter Property="Background" Value="Transparent" />
         <Setter Property="BorderThickness" Value="0" />
     </Style>
     <Style Selector="ListBox.Compact ListBoxItem">
-        <Setter Property="Padding" Value="6,2" />
-        <Setter Property="MinHeight" Value="0" />
+        <Setter Property="Padding" Value="4,0" />
+        <Setter Property="MinHeight" Value="17" />
         <Setter Property="FontSize" Value="12" />
     </Style>
 
-    <!-- ── Compact tree (tight scenery rows) ──────────────────────────────── -->
     <Style Selector="TreeView.Compact TreeViewItem">
-        <Setter Property="MinHeight" Value="22" />
+        <Setter Property="MinHeight" Value="19" />
         <Setter Property="FontSize" Value="12" />
     </Style>
     <Style Selector="TreeView.Compact TreeViewItem /template/ Border#PART_LayoutRoot">
-        <Setter Property="MinHeight" Value="22" />
-        <Setter Property="Padding" Value="4,1" />
+        <Setter Property="MinHeight" Value="19" />
+        <Setter Property="Padding" Value="3,0" />
+    </Style>
+
+    <!-- Keyboard focus. The default theme leaves the ring almost invisible on this
+         palette, so everything that can take focus gets the same bright outline; the
+         consist cards paint it as a box shadow because their border already carries
+         the selection colour. -->
+    <Style Selector=":is(Button):focus-visible /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="BorderBrush" Value="{StaticResource CarbonAccentBright}" />
+        <Setter Property="BorderThickness" Value="1" />
+    </Style>
+    <Style Selector="CheckBox:focus-visible /template/ Border#NormalRectangle">
+        <Setter Property="BorderBrush" Value="{StaticResource CarbonAccentBright}" />
+    </Style>
+    <Style Selector="TextBox:focus /template/ Border#PART_BorderElement">
+        <Setter Property="BorderBrush" Value="{StaticResource CarbonAccentBright}" />
+    </Style>
+    <Style Selector="ComboBox:focus-visible /template/ Border#Background">
+        <Setter Property="BorderBrush" Value="{StaticResource CarbonAccentBright}" />
+    </Style>
+    <Style Selector="TabItem:focus-visible">
+        <Setter Property="Foreground" Value="{StaticResource CarbonAccentBright}" />
+    </Style>
+    <Style Selector="ListBoxItem:focus-visible /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="BorderBrush" Value="{StaticResource CarbonAccentBright}" />
+        <Setter Property="BorderThickness" Value="1" />
+    </Style>
+    <Style Selector="TreeViewItem:focus-visible /template/ Border#PART_LayoutRoot">
+        <Setter Property="BorderBrush" Value="{StaticResource CarbonAccentBright}" />
+        <Setter Property="BorderThickness" Value="1" />
+    </Style>
+    <Style Selector="Border.ConsistCard:focus">
+        <Setter Property="BoxShadow" Value="0 0 0 2 #41c400" />
     </Style>
 </Styles>

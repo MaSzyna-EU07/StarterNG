@@ -3,59 +3,86 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Text;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Layout;
+using Avalonia.LogicalTree;
 using Avalonia.Markup.Xaml.Styling;
 using Avalonia.Media;
 using StarterNG.Classes;
-// Disambiguate from Avalonia.Input.KeyBinding (a command-input binding) imported above.
+using StarterNG.Controls;
+using StarterNG.Infrastructure;
+using StarterNG.Services;
+
 using KeyBinding = StarterNG.Classes.KeyBinding;
+using StarterNG.Domain.Settings;
+using StarterNG.Application;
 
 namespace StarterNG.Views;
 
-public partial class Settings : UserControl
+public partial class Settings : UserControl, ISettingsCapture
 {
     private bool _loading;
+
+    /// <summary>
+    /// Raised once a saved (or applied) setting changes something the other tabs
+    /// have already drawn, so they can redraw instead of waiting for a restart.
+    /// </summary>
+    public event Action? ThumbnailSizeChanged;
+
+    /// <summary>Thumbnail size the other tabs were last drawn at.</summary>
+    private bool _drawnThumbs = AppServices.Current.Settings.LargeThumbnails;
 
     public Settings()
     {
         InitializeComponent();
 
-        TrainPhysicsThreadsSlider.Maximum = Environment.ProcessorCount;
+        SettingsPathText.Text = AppServices.Current.SettingsStore.LoadedFrom;
+        ToolTip.SetTip(SettingsPathText, AppServices.Current.SettingsStore.LoadedFrom);
 
         this.AttachedToVisualTree += (_, _) =>
         {
             TextureResolutionSlider_OnValueChanged(null, null);
             CabTextureResolutionSlider_OnValueChanged(null, null);
             shaderResolutionSlider_OnValueChanged(null, null);
+            UpdateQualityCaptions();
         };
 
-        ChangeLanguageCb.SelectedIndex = App.Loc.CurrentLanguage switch
-        {
-            "Polski" => 0,
-            _ => 1
-        };
+        FillLanguageCombo();
+
+        App.Loc.LanguageChanged += SelectActiveLanguage;
+        App.Loc.LanguageChanged += UpdateQualityCaptions;
+        App.Loc.LanguageChanged += UpdateSaveState;
+        App.Loc.LanguageChanged += () => shaderResolutionSlider_OnValueChanged(null, null);
 
         FeedbackCb.SelectionChanged += FeedbackCb_OnSelectionChanged;
         FpsLimitEnableCb.IsCheckedChanged += (_, _) => FpsLimitSlider.IsEnabled = IsChecked(FpsLimitEnableCb);
 
-        // The settings instance pulls live values from here whenever the app
-        // closes or the game is launched.
-        StarterNG.Classes.Settings.Instance.CaptureFromUi = ReadFromUi;
+        AppServices.Current.SettingsStore.RegisterCapture(this);
 
         PopulateProfileCombo();
         ApplyToUi();
 
-        // Controls tab: load the key bindings and build the editor + on-screen
-        // keyboard. The tunnelling handler lets us capture a key press before the
-        // focused button consumes it (Space/Enter would otherwise click it).
         KeyboardConfig.Instance.Load();
         BuildControlsTab();
         AddHandler(KeyDownEvent, OnControlsKeyDown, RoutingStrategies.Tunnel);
+
+        HookDirtyTracking();
+        ApplyFilter();
+        UpdateSaveState();
+    }
+
+    private static int IndexOfTag(ComboBox cb, string? tag)
+    {
+        for (int i = 0; i < cb.Items.Count; i++)
+            if (cb.Items[i] is ComboBoxItem item &&
+                string.Equals(item.Tag as string, tag, StringComparison.OrdinalIgnoreCase))
+                return i;
+        return -1;
     }
 
     private static int FindComboIndexByContent(ComboBox cb, string content)
@@ -86,8 +113,9 @@ public partial class Settings : UserControl
             return;
         string path = SettingsProfileStore.PathFor(name);
         if (!File.Exists(path)) return;
-        StarterNG.Classes.Settings.Instance.LoadFrom(path);
+        AppServices.Current.SettingsStore.LoadFrom(path);
         ApplyToUi();
+        RedrawThumbnailsIfNeeded();
     }
 
     private void ProfileSaveAsButton_OnClick(object? sender, RoutedEventArgs e)
@@ -103,8 +131,8 @@ public partial class Settings : UserControl
         void Commit()
         {
             if (string.IsNullOrWhiteSpace(nameBox.Text)) return;
-            ReadFromUi();
-            StarterNG.Classes.Settings.Instance.SaveTo(SettingsProfileStore.PathFor(nameBox.Text));
+            CaptureInto(AppServices.Current.Settings);
+            AppServices.Current.SettingsStore.SaveTo(SettingsProfileStore.PathFor(nameBox.Text));
             PopulateProfileCombo();
             int idx = FindComboIndexByContent(ProfileCb, nameBox.Text.Trim());
             if (idx >= 0) ProfileCb.SelectedIndex = idx;
@@ -121,7 +149,7 @@ public partial class Settings : UserControl
         string? current = (SelectExeCb.SelectedItem as ComboBoxItem)?.Content?.ToString();
         SelectExeCb.Items.Clear();
         SelectExeCb.Items.Add(new ComboBoxItem { Content = App.Loc["SelectEXEAuto"] });
-        foreach (string exe in StarterNG.Classes.Settings.ListCandidateExecutables())
+        foreach (string exe in AppServices.Current.Executables.ListCandidates())
             SelectExeCb.Items.Add(new ComboBoxItem { Content = exe });
         if (current is not null)
         {
@@ -130,18 +158,18 @@ public partial class Settings : UserControl
         }
     }
 
-    // ── Settings instance → controls ──────────────────────────────────────
+    public void ReloadFromSettings() => ApplyToUi();
+
     private void ApplyToUi()
     {
-        var s = StarterNG.Classes.Settings.Instance;
+        var s = AppServices.Current.Settings;
         _loading = true;
         try
         {
             PopulateProfileCombo();
             PopulateExeCombo();
 
-            // General
-            ChangeLanguageCb.SelectedIndex = s.Language == "Polski" ? 0 : 1;
+            SelectActiveLanguage();
             FullscreenCb.IsChecked = s.Fullscreen;
             PauseInactiveCb.IsChecked = s.PauseWhenInactive;
             PauseStartCb.IsChecked = s.PauseOnStart;
@@ -149,31 +177,29 @@ public partial class Settings : UserControl
             MouseHorInvertCb.IsChecked = s.InvertMouseHorizontal;
             MouseVertInvertCb.IsChecked = s.InvertMouseVertical;
 
-            // Communication
             GamepadIgnoreCb.IsChecked = s.IgnoreGamepad;
             FeedbackCb.SelectedIndex = s.FeedbackMode;
             FeedbackPortNud.Value = (decimal)s.FeedbackPort;
-            UartEnableCb.IsChecked = s.UartEnabled;
-            UartPortTb.Text = s.UartPort;
-            UartTuneTb.Text = s.UartTune;
-            UartDebugCb.IsChecked = s.UartDebug;
-            UartMainCb.IsChecked = s.UartMain;
-            UartScndCb.IsChecked = s.UartScnd;
-            UartTrainCb.IsChecked = s.UartTrain;
-            UartLocalCb.IsChecked = s.UartLocal;
-            UartRadioVolumeCb.IsChecked = s.UartRadioVolume;
-            UartRadioChannelCb.IsChecked = s.UartRadioChannel;
             UpdateFeedbackDetailVisibility();
 
-            // Other
-            SelectExeCb.SelectedIndex = s.SelectExeAutomatically
-                ? 0
-                : Math.Max(0, FindComboIndexByContent(SelectExeCb, s.ExecutablePath));
+            if (s.SelectExeAutomatically)
+            {
+                SelectExeCb.SelectedIndex = 0;
+            }
+            else
+            {
+                int exeIdx = FindComboIndexByContent(SelectExeCb, s.ExecutablePath);
+                if (exeIdx < 0)
+                {
+                    SelectExeCb.Items.Add(new ComboBoxItem { Content = s.ExecutablePath });
+                    exeIdx = SelectExeCb.Items.Count - 1;
+                }
+                SelectExeCb.SelectedIndex = exeIdx;
+            }
             DebugModeCb.IsChecked = s.DebugMode;
             VirtualShuntingCb.IsChecked = s.VirtualShunting;
             LogMissingVehicleFilesCb.IsChecked = s.LogMissingVehicleFiles;
 
-            // Graphics
             RenderEngineCb.SelectedIndex = s.RenderEngine;
             SelectResolution(s.Width, s.Height);
             bufferScale.Value = s.BufferScalePercent;
@@ -208,7 +234,6 @@ public partial class Settings : UserControl
             FullscreenWindowedCb.IsChecked = s.FullscreenWindowed;
             RenderAngleVulkanCb.IsChecked = s.RenderAngleVulkan;
 
-            // Physics
             TrackCurvesSlider.Value = s.SplineFidelity;
             PhysicsAccuracyCb.IsChecked = s.FullPhysics;
             PantographBreakCb.IsChecked = s.EnableTraction;
@@ -222,45 +247,39 @@ public partial class Settings : UserControl
             BrakeStepSlider.Value = s.BrakeStep;
             BrakeSpeedSlider.Value = s.BrakeSpeed;
 
-            // Sound
             EnableSoundsCb.IsChecked = s.SoundEnabled;
             VolumeSlider.Value = s.Volume;
             RadioVolumeSlider.Value = s.RadioVolume;
             VehiclesVolumeSlider.Value = s.VehiclesVolume;
             PositionalVolumeSlider.Value = s.PositionalVolume;
             AmbientVolumeSlider.Value = s.AmbientVolume;
+            SkipPipelineCb.IsChecked = s.SkipPipeline;
+            DebugLogVisibleCb.IsChecked = s.DebugLogVisible;
+            PyScreenPriorityCb.SelectedIndex = Math.Max(0, IndexOfTag(PyScreenPriorityCb, s.PythonScreenUpdateRate.ToString(CultureInfo.InvariantCulture)));
 
-            // Advanced
-            CompressTexturesCb.IsChecked = s.CompressTextures;
-            ScaleSpecularsCb.IsChecked = s.ScaleSpeculars;
-            UseGLESCb.IsChecked = s.UseGLES;
-            ShaderGammaCb.IsChecked = s.ShaderGamma;
-            ScreenMipmapsCb.IsChecked = s.ScreenMipmaps;
-            ExtendedModelConversionCb.IsChecked = s.ExtendedModelConversion;
-            GfxResourceMoveCb.IsChecked = s.GfxResourceMove;
-            GfxResourceSweepCb.IsChecked = s.GfxResourceSweep;
-            TrainPhysicsThreadsSlider.Value = s.TrainPhysicsThreads;
-            IgnoreIrrelevantTrainsCb.IsChecked = s.IgnoreIrrelevantTrains;
-
-            // Starter
             AutoCloseStarterCb.IsChecked = s.AutoCloseStarter;
             LargeThumbnailsCb.IsChecked = s.LargeThumbnails;
             AutoExpandTreeCb.IsChecked = s.AutoExpandSceneryTree;
-            BatteryDefaultCb.SelectedIndex = (int)s.BatteryDefault;
+            ReadyOverrideCb.SelectedIndex = (int)s.ReadyOverride;
         }
         finally
         {
             _loading = false;
         }
+
+        UpdateQualityCaptions();
     }
 
-    // ── controls → Settings instance ──────────────────────────────────────
-    private void ReadFromUi()
+    /// <summary>
+    /// Writes the pending edits on this screen into the settings, so a save from
+    /// anywhere in the application picks them up.
+    /// </summary>
+    public void CaptureInto(SimulatorSettings s)
     {
-        var s = StarterNG.Classes.Settings.Instance;
 
-        // General
-        s.Language = ChangeLanguageCb.SelectedIndex == 0 ? "Polski" : "English";
+        var language = ChangeLanguageCb.SelectedItem as ComboBoxItem;
+        s.Language = language?.Content?.ToString() ?? App.Loc.CurrentLanguage;
+        s.LanguageCode = language?.Tag as string ?? App.Loc.CurrentLangCode;
         s.Fullscreen = IsChecked(FullscreenCb);
         s.PauseWhenInactive = IsChecked(PauseInactiveCb);
         s.PauseOnStart = IsChecked(PauseStartCb);
@@ -268,22 +287,10 @@ public partial class Settings : UserControl
         s.InvertMouseHorizontal = IsChecked(MouseHorInvertCb);
         s.InvertMouseVertical = IsChecked(MouseVertInvertCb);
 
-        // Communication
         s.IgnoreGamepad = IsChecked(GamepadIgnoreCb);
         s.FeedbackMode = Math.Max(0, FeedbackCb.SelectedIndex);
         s.FeedbackPort = (int)(FeedbackPortNud.Value ?? 888);
-        s.UartEnabled = IsChecked(UartEnableCb);
-        s.UartPort = UartPortTb.Text ?? "";
-        s.UartTune = UartTuneTb.Text ?? "";
-        s.UartDebug = IsChecked(UartDebugCb);
-        s.UartMain = IsChecked(UartMainCb);
-        s.UartScnd = IsChecked(UartScndCb);
-        s.UartTrain = IsChecked(UartTrainCb);
-        s.UartLocal = IsChecked(UartLocalCb);
-        s.UartRadioVolume = IsChecked(UartRadioVolumeCb);
-        s.UartRadioChannel = IsChecked(UartRadioChannelCb);
 
-        // Other
         s.SelectExeAutomatically = SelectExeCb.SelectedIndex == 0;
         s.ExecutablePath = s.SelectExeAutomatically ? "eu07.exe"
             : (SelectExeCb.SelectedItem as ComboBoxItem)?.Content?.ToString() ?? "eu07.exe";
@@ -291,14 +298,13 @@ public partial class Settings : UserControl
         s.VirtualShunting = IsChecked(VirtualShuntingCb);
         s.LogMissingVehicleFiles = IsChecked(LogMissingVehicleFilesCb);
 
-        // Graphics
         s.RenderEngine = Math.Max(0, RenderEngineCb.SelectedIndex);
         ReadResolution(s);
         s.BufferScalePercent = (int)bufferScale.Value;
         s.MaxTextureSize = 1 << (int)textureResolutionSlider.Value;
         s.MaxCabTextureSize = 1 << (int)cabTextureResolutionSlider.Value;
-        s.TextureFiltering = StarterNG.Classes.Settings.AnisotropySteps[
-            Clamp((int)TexFilteringSlider.Value - 1, 0, StarterNG.Classes.Settings.AnisotropySteps.Length - 1)];
+        s.TextureFiltering = SimulatorSettings.AnisotropySteps[
+            Clamp((int)TexFilteringSlider.Value - 1, 0, SimulatorSettings.AnisotropySteps.Length - 1)];
         s.Multisampling = Clamp((int)MultisamplingSlider.Value - 1, 0, 3);
         s.DynamicLights = (int)DynamicLightsSlider.Value;
         s.DrawRangeFactor = RenderRangeSlider.Value;
@@ -326,7 +332,6 @@ public partial class Settings : UserControl
         s.FullscreenWindowed = IsChecked(FullscreenWindowedCb);
         s.RenderAngleVulkan = IsChecked(RenderAngleVulkanCb);
 
-        // Physics
         s.SplineFidelity = (int)TrackCurvesSlider.Value;
         s.FullPhysics = IsChecked(PhysicsAccuracyCb);
         s.EnableTraction = IsChecked(PantographBreakCb);
@@ -340,55 +345,63 @@ public partial class Settings : UserControl
         s.BrakeStep = BrakeStepSlider.Value;
         s.BrakeSpeed = BrakeSpeedSlider.Value;
 
-        // Sound
         s.SoundEnabled = IsChecked(EnableSoundsCb);
         s.Volume = (int)VolumeSlider.Value;
         s.RadioVolume = (int)RadioVolumeSlider.Value;
         s.VehiclesVolume = (int)VehiclesVolumeSlider.Value;
         s.PositionalVolume = (int)PositionalVolumeSlider.Value;
         s.AmbientVolume = (int)AmbientVolumeSlider.Value;
+        s.SkipPipeline = IsChecked(SkipPipelineCb);
+        s.DebugLogVisible = IsChecked(DebugLogVisibleCb);
+        s.PythonScreenUpdateRate = ParsePriorityTag((PyScreenPriorityCb.SelectedItem as ComboBoxItem)?.Tag);
 
-        // Advanced
-        s.CompressTextures = IsChecked(CompressTexturesCb);
-        s.ScaleSpeculars = IsChecked(ScaleSpecularsCb);
-        s.UseGLES = IsChecked(UseGLESCb);
-        s.ShaderGamma = IsChecked(ShaderGammaCb);
-        s.ScreenMipmaps = IsChecked(ScreenMipmapsCb);
-        s.ExtendedModelConversion = IsChecked(ExtendedModelConversionCb);
-        s.GfxResourceMove = IsChecked(GfxResourceMoveCb);
-        s.GfxResourceSweep = IsChecked(GfxResourceSweepCb);
-        s.TrainPhysicsThreads = (int)TrainPhysicsThreadsSlider.Value;
-        s.IgnoreIrrelevantTrains = IsChecked(IgnoreIrrelevantTrainsCb);
-
-        // Starter
         s.AutoCloseStarter = IsChecked(AutoCloseStarterCb);
         s.LargeThumbnails = IsChecked(LargeThumbnailsCb);
         s.AutoExpandSceneryTree = IsChecked(AutoExpandTreeCb);
-        s.BatteryDefault = (BatteryDefault)Math.Max(0, BatteryDefaultCb.SelectedIndex);
+        s.ReadyOverride = (ConsistReadyOverride)Math.Clamp(ReadyOverrideCb.SelectedIndex, 0, 2);
+    }
+
+    private void ComButton_OnClick(object? sender, RoutedEventArgs e)
+    {
+        if (TopLevel.GetTopLevel(this) is Window owner)
+            new UartWindow().ShowDialog(owner);
     }
 
     private void SaveButton_OnClick(object? sender, RoutedEventArgs e)
     {
-        ReadFromUi();
-        StarterNG.Classes.Settings.Instance.Save();
+        CaptureInto(AppServices.Current.Settings);
+        AppServices.Current.SettingsStore.Save();
         KeyboardConfig.Instance.Save();
+        RedrawThumbnailsIfNeeded();
+        _dirty = false;
+        UpdateSaveState();
         if (SaveStatus is not null)
             SaveStatus.Text = App.Loc["SettingsSaved"];
     }
 
+    private void RedrawThumbnailsIfNeeded()
+    {
+        bool large = AppServices.Current.Settings.LargeThumbnails;
+        if (large == _drawnThumbs)
+            return;
+
+        _drawnThumbs = large;
+        ThumbnailSizeChanged?.Invoke();
+    }
+
     private void ResetButton_OnClick(object? sender, RoutedEventArgs e)
     {
-        StarterNG.Classes.Settings.Instance.Load();
+        AppServices.Current.SettingsStore.Load();
         ApplyToUi();
+        RedrawThumbnailsIfNeeded();
         CancelCapture();
         KeyboardConfig.Instance.Load();
         RebuildBindingList();
         RebuildKeyboard();
-        if (SaveStatus is not null)
-            SaveStatus.Text = string.Empty;
+        _dirty = false;
+        UpdateSaveState();
     }
 
-    // ── resolution combo helpers ──────────────────────────────────────────
     private void SelectResolution(int width, int height)
     {
         string target = $"{width}x{height}";
@@ -400,13 +413,13 @@ public partial class Settings : UserControl
                 return;
             }
         }
-        // Not in the predefined list: add and select it.
+
         var added = new ComboBoxItem { Content = target };
         ResolutionCb.Items.Add(added);
         ResolutionCb.SelectedItem = added;
     }
 
-    private void ReadResolution(Classes.Settings s)
+    private void ReadResolution(SimulatorSettings s)
     {
         var text = (ResolutionCb.SelectedItem as ComboBoxItem)?.Content?.ToString();
         if (string.IsNullOrEmpty(text))
@@ -420,57 +433,257 @@ public partial class Settings : UserControl
         }
     }
 
-    // ── existing slider readouts ──────────────────────────────────────────
     private void TextureResolutionSlider_OnValueChanged(object? sender, RangeBaseValueChangedEventArgs e)
     {
-        if (texResolution is null || textureResolutionSlider is null)
+        if (TexResolutionRow is null || textureResolutionSlider is null)
             return;
 
         int resolution = 1 << (int)textureResolutionSlider.Value;
-        texResolution.Text = $"{resolution} px";
+        TexResolutionRow.ValueText = $"{resolution} px";
     }
 
     private void CabTextureResolutionSlider_OnValueChanged(object? sender, RangeBaseValueChangedEventArgs e)
     {
-        if (cabTexResolution is null || cabTextureResolutionSlider is null)
+        if (CabTexResolutionRow is null || cabTextureResolutionSlider is null)
             return;
 
         int resolution = 1 << (int)cabTextureResolutionSlider.Value;
-        cabTexResolution.Text = $"{resolution} px";
+        CabTexResolutionRow.ValueText = $"{resolution} px";
     }
 
     private void shaderResolutionSlider_OnValueChanged(object? sender, RangeBaseValueChangedEventArgs e)
     {
-        if (shaderResolution is null || shaderResolutionSlider is null)
+        if (ShadowResolutionRow is null || shaderResolutionSlider is null)
             return;
 
         int resolution = 1 << (int)shaderResolutionSlider.Value;
-        shaderResolution.Text = $"{resolution} px";
+        ShadowResolutionRow.ValueText = $"{resolution} px";
+        ToolTip.SetTip(shaderResolutionSlider, ShadowMapWord(resolution));
+    }
+
+    private void FillLanguageCombo()
+    {
+        ChangeLanguageCb.Items.Clear();
+        foreach (var lang in LocalizationService.AvailableLanguages())
+            ChangeLanguageCb.Items.Add(new ComboBoxItem { Content = lang.Name, Tag = lang.Code });
+        if (ChangeLanguageCb.ItemCount == 0)
+            ChangeLanguageCb.Items.Add(new ComboBoxItem { Content = "English", Tag = "en" });
+        SelectActiveLanguage();
+    }
+
+    private void SelectActiveLanguage()
+    {
+        var item = ChangeLanguageCb.Items.OfType<ComboBoxItem>()
+            .FirstOrDefault(it => string.Equals(it.Tag as string, App.Loc.CurrentLangCode,
+                                                StringComparison.OrdinalIgnoreCase))
+            ?? ChangeLanguageCb.Items.OfType<ComboBoxItem>().FirstOrDefault();
+
+        if (item != null && !ReferenceEquals(ChangeLanguageCb.SelectedItem, item))
+            ChangeLanguageCb.SelectedItem = item;
     }
 
     private void LanguageComboBox_OnSelectionChanged(object? sender, SelectionChangedEventArgs e)
     {
-        if (sender is not ComboBox { SelectedItem: ComboBoxItem item }) return;
-        if (!item.IsKeyboardFocusWithin) return; // ignore programmatic (ApplyToUi) changes
-        var lang = item.Content?.ToString();
-        if (string.IsNullOrEmpty(lang)) return;
+        if ((ChangeLanguageCb.SelectedItem as ComboBoxItem)?.Tag is not string code)
+            return;
+        if (string.Equals(code, App.Loc.CurrentLangCode, StringComparison.OrdinalIgnoreCase))
+            return;
 
-        App.ApplyLanguage(lang);
+        App.ApplyLanguage(code);
     }
 
     private void FeedbackCb_OnSelectionChanged(object? sender, SelectionChangedEventArgs e) =>
         UpdateFeedbackDetailVisibility();
 
-    private void UpdateFeedbackDetailVisibility()
+    /// <summary>
+    /// The port and UART rows only apply to some feedback modes. Visibility is
+    /// decided in one place — <see cref="ApplyFilter"/> — so that a search cannot
+    /// reveal a row the selected mode does not use.
+    /// </summary>
+    private void UpdateFeedbackDetailVisibility() => ApplyFilter();
+
+    private bool ConditionAllows(SettingRow row)
     {
-        FeedbackPortRow.IsVisible = FeedbackCb.SelectedIndex == 3;
-        UartExpander.IsVisible = FeedbackCb.SelectedIndex == 5;
+        if (ReferenceEquals(row, FeedbackPortRow))
+            return FeedbackCb.SelectedIndex == 3;
+        if (ReferenceEquals(row, ComButtonRow))
+            return FeedbackCb.SelectedIndex == 5;
+        return true;
     }
 
-    // ── tiny helpers ──────────────────────────────────────────────────────
+    // ── Category navigation, search and unsaved-changes state ────────────────
+
+    private bool _dirty;
+
+    private void CategoryList_OnSelectionChanged(object? sender, SelectionChangedEventArgs e)
+    {
+        // Picking a category is how you leave a search, so the query goes with it.
+        if (SettingsSearch is { Text.Length: > 0 })
+            SettingsSearch.Text = string.Empty;   // raises TextChanged -> ApplyFilter
+        else
+            ApplyFilter();
+    }
+
+    private void SettingsSearch_OnTextChanged(object? sender, TextChangedEventArgs e) => ApplyFilter();
+
+    /// <summary>
+    /// Single owner of what is on screen. With an empty query it shows the selected
+    /// category; with a query it stacks every category and keeps only the rows that
+    /// match, collapsing sections and categories that end up empty.
+    /// </summary>
+    private void ApplyFilter()
+    {
+        if (SettingsStack is null || CategoryList is null || ControlsHost is null)
+            return;
+
+        string query = SettingsSearch?.Text?.Trim() ?? string.Empty;
+        bool searching = query.Length > 0;
+        string category = (CategoryList.SelectedItem as ListBoxItem)?.Tag as string ?? string.Empty;
+
+        // Key bindings are their own world: they bring their own scrolling and a
+        // star-sized row, so they replace the settings scroller rather than living
+        // in it, and the search box filters them instead of the settings.
+        bool bindings = category == "controls";
+        ControlsHost.IsVisible = bindings;
+        SettingsScroll.IsVisible = !bindings;
+
+        if (bindings)
+        {
+            RebuildBindingList();
+            foreach (var entry in CategoryList.Items.OfType<ListBoxItem>())
+                entry.Classes.Set("NoHits", false);
+            return;
+        }
+
+        foreach (var panel in SettingsStack.Children.OfType<StackPanel>())
+        {
+            bool anyRow = false;
+
+            foreach (var section in panel.GetLogicalDescendants().OfType<SettingsSection>())
+            {
+                bool anyInSection = false;
+
+                foreach (var row in section.GetLogicalDescendants().OfType<SettingRow>())
+                {
+                    bool visible = ConditionAllows(row) &&
+                                   (!searching || TextMatch.Contains(RowSearchText(row), query));
+                    row.IsVisible = visible;
+                    anyInSection |= visible;
+                }
+
+                section.IsVisible = anyInSection;
+                anyRow |= anyInSection;
+            }
+
+            string tag = panel.Tag as string ?? string.Empty;
+            panel.IsVisible = anyRow && (searching || tag == category);
+
+            // The caption only earns its place when several categories are stacked.
+            foreach (var caption in panel.Children.OfType<TextBlock>())
+                caption.IsVisible = searching;
+
+            if (CategoryItem(tag) is { } item)
+                item.Classes.Set("NoHits", searching && !anyRow);
+        }
+
+        if (searching)
+            SettingsScroll.Offset = new Vector(0, 0);
+    }
+
+    private ListBoxItem? CategoryItem(string tag) =>
+        CategoryList.Items.OfType<ListBoxItem>()
+            .FirstOrDefault(i => string.Equals(i.Tag as string, tag, StringComparison.Ordinal));
+
+    /// <summary>
+    /// Everything about a row a user might type: its label, its explanation and
+    /// the text of the control itself (a checkbox caption, a dropdown's options).
+    /// </summary>
+    private static string RowSearchText(SettingRow row)
+    {
+        var sb = new StringBuilder();
+        sb.Append(row.Label).Append(' ').Append(row.Description).Append(' ');
+
+        switch (row.Content)
+        {
+            case CheckBox cb:
+                sb.Append(cb.Content);
+                break;
+            case Button btn:
+                sb.Append(btn.Content);
+                break;
+            case ComboBox combo:
+                foreach (var item in combo.Items.OfType<ComboBoxItem>())
+                    sb.Append(item.Content).Append(' ');
+                break;
+        }
+
+        return sb.ToString();
+    }
+
+    /// <summary>
+    /// Subscribes every input in the panel to <see cref="MarkDirty"/> once, so the
+    /// Save button can tell the user there is something to save. Section master
+    /// switches hang off SettingsSection.Toggle rather than the logical tree, so
+    /// they are collected separately.
+    /// </summary>
+    private void HookDirtyTracking()
+    {
+        foreach (var control in this.GetLogicalDescendants().OfType<Control>())
+        {
+            switch (control)
+            {
+                // Choosing a profile changes nothing until Apply is pressed.
+                case ComboBox combo when ReferenceEquals(combo, ProfileCb):
+                    break;
+                case CheckBox cb:
+                    cb.IsCheckedChanged += (_, _) => MarkDirty();
+                    break;
+                case Slider slider:
+                    slider.ValueChanged += (_, _) => MarkDirty();
+                    break;
+                case ComboBox combo:
+                    combo.SelectionChanged += (_, _) => MarkDirty();
+                    break;
+                case NumericUpDown nud:
+                    nud.ValueChanged += (_, _) => MarkDirty();
+                    break;
+            }
+        }
+
+        foreach (var section in this.GetLogicalDescendants().OfType<SettingsSection>())
+            if (section.Toggle is CheckBox toggle)
+                toggle.IsCheckedChanged += (_, _) => MarkDirty();
+    }
+
+    private void MarkDirty()
+    {
+        if (_loading || _dirty)
+            return;
+
+        _dirty = true;
+        UpdateSaveState();
+    }
+
+    private void UpdateSaveState()
+    {
+        if (SaveButton is null || SaveStatus is null)
+            return;
+
+        bool dirty = _dirty || KeyboardConfig.Instance.Dirty;
+        SaveButton.Classes.Set("Accent", dirty);
+        SaveStatus.Text = dirty ? App.Loc["UnsavedChanges"] : string.Empty;
+    }
+
     private static bool IsChecked(CheckBox cb) => cb.IsChecked == true;
 
     private static int Clamp(int v, int lo, int hi) => v < lo ? lo : (v > hi ? hi : v);
+
+    private static int ParsePriorityTag(object? tag)
+    {
+        if (tag is int i) return i;
+        if (tag is string s && int.TryParse(s, NumberStyles.Integer, CultureInfo.InvariantCulture, out int n)) return n;
+        return 200;
+    }
 
     private static int Log2(int value, int fallback)
     {
@@ -481,33 +694,29 @@ public partial class Settings : UserControl
 
     private static int AnisotropyToSlider(int anisotropy)
     {
-        var steps = StarterNG.Classes.Settings.AnisotropySteps;
+        var steps = SimulatorSettings.AnisotropySteps;
         for (int i = 0; i < steps.Length; i++)
             if (steps[i] == anisotropy)
                 return i + 1;
-        return 4; // default → 8x
+        return 4;
     }
 
-    // ══════════════════════════════════════════════════════════════════════
-    //  Controls tab — key-binding editor and on-screen keyboard
-    // ══════════════════════════════════════════════════════════════════════
-
-    private TextBox? _controlsSearch;
     private StackPanel? _bindingListPanel;
     private StackPanel? _keyboardPanel;
 
-    // Binding currently waiting for a key press, and the button that launched it.
+    /// <summary>
+    /// True while a cab-control binding is waiting for a keypress. The window's own
+    /// shortcuts stand down for the duration, otherwise Ctrl+N would never reach here.
+    /// </summary>
+    public bool IsCapturingKey => _capturing is not null;
+
     private KeyBinding? _capturing;
     private Button? _capturingButton;
 
-    // On-screen key cells, keyed by token, so colours can be refreshed in place
-    // (rebuilding the whole keyboard would detach an open assignment flyout).
     private readonly Dictionary<string, Grid> _keyCells = new(StringComparer.OrdinalIgnoreCase);
 
-    // Guards the assignment flyout's combo boxes against feedback during programmatic updates.
     private bool _flyoutLoading;
 
-    // State colours (match the legend): unassigned/filler, plain, +shift, +ctrl.
     private static readonly IBrush KeyUnassignedBrush = new SolidColorBrush(Color.Parse("#2A3036"));
     private static readonly IBrush KeyFillerBrush = new SolidColorBrush(Color.Parse("#21262B"));
     private static readonly IBrush KeyPlainBrush = new SolidColorBrush(Color.Parse("#2E9E1F"));
@@ -518,7 +727,7 @@ public partial class Settings : UserControl
     private static readonly IBrush FgDimBrush = new SolidColorBrush(Color.Parse("#9098A0"));
     private static readonly IBrush ConflictBrush = new SolidColorBrush(Color.Parse("#E06C5A"));
 
-    private const double KeyUnit = 30;   // px per relative width unit
+    private const double KeyUnit = 30;
     private const double KeyHeight = 34;
     private const double KeyGap = 4;
 
@@ -527,7 +736,6 @@ public partial class Settings : UserControl
         if (ControlsHost is null)
             return;
 
-        // Row 0 — search / restore bar.
         var topBar = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8, Margin = new Thickness(0, 0, 0, 8) };
         topBar.Children.Add(new TextBlock
         {
@@ -535,10 +743,6 @@ public partial class Settings : UserControl
             VerticalAlignment = VerticalAlignment.Center,
             Foreground = FgDimBrush
         });
-        _controlsSearch = new TextBox { Width = 240, Watermark = App.Loc["Search"] };
-        _controlsSearch.TextChanged += (_, _) => RebuildBindingList();
-        topBar.Children.Add(_controlsSearch);
-
         var restoreBtn = new Button { Content = App.Loc["RestoreDefaults"] };
         restoreBtn.Classes.Add("Flat");
         restoreBtn.Click += (_, _) =>
@@ -546,6 +750,7 @@ public partial class Settings : UserControl
             CancelCapture();
             KeyboardConfig.Instance.LoadDefaults();
             KeyboardConfig.Instance.Dirty = true;
+            MarkDirty();
             RebuildBindingList();
             RebuildKeyboard();
         };
@@ -553,7 +758,6 @@ public partial class Settings : UserControl
         Grid.SetRow(topBar, 0);
         ControlsHost.Children.Add(topBar);
 
-        // Row 1 — scrollable binding list.
         _bindingListPanel = new StackPanel { Spacing = 3 };
         var listScroll = new ScrollViewer
         {
@@ -563,7 +767,6 @@ public partial class Settings : UserControl
         Grid.SetRow(listScroll, 1);
         ControlsHost.Children.Add(listScroll);
 
-        // Row 2 — legend + on-screen keyboard.
         var bottom = new StackPanel { Spacing = 8, Margin = new Thickness(0, 10, 0, 0) };
         bottom.Children.Add(BuildLegend());
         _keyboardPanel = new StackPanel();
@@ -580,14 +783,14 @@ public partial class Settings : UserControl
         RebuildKeyboard();
     }
 
-    // ── binding list ───────────────────────────────────────────────────────
     private void RebuildBindingList()
     {
         if (_bindingListPanel is null)
             return;
 
         _bindingListPanel.Children.Clear();
-        string filter = _controlsSearch?.Text?.Trim().ToLowerInvariant() ?? string.Empty;
+        // The sidebar search box serves this list too - see ApplyFilter.
+        string filter = SettingsSearch?.Text?.Trim() ?? string.Empty;
         var conflicts = ComputeConflicts();
 
         foreach (var b in KeyboardConfig.Instance.Bindings)
@@ -599,8 +802,8 @@ public partial class Settings : UserControl
     }
 
     private static bool MatchesFilter(KeyBinding b, string filter) =>
-        b.Command.ToLowerInvariant().Contains(filter) ||
-        b.Description.ToLowerInvariant().Contains(filter);
+        TextMatch.Contains(b.Command, filter) ||
+        TextMatch.Contains(b.Description, filter);
 
     private Control BuildBindingRow(KeyBinding b, HashSet<string> conflicts)
     {
@@ -615,14 +818,14 @@ public partial class Settings : UserControl
         {
             Text = CommandLabel(b),
             Foreground = FgBrush,
-            FontSize = 13,
+            FontSize = 12,
             TextTrimming = TextTrimming.CharacterEllipsis
         });
         label.Children.Add(new TextBlock
         {
             Text = b.Command,
             Foreground = FgDimBrush,
-            FontSize = 11,
+            FontSize = 12,
             TextTrimming = TextTrimming.CharacterEllipsis
         });
         Grid.SetColumn(label, 0);
@@ -658,6 +861,7 @@ public partial class Settings : UserControl
             b.Shift = b.Ctrl = false;
             b.Key = "none";
             KeyboardConfig.Instance.Dirty = true;
+            MarkDirty();
             RebuildBindingList();
             RebuildKeyboard();
         };
@@ -675,17 +879,16 @@ public partial class Settings : UserControl
         };
     }
 
-    // ── key capture ──────────────────────────────────────────────────────--
     private void StartCapture(KeyBinding b, Button button)
     {
-        // Restore the previously listening button, if any, before switching.
+
         if (_capturing is not null && _capturingButton is not null)
             _capturingButton.Content = ComboText(_capturing);
 
         _capturing = b;
         _capturingButton = button;
         button.Content = App.Loc["PressKey"];
-        button.Focus(); // keep focus inside the view so the tunnel handler sees keys
+        button.Focus();
     }
 
     private void CancelCapture()
@@ -708,14 +911,13 @@ public partial class Settings : UserControl
             return;
         }
 
-        // Wait for a real key while only modifiers are held.
         if (KeyMap.IsModifierKey(e.Key))
             return;
 
         string? token = KeyMap.FromInput(e.Key, e.PhysicalKey);
         if (token is null)
         {
-            e.Handled = true; // swallow unsupported keys instead of clicking the button
+            e.Handled = true;
             return;
         }
 
@@ -723,6 +925,7 @@ public partial class Settings : UserControl
         _capturing.Ctrl = e.KeyModifiers.HasFlag(KeyModifiers.Control);
         _capturing.Key = token;
         KeyboardConfig.Instance.Dirty = true;
+        MarkDirty();
         e.Handled = true;
 
         _capturing = null;
@@ -731,7 +934,6 @@ public partial class Settings : UserControl
         RebuildKeyboard();
     }
 
-    // ── on-screen keyboard ───────────────────────────────────────────────--
     private void RebuildKeyboard()
     {
         if (_keyboardPanel is null)
@@ -748,15 +950,13 @@ public partial class Settings : UserControl
         _keyboardPanel.Children.Add(row);
     }
 
-    // Recolours every key in place without rebuilding the tree, so an open
-    // assignment flyout keeps its anchor.
     private void UpdateKeyboardColors()
     {
         var states = ComputeKeyStates();
         foreach (var (token, content) in _keyCells)
         {
             if (content.Children.Count > 0)
-                content.Children.RemoveAt(0); // drop the old background, keep the label
+                content.Children.RemoveAt(0);
             content.Children.Insert(0, BuildKeyBackground(token, states));
             states.TryGetValue(token, out var state);
             ToolTip.SetTip(content, BuildKeyTooltip(token, state));
@@ -792,7 +992,7 @@ public partial class Settings : UserControl
 
         if (cap.Token is null)
         {
-            // Reserved key (Esc, F1-F12, modifiers …): greyed out and not editable.
+
             content.Children.Add(new Border { Background = KeyFillerBrush });
             content.Children.Add(new TextBlock
             {
@@ -853,7 +1053,6 @@ public partial class Settings : UserControl
         return head + "\n" + string.Join("\n", state.Tips);
     }
 
-    // ── key assignment flyout (one combo per modifier combination) ──────────
     private void ShowKeyFlyout(string token, Control anchor)
     {
         CancelCapture();
@@ -929,7 +1128,7 @@ public partial class Settings : UserControl
         {
             Text = App.Loc["BindKeyHint"],
             Foreground = FgDimBrush,
-            FontSize = 11,
+            FontSize = 12,
             TextWrapping = TextWrapping.Wrap
         });
         panel.Children.Add(grid);
@@ -955,7 +1154,6 @@ public partial class Settings : UserControl
     {
         KeyBinding? chosen = selectedIndex <= 0 ? null : commands[selectedIndex - 1];
 
-        // Free the slot: unbind any other command currently sitting on it.
         foreach (var b in KeyboardConfig.Instance.Bindings)
         {
             if (!ReferenceEquals(b, chosen) && b.IsAssigned &&
@@ -975,6 +1173,7 @@ public partial class Settings : UserControl
         }
 
         KeyboardConfig.Instance.Dirty = true;
+        MarkDirty();
     }
 
     private static KeyBinding? CommandInSlot(string token, bool shift, bool ctrl) =>
@@ -1016,7 +1215,6 @@ public partial class Settings : UserControl
         return sp;
     }
 
-    // ── shared helpers ─────────────────────────────────────────────────────
     private sealed class KeyState
     {
         public bool Plain;
@@ -1074,11 +1272,108 @@ public partial class Settings : UserControl
         return string.Join(" + ", parts);
     }
 
-    // Display label for a command: its (capitalised) description, or the raw
-    // command token when the file has no comment for it.
     private static string CommandLabel(KeyBinding b) =>
         string.IsNullOrEmpty(b.Description) ? b.Command : Capitalize(b.Description);
 
     private static string Capitalize(string s) =>
         string.IsNullOrEmpty(s) ? s : char.ToUpperInvariant(s[0]) + s.Substring(1);
+
+    private static string[] QualityWords => new[]
+    {
+        App.Loc["QualityVeryLow"], App.Loc["QualityLow"], App.Loc["QualityNormal"],
+        App.Loc["QualityHigh"], App.Loc["QualityVeryHigh"]
+    };
+
+    private void QualitySlider_OnValueChanged(object? sender, RangeBaseValueChangedEventArgs e)
+        => UpdateQualityCaptions();
+
+    private void UpdateQualityCaptions()
+    {
+        var q = QualityWords;
+
+        if (TexFilteringRow != null)
+            TexFilteringRow.ValueText = q[Clamp((int)TexFilteringSlider.Value, 1, 5) - 1];
+
+        string[] four = { q[0], q[1], q[3], q[4] };
+        if (TrackCurvesRow != null)
+            TrackCurvesRow.ValueText = four[Clamp((int)TrackCurvesSlider.Value, 1, 4) - 1];
+        if (SmokeParticlesRow != null)
+            SmokeParticlesRow.ValueText = four[Clamp((int)SmokeParticlesSlider.Value, 1, 4) - 1];
+
+        string[] msaa = { App.Loc["MsaaNone"], "x2", "x4", "x8" };
+        if (MultisamplingRow != null)
+            MultisamplingRow.ValueText = msaa[Clamp((int)MultisamplingSlider.Value, 1, 4) - 1];
+
+        string[] range = { App.Loc["RangeNormal"], App.Loc["RangeHigh"], App.Loc["RangeVeryHigh"] };
+        if (RenderRangeRow != null)
+            RenderRangeRow.ValueText = range[Clamp((int)RenderRangeSlider.Value, 1, 3) - 1];
+
+        if (CursorSensitivityRow != null)
+            CursorSensitivityRow.ValueText = (int)CursorSensitivitySlider.Value switch
+            {
+                <= 1 => q[1],
+                2 => App.Loc["QualityStandard"],
+                3 => q[3],
+                _ => q[4]
+            };
+
+        if (ShadowRangeRow != null)
+        {
+            int metres = (int)shaderRange.Value;
+            ShadowRangeRow.ValueText = $"{metres} m";
+            ToolTip.SetTip(shaderRange, ShadowRangeWord(metres));
+        }
+
+        if (CabShadowRangeRow != null)
+        {
+            int metres = (int)cabShaderSourceRange.Value;
+            CabShadowRangeRow.ValueText = metres <= 0 ? App.Loc["RangeDisabled"] : $"{metres} m";
+            ToolTip.SetTip(cabShaderSourceRange, CabShadowRangeWord(metres));
+        }
+
+        if (ReflectionsFramerateRow != null)
+        {
+            int fps = (int)reflectionsFramerate.Value;
+            string word = ReflectionsRefreshWord(fps);
+            ReflectionsFramerateRow.ValueText = $"{fps} FPS";
+            ToolTip.SetTip(reflectionsFramerate, word.Length == 0 ? null : word);
+        }
+    }
+
+    private static string ShadowMapWord(int pixels) => pixels switch
+    {
+        <= 512 => App.Loc["QualityVeryLow"],
+        <= 1024 => App.Loc["QualityLow"],
+        <= 2048 => App.Loc["QualityModerate"],
+        <= 4096 => App.Loc["QualityHigh"],
+        _ => App.Loc["QualityVeryHigh"]
+    };
+
+    private static string ShadowRangeWord(int metres) => metres switch
+    {
+        <= 25 => App.Loc["RangeVeryLow"],
+        <= 50 => App.Loc["RangeLow"],
+        <= 150 => App.Loc["RangeModerate"],
+        <= 250 => App.Loc["RangeHigh"],
+        _ => App.Loc["RangeVeryHigh"]
+    };
+
+    private static string CabShadowRangeWord(int metres) => metres switch
+    {
+        <= 10 => App.Loc["RangeVeryLow"],
+        <= 20 => App.Loc["RangeLow"],
+        <= 30 => App.Loc["RangeStandard"],
+        <= 50 => App.Loc["RangeHigh"],
+        _ => App.Loc["RangeVeryHigh"]
+    };
+
+    private static string ReflectionsRefreshWord(int fps) => fps switch
+    {
+        <= 5 => App.Loc["QualityVeryLow"],
+        <= 10 => App.Loc["QualityLow"],
+        <= 25 => App.Loc["QualityHigh"],
+        <= 60 => App.Loc["QualityVeryHigh"],
+        _ => string.Empty
+    };
+
 }

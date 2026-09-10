@@ -8,91 +8,181 @@ using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
 using Avalonia.Threading;
+using StarterNG.Application;
 using StarterNG.Classes;
+using StarterNG.Infrastructure;
 using StarterNG.Services;
 
 namespace StarterNG;
 
-public partial class App : Application
+public partial class App : Avalonia.Application
 {
-    
-    public static LocalizationService Loc { get; } = new();
-    
+
+    /// <summary>
+    /// The translation table, as a static source for the XAML bindings. Code
+    /// should take <see cref="Application.Abstractions.ILocalizedStrings"/>
+    /// through its constructor rather than reading this.
+    /// </summary>
+    public static LocalizationService Loc => AppServices.Current.Localization;
+
     public override void Initialize()
     {
         AvaloniaXamlLoader.Load(this);
 
-        // Load the persisted configuration up front so the saved language wins;
-        // fall back to the system culture only when the file has no lang entry.
-        Settings.Instance.Load();
+        AppServices.Current.SettingsStore.Load();
 
-        // Key bindings live in eu07_input-keyboard.ini next to eu07.ini.
         KeyboardConfig.Instance.Load();
 
         CultureInfo ci = CultureInfo.InstalledUICulture ;
 
-        var langName = Settings.Instance.LanguageWasSet
-            ? Settings.Instance.Language
+        var langName = AppServices.Current.Settings.LanguageWasSet
+            ? AppServices.Current.Settings.Language
             : ci.Name switch
             {
                 "pl-PL" => "Polski",
                 _ => "English"
             };
-        Settings.Instance.Language = langName;
+        AppServices.Current.Settings.Language = langName;
+
+        // What eu07.ini asked for, before the starter picks a language it can
+        // actually display.
+        string requestedCode = AppServices.Current.Settings.LanguageCode;
 
         ApplyLanguage(langName);
+
+        // The starter ships no translation for this code, so its own interface
+        // falls back - but the simulator has one and keeps it. Overwriting the key
+        // here would silently move eu07.exe to English on the next save.
+        if (!string.IsNullOrWhiteSpace(requestedCode) &&
+            !string.Equals(requestedCode, Loc.CurrentLangCode, StringComparison.OrdinalIgnoreCase))
+            AppServices.Current.Settings.LanguageCode = requestedCode;
     }
 
-    /// <summary>
-    /// Swaps the active language by loading the matching XML file from the
-    /// <c>lang/</c> folder next to the executable (see <see cref="LocalizationService"/>).
-    /// The translations are no longer compiled into the assembly, so they can be
-    /// edited or added without rebuilding the launcher. Accepts either a display
-    /// name ("English", "Polski") or a short code ("en", "pl").
-    /// </summary>
     public static void ApplyLanguage(string langNameOrCode)
     {
-        // Loc.Load resolves the file and returns the canonical display name,
-        // which we mirror back into the settings so the stored value stays valid.
+
         var resolvedName = Loc.Load(langNameOrCode);
-        Settings.Instance.Language = resolvedName;
+
+        // The service is the authority on which language actually loaded: the code
+        // goes to eu07.ini for the simulator, the name to the picker.
+        AppServices.Current.Settings.Language = resolvedName;
+        AppServices.Current.Settings.LanguageCode = Loc.CurrentLangCode;
+
+        ApplyCulture(Loc.CurrentLangCode);
+    }
+
+    private static void ApplyCulture(string langCode)
+    {
+        CultureInfo culture;
+        try
+        {
+            culture = langCode switch
+            {
+                "" or "en" => CultureInfo.InvariantCulture,
+                "cz" => CultureInfo.GetCultureInfo("cs"),
+                _ => CultureInfo.GetCultureInfo(langCode)
+            };
+        }
+        catch (CultureNotFoundException)
+        {
+            culture = CultureInfo.InvariantCulture;
+        }
+
+        CultureInfo.DefaultThreadCurrentCulture = culture;
+        CultureInfo.DefaultThreadCurrentUICulture = culture;
+        CultureInfo.CurrentCulture = culture;
+        CultureInfo.CurrentUICulture = culture;
     }
 
     public override void OnFrameworkInitializationCompleted()
     {
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
-            // Code page 1250 is needed to parse scenery files (done during load).
+
             Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
 
-            // Persist settings when the launcher is closing. Key bindings are only
-            // rewritten when actually edited, so an untouched file keeps its layout.
             desktop.ShutdownRequested += (_, _) =>
             {
-                Settings.Instance.CaptureAndSave();
-                if (KeyboardConfig.Instance.Dirty)
-                    KeyboardConfig.Instance.Save();
+                try { AppServices.Current.SettingsStore.CaptureAndSave(); }
+                catch (Exception ex) { Diagnostics.Log("Settings save", ex); }
+
+                AppServices.Current.MissingVehicleLog.Dump();
+
+                try
+                {
+                    if (KeyboardConfig.Instance.Dirty)
+                        KeyboardConfig.Instance.Save();
+                }
+                catch (Exception ex) { Diagnostics.Log("Keyboard config save", ex); }
+
+                Diagnostics.Flush();
             };
 
-            var splash = new SplashWindow();
-            desktop.MainWindow = splash;
-            splash.Show();
-
-            // Progress<T> marshals callbacks back to this (UI) thread.
-            var progress = new Progress<LoadStatus>(splash.Report);
+            SplashWindow? splash = null;
+            bool mainReady = false;
+            var sw = System.Diagnostics.Stopwatch.StartNew();
 
             Task.Run(async () =>
             {
-                GameData.Instance.Load(progress);
-                await Task.Delay(400); // let the completed bar be visible briefly
-            }).ContinueWith(_ =>
-            {
-                Dispatcher.UIThread.Post(() =>
+                var progress = new Progress<LoadStatus>(status =>
                 {
-                    var main = new MainWindow();
-                    desktop.MainWindow = main;   // keep a main window before closing the splash
+                    Dispatcher.UIThread.Post(() =>
+                    {
+                        if (mainReady)
+                            return;
+
+                        if (sw.ElapsedMilliseconds > 300 && splash == null)
+                        {
+                            splash = new SplashWindow();
+                            desktop.MainWindow = splash;
+                            splash.Show();
+                        }
+                        splash?.Report(status);
+                    });
+                });
+
+                AppServices.Current.Library.Load(progress);
+            }).ContinueWith(load =>
+            {
+                Dispatcher.UIThread.Post(async () =>
+                {
+                    MainWindow main;
+                    try
+                    {
+                        main = new MainWindow();
+                    }
+                    catch (Exception ex)
+                    {
+                        Diagnostics.Log("Main window", ex);
+                        Diagnostics.Flush();
+                        Console.Error.WriteLine(ex);
+                        mainReady = true;
+                        splash?.Close();
+                        desktop.Shutdown(1);
+                        return;
+                    }
+
+                    mainReady = true;
+                    desktop.MainWindow = main;
                     main.Show();
-                    splash.Close();
+                    splash?.Close();
+                    splash = null;
+
+                    if (load.IsFaulted && load.Exception is { } error)
+                    {
+                        var inner = error.GetBaseException();
+                        Diagnostics.Log("Game data load", inner);
+                        await Diagnostics.ReportAsync(
+                            $"{Loc["FaultLoadData"]}{Environment.NewLine}{Environment.NewLine}{Loc["FaultDetail"]} {inner.Message}");
+                    }
+
+                    var faults = Diagnostics.CheckInstallation();
+                    if (faults.Count > 0)
+                    {
+                        await Diagnostics.ReportAsync(
+                            string.Join(Environment.NewLine, faults) + Environment.NewLine + Environment.NewLine +
+                            Loc["FaultBadInstall"]);
+                    }
                 });
             });
         }

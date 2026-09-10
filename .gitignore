@@ -2,3 +2,8 @@
 /StarterNG/obj
 /.idea
 /.vs
+starter/
+
+# Build output of any project in the solution
+[Bb]in/
+[Oo]bj/
