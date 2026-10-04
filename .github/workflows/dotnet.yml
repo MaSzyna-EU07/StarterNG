@@ -20,10 +20,47 @@ env:
   DOTNET_CLI_TELEMETRY_OPTOUT: 1
   DOTNET_NOLOGO: true
   PROJECT_PATH: StarterNG/StarterNG.csproj
+  TEST_PROJECT_PATH: StarterNG.Tests/StarterNG.Tests.csproj
 
 jobs:
+  # On both systems the packages are built for: paths, encodings and the file
+  # system differ, and that is where these tests earn their keep.
+  test:
+    name: Tests (${{ matrix.name }})
+
+    strategy:
+      fail-fast: false
+
+      matrix:
+        include:
+          - name: Windows x64
+            os: windows-2022
+
+          - name: Linux x64
+            os: ubuntu-22.04
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Setup .NET 9
+        uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: 9.0.x
+
+      - name: Test
+        run: >
+          dotnet test
+          "${{ env.TEST_PROJECT_PATH }}"
+          -c Release
+
   publish:
     name: ${{ matrix.name }}
+
+    # A failing test stops the packages, and with them the rolling pre-release.
+    needs: test
 
     strategy:
       fail-fast: false
