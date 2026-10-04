@@ -544,6 +544,18 @@ public sealed class Consist : IReadOnlyList<ConsistItem>
         Raise();
     }
 
+    /// <summary>
+    /// The Auto button: couplers picked afresh for the whole consist, hand-set ones
+    /// included, so the back of the train is 0 again.
+    /// </summary>
+    public void AutoCouple()
+    {
+        foreach (var car in Flatten())
+            car.CouplerSetByHand = false;
+
+        AutoConnectAll();
+    }
+
     public void AutoConnectAll()
     {
         var flat = Flatten();

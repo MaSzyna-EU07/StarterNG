@@ -82,6 +82,20 @@ public class ConsistTailTests
         Assert.Equal(0, first.Cars[0].Coupling.Flags);
     }
 
+    [Fact]
+    public void The_auto_button_frees_the_back_even_when_it_was_set_by_hand()
+    {
+        Append("b111-01");
+        var last = Append("b111-02");
+        last.Cars[0].Coupling.Flags = 3;
+        last.Cars[0].CouplerSetByHand = true;
+
+        _consist.AutoCouple();
+
+        Assert.Equal(0, last.Cars[0].Coupling.Flags);
+        Assert.False(last.Cars[0].CouplerSetByHand);
+    }
+
     private ConsistItem Append(string skin)
     {
         var item = new ConsistItem

@@ -242,13 +242,13 @@ public sealed class VehicleDetails
             Cursor = _hand,
             HorizontalAlignment = HorizontalAlignment.Stretch,
             HorizontalContentAlignment = HorizontalAlignment.Center,
-            IsEnabled = _consist.Count > 1 && !isLast
+            IsEnabled = _consist.Count > 0
         };
         auto.Classes.Add("Flat");
         ToolTip.SetTip(auto, App.Loc["TipAutoCoupler"]);
         auto.Click += (_, _) =>
         {
-            _consist.AutoConnectAll();
+            _consist.AutoCouple();
             _redraw();
             Refresh();
         };
