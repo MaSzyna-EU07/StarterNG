@@ -612,9 +612,7 @@ public sealed class VehicleCards
 
     private void PaintDriverButton(Button btn, ConsistItem item)
     {
-        var type = ReferenceEquals(item, _consist.Selected) && item.Cars.Count > 1
-            ? _consist.ActiveCar(item).DriverType
-            : item.Driver;
+        var type = item.Driver;
 
         (string glyph, string color) = type switch
         {

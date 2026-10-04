@@ -123,6 +123,39 @@ public class ConsistCrewTests
         Assert.Equal(eDriverType.Headdriver, loco.Cars[0].DriverType);
     }
 
+    [Fact]
+    public void A_unit_staffed_at_the_head_has_its_driver_in_cab_1_of_the_first_car()
+    {
+        var unit = Unit("ep07-001", "ep07-002");
+
+        _consist.Staff(unit, 0);
+
+        Assert.Equal(eDriverType.Headdriver, unit.Cars[0].DriverType);
+        Assert.Equal(eDriverType.Nobody, unit.Cars[1].DriverType);
+    }
+
+    [Fact]
+    public void A_driver_in_cab_2_moves_into_the_last_car_of_a_unit()
+    {
+        var loco = Add("ep07-001", 0);
+        loco.Cars[0].DriverType = eDriverType.Reardriver;
+        loco.Driver = eDriverType.Reardriver;
+        var unit = Unit("ep07-001", "ep07-002");
+
+        _consist.Replace(0, unit);
+
+        Assert.Equal(eDriverType.Nobody, unit.Cars[0].DriverType);
+        Assert.Equal(eDriverType.Reardriver, unit.Cars[1].DriverType);
+        Assert.Equal(eDriverType.Reardriver, unit.Driver);
+    }
+
+    private ConsistItem Unit(params string[] skins) =>
+        new()
+        {
+            Cars = skins.Select(skin => _consist.MakeDynamic(_catalog.TextureForSkin(skin)!, null)).ToList(),
+            Grouped = true
+        };
+
     private ConsistItem Add(string skin, int at)
     {
         var item = Item(skin);

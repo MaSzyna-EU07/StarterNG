@@ -274,14 +274,34 @@ public sealed class Consist : IReadOnlyList<ConsistItem>
     }
 
     // The crew lives on the cars - they are what is shown and exported - and the
-    // card only mirrors it.
+    // card only mirrors it. A unit has one crew, in the car that has the cab.
     private static void Crew(ConsistItem item, eDriverType crew)
     {
         if (item.Cars.Count == 0)
             return;
 
-        item.Cars[0].DriverType = crew;
+        foreach (var car in item.Cars)
+            car.DriverType = eDriverType.Nobody;
+        CrewCar(item, crew).DriverType = crew;
         item.Driver = crew;
+    }
+
+    /// <summary>
+    /// Where a unit's crew sits: cab 1 is at the front of its first car and cab 2
+    /// at the back of its last - the ET42-A has only cab 1, the ET42-B only cab 2.
+    /// The unit's own order, so turning it round takes the cabs along.
+    /// </summary>
+    public static Dynamic CrewCar(ConsistItem item, eDriverType crew) =>
+        crew == eDriverType.Reardriver ? item.Cars[^1] : item.Cars[0];
+
+    /// <summary>Puts the crew into the unit, in the car its cab is in.</summary>
+    public void SetCrew(ConsistItem item, eDriverType crew)
+    {
+        Crew(item, crew);
+        if (ReferenceEquals(Selected, item))
+            SyncStartingVehicle();
+        Raise();
+        AppServices.Current.State.NotifyChanged();
     }
 
     private bool IsPowered(ConsistItem item) =>
@@ -400,22 +420,14 @@ public sealed class Consist : IReadOnlyList<ConsistItem>
             _items.Reverse(first, last - first + 1);
     }
 
-    public void CycleDriver(ConsistItem item)
-    {
-        var car = ActiveCar(item);
-        car.DriverType = car.DriverType switch
+    public void CycleDriver(ConsistItem item) =>
+        SetCrew(item, item.Driver switch
         {
             eDriverType.Nobody => eDriverType.Headdriver,
             eDriverType.Headdriver => eDriverType.Reardriver,
             eDriverType.Reardriver => eDriverType.Passenger,
             _ => eDriverType.Nobody
-        };
-        item.Driver = UnitDriver(item.Cars);
-        if (ReferenceEquals(Selected, item))
-            SyncStartingVehicle();
-        Raise();
-        AppServices.Current.State.NotifyChanged();
-    }
+        });
 
     public void Split(ConsistItem item)
     {

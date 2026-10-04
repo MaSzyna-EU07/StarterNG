@@ -262,17 +262,16 @@ public sealed class VehicleDetails
     }
 
     /// <summary>
-    /// The vehicle's own settings. Every write path is unchanged: crew and wagon number
-    /// go through the unit's active car, the coolant flag to its first car only.
+    /// The vehicle's own settings: the crew is the unit's and sits where its cab is,
+    /// the wagon number goes through the unit's active car, the coolant flag to its
+    /// first car only.
     /// </summary>
     private Control BuildVehicleSection(ConsistItem item)
     {
         var driver = new ComboBox { FontSize = 12, MinWidth = 0 };
         foreach (string key in new[] { "DriverHead", "DriverRear", "DriverPassenger", "DriverNobody" })
             driver.Items.Add(new ComboBoxItem { Content = App.Loc[key] });
-        var crewCar = _consist.ActiveCar(item);
-
-        driver.SelectedIndex = crewCar.DriverType switch
+        driver.SelectedIndex = item.Driver switch
         {
             eDriverType.Headdriver => 0,
             eDriverType.Reardriver => 1,
@@ -288,14 +287,9 @@ public sealed class VehicleDetails
                 2 => eDriverType.Passenger,
                 _ => eDriverType.Nobody
             };
-            if (picked == crewCar.DriverType) return;
+            if (picked == item.Driver) return;
 
-            crewCar.DriverType = picked;
-            item.Driver = Consist.UnitDriver(item.Cars);
-            if (ReferenceEquals(_consist.Selected, item))
-                _consist.SyncStartingVehicle();
-            _redraw();
-            AppServices.Current.State.NotifyChanged();
+            _consist.SetCrew(item, picked);
         };
         driver.MinWidth = 0;
         driver.HorizontalAlignment = HorizontalAlignment.Stretch;
