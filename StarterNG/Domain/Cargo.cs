@@ -117,6 +117,12 @@ public sealed class Cargo
         }
     }
 
+    public void MaxAmounts(IReadOnlyList<ConsistItem> consist)
+    {
+        foreach (var c in consist.SelectMany(u => u.Cars))
+            FillToMax(c);
+    }
+
     public void RandomAmounts(IReadOnlyList<ConsistItem> consist)
     {
         foreach (var c in consist.SelectMany(u => u.Cars))
