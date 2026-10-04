@@ -81,7 +81,10 @@ public partial class Depot : UserControl
             _consist, () => _browser.Selected, InsertTextureAt, _browser.SelectInBrowser);
 
         _cards = new VehicleCards(consistStack, _db, _consist, _cargo, _minis, _hand,
-            RebuildConsist, () => _details.Refresh(), _browser.SelectInBrowser, _drag.ArmCardDrag);
+            RebuildConsist, () => _details.Refresh(), _browser.SelectInBrowser, _drag.ArmCardDrag)
+        {
+            AddCopies = AddCopiesAfter
+        };
 
         // Hidden still scrolls - it only drops the bar itself.
         MiniTextures.Sharp(miniPreview);
@@ -592,6 +595,16 @@ public partial class Depot : UserControl
             if (si >= 0) at = si + 1;
         }
         InsertTexturesAt(texture, at, count);
+    }
+
+    /// <summary>Copies of the vehicle on a card - a whole unit for one of a set - right after it.</summary>
+    private void AddCopiesAfter(ConsistItem item, int count)
+    {
+        int index = _consist.IndexOf(item);
+        if (index < 0 || item.Cars.Count == 0 || _db.TextureForSkin(item.Cars[0].SkinFile) is not { } texture)
+            return;
+
+        InsertTexturesAt(texture, index + 1, count);
     }
 
     private void InsertTextureAt(VehicleTexture texture, int at) => InsertTexturesAt(texture, at, 1);

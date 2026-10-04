@@ -54,8 +54,6 @@ public sealed class VehicleBrowser
     /// <summary>Adds the vehicle to the consist the given number of times.</summary>
     public Action<VehicleTexture, int>? AddMany { get; set; }
 
-    private const int MaxAddMany = 100;
-
     private bool _suppress;
     private bool _syncingCombos;
 
@@ -363,38 +361,6 @@ public sealed class VehicleBrowser
         }
     }
 
-    private void ShowAddManyFlyout(Control anchor, VehicleTexture texture)
-    {
-        var count = new NumericUpDown
-        {
-            Minimum = 1, Maximum = MaxAddMany, Increment = 1, FormatString = "0", Value = 2, MinWidth = 120
-        };
-        var add = new Button { Content = App.Loc["AddVehicle"], HorizontalAlignment = HorizontalAlignment.Right };
-        add.Classes.Add("Flat");
-        add.Classes.Add("Accent");
-
-        var panel = new StackPanel { Spacing = 6, Margin = new Thickness(8), MinWidth = 160 };
-        panel.Children.Add(new TextBlock { Text = App.Loc["AddManyCount"], FontWeight = FontWeight.Bold, FontSize = 12 });
-        panel.Children.Add(count);
-        panel.Children.Add(add);
-
-        var flyout = new Flyout { Content = panel, Placement = PlacementMode.Right };
-        void Commit()
-        {
-            flyout.Hide();
-            AddMany?.Invoke(texture, Math.Clamp((int)(count.Value ?? 1), 1, MaxAddMany));
-        }
-        add.Click += (_, _) => Commit();
-        count.KeyDown += (_, e) =>
-        {
-            if (e.Key != Key.Enter) return;
-            e.Handled = true;
-            Commit();
-        };
-        flyout.ShowAt(anchor);
-        count.Focus();
-    }
-
     private void List_OnContextRequested(object? sender, ContextRequestedEventArgs e)
     {
         var hit = e.Source as Control;
@@ -413,7 +379,8 @@ public sealed class VehicleBrowser
         var menu = new ContextMenu();
 
         var addMany = new MenuItem { Header = App.Loc["AddMany"], IsEnabled = AddMany is not null };
-        addMany.Click += (_, _) => ShowAddManyFlyout(anchor, texture);
+        addMany.Click += (_, _) =>
+            AddManyFlyout.Show(anchor, PlacementMode.Right, count => AddMany?.Invoke(texture, count));
         menu.Items.Add(addMany);
         menu.Items.Add(new Separator());
 

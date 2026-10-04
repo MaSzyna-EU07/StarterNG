@@ -33,6 +33,9 @@ public sealed class VehicleCards
 
     private readonly List<(Border Frame, ConsistItem Item, Dynamic Car)> _memberChrome = new();
 
+    /// <summary>Puts copies of the vehicle on a card right after it, the given number of times.</summary>
+    public Action<ConsistItem, int>? AddCopies { get; set; }
+
     private readonly List<(Button Badge, ConsistItem Item)> _driverChrome = new();
 
     public Dynamic? PressedCar { get; set; }
@@ -587,6 +590,12 @@ public sealed class VehicleCards
         menu.Opening += (_, _) =>
         {
             menu.Items.Clear();
+
+            var addMany = new MenuItem { Header = App.Loc["AddMany"], IsEnabled = AddCopies is not null };
+            addMany.Click += (_, _) =>
+                AddManyFlyout.Show(anchor, PlacementMode.Top, count => AddCopies?.Invoke(item, count));
+            menu.Items.Add(addMany);
+            menu.Items.Add(new Separator());
 
             var num = new MenuItem { Header = App.Loc["WagonNumber"] };
             num.Click += (_, _) => ShowWagonNumberFlyout(anchor, item.Cars[0]);
