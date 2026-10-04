@@ -254,7 +254,7 @@ public partial class Depot : UserControl
         StarterNG.Infrastructure.StatsBar.Fill(trainStats, TrainsetDisplay.StatsFields(
             _consist.EditingTrainset,
             _info.PhysicsFor,
-            car => _db.TextureFor(car.SkinFile, car.MmdFile) is { } t ? VehicleInfo.CategoryOf(t) : null,
+            car => _db.TextureFor(car.DataFolder, car.SkinFile, car.MmdFile) is { } t ? VehicleInfo.CategoryOf(t) : null,
             AppServices.Current.LoadWeights.Table.WeightOf));
     }
 
@@ -607,7 +607,7 @@ public partial class Depot : UserControl
     private void AddCopiesAfter(ConsistItem item, int count)
     {
         int index = _consist.IndexOf(item);
-        if (index < 0 || item.Cars.Count == 0 || _db.TextureFor(item.Cars[0].SkinFile, item.Cars[0].MmdFile) is not { } texture)
+        if (index < 0 || item.Cars.Count == 0 || _db.TextureFor(item.Cars[0].DataFolder, item.Cars[0].SkinFile, item.Cars[0].MmdFile) is not { } texture)
             return;
 
         InsertTexturesAt(texture, index + 1, count);

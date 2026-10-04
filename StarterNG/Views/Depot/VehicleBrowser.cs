@@ -590,7 +590,7 @@ public sealed class VehicleBrowser
 
     public void SelectInBrowser(Dynamic car)
     {
-        var texture = _db.TextureFor(car.SkinFile, car.MmdFile);
+        var texture = _db.TextureFor(car.DataFolder, car.SkinFile, car.MmdFile);
         if (texture is null)
             return;
 

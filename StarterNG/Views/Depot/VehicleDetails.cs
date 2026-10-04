@@ -97,7 +97,7 @@ public sealed class VehicleDetails
 
         BuildGeneralInfo(_consist.Selected);
 
-        if (_db.TextureFor(_consist.ActiveCar(_consist.Selected).SkinFile, _consist.ActiveCar(_consist.Selected).MmdFile) is { } tex)
+        if (_db.TextureFor(_consist.ActiveCar(_consist.Selected).DataFolder, _consist.ActiveCar(_consist.Selected).SkinFile, _consist.ActiveCar(_consist.Selected).MmdFile) is { } tex)
             _showTextureInfo(tex, consistTexturePanel);
         else
             consistTexturePanel.Children.Add(PanelNote(App.Loc["NoTextureInfo"]));

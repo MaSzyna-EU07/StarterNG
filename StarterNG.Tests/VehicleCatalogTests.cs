@@ -134,17 +134,31 @@ public class VehicleCatalogTests
     {
         var catalog = SharedSkinPair();
 
-        Assert.Equal("ET42-026-A", catalog.TextureFor("112E-026", "112E-A")!.TextureMini);
-        Assert.Equal("ET42-026-B", catalog.TextureFor("112E-026", "112E-B")!.TextureMini);
+        Assert.Equal("ET42-026-A", catalog.TextureFor(@"PKP\ET42_V2", "112E-026", "112E-A")!.TextureMini);
+        Assert.Equal("ET42-026-B", catalog.TextureFor(@"PKP\ET42_V2", "112E-026", "112E-B")!.TextureMini);
     }
 
     [Fact]
     public void The_second_half_on_a_shared_skin_follows_the_first_in_its_set()
     {
         var catalog = SharedSkinPair();
-        var b = catalog.TextureFor("112E-026", "112E-B")!;
+        var b = catalog.TextureFor(@"PKP\ET42_V2", "112E-026", "112E-B")!;
 
         Assert.True(catalog.IsSetFollower(b));
         Assert.Equal(new[] { "112E-A", "112E-B" }, catalog.ResolveSet(b)!.Select(t => t.Model));
+    }
+
+    [Fact]
+    public void A_skin_name_used_in_two_folders_is_found_by_the_folder()
+    {
+        var files = new InMemoryFileSystem()
+            .WithFile(TexturesFile("road", "clio"), "red.mat=clio,CLIO")
+            .WithFile(TexturesFile("industrial", "wls50_v1"), "red.mat=wls50,WLS50");
+        var installation = new TestInstallation(files);
+        installation.Vehicles.Load(installation.Library.Vehicles);
+        var catalog = installation.Library.Vehicles;
+
+        Assert.Equal("clio", catalog.TextureFor(@"road\clio", "red", "clio")!.Model);
+        Assert.Equal("wls50", catalog.TextureFor("industrial/wls50_v1", "red", "wls50.mmd")!.Model);
     }
 }

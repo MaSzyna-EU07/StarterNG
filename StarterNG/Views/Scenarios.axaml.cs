@@ -363,14 +363,14 @@ public partial class Scenarios : UserControl
             foreach (var v in ts.Vehicles)
             {
                 if (string.IsNullOrEmpty(v.SkinFile)) continue;
-                if (db.TextureFor(v.SkinFile, v.MmdFile) is null)
+                if (db.TextureFor(v.DataFolder, v.SkinFile, v.MmdFile) is null)
                     lines.Add($"# unknown texture: {v.Name} ({v.SkinFile})");
             }
         }
 
         foreach (var v in scenery.LooseVehicles)
         {
-            if (db.TextureFor(v.SkinFile, v.MmdFile) is null)
+            if (db.TextureFor(v.DataFolder, v.SkinFile, v.MmdFile) is null)
                 lines.Add($"# unknown loose texture: {v.Name} ({v.SkinFile})");
         }
 
@@ -860,7 +860,7 @@ public partial class Scenarios : UserControl
         foreach (var train in trainset.Vehicles)
         {
 
-            string miniName = db.MiniFor(train.SkinFile, train.MmdFile) ?? train.SkinFile;
+            string miniName = db.MiniFor(train.DataFolder, train.SkinFile, train.MmdFile) ?? train.SkinFile;
             if (!AppServices.Current.MiniTextures.Has(miniName) && AppServices.Current.MiniTextures.Has(train.SkinFile))
                 miniName = train.SkinFile;
             int thumbH = AppServices.Current.Settings.LargeThumbnails ? 64 : 32;
@@ -1161,10 +1161,10 @@ public partial class Scenarios : UserControl
         var db = AppServices.Current.Library.Vehicles;
         StarterNG.Infrastructure.StatsBar.Fill(trainStats, TrainsetDisplay.StatsFields(
             trainset,
-            car => AppServices.Current.Physics.For(car.DataFolder, db.TextureFor(car.SkinFile, car.MmdFile)?.Model)
+            car => AppServices.Current.Physics.For(car.DataFolder, db.TextureFor(car.DataFolder, car.SkinFile, car.MmdFile)?.Model)
                    ?? AppServices.Current.Physics.For(car.DataFolder, car.MmdFile)
                    ?? AppServices.Current.Physics.For(car.DataFolder, car.SkinFile),
-            car => db.TextureFor(car.SkinFile, car.MmdFile)?.ResolvedCategory));
+            car => db.TextureFor(car.DataFolder, car.SkinFile, car.MmdFile)?.ResolvedCategory));
     }
 
     private void RefreshSelectedConsist()

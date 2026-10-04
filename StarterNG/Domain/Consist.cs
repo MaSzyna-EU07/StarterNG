@@ -60,7 +60,7 @@ public sealed class Consist : IReadOnlyList<ConsistItem>
         var cars = trainset.Vehicles.Select(v =>
         {
             var c = v.Clone();
-            c.MiniName = _db.MiniFor(c.SkinFile, c.MmdFile) ?? c.MiniName;
+            c.MiniName = _db.MiniFor(c.DataFolder, c.SkinFile, c.MmdFile) ?? c.MiniName;
             return c;
         }).ToList();
 
@@ -86,7 +86,7 @@ public sealed class Consist : IReadOnlyList<ConsistItem>
             }
 
             VehicleSet? set = null;
-            if (_db.TextureFor(cars[i].SkinFile, cars[i].MmdFile)?.Uuid is { } uuid)
+            if (_db.TextureFor(cars[i].DataFolder, cars[i].SkinFile, cars[i].MmdFile)?.Uuid is { } uuid)
                 _db.SetByTextureUuid.TryGetValue(uuid, out set);
 
             if (set?.TextureRefs is { Count: > 1 })
@@ -97,7 +97,7 @@ public sealed class Consist : IReadOnlyList<ConsistItem>
                 int j = i;
                 while (j < cars.Count && group.Count < set.TextureRefs.Count)
                 {
-                    if (_db.TextureFor(cars[j].SkinFile, cars[j].MmdFile)?.Uuid is { } u
+                    if (_db.TextureFor(cars[j].DataFolder, cars[j].SkinFile, cars[j].MmdFile)?.Uuid is { } u
                         && members.Contains(u))
                         group.Add(cars[j++]);
                     else
@@ -285,7 +285,7 @@ public sealed class Consist : IReadOnlyList<ConsistItem>
     }
 
     private bool IsPowered(ConsistItem item) =>
-        item.Cars.Count > 0 && _db.TextureFor(item.Cars[0].SkinFile, item.Cars[0].MmdFile) is { } texture &&
+        item.Cars.Count > 0 && _db.TextureFor(item.Cars[0].DataFolder, item.Cars[0].SkinFile, item.Cars[0].MmdFile) is { } texture &&
         VehicleInfo.IsPoweredCategory(VehicleInfo.CategoryOf(texture));
 
     public void MoveLeft(ConsistItem item)
@@ -611,8 +611,8 @@ public sealed class Consist : IReadOnlyList<ConsistItem>
         if (IsUnitCar(a) && IsUnitCar(b) && UnitKey(a) == UnitKey(b))
             return true;
 
-        string? ua = _db.TextureFor(a.SkinFile, a.MmdFile)?.Uuid;
-        string? ub = _db.TextureFor(b.SkinFile, b.MmdFile)?.Uuid;
+        string? ua = _db.TextureFor(a.DataFolder, a.SkinFile, a.MmdFile)?.Uuid;
+        string? ub = _db.TextureFor(b.DataFolder, b.SkinFile, b.MmdFile)?.Uuid;
         if (string.IsNullOrEmpty(ua) || string.IsNullOrEmpty(ub))
             return false;
 
