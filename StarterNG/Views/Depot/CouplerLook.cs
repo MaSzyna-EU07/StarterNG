@@ -52,7 +52,7 @@ public static class CouplerLook
         Solid("#FF8C1A"), // high voltage - orange
         Solid("#1FD67A"), // gangway - green, as an exit sign
         Solid("#FFD60A"), // auxiliary air - yellow
-        Solid("#FF5CC8"), // heating - pink
+        Solid("#F2F2F2"), // heating - white, as steam
         Solid("#9AA3AC")  // workshop lock - grey
     };
 
