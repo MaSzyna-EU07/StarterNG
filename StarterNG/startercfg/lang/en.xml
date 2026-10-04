@@ -253,6 +253,11 @@
     <String key="ExeNotFound">The simulator executable was not found.</String>
     <String key="ExeNotExecutable">The file is not marked as executable (chmod +x).</String>
     <String key="ExeWrongPlatform">This binary is built for a different operating system. On Linux a Windows build can still run through Wine or Proton - if you use them, this is not an error.</String>
+    <String key="SimExitTitle">The simulator ended unexpectedly</String>
+    <String key="SimExitCode">Exit code: {0}</String>
+    <String key="SimExitQuick">It closed {0:0.0} s after starting.</String>
+    <String key="SimExitMessages">Last messages:</String>
+    <String key="SimExitSeeLog">The full run is in log.txt in the simulator folder.</String>
     <String key="TabInfo">Info</String>
     <String key="SettingsFileChangedTitle">Settings</String>
     <String key="SettingsFileChanged">eu07.ini was changed outside the starter. Reload it?</String>

@@ -253,6 +253,11 @@
     <String key="ExeNotFound">Исполняемый файл симулятора не найден.</String>
     <String key="ExeNotExecutable">Файл не помечен как исполняемый (chmod +x).</String>
     <String key="ExeWrongPlatform">Этот исполняемый файл собран для другой операционной системы. В Linux версия для Windows может работать через Wine или Proton - если вы их используете, это не ошибка.</String>
+    <String key="SimExitTitle">Симулятор неожиданно завершил работу</String>
+    <String key="SimExitCode">Код выхода: {0}</String>
+    <String key="SimExitQuick">Он закрылся через {0:0.0} с после запуска.</String>
+    <String key="SimExitMessages">Последние сообщения:</String>
+    <String key="SimExitSeeLog">Полный журнал находится в файле log.txt в папке симулятора.</String>
     <String key="TabInfo">Информация</String>
     <String key="SettingsFileChangedTitle">Настройки</String>
     <String key="SettingsFileChanged">Файл eu07.ini изменён вне стартера. Загрузить заново?</String>

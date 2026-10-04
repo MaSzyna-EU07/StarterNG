@@ -253,6 +253,11 @@
     <String key="ExeNotFound">Spustitelný soubor simulátoru nebyl nalezen.</String>
     <String key="ExeNotExecutable">Soubor není označen jako spustitelný (chmod +x).</String>
     <String key="ExeWrongPlatform">Tento binární soubor je pro jiný operační systém. Na Linuxu může verze pro Windows běžet přes Wine nebo Proton - pokud je používáte, nejde o chybu.</String>
+    <String key="SimExitTitle">Simulátor se neočekávaně ukončil</String>
+    <String key="SimExitCode">Návratový kód: {0}</String>
+    <String key="SimExitQuick">Ukončil se {0:0.0} s po spuštění.</String>
+    <String key="SimExitMessages">Poslední zprávy:</String>
+    <String key="SimExitSeeLog">Celý průběh je v souboru log.txt ve složce simulátoru.</String>
     <String key="TabInfo">Informace</String>
     <String key="SettingsFileChangedTitle">Nastavení</String>
     <String key="SettingsFileChanged">Soubor eu07.ini byl změněn mimo starter. Načíst jej znovu?</String>

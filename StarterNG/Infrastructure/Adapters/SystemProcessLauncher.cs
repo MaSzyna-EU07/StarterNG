@@ -18,29 +18,38 @@ public sealed class SystemProcessLauncher : IProcessLauncher
     }
 
     public IProcessHandle? Start(string executablePath, IReadOnlyList<string> arguments, string? workingDirectory,
-                                 out string? error)
+                                 bool captureErrors, out string? error)
     {
         var info = new ProcessStartInfo
         {
             FileName = executablePath,
             WorkingDirectory = workingDirectory ?? string.Empty,
-            UseShellExecute = false
+            UseShellExecute = false,
+            RedirectStandardError = captureErrors
         };
         foreach (string argument in arguments)
             info.ArgumentList.Add(argument);
 
         try
         {
-            var process = Process.Start(info);
-            if (process is null)
+            var process = new Process { StartInfo = info };
+            var handle = new ProcessHandle(process, started: true);
+            if (captureErrors)
+                process.ErrorDataReceived += (_, e) => handle.AddError(e.Data);
+
+            if (!process.Start())
             {
                 error = executablePath;
                 _log.Log($"start {executablePath}: process not created");
                 return null;
             }
 
+            // Drained as it comes: a full pipe would stall the simulator.
+            if (captureErrors)
+                process.BeginErrorReadLine();
+
             error = null;
-            return new ProcessHandle(process);
+            return handle;
         }
         catch (Exception ex)
         {
@@ -69,7 +78,7 @@ public sealed class SystemProcessLauncher : IProcessLauncher
         try
         {
             var process = Process.GetProcessesByName(processName).FirstOrDefault();
-            return process is null ? null : new ProcessHandle(process);
+            return process is null ? null : new ProcessHandle(process, started: false);
         }
         catch (Exception ex)
         {
@@ -80,11 +89,16 @@ public sealed class SystemProcessLauncher : IProcessLauncher
 
     private sealed class ProcessHandle : IProcessHandle
     {
-        private readonly Process _process;
+        private const int KeptErrorLines = 20;
 
-        public ProcessHandle(Process process)
+        private readonly Process _process;
+        private readonly bool _started;
+        private readonly Queue<string> _errors = new();
+
+        public ProcessHandle(Process process, bool started)
         {
             _process = process;
+            _started = started;
         }
 
         public bool HasExited
@@ -93,6 +107,39 @@ public sealed class SystemProcessLauncher : IProcessLauncher
             {
                 try { return _process.HasExited; }
                 catch { return true; }
+            }
+        }
+
+        // Only a process started here has an exit code to read; one merely found
+        // running throws on it.
+        public int? ExitCode
+        {
+            get
+            {
+                try { return _started && _process.HasExited ? _process.ExitCode : null; }
+                catch { return null; }
+            }
+        }
+
+        public IReadOnlyList<string> ErrorTail
+        {
+            get
+            {
+                lock (_errors)
+                    return _errors.ToList();
+            }
+        }
+
+        public void AddError(string? line)
+        {
+            if (line is null)
+                return;
+
+            lock (_errors)
+            {
+                _errors.Enqueue(line);
+                if (_errors.Count > KeptErrorLines)
+                    _errors.Dequeue();
             }
         }
 

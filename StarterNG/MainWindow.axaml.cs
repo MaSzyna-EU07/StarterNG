@@ -531,6 +531,7 @@ public partial class MainWindow : Window
     /// </summary>
     private void WatchSimulator(IProcessHandle? simulator)
     {
+        var started = DateTime.UtcNow;
         simulator ??= AppServices.Current.Processes.FindRunning(
             Path.GetFileNameWithoutExtension(AppServices.Current.SettingsStore.ResolveExecutable()));
 
@@ -540,8 +541,46 @@ public partial class MainWindow : Window
             return;
         }
 
-        _ = simulator.WaitForExitAsync().ContinueWith(
-            _ => Dispatcher.UIThread.Post(RestoreFromSimulator), TaskScheduler.Default);
+        _ = simulator.WaitForExitAsync().ContinueWith(_ => Dispatcher.UIThread.Post(() =>
+        {
+            RestoreFromSimulator();
+            ReportIfCrashed(simulator, DateTime.UtcNow - started);
+        }), TaskScheduler.Default);
+    }
+
+    /// <summary>
+    /// Says why the simulator is gone when it did not end the way a session does:
+    /// an error code, or a close so soon after the start that nobody played - a
+    /// window that only flashed. Its own words come from the error stream, or from
+    /// its log when that stayed silent.
+    /// </summary>
+    private async void ReportIfCrashed(IProcessHandle simulator, TimeSpan runTime)
+    {
+        if (simulator.ExitCode is not { } code)
+            return;
+
+        var exit = new SimulatorExit(code, runTime, simulator.ErrorTail);
+        if (!exit.Failed)
+            return;
+
+        var words = exit.CleanErrors.Count > 0
+            ? exit.CleanErrors
+            : AppServices.Current.StartSimulation.SimulatorLogTail(12);
+
+        var message = new StringBuilder();
+        message.AppendLine(string.Format(App.Loc["SimExitCode"], exit.DescribeCode()));
+        if (exit.Quick)
+            message.AppendLine(string.Format(App.Loc["SimExitQuick"], runTime.TotalSeconds));
+        if (words.Count > 0)
+        {
+            message.AppendLine().AppendLine(App.Loc["SimExitMessages"]);
+            foreach (string line in words)
+                message.AppendLine(line);
+        }
+        message.AppendLine().Append(App.Loc["SimExitSeeLog"]);
+
+        Diagnostics.Log(message.ToString().Replace(Environment.NewLine, " | "));
+        await MessageBox.Show(this, message.ToString(), App.Loc["SimExitTitle"], MessageBoxButtons.Ok);
     }
 
     private async void CheckExternalSettings()

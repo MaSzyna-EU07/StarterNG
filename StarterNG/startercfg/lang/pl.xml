@@ -253,6 +253,11 @@
     <String key="ExeNotFound">Nie znaleziono pliku wykonywalnego symulatora.</String>
     <String key="ExeNotExecutable">Plik nie ma prawa wykonywania (chmod +x).</String>
     <String key="ExeWrongPlatform">To jest plik wykonywalny dla innego systemu niż uruchomiony. Na Linuksie wersja dla Windows może działać przez Wine lub Proton - jeśli ich używasz, to nie jest błąd.</String>
+    <String key="SimExitTitle">Symulator zakończył pracę nieoczekiwanie</String>
+    <String key="SimExitCode">Kod wyjścia: {0}</String>
+    <String key="SimExitQuick">Zamknął się {0:0.0} s po uruchomieniu.</String>
+    <String key="SimExitMessages">Ostatnie komunikaty:</String>
+    <String key="SimExitSeeLog">Pełny przebieg jest w pliku log.txt w katalogu symulatora.</String>
     <String key="TabInfo">Informacje</String>
     <String key="SettingsFileChangedTitle">Ustawienia</String>
     <String key="SettingsFileChanged">Plik eu07.ini został zmieniony poza starterem. Wczytać ponownie?</String>

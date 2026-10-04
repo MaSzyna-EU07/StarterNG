@@ -55,6 +55,30 @@ public class StartSimulationTests
     }
 
     [Fact]
+    public void The_error_stream_is_kept_only_while_the_starter_stays_to_read_it()
+    {
+        var (start, launcher, installation) = Rig(files => files.WithExecutable(Build));
+
+        start.Execute(freeFly: true, saveSettings: false);
+        Assert.True(launcher.CapturedErrors);
+
+        // Closing right after the launch would leave the pipe with no reader.
+        installation.SettingsStore.Settings.AutoCloseStarter = true;
+        start.Execute(freeFly: true, saveSettings: false);
+        Assert.False(launcher.CapturedErrors);
+    }
+
+    [Fact]
+    public void The_end_of_the_simulator_log_is_read_for_a_silent_crash()
+    {
+        var (start, _, _) = Rig(files => files
+            .WithExecutable(Build)
+            .WithFile(TestInstallation.At("log.txt"), "first\r\nsecond\r\n\r\nthird\r\n"));
+
+        Assert.Equal(new[] { "second", "third" }, start.SimulatorLogTail(2));
+    }
+
+    [Fact]
     public void A_file_that_cannot_be_run_is_not()
     {
         var (start, launcher, _) = Rig(files => files.WithFile(Build, "\u007fELF"));
@@ -102,10 +126,13 @@ public class StartSimulationTests
 
         public IReadOnlyList<string>? Arguments { get; private set; }
 
+        public bool? CapturedErrors { get; private set; }
+
         public IProcessHandle? Start(string executablePath, IReadOnlyList<string> arguments, string? workingDirectory,
-                                     out string? error)
+                                     bool captureErrors, out string? error)
         {
             Executable = executablePath;
+            CapturedErrors = captureErrors;
             Arguments = arguments;
             WorkingDirectory = workingDirectory;
             error = null;
@@ -120,6 +147,10 @@ public class StartSimulationTests
     private sealed class RunningProcess : IProcessHandle
     {
         public bool HasExited => false;
+
+        public int? ExitCode => null;
+
+        public IReadOnlyList<string> ErrorTail => Array.Empty<string>();
 
         public Task WaitForExitAsync(CancellationToken cancellationToken = default) => Task.CompletedTask;
     }

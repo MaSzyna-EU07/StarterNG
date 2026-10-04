@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -60,6 +61,29 @@ public sealed class StartSimulation
         _processes = processes;
         _random = random;
         _log = log;
+    }
+
+    /// <summary>The end of the simulator's own log, for when it died without a word on its error stream.</summary>
+    public IReadOnlyList<string> SimulatorLogTail(int count)
+    {
+        string path = _paths.FromRoot("log.txt");
+        try
+        {
+            if (!_files.FileExists(path))
+                return Array.Empty<string>();
+
+            var lines = LegacyText.Decode(_files.ReadAllBytes(path))
+                .Split('\n')
+                .Select(line => line.TrimEnd('\r'))
+                .Where(line => line.Trim().Length > 0)
+                .ToList();
+            return lines.Skip(Math.Max(0, lines.Count - count)).ToList();
+        }
+        catch (Exception ex)
+        {
+            _log.Log($"reading {path}", ex);
+            return Array.Empty<string>();
+        }
     }
 
     public static string? StartableVehicle(Trainset? trainset, string? preferred)
@@ -139,7 +163,10 @@ public sealed class StartSimulation
         // The installation, not the folder of the binary: a simulator picked from a
         // build tree lives beside the data, and the data is what it opens.
         var (program, programArguments) = _executables.LaunchCommand(executable, arguments);
-        var process = _processes.Start(program, programArguments, _paths.Root, out string? error);
+        // Its error stream is kept for a report on a crash - unless the starter closes
+        // now, leaving nobody to read it or to report.
+        bool watched = !_settings.Settings.AutoCloseStarter;
+        var process = _processes.Start(program, programArguments, _paths.Root, watched, out string? error);
         if (process is null)
             return new SimulationStartResult(SimulationStartOutcome.LaunchFailed, ExecutablePath: executable,
                                              Detail: error);

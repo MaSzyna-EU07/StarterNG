@@ -253,6 +253,11 @@
     <String key="ExeNotFound">A szimulátor futtatható fájlja nem található.</String>
     <String key="ExeNotExecutable">A fájl nincs futtathatóként megjelölve (chmod +x).</String>
     <String key="ExeWrongPlatform">Ez a bináris másik operációs rendszerhez készült. Linuxon a Windows-verzió Wine vagy Proton segítségével futtatható - ha ezeket használod, ez nem hiba.</String>
+    <String key="SimExitTitle">A szimulátor váratlanul leállt</String>
+    <String key="SimExitCode">Kilépési kód: {0}</String>
+    <String key="SimExitQuick">{0:0.0} másodperccel az indítás után bezárult.</String>
+    <String key="SimExitMessages">Utolsó üzenetek:</String>
+    <String key="SimExitSeeLog">A teljes futás a szimulátor mappájában lévő log.txt fájlban található.</String>
     <String key="TabInfo">Információ</String>
     <String key="SettingsFileChangedTitle">Beállítások</String>
     <String key="SettingsFileChanged">Az eu07.ini fájl a starteren kívül módosult. Újratölti?</String>
