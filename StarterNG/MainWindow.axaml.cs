@@ -56,6 +56,8 @@ public partial class MainWindow : Window
         startButton.AddHandler(PointerReleasedEvent, StartButton_OnRightClick,
                                RoutingStrategies.Tunnel);
 
+        SettingsView.DeveloperToolsChanged += ApplyDeveloperTab;
+
         SettingsView.ThumbnailSizeChanged += () =>
         {
             DepotView.RefreshConsistView();
@@ -172,7 +174,7 @@ public partial class MainWindow : Window
         if (sender is not RadioButton { IsChecked: true } rb)
             return;
 
-        if (ScenariosView is null || DepotView is null || SettingsView is null)
+        if (ScenariosView is null || DepotView is null || SettingsView is null || DeveloperView is null)
             return;
 
         ShowPage(rb.Tag as string);
@@ -184,11 +186,31 @@ public partial class MainWindow : Window
         ScenariosView.IsVisible = page == "scenarios";
         DepotView.IsVisible = page == "depot";
         SettingsView.IsVisible = page == "settings";
+        DeveloperView.IsVisible = page == "developer";
+
+        if (DeveloperView.IsVisible)
+            DeveloperView.Refresh();
+    }
+
+    /// <summary>
+    /// Shows or hides the developer tab. Switching it off while it is the open one
+    /// hands the window back to the scenarios, so the top bar never ends up with
+    /// nothing selected.
+    /// </summary>
+    private void ApplyDeveloperTab()
+    {
+        bool wanted = AppServices.Current.Settings.DeveloperTools;
+        NavDeveloper.IsVisible = wanted;
+
+        if (!wanted && NavDeveloper.IsChecked == true)
+            NavScenarios.IsChecked = true;
     }
 
     private void ApplyInitialNav()
     {
-        foreach (var rb in new[] { NavScenarios, NavDepot, NavSettings })
+        ApplyDeveloperTab();
+
+        foreach (var rb in new[] { NavScenarios, NavDepot, NavSettings, NavDeveloper })
             if (rb.IsChecked == true)
             {
                 ShowPage(rb.Tag as string);

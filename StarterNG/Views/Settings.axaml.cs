@@ -34,8 +34,14 @@ public partial class Settings : UserControl, ISettingsCapture
     /// </summary>
     public event Action? ThumbnailSizeChanged;
 
+    /// <summary>Raised when the developer tab is switched on or off, so the top bar can follow.</summary>
+    public event Action? DeveloperToolsChanged;
+
     /// <summary>Thumbnail size the other tabs were last drawn at.</summary>
     private bool _drawnThumbs = AppServices.Current.Settings.LargeThumbnails;
+
+    /// <summary>Whether the top bar was last drawn with the developer tab on it.</summary>
+    private bool _shownDeveloperTools = AppServices.Current.Settings.DeveloperTools;
 
     public Settings()
     {
@@ -199,6 +205,7 @@ public partial class Settings : UserControl, ISettingsCapture
             DebugModeCb.IsChecked = s.DebugMode;
             VirtualShuntingCb.IsChecked = s.VirtualShunting;
             LogMissingVehicleFilesCb.IsChecked = s.LogMissingVehicleFiles;
+            DeveloperToolsCb.IsChecked = s.DeveloperTools;
 
             RenderEngineCb.SelectedIndex = s.RenderEngine;
             SelectResolution(s.Width, s.Height);
@@ -297,6 +304,7 @@ public partial class Settings : UserControl, ISettingsCapture
         s.DebugMode = IsChecked(DebugModeCb);
         s.VirtualShunting = IsChecked(VirtualShuntingCb);
         s.LogMissingVehicleFiles = IsChecked(LogMissingVehicleFilesCb);
+        s.DeveloperTools = IsChecked(DeveloperToolsCb);
 
         s.RenderEngine = Math.Max(0, RenderEngineCb.SelectedIndex);
         ReadResolution(s);
@@ -373,10 +381,21 @@ public partial class Settings : UserControl, ISettingsCapture
         AppServices.Current.SettingsStore.Save();
         KeyboardConfig.Instance.Save();
         RedrawThumbnailsIfNeeded();
+        RedrawNavIfNeeded();
         _dirty = false;
         UpdateSaveState();
         if (SaveStatus is not null)
             SaveStatus.Text = App.Loc["SettingsSaved"];
+    }
+
+    private void RedrawNavIfNeeded()
+    {
+        bool developer = AppServices.Current.Settings.DeveloperTools;
+        if (developer == _shownDeveloperTools)
+            return;
+
+        _shownDeveloperTools = developer;
+        DeveloperToolsChanged?.Invoke();
     }
 
     private void RedrawThumbnailsIfNeeded()

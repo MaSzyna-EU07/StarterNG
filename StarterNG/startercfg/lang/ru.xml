@@ -7,6 +7,7 @@
     <String key="NavScenarios">Сценарии</String>
     <String key="NavDepot">Депо</String>
     <String key="NavSettings">Настройки</String>
+    <String key="NavDeveloper">Developer</String>
     <String key="NavControls">Управление</String>
     <String key="Help">Справка</String>
     <String key="HelpWiki">Вики MaSzyna</String>
@@ -334,6 +335,7 @@
     <String key="DebugMode">Режим отладки (тестовый режим)</String>
     <String key="VirtualShunting">Виртуальный манёвр</String>
     <String key="LogMissingVehicleFiles">Записывать в журнал отсутствующие файлы состава при экспорте</String>
+    <String key="DeveloperTools">Show the package author's tab</String>
 
     <String key="Graphic">Графика</String>
     <String key="RenderEngine">Движок отрисовки</String>
@@ -584,4 +586,20 @@
     <String key="ShortcutMember">Выбрать секцию в сцепленной единице</String>
     <String key="ShortcutMoveVehicle">Переместить вагон в составе</String>
     <String key="ShortcutCardMenu">Открыть меню вагона</String>
+
+    <!-- Package author's tab - awaiting translation -->
+    <String key="DevDatabase">Vehicle database</String>
+    <String key="DevVehicles">Vehicle folders</String>
+    <String key="DevLiveries">Liveries</String>
+    <String key="DevWrecks">wrecks</String>
+    <String key="DevGroups">Groups</String>
+    <String key="DevSets">Fixed sets</String>
+    <String key="DevFiles">textures.txt files</String>
+    <String key="DevSource">Read from</String>
+    <String key="DevSourceCopy">the starter's copy</String>
+    <String key="DevSourceTextures">textures.txt files</String>
+    <String key="DevWritten">Copy written</String>
+    <String key="DevLocation">Copy folder</String>
+    <String key="DevRebuild">Rebuild copy</String>
+    <String key="DevRebuilt">Rebuilt</String>
 </Language>

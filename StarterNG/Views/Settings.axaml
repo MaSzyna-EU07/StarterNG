@@ -144,6 +144,9 @@
                                     <ctl:SettingRow ConfigKey="starter.logmissingvehicles" Description="{Binding [LogMissingVehicleFilesDesc], Source={x:Static starterNg:App.Loc}}">
                                         <CheckBox x:Name="LogMissingVehicleFilesCb" Content="{Binding [LogMissingVehicleFiles], Source={x:Static starterNg:App.Loc}}" />
                                     </ctl:SettingRow>
+                                    <ctl:SettingRow ConfigKey="starter.developertools" Description="{Binding [DeveloperToolsDesc], Source={x:Static starterNg:App.Loc}}">
+                                        <CheckBox x:Name="DeveloperToolsCb" Content="{Binding [DeveloperTools], Source={x:Static starterNg:App.Loc}}" />
+                                    </ctl:SettingRow>
                                 </StackPanel>
                             </ctl:SettingsSection>
                         </StackPanel>
