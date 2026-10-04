@@ -32,8 +32,8 @@ public enum CouplerState
 
 /// <summary>
 /// How a coupler is drawn on the consist strip. Under an icon for the coupler as a
-/// whole runs a bundle of stripes, one per connection in its own colour, so what
-/// is coupled reads at a glance; the coupler editor shows the same colours as its
+/// whole sits a block of squares, one place and colour per connection, so what is
+/// coupled reads at a glance; the coupler editor shows the same colours as its
 /// legend. Green is left out - on the strip it means selected or turned round.
 /// </summary>
 public static class CouplerLook
@@ -46,19 +46,20 @@ public static class CouplerLook
     /// <summary>One per bit of <see cref="CouplingBits.BitKeys"/>, in the same order.</summary>
     private static readonly IBrush[] BitBrushes =
     {
-        Solid("#C3CBD3"), // mechanical - steel
-        Solid("#FF5A5A"), // brake pipe - red
-        Solid("#4FB8FF"), // multiple-unit control - blue
-        Solid("#FFD43B"), // high voltage - yellow
-        Solid("#B08CFF"), // gangway - violet
-        Solid("#FF9F43"), // auxiliary air - orange
-        Solid("#FF6FB5"), // heating - pink
-        Solid("#7A838C")  // workshop lock - dark steel
+        Solid("#000000"), // mechanical - black, as the hook is; outlined to show on the dark strip
+        Solid("#FF3B3B"), // brake pipe - red
+        Solid("#3D9BFF"), // multiple-unit control - blue
+        Solid("#FFD60A"), // high voltage - yellow
+        Solid("#A970FF"), // gangway - purple
+        Solid("#FF8C1A"), // auxiliary air - orange
+        Solid("#FF5CC8"), // heating - pink
+        Solid("#9AA3AC")  // workshop lock - grey
     };
 
-    private static IBrush Solid(string color) => new SolidColorBrush(Color.Parse(color));
+    private static readonly IBrush Outline = Solid("#C3CBD3");
+    private static readonly IBrush EmptySlot = Solid("#4A525A");
 
-    public static IBrush BitBrush(int index) => BitBrushes[index];
+    private static IBrush Solid(string color) => new SolidColorBrush(Color.Parse(color));
 
     public static CouplerState StateOf(Coupling coupling, bool trailing)
     {
@@ -93,6 +94,36 @@ public static class CouplerLook
     public static IEnumerable<int> SetBits(Coupling coupling) =>
         Enumerable.Range(0, CouplingBits.BitKeys.Length).Where(i => coupling.Has(1 << i));
 
+    /// <summary>
+    /// The connections as a 2 by 4 block of squares laid out like the coupler
+    /// editor's checkboxes, so a square's place says what it is as much as its
+    /// colour; an empty place is a dot.
+    /// </summary>
+    public static void FillSlots(Grid slots, Coupling coupling)
+    {
+        slots.Children.Clear();
+        for (int i = 0; i < CouplingBits.BitKeys.Length; i++)
+        {
+            Control slot = coupling.Has(1 << i)
+                ? Swatch(i, 7)
+                : new Border
+                {
+                    Width = 3, Height = 3, CornerRadius = new CornerRadius(1.5), Background = EmptySlot,
+                    HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center
+                };
+            Grid.SetRow(slot, i / 2);
+            Grid.SetColumn(slot, i % 2);
+            slots.Children.Add(slot);
+        }
+    }
+
+    public static Grid Slots() => new()
+    {
+        ColumnDefinitions = new ColumnDefinitions("9,9"),
+        RowDefinitions = new RowDefinitions("9,9,9,9"),
+        HorizontalAlignment = HorizontalAlignment.Center
+    };
+
     /// <summary>A connection's name with its colour beside it, for the editor's checkboxes.</summary>
     public static Control BitLabel(int index) => new StackPanel
     {
@@ -100,13 +131,19 @@ public static class CouplerLook
         Spacing = 6,
         Children =
         {
-            new Border
-            {
-                Width = 10, Height = 10, CornerRadius = new CornerRadius(2),
-                Background = BitBrushes[index], VerticalAlignment = VerticalAlignment.Center
-            },
+            Swatch(index, 10),
             new TextBlock { Text = App.Loc[CouplingBits.BitKeys[index]], VerticalAlignment = VerticalAlignment.Center }
         }
+    };
+
+    private static Border Swatch(int index, double size) => new()
+    {
+        Width = size, Height = size, CornerRadius = new CornerRadius(1.5),
+        Background = BitBrushes[index],
+        // Black needs an edge to show on the dark strip; the rest have one in their own colour.
+        BorderBrush = index == 0 ? Outline : BitBrushes[index],
+        BorderThickness = new Thickness(1),
+        HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center
     };
 
     /// <summary>What the coupler connects, by the names the coupler editor uses.</summary>

@@ -2,9 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Avalonia;
-using Avalonia.Collections;
 using Avalonia.Controls;
-using Avalonia.Controls.Shapes;
 using Avalonia.Input;
 using Avalonia.Layout;
 using Avalonia.Media;
@@ -416,19 +414,14 @@ public sealed class VehicleCards
     {
         var coupling = Consist.TailCar(item).Coupling;
         var icon = new MaterialIcon { Width = 18, Height = 18, HorizontalAlignment = HorizontalAlignment.Center };
-        // Room for all eight, so every icon on the strip sits level.
-        var stripes = new StackPanel
-        {
-            Spacing = 1, Height = 23,
-            HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Top
-        };
+        var slots = CouplerLook.Slots();
         var coupler = new Button
         {
             Padding = new Thickness(3, 6, 3, 6),
             MinWidth = 0,
             Cursor = _hand,
             VerticalAlignment = VerticalAlignment.Center,
-            Content = new StackPanel { Spacing = 4, Children = { icon, stripes } }
+            Content = new StackPanel { Spacing = 4, Children = { icon, slots } }
         };
         coupler.Classes.Add("Basic");
 
@@ -438,22 +431,7 @@ public sealed class VehicleCards
             icon.Kind = CouplerLook.Icon(state);
             icon.Foreground = CouplerLook.Brush(state);
 
-            // A stripe per connection, the way the hoses and cables hang between
-            // the buffers; nothing coupled leaves a broken line.
-            stripes.Children.Clear();
-            foreach (int bit in CouplerLook.SetBits(coupling))
-                stripes.Children.Add(new Border
-                {
-                    Width = 22, Height = 2, CornerRadius = new CornerRadius(1),
-                    Background = CouplerLook.BitBrush(bit)
-                });
-            if (stripes.Children.Count == 0 && !trailing)
-                stripes.Children.Add(new Line
-                {
-                    StartPoint = new Point(0, 0), EndPoint = new Point(22, 0),
-                    Stroke = CouplerLook.Brush(state), StrokeThickness = 2,
-                    StrokeDashArray = new AvaloniaList<double> { 2, 2 }
-                });
+            CouplerLook.FillSlots(slots, coupling);
 
             ToolTip.SetTip(coupler, CouplerLook.Describe(coupling, trailing));
         }
