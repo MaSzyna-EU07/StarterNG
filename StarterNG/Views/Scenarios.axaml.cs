@@ -16,6 +16,7 @@ using Avalonia.Interactivity;
 using Avalonia.Layout;
 using Avalonia.Markup.Xaml;
 using Avalonia.Media.Imaging;
+using Avalonia.VisualTree;
 using StarterNG.Classes;
 using StarterNG.Domain;
 using StarterNG.Application;
@@ -103,11 +104,7 @@ public partial class Scenarios : UserControl
     // A right click picks the scenery under it, so the menu speaks of that one.
     private void SceneryList_OnContextRequested(object? sender, ContextRequestedEventArgs e)
     {
-        var hit = e.Source as Control;
-        while (hit is not null and not TreeViewItem)
-            hit = hit.Parent as Control;
-
-        if (hit is TreeViewItem { Tag: int } item)
+        if ((e.Source as Visual).FindAncestorOfType<TreeViewItem>(includeSelf: true) is { Tag: int } item)
             sceneryList.SelectedItem = item;
     }
 

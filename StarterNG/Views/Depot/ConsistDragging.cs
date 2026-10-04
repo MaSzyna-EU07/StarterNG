@@ -5,6 +5,7 @@ using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Media;
 using Avalonia.Media.Imaging;
+using Avalonia.VisualTree;
 
 using StarterNG.Classes;
 using StarterNG.Domain;
@@ -113,10 +114,7 @@ public sealed class ConsistDragging
         if (!e.GetCurrentPoint(vehicleListBox).Properties.IsLeftButtonPressed)
             return;
 
-        var hit = e.Source as Control;
-        while (hit != null && hit is not ListBoxItem)
-            hit = hit.Parent as Control;
-        if (hit is ListBoxItem { Tag: VehicleTexture texture })
+        if ((e.Source as Visual).FindAncestorOfType<ListBoxItem>(includeSelf: true) is { Tag: VehicleTexture texture })
             ArmVehicleDrag(e, vehicleListBox, texture);
     }
 

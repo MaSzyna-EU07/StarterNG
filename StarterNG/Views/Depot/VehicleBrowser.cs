@@ -11,6 +11,7 @@ using Avalonia.Layout;
 using Avalonia.Media;
 using Avalonia.Media.Imaging;
 using Avalonia.Threading;
+using Avalonia.VisualTree;
 
 using StarterNG.Classes;
 using StarterNG.Domain;
@@ -363,11 +364,8 @@ public sealed class VehicleBrowser
 
     private void List_OnContextRequested(object? sender, ContextRequestedEventArgs e)
     {
-        var hit = e.Source as Control;
-        while (hit != null && hit is not ListBoxItem)
-            hit = hit.Parent as Control;
-
-        if (hit is not ListBoxItem { Tag: VehicleTexture texture })
+        if ((e.Source as Visual).FindAncestorOfType<ListBoxItem>(includeSelf: true) is not
+            { Tag: VehicleTexture texture } hit)
             return;
 
         BuildBrowserMenu(texture, hit).Open(hit);
