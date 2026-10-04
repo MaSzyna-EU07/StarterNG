@@ -101,11 +101,20 @@ public partial class Scenarios : UserControl
             ? Sceneries[index]
             : null;
 
-    // A right click picks the scenery under it, so the menu speaks of that one.
+    // A right click picks the scenery under it, so the menu speaks of that one. A
+    // group has nothing to star, and the menu is not opened on it at all - it would
+    // otherwise act on whatever scenery was selected before.
     private void SceneryList_OnContextRequested(object? sender, ContextRequestedEventArgs e)
     {
-        if ((e.Source as Visual).FindAncestorOfType<TreeViewItem>(includeSelf: true) is { Tag: int } item)
-            sceneryList.SelectedItem = item;
+        switch ((e.Source as Visual).FindAncestorOfType<TreeViewItem>(includeSelf: true))
+        {
+            case { Tag: int } item:
+                sceneryList.SelectedItem = item;
+                break;
+            case not null:
+                e.Handled = true;
+                break;
+        }
     }
 
     private void SceneryMenu_OnOpening(object? sender, CancelEventArgs e)
