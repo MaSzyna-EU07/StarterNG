@@ -564,7 +564,6 @@
     <String key="StartFreeFly">Запустить без транспорта</String>
     <String key="StartEditor">Запустить редактор сценария</String>
     <String key="StartEditorWarning">Редактор сценария (eu07 -edit) есть только в некоторых версиях симулятора. Если выбранный симулятор его не поддерживает, редактор не откроется. Он работает с самим файлом {0}, а не с копией стартера, поэтому сохранённые изменения попадут в сценарий. Запустить?</String>
-    <String key="VolumePaused">Громкость на паузе</String>
     <String key="DebugLogVisible">Показывать ход симуляции</String>
     <String key="PyScreenPriority">Частота обновления дополнительных экранов</String>
     <String key="PyPriorityNormal">Стандартная</String>

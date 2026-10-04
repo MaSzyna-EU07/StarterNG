@@ -599,7 +599,6 @@
     <String key="StartFreeFly">Start with no vehicle</String>
     <String key="StartEditor">Open the scenery editor</String>
     <String key="StartEditorWarning">Only some simulator builds have the scenery editor (eu07 -edit). If the selected simulator does not, the editor will not open. It works on {0} itself, not on the starter's copy, so what you save goes into the scenery. Start it?</String>
-    <String key="VolumePaused">Volume while paused</String>
     <String key="DebugLogVisible">Show log in console</String>
     <String key="PyScreenPriority">Extra screen update delay</String>
     <String key="PyScreenPriorityDesc">Minimum time between Python cab screen updates in milliseconds. Higher value = less frequent updates.</String>

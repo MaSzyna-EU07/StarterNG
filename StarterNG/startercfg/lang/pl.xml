@@ -599,7 +599,6 @@
     <String key="StartFreeFly">Uruchom bez pojazdu</String>
     <String key="StartEditor">Uruchom edytor scenerii</String>
     <String key="StartEditorWarning">Edytor scenerii (eu07 -edit) mają tylko niektóre wersje symulatora. Jeśli wybrany plik symulatora go nie obsługuje, edytor się nie otworzy. Edytor pracuje na samym pliku {0}, a nie na kopii przygotowanej przez starter, więc zapisane zmiany trafią do scenerii. Uruchomić?</String>
-    <String key="VolumePaused">Głośność podczas pauzy</String>
     <String key="DebugLogVisible">Wyświetlaj log w konsoli</String>
     <String key="PyScreenPriority">Opóźnienie odświeżania ekranów dodatkowych</String>
     <String key="PyScreenPriorityDesc">Minimalny czas między aktualizacjami ekranów Python w kabinach (ms). Wyższa wartość = rzadsze odświeżanie.</String>

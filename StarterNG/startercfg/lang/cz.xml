@@ -564,7 +564,6 @@
     <String key="StartFreeFly">Spustit bez vozidla</String>
     <String key="StartEditor">Spustit editor scenérie</String>
     <String key="StartEditorWarning">Editor scenérie (eu07 -edit) mají jen některé verze simulátoru. Pokud ho vybraný simulátor nepodporuje, editor se neotevře. Editor pracuje přímo se souborem {0}, ne s kopií od starteru, takže uložené změny se zapíší do scenérie. Spustit?</String>
-    <String key="VolumePaused">Hlasitost při pauze</String>
     <String key="DebugLogVisible">Zobrazovat průběh simulace</String>
     <String key="PyScreenPriority">Frekvence obnovení doplňkových obrazovek</String>
     <String key="PyPriorityNormal">Standardní</String>
