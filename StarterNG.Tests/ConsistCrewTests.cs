@@ -87,6 +87,42 @@ public class ConsistCrewTests
         Assert.Equal(eDriverType.Nobody, second.Cars[0].DriverType);
     }
 
+    [Fact]
+    public void A_locomotive_moved_to_the_head_takes_the_driver_from_the_one_it_put_behind()
+    {
+        var first = Add("ep07-001", 0);
+        var second = Add("ep07-002", 1);
+
+        _consist.Move(1, 0);
+
+        Assert.Equal(eDriverType.Headdriver, second.Cars[0].DriverType);
+        Assert.Equal(eDriverType.Nobody, first.Cars[0].DriverType);
+        Assert.Equal(eDriverType.Nobody, first.Driver);
+    }
+
+    [Fact]
+    public void Stepping_a_locomotive_left_onto_the_head_hands_over_the_same_way()
+    {
+        var first = Add("ep07-001", 0);
+        var second = Add("ep07-002", 1);
+
+        _consist.MoveLeft(second);
+
+        Assert.Equal(eDriverType.Headdriver, second.Cars[0].DriverType);
+        Assert.Equal(eDriverType.Nobody, first.Cars[0].DriverType);
+    }
+
+    [Fact]
+    public void A_wagon_moved_to_the_head_leaves_the_driver_where_he_is()
+    {
+        var loco = Add("ep07-001", 0);
+        Add("b111-01", 1);
+
+        _consist.Move(1, 0);
+
+        Assert.Equal(eDriverType.Headdriver, loco.Cars[0].DriverType);
+    }
+
     private ConsistItem Add(string skin, int at)
     {
         var item = Item(skin);

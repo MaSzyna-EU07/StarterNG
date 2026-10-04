@@ -289,34 +289,49 @@ public sealed class Consist : IReadOnlyList<ConsistItem>
     {
         int i = _items.IndexOf(item);
         if (i > 0)
-        {
-            (_items[i - 1], _items[i]) = (_items[i], _items[i - 1]);
-            Raise();
-        }
+            Move(i, i - 1);
     }
 
     public void MoveRight(ConsistItem item)
     {
         int i = _items.IndexOf(item);
         if (i >= 0 && i < _items.Count - 1)
-        {
-            (_items[i + 1], _items[i]) = (_items[i], _items[i + 1]);
-            Raise();
-        }
+            Move(i, i + 1);
     }
 
     public void Move(int from, int to)
     {
         if (from < 0 || from >= _items.Count) return;
 
+        var previousHead = _items[0];
         var item = _items[from];
         _items.RemoveAt(from);
         to = Math.Clamp(to, 0, _items.Count);
         _items.Insert(to, item);
 
+        HandOverLead(previousHead);
         Selected = item;
         AutoConnectAll();
         Raise();
+    }
+
+    /// <summary>
+    /// A locomotive that comes to the head of the train takes over the driver of
+    /// the one it put behind, which is left unstaffed: the train is driven from its
+    /// front, from cab A.
+    /// </summary>
+    private void HandOverLead(ConsistItem previousHead)
+    {
+        var head = _items[0];
+        if (ReferenceEquals(head, previousHead) || !IsPowered(head) ||
+            previousHead.Driver is not (eDriverType.Headdriver or eDriverType.Reardriver))
+            return;
+
+        previousHead.Driver = eDriverType.Nobody;
+        foreach (var car in previousHead.Cars)
+            car.DriverType = eDriverType.Nobody;
+
+        Crew(head, eDriverType.Headdriver);
     }
 
     public void Remove(ConsistItem item)
