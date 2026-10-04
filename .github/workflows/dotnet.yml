@@ -56,11 +56,43 @@ jobs:
           "${{ env.TEST_PROJECT_PATH }}"
           -c Release
 
+  # Major and minor are set by hand in the project file; the patch is the number
+  # of commits, so every build of main is higher than the one before and no bot
+  # has to commit a bump back to the branch.
+  version:
+    name: Version
+    runs-on: ubuntu-latest
+
+    outputs:
+      number: ${{ steps.number.outputs.number }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Number this build
+        id: number
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          prefix=$(sed -n 's:.*<VersionPrefix>\([0-9][0-9]*\.[0-9][0-9]*\)</VersionPrefix>.*:\1:p' "$PROJECT_PATH")
+          if [ -z "$prefix" ]; then
+            echo "::error file=$PROJECT_PATH::No major.minor <VersionPrefix> in the project file"
+            exit 1
+          fi
+
+          number="$prefix.$(git rev-list --count HEAD)"
+          echo "number=$number" >> "$GITHUB_OUTPUT"
+          echo "Version $number"
+
   publish:
     name: ${{ matrix.name }}
 
-    # A failing test stops the packages, and with them the rolling pre-release.
-    needs: test
+    # A failing test stops the packages, and with them the release.
+    needs: [test, version]
 
     strategy:
       fail-fast: false
@@ -114,6 +146,7 @@ jobs:
           --no-restore
           -p:PublishAot=true
           -p:PublishTrimmed=true
+          -p:Version=${{ needs.version.outputs.number }}
           -o "publish/${{ matrix.rid }}"
 
       - name: Package Windows build
@@ -146,22 +179,19 @@ jobs:
           archive: false
 
   # Workflow artifacts are only reachable for signed-in users with repository
-  # access, so every build of a release branch also lands in a rolling
-  # pre-release, whose assets anyone can download:
-  #   https://github.com/${{ github.repository }}/releases/download/<tag>/<file>
-  # main -> "latest", staging -> "staging"; the two never overwrite each other.
+  # access, so every build of a release branch also lands in a release, whose
+  # assets anyone can download. main gets a release of its own per build, tagged
+  # with its version - the newest is what the starter checks itself against:
+  #   https://github.com/${{ github.repository }}/releases/latest/download/<file>
+  # staging keeps one rolling pre-release for testers.
   release:
-    name: Rolling pre-release
-    needs: publish
+    name: Release
+    needs: [publish, version]
     if: github.event_name == 'push'
     runs-on: ubuntu-latest
 
     permissions:
       contents: write
-
-    env:
-      RELEASE_TAG: ${{ github.ref_name == 'main' && 'latest' || 'staging' }}
-      RELEASE_NAME: ${{ github.ref_name == 'main' && 'Latest build' || 'Staging build' }}
 
     steps:
       # v8, not v7: the packages are uploaded with archive: false, and only v8
@@ -175,22 +205,50 @@ jobs:
           merge-multiple: true
           skip-decompress: true
 
-      # Recreated rather than edited, so the tag follows its branch and no asset
-      # from an older build is left behind.
-      - name: Replace the rolling pre-release
+      - name: Publish the release
+        if: github.ref_name == 'main'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: v${{ needs.version.outputs.number }}
+          VERSION: ${{ needs.version.outputs.number }}
         run: |
           set -euo pipefail
 
           ls -l dist
 
-          gh release delete "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --yes --cleanup-tag || true
-          gh release create "$RELEASE_TAG" \
+          # A re-run of the same commit finds its release already there.
+          if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" > /dev/null 2>&1; then
+            gh release upload "$TAG" dist/* --repo "$GITHUB_REPOSITORY" --clobber
+            exit 0
+          fi
+
+          gh release create "$TAG" \
+            dist/StarterNG-windows-x64.zip \
+            dist/StarterNG-linux-x64.tar.gz \
+            --repo "$GITHUB_REPOSITORY" \
+            --target "$GITHUB_SHA" \
+            --title "StarterNG $VERSION" \
+            --generate-notes \
+            --latest
+
+      # Recreated rather than edited, so the tag follows its branch and no asset
+      # from an older build is left behind.
+      - name: Replace the staging pre-release
+        if: github.ref_name == 'staging'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VERSION: ${{ needs.version.outputs.number }}
+        run: |
+          set -euo pipefail
+
+          ls -l dist
+
+          gh release delete staging --repo "$GITHUB_REPOSITORY" --yes --cleanup-tag || true
+          gh release create staging \
             dist/StarterNG-windows-x64.zip \
             dist/StarterNG-linux-x64.tar.gz \
             --repo "$GITHUB_REPOSITORY" \
             --target "$GITHUB_SHA" \
             --prerelease \
-            --title "$RELEASE_NAME" \
+            --title "Staging build $VERSION" \
             --notes "Automatic build of $GITHUB_REF_NAME (${GITHUB_SHA::7}), $(date -u '+%Y-%m-%d %H:%M UTC')."

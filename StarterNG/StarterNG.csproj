@@ -10,8 +10,9 @@
         <ApplicationManifest>app.manifest</ApplicationManifest>
         <ApplicationIcon>Assets\starter.ico</ApplicationIcon>
         <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
-        <AssemblyVersion>1.4.0.0</AssemblyVersion>
-        <FileVersion>1.4.0.0</FileVersion>
+        <!-- Major and minor only: CI adds the patch, the number of commits, so every
+             build of main is a higher version without anyone bumping it. -->
+        <VersionPrefix>1.4</VersionPrefix>
         <AssemblyName>Starter</AssemblyName>
         <Company>eu07.pl</Company>
     </PropertyGroup>
