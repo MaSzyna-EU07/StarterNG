@@ -425,6 +425,9 @@ public sealed class VehicleCards
         };
         coupler.Classes.Add("Basic");
 
+        // Between vehicles the squares say it all; the icon is for the back of the train.
+        icon.IsVisible = trailing;
+
         void Restyle()
         {
             var state = CouplerLook.StateOf(coupling, trailing);

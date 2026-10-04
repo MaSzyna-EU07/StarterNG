@@ -46,12 +46,12 @@ public static class CouplerLook
     /// <summary>One per bit of <see cref="CouplingBits.BitKeys"/>, in the same order.</summary>
     private static readonly IBrush[] BitBrushes =
     {
-        Solid("#000000"), // mechanical - black, as the hook is; outlined to show on the dark strip
+        Solid("#000000"), // mechanical - black, outlined to show on the dark strip
         Solid("#FF3B3B"), // brake pipe - red
         Solid("#3D9BFF"), // multiple-unit control - blue
-        Solid("#FFD60A"), // high voltage - yellow
+        Solid("#FF8C1A"), // high voltage - orange
         Solid("#A970FF"), // gangway - purple
-        Solid("#FF8C1A"), // auxiliary air - orange
+        Solid("#FFD60A"), // auxiliary air - yellow
         Solid("#FF5CC8"), // heating - pink
         Solid("#9AA3AC")  // workshop lock - grey
     };
@@ -105,10 +105,10 @@ public static class CouplerLook
         for (int i = 0; i < CouplingBits.BitKeys.Length; i++)
         {
             Control slot = coupling.Has(1 << i)
-                ? Swatch(i, 7)
+                ? Swatch(i, 10)
                 : new Border
                 {
-                    Width = 3, Height = 3, CornerRadius = new CornerRadius(1.5), Background = EmptySlot,
+                    Width = 4, Height = 4, CornerRadius = new CornerRadius(2), Background = EmptySlot,
                     HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center
                 };
             Grid.SetRow(slot, i / 2);
@@ -119,8 +119,8 @@ public static class CouplerLook
 
     public static Grid Slots() => new()
     {
-        ColumnDefinitions = new ColumnDefinitions("9,9"),
-        RowDefinitions = new RowDefinitions("9,9,9,9"),
+        ColumnDefinitions = new ColumnDefinitions("12,12"),
+        RowDefinitions = new RowDefinitions("12,12,12,12"),
         HorizontalAlignment = HorizontalAlignment.Center
     };
 
