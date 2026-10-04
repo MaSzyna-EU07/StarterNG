@@ -2,7 +2,9 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Avalonia;
+using Avalonia.Collections;
 using Avalonia.Controls;
+using Avalonia.Controls.Shapes;
 using Avalonia.Input;
 using Avalonia.Layout;
 using Avalonia.Media;
@@ -413,36 +415,34 @@ public sealed class VehicleCards
     public Control BuildCoupler(ConsistItem item, bool trailing = false)
     {
         var coupling = Consist.TailCar(item).Coupling;
-        var glyph = new TextBlock
+        var icon = new MaterialIcon { Width = 18, Height = 18, HorizontalAlignment = HorizontalAlignment.Center };
+        var bar = new Line
         {
-            FontSize = 18,
-            VerticalAlignment = VerticalAlignment.Center,
-            HorizontalAlignment = HorizontalAlignment.Center
+            StartPoint = new Point(0, 0),
+            EndPoint = new Point(22, 0),
+            HorizontalAlignment = HorizontalAlignment.Center,
+            StrokeLineCap = PenLineCap.Round
         };
         var coupler = new Button
         {
-            Padding = new Thickness(4, 6, 4, 6),
+            Padding = new Thickness(3, 6, 3, 6),
             MinWidth = 0,
             Cursor = _hand,
             VerticalAlignment = VerticalAlignment.Center,
-            Content = glyph
+            Content = new StackPanel { Spacing = 4, Children = { icon, bar } }
         };
         coupler.Classes.Add("Basic");
 
         void Restyle()
         {
             var state = CouplerLook.StateOf(coupling, trailing);
-            glyph.Text = CouplerLook.Glyph(state);
-            if (CouplerLook.Brush(state) is { } brush)
-            {
-                glyph.Foreground = brush;
-                glyph.Opacity = 1;
-            }
-            else
-            {
-                glyph.ClearValue(TextBlock.ForegroundProperty);
-                glyph.Opacity = 0.7;
-            }
+            var brush = CouplerLook.Brush(state);
+            icon.Kind = CouplerLook.Icon(state);
+            icon.Foreground = brush;
+            bar.Opacity = CouplerLook.HasBar(state) ? 1 : 0; // kept in the layout, so every icon sits level
+            bar.Stroke = brush;
+            bar.StrokeThickness = CouplerLook.BarThickness(state);
+            bar.StrokeDashArray = state == CouplerState.Free ? new AvaloniaList<double> { 1.5, 1.5 } : null;
             ToolTip.SetTip(coupler, CouplerLook.Describe(coupling, trailing));
         }
 

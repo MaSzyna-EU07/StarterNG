@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using Avalonia.Media;
+using Material.Icons;
 using StarterNG.Classes;
 
 namespace StarterNG.Views;
@@ -26,14 +27,21 @@ public enum CouplerState
     NoEndSignals
 }
 
-/// <summary>How a coupler is drawn on the consist strip, so its state reads at a glance.</summary>
+/// <summary>
+/// How a coupler is drawn on the consist strip, so its state reads at a glance:
+/// an icon and a bar under it that ties the two cards, both in the state's colour.
+/// Green is left out - on the strip it means selected or turned round.
+/// </summary>
 public static class CouplerLook
 {
-    private static readonly IBrush Dim = new SolidColorBrush(Color.Parse("#808080"));
-    private static readonly IBrush Green = new SolidColorBrush(Color.Parse("#41C400"));
-    private static readonly IBrush Blue = new SolidColorBrush(Color.Parse("#4AA3FF"));
-    private static readonly IBrush Red = new SolidColorBrush(Color.Parse("#E5484D"));
-    private static readonly IBrush Amber = new SolidColorBrush(Color.Parse("#E0A030"));
+    private static readonly IBrush Steel = Solid("#C3CBD3");
+    private static readonly IBrush Dim = Solid("#6B737B");
+    private static readonly IBrush Sky = Solid("#4FB8FF");
+    private static readonly IBrush Violet = Solid("#B08CFF");
+    private static readonly IBrush Red = Solid("#FF5A5A");
+    private static readonly IBrush Amber = Solid("#F0A030");
+
+    private static IBrush Solid(string color) => new SolidColorBrush(Color.Parse(color));
 
     public static CouplerState StateOf(Coupling coupling, bool trailing)
     {
@@ -47,25 +55,30 @@ public static class CouplerLook
         return (flags & Coupling.ControlMU) != 0 ? CouplerState.MultipleUnit : CouplerState.Coupled;
     }
 
-    // Box drawing and a plain disc: Windows draws no colour emoji for these.
-    public static string Glyph(CouplerState state) => state switch
+    public static MaterialIconKind Icon(CouplerState state) => state switch
     {
-        CouplerState.Free => "╎",
-        CouplerState.Permanent => "═",
-        CouplerState.EndSignals => "●",
-        _ => "≣"
+        CouplerState.Free => MaterialIconKind.LinkVariantOff,
+        CouplerState.Permanent => MaterialIconKind.LinkLock,
+        CouplerState.EndSignals => MaterialIconKind.RecordCircle,
+        CouplerState.NoEndSignals => MaterialIconKind.AlertCircleOutline,
+        _ => MaterialIconKind.LinkVariant
     };
 
-    /// <summary>The colour of the glyph; null keeps the ordinary text colour.</summary>
-    public static IBrush? Brush(CouplerState state) => state switch
+    public static IBrush Brush(CouplerState state) => state switch
     {
         CouplerState.Free => Dim,
-        CouplerState.MultipleUnit => Green,
-        CouplerState.Permanent => Blue,
+        CouplerState.MultipleUnit => Sky,
+        CouplerState.Permanent => Violet,
         CouplerState.EndSignals => Red,
         CouplerState.NoEndSignals => Amber,
-        _ => null
+        _ => Steel
     };
+
+    /// <summary>The bar under the icon: none at the back, broken where nothing is coupled.</summary>
+    public static bool HasBar(CouplerState state) => state is not (CouplerState.EndSignals or CouplerState.NoEndSignals);
+
+    /// <summary>Thicker where the vehicles do not part in shunting.</summary>
+    public static double BarThickness(CouplerState state) => state == CouplerState.Permanent ? 5 : 3;
 
     /// <summary>What the coupler connects, by the names the coupler editor uses.</summary>
     public static IReadOnlyList<string> Connections(Coupling coupling) =>
