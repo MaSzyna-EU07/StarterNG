@@ -21,6 +21,7 @@ public sealed class ExecutableLocator
 
     private string? _wine;
     private bool _wineLookedUp;
+    private string? _missingPickLogged;
 
     public ExecutableLocator(IFileSystem files, IGamePaths paths, IEnvironment environment, IDiagnosticsLog log)
     {
@@ -32,14 +33,39 @@ public sealed class ExecutableLocator
 
     public string CanonicalName => _environment.IsWindows ? "eu07.exe" : "eu07";
 
+    /// <summary>
+    /// The simulator to start: the one picked in the settings, or the best one in
+    /// the installation. A pick that is not there - the settings live per user and
+    /// are shared by every installation, so it may come from another one - gives
+    /// way to the search rather than stopping the start.
+    /// </summary>
     public string Resolve(SimulatorSettings settings, out ExeProblem problem)
     {
         if (!settings.SelectExeAutomatically && !string.IsNullOrWhiteSpace(settings.ExecutablePath))
         {
             problem = Validate(FullPath(settings.ExecutablePath));
-            return settings.ExecutablePath;
+            if (problem != ExeProblem.NotFound)
+                return settings.ExecutablePath;
+
+            string found = Search(out var searched);
+            if (searched == ExeProblem.NotFound)
+                return settings.ExecutablePath;
+
+            // Resolved on every start and for the title bar, so said once.
+            if (_missingPickLogged != settings.ExecutablePath)
+            {
+                _log.Log($"The chosen simulator {settings.ExecutablePath} is not in {_paths.Root}, using {found}");
+                _missingPickLogged = settings.ExecutablePath;
+            }
+            problem = searched;
+            return found;
         }
 
+        return Search(out problem);
+    }
+
+    private string Search(out ExeProblem problem)
+    {
         string? fallback = null;
         try
         {

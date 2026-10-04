@@ -69,6 +69,31 @@ public class ExecutableLocatorTests
     }
 
     [Fact]
+    public void A_pick_from_another_installation_gives_way_to_the_search()
+    {
+        var files = new InMemoryFileSystem().WithExecutable(TestInstallation.At("eu07"), Elf);
+        var installation = new TestInstallation(files);
+        var settings = new SimulatorSettings { SelectExeAutomatically = false, ExecutablePath = "eu07-elsewhere" };
+
+        string resolved = installation.Executables.Resolve(settings, out var problem);
+
+        Assert.EndsWith("eu07", resolved);
+        Assert.Equal(ExeProblem.None, problem);
+    }
+
+    [Fact]
+    public void A_missing_pick_is_reported_when_the_installation_has_none_either()
+    {
+        var installation = new TestInstallation();
+        var settings = new SimulatorSettings { SelectExeAutomatically = false, ExecutablePath = "eu07-elsewhere" };
+
+        string resolved = installation.Executables.Resolve(settings, out var problem);
+
+        Assert.Equal("eu07-elsewhere", resolved);
+        Assert.Equal(ExeProblem.NotFound, problem);
+    }
+
+    [Fact]
     public void Data_files_beside_the_binary_are_never_offered_as_candidates()
     {
         var files = new InMemoryFileSystem()
