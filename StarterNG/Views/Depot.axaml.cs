@@ -56,7 +56,7 @@ public partial class Depot : UserControl
 
     public Depot()
     {
-        _info = new VehicleInfo(_db);
+        _info = new VehicleInfo(_db, AppServices.Current.Physics);
         _consist = new Consist(_db, _info);
         _cargo = new Cargo(_info, _rng);
         _consist.Changed += RebuildConsist;
@@ -572,8 +572,7 @@ public partial class Depot : UserControl
         var item = new ConsistItem
         {
             Cars = unit.Select(NewVehicle).ToList(),
-            Grouped = unit.Count > 1,
-            Flipped = _consist.Selected.Flipped
+            Grouped = unit.Count > 1
         };
         _consist.Replace(i, item);
         _consist.Selected = item;

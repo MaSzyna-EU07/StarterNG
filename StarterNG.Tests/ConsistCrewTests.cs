@@ -20,7 +20,7 @@ public class ConsistCrewTests
         installation.Vehicles.Load(installation.Library.Vehicles);
 
         _catalog = installation.Library.Vehicles;
-        _consist = new Consist(_catalog, new VehicleInfo(_catalog));
+        _consist = new Consist(_catalog, new VehicleInfo(_catalog, installation.Physics));
     }
 
     [Fact]

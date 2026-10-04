@@ -256,15 +256,19 @@ public sealed class Consist : IReadOnlyList<ConsistItem>
     }
 
     /// <summary>
-    /// Puts item in place of the vehicle at index. Its crew moves over where the
-    /// replacement can take it - a driver only into something powered - and the
-    /// rest is staffed as a newly added vehicle would be.
+    /// Puts item in place of the vehicle at index, facing the same way. Its crew
+    /// moves over where the replacement can take it - a driver only into something
+    /// powered - and the rest is staffed as a newly added vehicle would be.
     /// </summary>
     public void Replace(int index, ConsistItem item)
     {
         var replaced = _items[index];
         _items[index] = item;
         Staff(item, index);
+
+        // Facing the way the replaced vehicle did - cars and all, as Flip would.
+        if (item.Flipped != replaced.Flipped)
+            Turn(index, index);
 
         var crew = replaced.Driver;
         if (crew == eDriverType.Passenger ||
@@ -339,6 +343,16 @@ public sealed class Consist : IReadOnlyList<ConsistItem>
         int index = _items.IndexOf(item);
         if (index < 0) return;
 
+        var (first, last) = UnitAround(index);
+        Turn(first, last);
+
+        AutoConnectAll();
+        Raise();
+    }
+
+    /// <summary>The cards locked together with the one at index, as the range they span.</summary>
+    private (int First, int Last) UnitAround(int index)
+    {
         int first = index;
         while (first > 0 && HoldsTail(_items[first - 1]))
             first--;
@@ -347,6 +361,17 @@ public sealed class Consist : IReadOnlyList<ConsistItem>
         while (last + 1 < _items.Count && HoldsTail(_items[last]))
             last++;
 
+        return (first, last);
+    }
+
+    /// <summary>
+    /// Turns the cards first..last end for end - the flag on each card, the cars it
+    /// holds and the order of the cards. All three or nothing: the export writes the
+    /// cars in card order and each car with its own orientation, so a flag turned
+    /// alone couples a multi-car unit back to front.
+    /// </summary>
+    private void Turn(int first, int last)
+    {
         for (int k = first; k <= last; k++)
         {
             var card = _items[k];
@@ -357,9 +382,6 @@ public sealed class Consist : IReadOnlyList<ConsistItem>
 
         if (last > first)
             _items.Reverse(first, last - first + 1);
-
-        AutoConnectAll();
-        Raise();
     }
 
     public void CycleDriver(ConsistItem item)
@@ -492,9 +514,15 @@ public sealed class Consist : IReadOnlyList<ConsistItem>
         if (start < 0) start = 0;
         if (start >= _items.Count) return;
 
-        for (int i = start; i < _items.Count; i++)
+        // Unit by unit, as Flip turns them: half a locked unit turned on its own
+        // would be coupled back to front.
+        for (int i = start; i < _items.Count;)
+        {
+            var (first, last) = UnitAround(i);
             if (rng.Next(2) == 0)
-                _items[i].Flipped = !_items[i].Flipped;
+                Turn(first, last);
+            i = last + 1;
+        }
 
         AutoConnectAll();
         Raise();
