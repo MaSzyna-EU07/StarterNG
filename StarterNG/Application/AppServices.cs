@@ -62,6 +62,7 @@ public sealed class AppServices
                                   files, clock, log, settingsPaths.UpdateCheckPath());
         StartSimulation = new StartSimulation(State, SettingsStore, Library.Vehicles, Executables, files, paths,
                                               Processes, Random, log);
+        Aftermath = new SimulatorAftermath(files, paths, log);
     }
 
     public static AppServices Current =>
@@ -138,6 +139,8 @@ public sealed class AppServices
     public FavoriteSceneries Favorites { get; }
 
     public StartSimulation StartSimulation { get; }
+
+    public SimulatorAftermath Aftermath { get; }
 
     public LocalizationService Localization { get; }
 }

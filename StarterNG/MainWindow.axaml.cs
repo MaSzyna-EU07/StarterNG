@@ -597,7 +597,7 @@ public partial class MainWindow : Window
 
         var words = exit.CleanErrors.Count > 0
             ? exit.CleanErrors
-            : AppServices.Current.StartSimulation.SimulatorLogTail(12);
+            : AppServices.Current.Aftermath.SimulatorLogTail(12);
 
         var message = new StringBuilder();
         message.AppendLine(string.Format(App.Loc["SimExitCode"], exit.DescribeCode()));
@@ -611,7 +611,7 @@ public partial class MainWindow : Window
         }
         message.AppendLine().Append(App.Loc["SimExitSeeLog"]);
 
-        string? dump = AppServices.Current.StartSimulation.CrashDumpsSince(startedUtc, executable).FirstOrDefault();
+        string? dump = AppServices.Current.Aftermath.CrashDumpsSince(startedUtc, executable).FirstOrDefault();
         if (dump is not null)
             message.AppendLine().AppendLine().AppendLine(string.Format(App.Loc["SimExitDump"], dump))
                    .Append(App.Loc["SimExitOpenDump"]);
