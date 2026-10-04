@@ -281,6 +281,8 @@
     <String key="TipJoin">Połącz ten pojazd z następnym w jeden zespół</String>
     <String key="TipReorder">Przeciągnij, aby zmienić kolejność</String>
     <String key="AddVehicle">Dodaj</String>
+    <String key="AddMany">Dodaj wiele…</String>
+    <String key="AddManyCount">Ile razy dodać pojazd</String>
     <String key="TipAddVehicle">Dodaj ten pojazd do składu</String>
     <String key="TipAddUnit">Dodaj cały zespół do składu</String>
 

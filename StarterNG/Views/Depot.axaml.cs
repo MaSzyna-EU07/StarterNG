@@ -71,7 +71,10 @@ public partial class Depot : UserControl
 
         _browser = new VehicleBrowser(categoryCombo, classCombo, vehicleListBox, searchBox,
             hideArchivalCheck, miniPreview, addVehicleButton, _db, _minis,
-            () => TextureBaseButton_OnClick(null, null!));
+            () => TextureBaseButton_OnClick(null, null!))
+        {
+            AddMany = (texture, count) => AddTexture(texture, count)
+        };
 
         _drag = new ConsistDragging(consistStack, consistScroll, consistOverlay,
             consistDropTarget, vehicleListBox, miniPreviewPanel,
@@ -580,7 +583,7 @@ public partial class Depot : UserControl
         RebuildConsist();
     }
 
-    private void AddTexture(VehicleTexture texture)
+    private void AddTexture(VehicleTexture texture, int count = 1)
     {
         int at = _consist.Count;
         if (_consist.Selected != null)
@@ -588,26 +591,33 @@ public partial class Depot : UserControl
             int si = _consist.IndexOf(_consist.Selected);
             if (si >= 0) at = si + 1;
         }
-        InsertTextureAt(texture, at);
+        InsertTexturesAt(texture, at, count);
     }
 
-    private void InsertTextureAt(VehicleTexture texture, int at)
+    private void InsertTextureAt(VehicleTexture texture, int at) => InsertTexturesAt(texture, at, 1);
+
+    /// <summary>The vehicle count times in a row from at - each staffed as added - and one redraw.</summary>
+    private void InsertTexturesAt(VehicleTexture texture, int at, int count)
     {
         var set = _db.ResolveSet(texture);
         var unit = set ?? new List<VehicleTexture> { texture };
 
-        var item = new ConsistItem
-        {
-            Cars = unit.Select(NewVehicle).ToList(),
-            Grouped = unit.Count > 1,
-            Driver = eDriverType.Nobody,
-            Flipped = false
-        };
-
         at = Math.Clamp(at, 0, _consist.Count);
-        _consist.Staff(item, at);
-        _consist.Insert(at, item);
-        _consist.Selected = item;
+        for (int n = 0; n < count; n++, at++)
+        {
+            var item = new ConsistItem
+            {
+                Cars = unit.Select(NewVehicle).ToList(),
+                Grouped = unit.Count > 1,
+                Driver = eDriverType.Nobody,
+                Flipped = false
+            };
+
+            _consist.Staff(item, at);
+            _consist.Insert(at, item);
+            _consist.Selected = item;
+        }
+
         _consist.AutoConnectAll();
         RebuildConsist();
     }

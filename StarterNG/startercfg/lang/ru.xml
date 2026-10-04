@@ -281,6 +281,8 @@
     <String key="TipJoin">Соединить этот вагон со следующим в один состав</String>
     <String key="TipReorder">Перетащите для изменения порядка</String>
     <String key="AddVehicle">Добавить</String>
+    <String key="AddMany">Добавить несколько…</String>
+    <String key="AddManyCount">Сколько раз добавить единицу</String>
     <String key="TipAddVehicle">Добавить эту единицу в состав</String>
     <String key="TipAddUnit">Добавить весь сцеп в состав</String>
 

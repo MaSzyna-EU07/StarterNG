@@ -281,6 +281,8 @@
     <String key="TipJoin">Spojit toto vozidlo s následujícím do jedné jednotky</String>
     <String key="TipReorder">Přetáhněte pro změnu pořadí</String>
     <String key="AddVehicle">Přidat</String>
+    <String key="AddMany">Přidat vícekrát…</String>
+    <String key="AddManyCount">Kolikrát vozidlo přidat</String>
     <String key="TipAddVehicle">Přidat toto vozidlo do soupravy</String>
     <String key="TipAddUnit">Přidat celou jednotku do soupravy</String>
 

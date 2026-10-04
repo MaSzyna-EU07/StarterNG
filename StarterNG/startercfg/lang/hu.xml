@@ -281,6 +281,8 @@
     <String key="TipJoin">A jármű összekapcsolása a következővel egy egységgé</String>
     <String key="TipReorder">Húzza az átrendezéshez</String>
     <String key="AddVehicle">Hozzáadás</String>
+    <String key="AddMany">Hozzáadás többször…</String>
+    <String key="AddManyCount">Hányszor add hozzá a járművet</String>
     <String key="TipAddVehicle">Jármű hozzáadása a szerelvényhez</String>
     <String key="TipAddUnit">A teljes egység hozzáadása a szerelvényhez</String>
 

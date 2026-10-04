@@ -281,6 +281,8 @@
     <String key="TipJoin">Couple this vehicle with the next one into a single unit</String>
     <String key="TipReorder">Drag to reorder</String>
     <String key="AddVehicle">Add</String>
+    <String key="AddMany">Add several…</String>
+    <String key="AddManyCount">How many times to add it</String>
     <String key="TipAddVehicle">Add this vehicle to the consist</String>
     <String key="TipAddUnit">Add the whole unit to the consist</String>
 
