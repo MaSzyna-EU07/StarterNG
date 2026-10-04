@@ -27,6 +27,9 @@ public sealed class VehicleCatalog
 
     public Dictionary<string, VehicleTexture> TextureBySkin { get; } = new();
 
+    /// <summary>For a skin shared by several models, which one dresses which.</summary>
+    private readonly Dictionary<string, VehicleTexture> _textureBySkinAndModel = new();
+
     public void BeginLoad()
     {
         Textures.Clear();
@@ -35,6 +38,7 @@ public sealed class VehicleCatalog
         SetByTextureUuid.Clear();
         TextureByUuid.Clear();
         TextureBySkin.Clear();
+        _textureBySkinAndModel.Clear();
     }
 
     public void Ingest(VehicleEntry entry)
@@ -49,7 +53,10 @@ public sealed class VehicleCatalog
                 TextureByUuid[texture.Uuid] = texture;
 
             if (!string.IsNullOrEmpty(texture.Skinfile))
-                TextureBySkin.TryAdd(Path.GetFileNameWithoutExtension(texture.Skinfile).ToLowerInvariant(), texture);
+            {
+                TextureBySkin.TryAdd(Key(texture.Skinfile), texture);
+                _textureBySkinAndModel.TryAdd(Key(texture.Skinfile, texture.Model), texture);
+            }
 
             if (texture.Wreck)
                 continue;
@@ -105,17 +112,37 @@ public sealed class VehicleCatalog
         return texture.TextureMini;
     }
 
-    public string? MiniForSkin(string? skinFile) =>
-        TextureForSkin(skinFile) is { } texture ? ResolveMiniName(texture) : null;
+    public string? MiniFor(string? skinFile, string? model) =>
+        TextureFor(skinFile, model) is { } texture ? ResolveMiniName(texture) : null;
+
+    /// <summary>
+    /// The texture a vehicle wears: by the skin, and where one skin dresses several
+    /// models, by the model too - the scenery names both.
+    /// </summary>
+    public VehicleTexture? TextureFor(string? skinFile, string? model)
+    {
+        if (string.IsNullOrEmpty(skinFile))
+            return null;
+
+        if (!string.IsNullOrEmpty(model) &&
+            _textureBySkinAndModel.TryGetValue(Key(skinFile, model), out var exact))
+            return exact;
+
+        return TextureForSkin(skinFile);
+    }
 
     public VehicleTexture? TextureForSkin(string? skinFile)
     {
         if (string.IsNullOrEmpty(skinFile))
             return null;
 
-        string key = Path.GetFileNameWithoutExtension(skinFile).ToLowerInvariant();
-        return TextureBySkin.TryGetValue(key, out var texture) ? texture : null;
+        return TextureBySkin.TryGetValue(Key(skinFile), out var texture) ? texture : null;
     }
+
+    private static string Key(string skinFile) => Path.GetFileNameWithoutExtension(skinFile).ToLowerInvariant();
+
+    private static string Key(string skinFile, string? model) =>
+        Key(skinFile) + "|" + (string.IsNullOrEmpty(model) ? "" : Path.GetFileNameWithoutExtension(model).ToLowerInvariant());
 
     public string GroupHeader(string? groupId)
     {

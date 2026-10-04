@@ -67,14 +67,14 @@ public static class TrainsetDisplay
 
     public static string VehicleLabel(Dynamic v, bool head = false)
     {
-        var tex = AppServices.Current.Library.Vehicles.TextureForSkin(v.SkinFile);
+        var tex = AppServices.Current.Library.Vehicles.TextureFor(v.SkinFile, v.MmdFile);
         string? cls = string.IsNullOrEmpty(tex?.ResolvedClass) ? null : tex!.ResolvedClass;
         string? name = string.IsNullOrWhiteSpace(v.Name) ? null : v.Name;
         return (head ? name ?? cls : cls ?? name) ?? BaseSkin(v);
     }
 
     public static bool IsPowered(Dynamic v) =>
-        AppServices.Current.Library.Vehicles.TextureForSkin(v.SkinFile)?.ResolvedCategory
+        AppServices.Current.Library.Vehicles.TextureFor(v.SkinFile, v.MmdFile)?.ResolvedCategory
             is "e" or "s" or "p" or "z" or "a";
 
     private static string BaseSkin(Dynamic v) =>
@@ -206,7 +206,7 @@ public static class TrainsetDisplay
 
         bool mu = trainset.Vehicles.Any(v =>
         {
-            string? cat = db.TextureForSkin(v.SkinFile)?.ResolvedCategory;
+            string? cat = db.TextureFor(v.SkinFile, v.MmdFile)?.ResolvedCategory;
             return cat is "z" or "a";
         });
 
@@ -232,7 +232,7 @@ public static class TrainsetDisplay
 
     public static string PreferredBaseName(Dynamic v, VehicleCatalog db)
     {
-        var tex = db.TextureForSkin(v.SkinFile);
+        var tex = db.TextureFor(v.SkinFile, v.MmdFile);
         if (tex != null)
         {
 

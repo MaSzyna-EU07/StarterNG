@@ -79,7 +79,8 @@ public sealed class VehicleCacheRepository : IVehicleRepository
     /// </summary>
     private (string Text, int Sources) Stamp()
     {
-        var stamp = new StringBuilder().Append("root|").Append(Path.GetFullPath(_paths.Root)).Append('\n');
+        var stamp = new StringBuilder().Append("root|").Append(Path.GetFullPath(_paths.Root)).Append('\n')
+                                       .Append("parser|").Append(TexturesTxtParser.Version).Append('\n');
         int sources = 0;
 
         foreach (string path in _legacy.Sources())

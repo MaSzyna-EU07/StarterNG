@@ -22,7 +22,7 @@ public sealed class VehicleInfo
     public static bool IsPoweredCategory(string? c) =>
         c is "e" or "s" or "p" or "z" or "a";
 
-    public VehicleTexture? TextureFor(Dynamic car) => _db.TextureForSkin(car.SkinFile);
+    public VehicleTexture? TextureFor(Dynamic car) => _db.TextureFor(car.SkinFile, car.MmdFile);
 
     public string? CategoryOf(Dynamic car) =>
         TextureFor(car) is { } t ? CategoryOf(t) : null;

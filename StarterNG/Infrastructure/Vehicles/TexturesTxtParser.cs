@@ -8,6 +8,9 @@ public sealed class TexturesTxtParser
 {
     private const string DeriveCategory = "*";
 
+    /// <summary>Goes into the vehicle cache stamp, so a change to what is parsed rebuilds the cache.</summary>
+    public const int Version = 2;
+
     public VehicleEntry? Parse(string directory, IReadOnlyList<string> lines)
     {
         var entry = new VehicleEntry { Uuid = "legacy:" + directory };
@@ -133,9 +136,16 @@ public sealed class TexturesTxtParser
                 Implicit = true
             });
 
+        // One skin may dress several models - the ET42-026 has a single 112E-026 for
+        // both halves - and the scenery tells them apart by the model, so the later
+        // ones are named by it as well, or they would all be the first.
+        string uuid = $"legacy:{directory}{skin}";
+        if (entry.Textures.Exists(t => string.Equals(t.Skinfile, skin, StringComparison.OrdinalIgnoreCase)))
+            uuid += "#" + lead.Model;
+
         var texture = new VehicleTexture
         {
-            Uuid = $"legacy:{directory}{skin}",
+            Uuid = uuid,
             Directory = directory,
             Skinfile = skin,
             Wreck = skin.Contains("wreck", StringComparison.OrdinalIgnoreCase) ||

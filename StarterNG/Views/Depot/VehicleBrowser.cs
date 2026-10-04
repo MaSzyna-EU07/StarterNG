@@ -590,7 +590,7 @@ public sealed class VehicleBrowser
 
     public void SelectInBrowser(Dynamic car)
     {
-        var texture = _db.TextureForSkin(car.SkinFile);
+        var texture = _db.TextureFor(car.SkinFile, car.MmdFile);
         if (texture is null)
             return;
 
@@ -635,6 +635,7 @@ public sealed class VehicleBrowser
         foreach (var obj in vehicleListBox.Items)
             if (obj is ListBoxItem { Tag: VehicleTexture t } entry &&
                 string.Equals(t.Skinfile, texture.Skinfile, StringComparison.OrdinalIgnoreCase) &&
+                string.Equals(t.Model, texture.Model, StringComparison.OrdinalIgnoreCase) &&
                 string.Equals(t.Directory, texture.Directory, StringComparison.OrdinalIgnoreCase))
             {
                 vehicleListBox.SelectedItem = entry;
