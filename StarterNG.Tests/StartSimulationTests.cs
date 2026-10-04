@@ -34,6 +34,27 @@ public class StartSimulationTests
     }
 
     [Fact]
+    public void A_windows_build_on_linux_is_started_through_wine()
+    {
+        string wine = Path.Combine("/usr/bin", "wine");
+        string exe = Path.Combine(Path.GetTempPath(), "maszyna", "eu07.exe");
+        var (start, launcher, installation) = Rig(files => files
+            .WithExecutable(wine)
+            .WithFile(exe, "MZ\u0090\u0000"));
+        installation.Environment.With("PATH", "/usr/bin");
+        installation.SettingsStore.Settings.ExecutablePath = exe;
+
+        var result = start.Execute(freeFly: true, saveSettings: false);
+
+        // Unpacked from the Windows zip, it has no execute bit - Wine does not need one.
+        Assert.Equal(SimulationStartOutcome.Started, result.Outcome);
+        Assert.Equal(wine, launcher.Executable);
+        Assert.Equal(exe, launcher.Arguments![0]);
+        Assert.Equal("-s", launcher.Arguments[1]);
+        Assert.Equal(installation.Paths.Root, launcher.WorkingDirectory);
+    }
+
+    [Fact]
     public void A_file_that_cannot_be_run_is_not()
     {
         var (start, launcher, _) = Rig(files => files.WithFile(Build, "\u007fELF"));
@@ -68,8 +89,8 @@ public class StartSimulationTests
 
         var launcher = new RecordingLauncher();
         var start = new StartSimulation(state, installation.SettingsStore, installation.Library.Vehicles,
-                                        installation.Files, installation.Paths, launcher, installation.Random,
-                                        installation.Log);
+                                        installation.Executables, installation.Files, installation.Paths, launcher,
+                                        installation.Random, installation.Log);
         return (start, launcher, installation);
     }
 

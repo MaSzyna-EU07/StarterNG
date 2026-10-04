@@ -19,6 +19,9 @@ public sealed class ExecutableLocator
     private readonly IEnvironment _environment;
     private readonly IDiagnosticsLog _log;
 
+    private string? _wine;
+    private bool _wineLookedUp;
+
     public ExecutableLocator(IFileSystem files, IGamePaths paths, IEnvironment environment, IDiagnosticsLog log)
     {
         _files = files;
@@ -42,8 +45,9 @@ public sealed class ExecutableLocator
         {
             var candidates = _files.GetFiles(_paths.Root, "eu07*")
                 .Where(IsCandidate)
-                .OrderBy(path => string.Equals(Path.GetFileName(path), CanonicalName,
-                                               StringComparison.OrdinalIgnoreCase) ? 0 : 1)
+                .OrderBy(path => IsExeOnLinux(path) ? 1 : 0)
+                .ThenBy(path => string.Equals(Path.GetFileName(path), CanonicalName,
+                                              StringComparison.OrdinalIgnoreCase) ? 0 : 1)
                 .ThenBy(path => Path.GetFileName(path).Length);
 
             foreach (string path in candidates)
@@ -94,10 +98,16 @@ public sealed class ExecutableLocator
             if (!_files.FileExists(path))
                 return ExeProblem.NotFound;
 
+            bool foreign = !MatchesPlatform(path);
+
+            // Started through Wine, a Windows build needs no execute bit of its own.
+            if (foreign && RunsThroughWine(path))
+                return ExeProblem.WrongPlatform;
+
             if (!_environment.IsWindows && !_files.IsExecutable(path))
                 return ExeProblem.NotExecutable;
 
-            return MatchesPlatform(path) ? ExeProblem.None : ExeProblem.WrongPlatform;
+            return foreign ? ExeProblem.WrongPlatform : ExeProblem.None;
         }
         catch (Exception)
         {
@@ -105,23 +115,91 @@ public sealed class ExecutableLocator
         }
     }
 
-    private bool MatchesPlatform(string path)
+    /// <summary>
+    /// What to start for a simulator binary: the binary itself, or Wine with the
+    /// binary as its first argument when it is a Windows build on Linux.
+    /// </summary>
+    public (string FileName, IReadOnlyList<string> Arguments) LaunchCommand(string executable,
+                                                                            IReadOnlyList<string> arguments)
+    {
+        if (!RunsThroughWine(executable))
+            return (executable, arguments);
+
+        return (Wine()!, new[] { executable }.Concat(arguments).ToList());
+    }
+
+    /// <summary>Wine from the PATH, or null where there is none - and always on Windows.</summary>
+    public string? Wine()
+    {
+        if (_environment.IsWindows)
+            return null;
+
+        if (!_wineLookedUp)
+        {
+            _wine = FindOnPath("wine") ?? FindOnPath("wine64");
+            _wineLookedUp = true;
+        }
+
+        return _wine;
+    }
+
+    private string? FindOnPath(string name)
+    {
+        // The PATH of Linux and macOS, whatever the host the tests run on.
+        string[] directories = (_environment.GetVariable("PATH") ?? "").Split(':', StringSplitOptions.RemoveEmptyEntries);
+        foreach (string directory in directories)
+        {
+            string candidate = Path.Combine(directory, name);
+            if (_files.FileExists(candidate) && _files.IsExecutable(candidate))
+                return candidate;
+        }
+
+        return null;
+    }
+
+    private bool RunsThroughWine(string path)
+    {
+        try
+        {
+            return !_environment.IsWindows && Wine() is not null && Format(path) == BinaryFormat.PortableExecutable;
+        }
+        catch (Exception)
+        {
+            return false;
+        }
+    }
+
+    private bool MatchesPlatform(string path) => Format(path) switch
+    {
+        BinaryFormat.Elf => !_environment.IsWindows,
+        BinaryFormat.PortableExecutable => !_environment.IsLinux,
+        _ => true
+    };
+
+    private enum BinaryFormat
+    {
+        Unknown,
+        Elf,
+        PortableExecutable
+    }
+
+    private BinaryFormat Format(string path)
     {
         byte[] head = new byte[4];
         using var stream = _files.OpenRead(path);
         if (stream.Read(head, 0, 4) != 4)
-            return true;
+            return BinaryFormat.Unknown;
 
-        bool portableExecutable = head[0] == 0x4D && head[1] == 0x5A;
-        bool elf = head[0] == 0x7F && head[1] == 0x45 && head[2] == 0x4C && head[3] == 0x46;
+        if (head[0] == 0x4D && head[1] == 0x5A)
+            return BinaryFormat.PortableExecutable;
+        if (head[0] == 0x7F && head[1] == 0x45 && head[2] == 0x4C && head[3] == 0x46)
+            return BinaryFormat.Elf;
 
-        if (_environment.IsWindows && elf)
-            return false;
-        if (_environment.IsLinux && portableExecutable)
-            return false;
-
-        return true;
+        return BinaryFormat.Unknown;
     }
+
+    private bool IsExeOnLinux(string path) =>
+        _environment.IsLinux && string.Equals(Path.GetExtension(path), ".exe", StringComparison.OrdinalIgnoreCase);
 
     private bool IsCandidate(string path)
     {
@@ -133,8 +211,11 @@ public sealed class ExecutableLocator
         if (_environment.IsWindows)
             return extension == ".exe";
 
+        // A Windows build is offered only where Wine can start it, and after any
+        // native one - see the ordering in Resolve.
         if (_environment.IsLinux)
-            return extension.Length == 0 || extension is ".x86_64" or ".run" or ".appimage";
+            return extension.Length == 0 || extension is ".x86_64" or ".run" or ".appimage" ||
+                   (IsExeOnLinux(path) && Wine() is not null);
 
         return extension.Length == 0 || extension is ".exe" or ".x86_64" or ".run" or ".appimage";
     }
