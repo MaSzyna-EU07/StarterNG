@@ -413,13 +413,15 @@ public partial class MainWindow : Window
     /// </summary>
     public async Task OfferExecutablePickAsync()
     {
+        var services = AppServices.Current;
         string paragraph = Environment.NewLine + Environment.NewLine;
-        string message = string.Format(App.Loc["FaultNoExe"], AppServices.Current.Paths.Root) + paragraph;
-        if (!AppServices.Current.Environment.IsWindows)
-            message += App.Loc["FaultNoExeWine"] + paragraph;
-        message += App.Loc["FaultNoExePick"];
+        string message = string.Format(App.Loc["FaultNoExe"], services.Executables.CanonicalName, services.Paths.Root) +
+                         paragraph + App.Loc["FaultNoExePick"];
+        if (!services.Environment.IsWindows)
+            message += paragraph + App.Loc["FaultNoExeWine"];
 
-        if (!await MessageBox.Show(this, message, App.Loc["FaultTitle"], MessageBoxButtons.YesNo))
+        if (!await MessageBox.Show(this, message, App.Loc["FaultNoExeTitle"], MessageBoxButtons.YesNo,
+                                   App.Loc["FaultNoExePickNow"], App.Loc["NotNow"]))
             return;
 
         NavSettings.IsChecked = true;

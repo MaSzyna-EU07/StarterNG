@@ -513,9 +513,12 @@
     <String key="FaultNoScenery">Сценарии не найдены.</String>
     <String key="FaultNoVehicles">Транспортные средства не найдены.</String>
     <String key="FaultNoPhysics">Данные подвижного состава не найдены.</String>
-    <String key="FaultNoExe">Исполняемый файл симулятора не найден в папке {0}.</String>
-    <String key="FaultNoExeWine">В Linux можно выбрать и версию для Windows (eu07.exe) - она может работать через Wine или Proton.</String>
-    <String key="FaultNoExePick">Если симулятор находится в другом месте, например ваша собственная сборка, укажите его - выбор будет сохранён. Это можно сделать и позже на вкладке Настройки (раздел Прочее, кнопка «Выбрать файл…»). Указать файл сейчас?</String>
+    <String key="FaultNoExeTitle">Симулятор не найден</String>
+    <String key="FaultNoExe">Стартер запускает симулятор ({0}) из папки, из которой запущен сам:&#10;{1}&#10;&#10;Симулятора там нет, поэтому «Старт» не сработает.</String>
+    <String key="FaultNoExePick">Если симулятор находится в другом месте, например ваша собственная сборка, укажите его. Выбор можно потом изменить в Настройках, в разделе «Прочее». Если это не папка MaSzyna, запустите стартер из правильной папки.</String>
+    <String key="FaultNoExeWine">В Linux можно указать и версию для Windows (eu07.exe) — она запустится через Wine или Proton.</String>
+    <String key="FaultNoExePickNow">Указать симулятор…</String>
+    <String key="NotNow">Не сейчас</String>
 
     <!-- About -->
     <String key="AboutTitle">О программе</String>

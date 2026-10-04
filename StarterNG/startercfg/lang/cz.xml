@@ -513,9 +513,12 @@
     <String key="FaultNoScenery">Nebyly nalezeny žádné scénáře.</String>
     <String key="FaultNoVehicles">Nebyla nalezena žádná vozidla.</String>
     <String key="FaultNoPhysics">Nebyla nalezena data vozového parku.</String>
-    <String key="FaultNoExe">Spustitelný soubor simulátoru nebyl v adresáři {0} nalezen.</String>
-    <String key="FaultNoExeWine">Na Linuxu můžete vybrat i verzi pro Windows (eu07.exe) - může běžet přes Wine nebo Proton.</String>
-    <String key="FaultNoExePick">Pokud je simulátor jinde, např. jako vlastní build, vyberte jej a volba se uloží. Můžete to udělat i později na kartě Nastavení (sekce Ostatní, tlačítko „Vybrat soubor…“). Vybrat soubor nyní?</String>
+    <String key="FaultNoExeTitle">Simulátor nebyl nalezen</String>
+    <String key="FaultNoExe">Starter spouští simulátor ({0}) ze složky, ze které byl sám spuštěn:&#10;{1}&#10;&#10;Simulátor tam není, takže Start nebude fungovat.</String>
+    <String key="FaultNoExePick">Pokud je simulátor jinde, např. jako vlastní build, vyberte jej. Volbu můžete později změnit v Nastavení, v sekci Ostatní. Pokud to není složka MaSzyny, spusťte starter ze správné složky.</String>
+    <String key="FaultNoExeWine">Na Linuxu můžete vybrat i verzi pro Windows (eu07.exe) — poběží přes Wine nebo Proton.</String>
+    <String key="FaultNoExePickNow">Vybrat simulátor…</String>
+    <String key="NotNow">Teď ne</String>
 
     <!-- About -->
     <String key="AboutTitle">O programu</String>

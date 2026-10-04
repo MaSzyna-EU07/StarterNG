@@ -548,9 +548,12 @@
     <String key="FaultNoScenery">No scenarios found.</String>
     <String key="FaultNoVehicles">No vehicles found.</String>
     <String key="FaultNoPhysics">No rolling stock data found.</String>
-    <String key="FaultNoExe">Simulator executable not found in {0}.</String>
-    <String key="FaultNoExeWine">On Linux you can also pick the Windows build (eu07.exe) - it may run through Wine or Proton.</String>
-    <String key="FaultNoExePick">If the simulator lives elsewhere, such as your own build, pick it and the choice will be saved. You can also do it later on the Settings tab (Other section, the “Choose file…” button). Pick the file now?</String>
+    <String key="FaultNoExeTitle">Simulator not found</String>
+    <String key="FaultNoExe">The starter runs the simulator ({0}) from the folder it was started in:&#10;{1}&#10;&#10;There is no simulator there, so Start will not work.</String>
+    <String key="FaultNoExePick">If the simulator lives elsewhere, such as your own build, point to it. You can change the choice later in Settings, under Other. If this is not the MaSzyna folder, start the starter from the right one.</String>
+    <String key="FaultNoExeWine">On Linux you can also point to the Windows build (eu07.exe) — it runs through Wine or Proton.</String>
+    <String key="FaultNoExePickNow">Point to the simulator…</String>
+    <String key="NotNow">Not now</String>
 
     <!-- About -->
     <String key="AboutTitle">About</String>

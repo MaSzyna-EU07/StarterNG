@@ -548,9 +548,12 @@
     <String key="FaultNoScenery">Nie znaleziono scenariuszy.</String>
     <String key="FaultNoVehicles">Nie znaleziono pojazdów.</String>
     <String key="FaultNoPhysics">Nie znaleziono danych taboru.</String>
-    <String key="FaultNoExe">Nie znaleziono pliku wykonywalnego symulatora w katalogu {0}.</String>
-    <String key="FaultNoExeWine">Na Linuksie możesz wskazać także wersję dla Windows (eu07.exe) - może działać przez Wine lub Proton.</String>
-    <String key="FaultNoExePick">Jeśli symulator leży gdzie indziej, np. jako własny build, wskaż go - wybór zostanie zapisany. Możesz to zrobić też później w zakładce Ustawienia (sekcja Inne, przycisk „Wybierz plik…”). Wskazać plik teraz?</String>
+    <String key="FaultNoExeTitle">Nie znaleziono symulatora</String>
+    <String key="FaultNoExe">Starter uruchamia symulator ({0}) z folderu, z którego sam został uruchomiony:&#10;{1}&#10;&#10;Nie ma tam symulatora, więc Start nie zadziała.</String>
+    <String key="FaultNoExePick">Jeśli symulator leży gdzie indziej, np. jako własny build, wskaż go. Wybór zmienisz potem w Ustawieniach, w sekcji Inne. Jeśli to nie jest folder MaSzyny, uruchom starter z właściwego folderu.</String>
+    <String key="FaultNoExeWine">Na Linuksie możesz wskazać też wersję dla Windows (eu07.exe) — uruchomi się przez Wine lub Proton.</String>
+    <String key="FaultNoExePickNow">Wskaż symulator…</String>
+    <String key="NotNow">Nie teraz</String>
 
     <!-- About -->
     <String key="AboutTitle">O programie</String>

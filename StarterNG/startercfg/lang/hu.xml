@@ -513,9 +513,12 @@
     <String key="FaultNoScenery">Nem található forgatókönyv.</String>
     <String key="FaultNoVehicles">Nem található jármű.</String>
     <String key="FaultNoPhysics">Nem található járműadat.</String>
-    <String key="FaultNoExe">A szimulátor futtatható fájlja nem található itt: {0}.</String>
-    <String key="FaultNoExeWine">Linuxon a Windows-verziót (eu07.exe) is kiválaszthatod - Wine vagy Proton segítségével futhat.</String>
-    <String key="FaultNoExePick">Ha a szimulátor máshol van, például saját build, válaszd ki, és a választás mentésre kerül. Később a Beállítások lapon is megteheted (Egyéb szakasz, „Fájl kiválasztása…” gomb). Kiválasztod most a fájlt?</String>
+    <String key="FaultNoExeTitle">A szimulátor nem található</String>
+    <String key="FaultNoExe">A starter abból a mappából indítja a szimulátort ({0}), ahonnan őt magát elindították:&#10;{1}&#10;&#10;Ott nincs szimulátor, így az Indítás nem fog működni.</String>
+    <String key="FaultNoExePick">Ha a szimulátor máshol van, például saját build, válaszd ki. A választást később a Beállítások Egyéb szakaszában módosíthatod. Ha ez nem a MaSzyna mappája, a megfelelő mappából indítsd a startert.</String>
+    <String key="FaultNoExeWine">Linuxon a Windows-verziót (eu07.exe) is kiválaszthatod — Wine vagy Proton segítségével fut.</String>
+    <String key="FaultNoExePickNow">Szimulátor kiválasztása…</String>
+    <String key="NotNow">Most nem</String>
 
     <!-- About -->
     <String key="AboutTitle">Névjegy</String>
