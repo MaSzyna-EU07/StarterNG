@@ -487,6 +487,7 @@
     <String key="KbAssigned">Přiřazeno</String>
     <String key="KbShift">Se Shiftem</String>
     <String key="KbCtrl">S Ctrl</String>
+    <String key="KbShiftCtrl">S Ctrl + Shift</String>
     <String key="KbReserved">Vyhrazeno simulátorem</String>
     <String key="BindKeyTitle">Klávesa:</String>
     <String key="BindKeyHint">Přiřaďte příkaz ke každé kombinaci modifikátorů této klávesy.</String>

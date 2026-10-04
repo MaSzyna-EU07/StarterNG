@@ -522,6 +522,7 @@
     <String key="KbAssigned">Przypisany</String>
     <String key="KbShift">Z klawiszem Shift</String>
     <String key="KbCtrl">Z klawiszem Ctrl</String>
+    <String key="KbShiftCtrl">Z Ctrl + Shift</String>
     <String key="KbReserved">Zarezerwowany przez symulator</String>
     <String key="BindKeyTitle">Klawisz:</String>
     <String key="BindKeyHint">Przypisz komendę do każdej kombinacji modyfikatorów dla tego klawisza.</String>

@@ -487,6 +487,7 @@
     <String key="KbAssigned">Hozzárendelve</String>
     <String key="KbShift">Shift-tel</String>
     <String key="KbCtrl">Ctrl-lal</String>
+    <String key="KbShiftCtrl">Ctrl + Shift-tel</String>
     <String key="KbReserved">A szimulátor számára fenntartva</String>
     <String key="BindKeyTitle">Billentyű:</String>
     <String key="BindKeyHint">Rendeljen parancsot a billentyű minden módosító-kombinációjához.</String>

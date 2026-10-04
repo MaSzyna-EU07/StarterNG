@@ -487,6 +487,7 @@
     <String key="KbAssigned">Назначено</String>
     <String key="KbShift">С Shift</String>
     <String key="KbCtrl">С Ctrl</String>
+    <String key="KbShiftCtrl">С Ctrl + Shift</String>
     <String key="KbReserved">Зарезервировано симулятором</String>
     <String key="BindKeyTitle">Клавиша:</String>
     <String key="BindKeyHint">Назначьте команду каждому сочетанию модификаторов для этой клавиши.</String>

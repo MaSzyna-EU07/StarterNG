@@ -804,6 +804,7 @@ public partial class Settings : UserControl, ISettingsCapture
     private static readonly IBrush KeyPlainBrush = new SolidColorBrush(Color.Parse("#2E9E1F"));
     private static readonly IBrush KeyShiftBrush = new SolidColorBrush(Color.Parse("#C9A227"));
     private static readonly IBrush KeyCtrlBrush = new SolidColorBrush(Color.Parse("#2D7FD3"));
+    private static readonly IBrush KeyShiftCtrlBrush = new SolidColorBrush(Color.Parse("#C8372D"));
     private static readonly IBrush KeyBorderBrush = new SolidColorBrush(Color.Parse("#3A424A"));
     private static readonly IBrush FgBrush = new SolidColorBrush(Color.Parse("#E6E8EA"));
     private static readonly IBrush FgDimBrush = new SolidColorBrush(Color.Parse("#9098A0"));
@@ -1117,6 +1118,7 @@ public partial class Settings : UserControl, ISettingsCapture
         if (state is { Plain: true }) colours.Add(KeyPlainBrush);
         if (state is { Shift: true }) colours.Add(KeyShiftBrush);
         if (state is { Ctrl: true }) colours.Add(KeyCtrlBrush);
+        if (state is { ShiftCtrl: true }) colours.Add(KeyShiftCtrlBrush);
 
         if (colours.Count == 0)
             return new Border { Background = KeyUnassignedBrush };
@@ -1144,12 +1146,12 @@ public partial class Settings : UserControl, ISettingsCapture
         foreach (var c in commands)
             items.Add(CommandLabel(c));
 
-        var slots = new (bool shift, bool ctrl, string labelKey)[]
+        var slots = new (bool shift, bool ctrl, string labelKey, IBrush colour)[]
         {
-            (false, false, "BindNoMod"),
-            (true,  false, "BindShift"),
-            (false, true,  "BindCtrl"),
-            (true,  true,  "BindShiftCtrl"),
+            (false, false, "BindNoMod", KeyPlainBrush),
+            (true,  false, "BindShift", KeyShiftBrush),
+            (false, true,  "BindCtrl", KeyCtrlBrush),
+            (true,  true,  "BindShiftCtrl", KeyShiftCtrlBrush),
         };
 
         var combos = new ComboBox[slots.Length];
@@ -1161,14 +1163,24 @@ public partial class Settings : UserControl, ISettingsCapture
 
         for (int i = 0; i < slots.Length; i++)
         {
-            var (shift, ctrl, labelKey) = slots[i];
+            var (shift, ctrl, labelKey, colour) = slots[i];
 
-            var lbl = new TextBlock
+            // The swatch ties the row to the key colours on the keyboard above.
+            var lbl = new StackPanel
             {
-                Text = App.Loc[labelKey],
-                Foreground = FgBrush,
+                Orientation = Orientation.Horizontal,
+                Spacing = 6,
                 VerticalAlignment = VerticalAlignment.Center,
-                Margin = new Thickness(0, 4, 12, 4)
+                Margin = new Thickness(0, 4, 12, 4),
+                Children =
+                {
+                    new Border
+                    {
+                        Width = 10, Height = 10, CornerRadius = new CornerRadius(2),
+                        Background = colour, VerticalAlignment = VerticalAlignment.Center
+                    },
+                    new TextBlock { Text = App.Loc[labelKey], Foreground = FgBrush, VerticalAlignment = VerticalAlignment.Center }
+                }
             };
             Grid.SetRow(lbl, i);
             Grid.SetColumn(lbl, 0);
@@ -1271,6 +1283,7 @@ public partial class Settings : UserControl, ISettingsCapture
         legend.Children.Add(LegendItem(KeyPlainBrush, App.Loc["KbAssigned"]));
         legend.Children.Add(LegendItem(KeyShiftBrush, App.Loc["KbShift"]));
         legend.Children.Add(LegendItem(KeyCtrlBrush, App.Loc["KbCtrl"]));
+        legend.Children.Add(LegendItem(KeyShiftCtrlBrush, App.Loc["KbShiftCtrl"]));
         return legend;
     }
 
@@ -1302,6 +1315,7 @@ public partial class Settings : UserControl, ISettingsCapture
         public bool Plain;
         public bool Shift;
         public bool Ctrl;
+        public bool ShiftCtrl;
         public readonly List<string> Tips = new();
     }
 
@@ -1316,9 +1330,13 @@ public partial class Settings : UserControl, ISettingsCapture
             if (!map.TryGetValue(key, out var state))
                 map[key] = state = new KeyState();
 
-            if (!b.Shift && !b.Ctrl) state.Plain = true;
-            if (b.Shift) state.Shift = true;
-            if (b.Ctrl) state.Ctrl = true;
+            switch (b.Shift, b.Ctrl)
+            {
+                case (false, false): state.Plain = true; break;
+                case (true, false): state.Shift = true; break;
+                case (false, true): state.Ctrl = true; break;
+                default: state.ShiftCtrl = true; break;
+            }
 
             state.Tips.Add($"{ComboText(b)} — {CommandLabel(b)}");
         }
