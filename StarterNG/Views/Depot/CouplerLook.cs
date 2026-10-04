@@ -34,7 +34,7 @@ public enum CouplerState
 /// How a coupler is drawn on the consist strip. Under an icon for the coupler as a
 /// whole sits a block of squares, one place and colour per connection, so what is
 /// coupled reads at a glance; the coupler editor shows the same colours as its
-/// legend. Green is left out - on the strip it means selected or turned round.
+/// legend.
 /// </summary>
 public static class CouplerLook
 {
@@ -50,7 +50,7 @@ public static class CouplerLook
         Solid("#FF3B3B"), // brake pipe - red
         Solid("#3D9BFF"), // multiple-unit control - blue
         Solid("#FF8C1A"), // high voltage - orange
-        Solid("#A970FF"), // gangway - purple
+        Solid("#1FD67A"), // gangway - green, as an exit sign
         Solid("#FFD60A"), // auxiliary air - yellow
         Solid("#FF5CC8"), // heating - pink
         Solid("#9AA3AC")  // workshop lock - grey
