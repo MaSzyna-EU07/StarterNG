@@ -886,7 +886,7 @@ public partial class Settings : UserControl, ISettingsCapture
 
     private static bool MatchesFilter(KeyBinding b, string filter) =>
         TextMatch.Contains(b.Command, filter) ||
-        TextMatch.Contains(b.Description, filter);
+        TextMatch.Contains(KeyboardConfig.Instance.DescriptionOf(b), filter);
 
     private Control BuildBindingRow(KeyBinding b, HashSet<string> conflicts)
     {
@@ -1384,7 +1384,7 @@ public partial class Settings : UserControl, ISettingsCapture
     }
 
     private static string CommandLabel(KeyBinding b) =>
-        string.IsNullOrEmpty(b.Description) ? b.Command : Capitalize(b.Description);
+        KeyboardConfig.Instance.DescriptionOf(b) is { Length: > 0 } description ? Capitalize(description) : b.Command;
 
     private static string Capitalize(string s) =>
         string.IsNullOrEmpty(s) ? s : char.ToUpperInvariant(s[0]) + s.Substring(1);

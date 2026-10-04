@@ -86,7 +86,63 @@ public sealed class KeyboardConfig
         _savePath = UserConfigPath();
         string source = FirstExisting(_savePath, WorkingDirDefaultPath(), BundledDefaultPath());
         ParseSource(source);
+        LoadPolishDescriptions();
         Dirty = false;
+    }
+
+    /// <summary>
+    /// The game ships its key file with the descriptions stripped of Polish letters
+    /// ("zwiekszenie nastawnika glownego"); the copy bundled with the starter has
+    /// them. Read once, shown in place of the bare ones, never written back.
+    /// </summary>
+    private readonly Dictionary<string, string> _polishDescriptions = new(StringComparer.OrdinalIgnoreCase);
+
+    private void LoadPolishDescriptions()
+    {
+        _polishDescriptions.Clear();
+        try
+        {
+            string path = BundledDefaultPath();
+            if (!File.Exists(path))
+                return;
+
+            var bundled = new KeyboardConfig();
+            bundled.Parse(File.ReadAllText(path, FileEncoding));
+            foreach (var b in bundled.Bindings)
+                if (!string.IsNullOrEmpty(b.Description))
+                    _polishDescriptions.TryAdd(b.Command, b.Description);
+        }
+        catch (Exception ex)
+        {
+            StarterNG.Infrastructure.Diagnostics.Log("reading the bundled key descriptions", ex);
+        }
+    }
+
+    /// <summary>
+    /// The description to show: the bundled one with Polish letters when the file's
+    /// is the same text without them, the file's own when someone wrote their own.
+    /// </summary>
+    public string DescriptionOf(KeyBinding binding)
+    {
+        if (_polishDescriptions.TryGetValue(binding.Command, out string? polish) &&
+            (string.IsNullOrEmpty(binding.Description) ||
+             string.Equals(StripPolish(polish), binding.Description.Trim(), StringComparison.OrdinalIgnoreCase)))
+            return polish;
+
+        return binding.Description;
+    }
+
+    public static string StripPolish(string text)
+    {
+        var sb = new StringBuilder(text.Length);
+        foreach (char c in text.Trim())
+            sb.Append(c switch
+            {
+                'ą' => 'a', 'ć' => 'c', 'ę' => 'e', 'ł' => 'l', 'ń' => 'n', 'ó' => 'o', 'ś' => 's', 'ź' => 'z', 'ż' => 'z',
+                'Ą' => 'A', 'Ć' => 'C', 'Ę' => 'E', 'Ł' => 'L', 'Ń' => 'N', 'Ó' => 'O', 'Ś' => 'S', 'Ź' => 'Z', 'Ż' => 'Z',
+                _ => c
+            });
+        return sb.ToString();
     }
 
     public void LoadDefaults()
