@@ -66,6 +66,9 @@
     <String key="StartNoStaffConfirm">This consist has no crew and no passenger — there will be nothing to drive. Start anyway?</String>
     <String key="RestoreWeather">Restore weather</String>
     <String key="ReloadSceneries">Reload</String>
+    <String key="Favorites">Favourites</String>
+    <String key="FavoriteAdd">Add to favourites</String>
+    <String key="FavoriteRemove">Remove from favourites</String>
     <String key="OpenSceneryFolder">Open folder</String>
     <String key="OptionalIncludes">Optional elements</String>
     <String key="OpenTextureFolder">Open texture folder</String>

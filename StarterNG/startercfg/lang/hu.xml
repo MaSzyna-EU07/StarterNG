@@ -66,6 +66,9 @@
     <String key="StartNoStaffConfirm">Ebben a szerelvényben nincs személyzet és utas sem — nem lesz mit vezetni. Mégis elindítja?</String>
     <String key="RestoreWeather">Időjárás visszaállítása</String>
     <String key="ReloadSceneries">Újratöltés</String>
+    <String key="Favorites">Kedvencek</String>
+    <String key="FavoriteAdd">Hozzáadás a kedvencekhez</String>
+    <String key="FavoriteRemove">Eltávolítás a kedvencek közül</String>
     <String key="OpenSceneryFolder">Mappa megnyitása</String>
     <String key="OptionalIncludes">Opcionális elemek</String>
     <String key="OpenTextureFolder">Textúramappa megnyitása</String>

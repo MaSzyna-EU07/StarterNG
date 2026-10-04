@@ -53,6 +53,7 @@ public sealed class AppServices
         Executables = new ExecutableLocator(files, paths, environment, log);
         SettingsStore = new SettingsStore(files, clock, log, settingsPaths, new SettingsSerializer(), Executables);
         MissingVehicleLog = new MissingVehicleLog(SettingsStore.Settings, MissingAssets, Library, log);
+        Favorites = new FavoriteSceneries(files, log, settingsPaths.FavoritesPath());
         var assembly = typeof(AppServices).Assembly;
         var version = assembly.GetName().Version ?? new Version(0, 0);
         string? commit = UpdateCheck.CommitOf(
@@ -133,6 +134,8 @@ public sealed class AppServices
     public MissingVehicleLog MissingVehicleLog { get; }
 
     public UpdateCheck Updates { get; }
+
+    public FavoriteSceneries Favorites { get; }
 
     public StartSimulation StartSimulation { get; }
 

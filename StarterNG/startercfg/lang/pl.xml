@@ -66,6 +66,9 @@
     <String key="StartNoStaffConfirm">Skład nie ma obsady ani pasażera — nie będzie czym kierować. Uruchomić mimo to?</String>
     <String key="RestoreWeather">Przywróć pogodę</String>
     <String key="ReloadSceneries">Przeładuj</String>
+    <String key="Favorites">Ulubione</String>
+    <String key="FavoriteAdd">Dodaj do ulubionych</String>
+    <String key="FavoriteRemove">Usuń z ulubionych</String>
     <String key="OpenSceneryFolder">Otwórz folder</String>
     <String key="OptionalIncludes">Elementy opcjonalne</String>
     <String key="OpenTextureFolder">Otwórz folder tekstury</String>

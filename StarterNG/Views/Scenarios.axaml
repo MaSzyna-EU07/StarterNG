@@ -29,9 +29,12 @@
                           IsCheckedChanged="ArchivalSwitch_OnChanged"
                           Content="{Binding [HideArchivalSceneries], Source={x:Static starterNg:App.Loc}}" />
                 <TreeView Name="sceneryList" Classes="Compact"
-                          SelectionChanged="SceneryList_OnSelectionChanged">
+                          SelectionChanged="SceneryList_OnSelectionChanged"
+                          ContextRequested="SceneryList_OnContextRequested">
                     <TreeView.ContextMenu>
-                        <ContextMenu>
+                        <ContextMenu Opening="SceneryMenu_OnOpening">
+                            <MenuItem Name="favoriteMenuItem" Click="ToggleFavorite_OnClick" />
+                            <Separator />
                             <MenuItem Click="ReloadSceneries_OnClick"
                                       Header="{Binding [ReloadSceneries], Source={x:Static starterNg:App.Loc}}" />
                             <MenuItem Click="OpenSceneryDir_OnClick"

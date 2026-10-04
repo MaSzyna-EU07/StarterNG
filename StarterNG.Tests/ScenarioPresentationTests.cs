@@ -81,6 +81,36 @@ public class SceneryTreeBuilderTests
     }
 
     [Fact]
+    public void Starred_sceneries_are_gathered_on_top_and_starred_where_they_belong()
+    {
+        var (builder, sceneries) = Build("//$l Śląsk", "//$l Śląsk", "//$n Aaa luzem");
+        string starred = SceneryTreeBuilder.Star + sceneries.Single(scenery => scenery.Path.EndsWith("s1.scn")).DisplayName;
+        string plain = sceneries.Single(scenery => scenery.Path.EndsWith("s0.scn")).DisplayName;
+
+        var nodes = builder.Build(sceneries, includeArchival: true, "en",
+                                  scenery => scenery.Path.EndsWith("s1.scn"), "Ulubione");
+
+        var top = nodes[0];
+        Assert.True(top.IsGroup);
+        Assert.Equal(SceneryTreeBuilder.Star + "Ulubione", top.Label);
+        Assert.Equal(starred, Assert.Single(top.Children).Label);
+
+        var group = Assert.Single(nodes, node => node.Label == "Śląsk");
+        Assert.Contains(group.Children, node => node.Label == starred);
+        Assert.Contains(group.Children, node => node.Label == plain);
+    }
+
+    [Fact]
+    public void Without_favourites_there_is_no_favourites_group()
+    {
+        var (builder, sceneries) = Build("//$n Bytom");
+
+        var nodes = builder.Build(sceneries, includeArchival: true, "en", _ => false, "Ulubione");
+
+        Assert.DoesNotContain(nodes, node => node.Label.StartsWith(SceneryTreeBuilder.Star));
+    }
+
+    [Fact]
     public void Scenarios_declaring_a_group_are_gathered_under_it()
     {
         var (builder, sceneries) = Build("//$l Śląsk", "//$l Śląsk", "//$n Bez grupy");

@@ -50,6 +50,9 @@ public sealed class SettingsPaths
     /// </summary>
     public string VehicleCacheDirectory() => Path.Combine(UserConfigDirectory(), "vehicles");
 
+    /// <summary>The sceneries starred in the list.</summary>
+    public string FavoritesPath() => Path.Combine(UserConfigDirectory(), "favorites.txt");
+
     /// <summary>The day of the last update check and the release it found.</summary>
     public string UpdateCheckPath() => Path.Combine(UserConfigDirectory(), "updatecheck.txt");
 

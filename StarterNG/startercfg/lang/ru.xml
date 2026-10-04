@@ -66,6 +66,9 @@
     <String key="StartNoStaffConfirm">В этом составе нет ни бригады, ни пассажира — управлять будет нечем. Всё равно запустить?</String>
     <String key="RestoreWeather">Восстановить погоду</String>
     <String key="ReloadSceneries">Перезагрузить</String>
+    <String key="Favorites">Избранное</String>
+    <String key="FavoriteAdd">Добавить в избранное</String>
+    <String key="FavoriteRemove">Удалить из избранного</String>
     <String key="OpenSceneryFolder">Открыть папку</String>
     <String key="OptionalIncludes">Дополнительные элементы</String>
     <String key="OpenTextureFolder">Открыть папку с текстурами</String>

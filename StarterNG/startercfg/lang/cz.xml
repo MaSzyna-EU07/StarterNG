@@ -66,6 +66,9 @@
     <String key="StartNoStaffConfirm">Tato souprava nemá osádku ani cestujícího — nebude co řídit. Přesto spustit?</String>
     <String key="RestoreWeather">Obnovit počasí</String>
     <String key="ReloadSceneries">Načíst znovu</String>
+    <String key="Favorites">Oblíbené</String>
+    <String key="FavoriteAdd">Přidat do oblíbených</String>
+    <String key="FavoriteRemove">Odebrat z oblíbených</String>
     <String key="OpenSceneryFolder">Otevřít složku</String>
     <String key="OptionalIncludes">Volitelné prvky</String>
     <String key="OpenTextureFolder">Otevřít složku s texturami</String>
