@@ -252,7 +252,7 @@
     <String key="ExeLaunchFailed">Nie udało się uruchomić symulatora</String>
     <String key="ExeNotFound">Nie znaleziono pliku wykonywalnego symulatora.</String>
     <String key="ExeNotExecutable">Plik nie ma prawa wykonywania (chmod +x).</String>
-    <String key="ExeWrongPlatform">To jest plik wykonywalny dla innego systemu niż uruchomiony.</String>
+    <String key="ExeWrongPlatform">To jest plik wykonywalny dla innego systemu niż uruchomiony. Na Linuksie wersja dla Windows może działać przez Wine lub Proton - jeśli ich używasz, to nie jest błąd.</String>
     <String key="TabInfo">Informacje</String>
     <String key="SettingsFileChangedTitle">Ustawienia</String>
     <String key="SettingsFileChanged">Plik eu07.ini został zmieniony poza starterem. Wczytać ponownie?</String>
@@ -335,6 +335,9 @@
     <String key="Others">Inne</String>
     <String key="SelectEXE">Wybór exe</String>
     <String key="SelectEXEAuto">Wybierz automatycznie</String>
+    <String key="SelectEXEBrowse">Wybierz plik…</String>
+    <String key="SelectEXEBrowseTitle">Wskaż plik wykonywalny symulatora</String>
+    <String key="SelectEXEUseAnyway">Użyć go mimo to?</String>
     <String key="DebugMode">Tryb testowy</String>
     <String key="DebugModeDesc">Odblokowuje menu debug, dodatkowe panele i skróty testowe.</String>
     <String key="VirtualShunting">Wirtualny manewrowy</String>
@@ -534,7 +537,9 @@
     <String key="FaultNoScenery">Nie znaleziono scenariuszy.</String>
     <String key="FaultNoVehicles">Nie znaleziono pojazdów.</String>
     <String key="FaultNoPhysics">Nie znaleziono danych taboru.</String>
-    <String key="FaultNoExe">Nie znaleziono pliku wykonywalnego symulatora.</String>
+    <String key="FaultNoExe">Nie znaleziono pliku wykonywalnego symulatora w katalogu {0}.</String>
+    <String key="FaultNoExeWine">Na Linuksie możesz wskazać także wersję dla Windows (eu07.exe) - może działać przez Wine lub Proton.</String>
+    <String key="FaultNoExePick">Jeśli symulator leży gdzie indziej, np. jako własny build, wskaż go - wybór zostanie zapisany. Możesz to zrobić też później w zakładce Ustawienia (sekcja Inne, przycisk „Wybierz plik…”). Wskazać plik teraz?</String>
 
     <!-- About -->
     <String key="AboutTitle">O programie</String>

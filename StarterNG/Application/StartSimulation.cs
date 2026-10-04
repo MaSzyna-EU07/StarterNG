@@ -6,6 +6,7 @@ using StarterNG.Application.Abstractions;
 using StarterNG.Classes;
 using StarterNG.Domain;
 using StarterNG.Domain.Settings;
+using StarterNG.Domain.Vehicles;
 using StarterNG.Infrastructure.Adapters;
 
 namespace StarterNG.Application;
@@ -37,17 +38,21 @@ public sealed class StartSimulation
 
     private readonly AppState _state;
     private readonly SettingsStore _settings;
+    private readonly VehicleCatalog _vehicles;
     private readonly IFileSystem _files;
+    private readonly IGamePaths _paths;
     private readonly IProcessLauncher _processes;
     private readonly IRandomSource _random;
     private readonly IDiagnosticsLog _log;
 
-    public StartSimulation(AppState state, SettingsStore settings, IFileSystem files, IProcessLauncher processes,
-                           IRandomSource random, IDiagnosticsLog log)
+    public StartSimulation(AppState state, SettingsStore settings, VehicleCatalog vehicles, IFileSystem files,
+                           IGamePaths paths, IProcessLauncher processes, IRandomSource random, IDiagnosticsLog log)
     {
         _state = state;
         _settings = settings;
+        _vehicles = vehicles;
         _files = files;
+        _paths = paths;
         _processes = processes;
         _random = random;
         _log = log;
@@ -91,7 +96,7 @@ public sealed class StartSimulation
                 break;
         }
 
-        string? vehicle = TrainsetDisplay.UniquifyForLaunch(trainset, scenery, _state.StartingVehicleName)
+        string? vehicle = TrainsetDisplay.UniquifyForLaunch(trainset, scenery, _state.StartingVehicleName, _vehicles)
                           ?? StartableVehicle(trainset, _state.StartingVehicleName);
         _state.StartingVehicleName = vehicle;
 
@@ -116,7 +121,10 @@ public sealed class StartSimulation
             _settings.CaptureAndSave();
 
         string executable = Path.GetFullPath(_settings.ResolveExecutable(out var problem));
-        if (problem != ExeProblem.None)
+
+        // A binary for the other system is let through: on Linux a Windows build
+        // runs under Wine or Proton, and only the launch can tell.
+        if (problem is not (ExeProblem.None or ExeProblem.WrongPlatform))
             return new SimulationStartResult(SimulationStartOutcome.ExecutableProblem, ExecutablePath: executable,
                                              Problem: problem);
 
@@ -124,7 +132,9 @@ public sealed class StartSimulation
             ? new[] { "-s", exportName }
             : new[] { "-s", exportName, "-v", vehicle };
 
-        var process = _processes.Start(executable, arguments, Path.GetDirectoryName(executable), out string? error);
+        // The installation, not the folder of the binary: a simulator picked from a
+        // build tree lives beside the data, and the data is what it opens.
+        var process = _processes.Start(executable, arguments, _paths.Root, out string? error);
         if (process is null)
             return new SimulationStartResult(SimulationStartOutcome.LaunchFailed, ExecutablePath: executable,
                                              Detail: error);

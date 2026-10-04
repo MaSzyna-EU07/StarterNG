@@ -427,16 +427,28 @@ public partial class MainWindow : Window
         return trainset.Vehicles.Any(CanStart);
     }
 
-    private Task<bool> ShowExeProblem(ExeProblem problem, string exe)
-    {
-        string key = problem switch
-        {
-            ExeProblem.NotExecutable => "ExeNotExecutable",
-            ExeProblem.WrongPlatform => "ExeWrongPlatform",
-            _ => "ExeNotFound"
-        };
-        return MessageBox.Show(this, $"{exe}\n\n{App.Loc[key]}",
+    private Task<bool> ShowExeProblem(ExeProblem problem, string exe) =>
+        MessageBox.Show(this, $"{exe}\n\n{App.Loc[ExeProblemText.Key(problem)]}",
             App.Loc["ExeLaunchFailed"], MessageBoxButtons.Ok);
+
+    /// <summary>
+    /// Asks for the simulator when the installation holds none, and keeps the pick
+    /// straight away, so the question is not back on the next start.
+    /// </summary>
+    public async Task OfferExecutablePickAsync()
+    {
+        string paragraph = Environment.NewLine + Environment.NewLine;
+        string message = string.Format(App.Loc["FaultNoExe"], AppServices.Current.Paths.Root) + paragraph;
+        if (!AppServices.Current.Environment.IsWindows)
+            message += App.Loc["FaultNoExeWine"] + paragraph;
+        message += App.Loc["FaultNoExePick"];
+
+        if (!await MessageBox.Show(this, message, App.Loc["FaultTitle"], MessageBoxButtons.YesNo))
+            return;
+
+        NavSettings.IsChecked = true;
+        if (await SettingsView.BrowseForExecutableAsync())
+            SettingsView.Save();
     }
 
     private async void StartButton_OnClick(object? sender, RoutedEventArgs e) =>

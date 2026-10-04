@@ -199,10 +199,10 @@ public static class TrainsetDisplay
         return p.LoadAccepted.Contains(loadType, StringComparison.OrdinalIgnoreCase);
     }
 
-    public static string? UniquifyForLaunch(Trainset trainset, Scenery scenery, string? startName)
+    public static string? UniquifyForLaunch(Trainset trainset, Scenery scenery, string? startName,
+                                            VehicleCatalog db)
     {
         var used = CollectNames(scenery);
-        var db = AppServices.Current.Library.Vehicles;
 
         bool mu = trainset.Vehicles.Any(v =>
         {
@@ -221,18 +221,18 @@ public static class TrainsetDisplay
         if (mu)
         {
             foreach (var v in trainset.Vehicles)
-                Rename(v, used);
+                Rename(v, used, db);
             return target?.Name;
         }
 
         if (target != null)
-            Rename(target, used);
+            Rename(target, used, db);
         return target?.Name;
     }
 
-    public static string PreferredBaseName(Dynamic v)
+    public static string PreferredBaseName(Dynamic v, VehicleCatalog db)
     {
-        var tex = AppServices.Current.Library.Vehicles.TextureForSkin(v.SkinFile);
+        var tex = db.TextureForSkin(v.SkinFile);
         if (tex != null)
         {
 
@@ -294,11 +294,11 @@ public static class TrainsetDisplay
         return (n, "");
     }
 
-    private static void Rename(Dynamic v, HashSet<string> used)
+    private static void Rename(Dynamic v, HashSet<string> used, VehicleCatalog db)
     {
         var (_, number) = SplitWagonNumber(v.Name);
         if (!string.IsNullOrEmpty(v.Name))
             used.Remove(v.Name!);
-        v.Name = EnsureUnique(PreferredBaseName(v), used) + number;
+        v.Name = EnsureUnique(PreferredBaseName(v, db), used) + number;
     }
 }

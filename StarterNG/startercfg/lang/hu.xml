@@ -252,7 +252,7 @@
     <String key="ExeLaunchFailed">A szimulátor indítása sikertelen</String>
     <String key="ExeNotFound">A szimulátor futtatható fájlja nem található.</String>
     <String key="ExeNotExecutable">A fájl nincs futtathatóként megjelölve (chmod +x).</String>
-    <String key="ExeWrongPlatform">Ez a bináris másik operációs rendszerhez készült.</String>
+    <String key="ExeWrongPlatform">Ez a bináris másik operációs rendszerhez készült. Linuxon a Windows-verzió Wine vagy Proton segítségével futtatható - ha ezeket használod, ez nem hiba.</String>
     <String key="TabInfo">Információ</String>
     <String key="SettingsFileChangedTitle">Beállítások</String>
     <String key="SettingsFileChanged">Az eu07.ini fájl a starteren kívül módosult. Újratölti?</String>
@@ -332,6 +332,9 @@
     <String key="Others">Egyéb</String>
     <String key="SelectEXE">Exe kiválasztása</String>
     <String key="SelectEXEAuto">Automatikus kiválasztás</String>
+    <String key="SelectEXEBrowse">Fájl kiválasztása…</String>
+    <String key="SelectEXEBrowseTitle">Válaszd ki a szimulátor futtatható fájlját</String>
+    <String key="SelectEXEUseAnyway">Mégis használod?</String>
     <String key="DebugMode">Hibakeresési mód (teszt mód)</String>
     <String key="VirtualShunting">Virtuális tolatás</String>
     <String key="LogMissingVehicleFiles">Hiányzó járműfájlok naplózása exportáláskor</String>
@@ -499,7 +502,9 @@
     <String key="FaultNoScenery">Nem található forgatókönyv.</String>
     <String key="FaultNoVehicles">Nem található jármű.</String>
     <String key="FaultNoPhysics">Nem található járműadat.</String>
-    <String key="FaultNoExe">A szimulátor futtatható fájlja nem található.</String>
+    <String key="FaultNoExe">A szimulátor futtatható fájlja nem található itt: {0}.</String>
+    <String key="FaultNoExeWine">Linuxon a Windows-verziót (eu07.exe) is kiválaszthatod - Wine vagy Proton segítségével futhat.</String>
+    <String key="FaultNoExePick">Ha a szimulátor máshol van, például saját build, válaszd ki, és a választás mentésre kerül. Később a Beállítások lapon is megteheted (Egyéb szakasz, „Fájl kiválasztása…” gomb). Kiválasztod most a fájlt?</String>
 
     <!-- About -->
     <String key="AboutTitle">Névjegy</String>

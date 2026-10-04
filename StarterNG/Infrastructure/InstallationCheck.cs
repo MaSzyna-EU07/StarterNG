@@ -49,10 +49,17 @@ public sealed class InstallationCheck
         if (_physics.IndexedCount == 0)
             faults.Add(_strings["FaultNoPhysics"]);
 
-        _settings.ResolveExecutable(out var problem);
-        if (problem == ExeProblem.NotFound)
-            faults.Add(_strings["FaultNoExe"]);
-
         return faults;
+    }
+
+    /// <summary>
+    /// Kept out of <see cref="Run"/>: a simulator missing from the installation does
+    /// not make it a broken one - it may be a build kept elsewhere, or a Windows
+    /// build for Wine, waiting to be picked.
+    /// </summary>
+    public bool ExecutableMissing()
+    {
+        _settings.ResolveExecutable(out var problem);
+        return problem == ExeProblem.NotFound;
     }
 }

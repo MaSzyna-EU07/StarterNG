@@ -59,7 +59,8 @@ public sealed class AppServices
             assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion);
         Updates = new UpdateCheck(SettingsStore.Settings, new GitHubReleaseFeed(log, version), version, commit,
                                   files, clock, log, settingsPaths.UpdateCheckPath());
-        StartSimulation = new StartSimulation(State, SettingsStore, files, Processes, Random, log);
+        StartSimulation = new StartSimulation(State, SettingsStore, Library.Vehicles, files, paths, Processes,
+                                              Random, log);
     }
 
     public static AppServices Current =>

@@ -252,7 +252,7 @@
     <String key="ExeLaunchFailed">Could not start the simulator</String>
     <String key="ExeNotFound">The simulator executable was not found.</String>
     <String key="ExeNotExecutable">The file is not marked as executable (chmod +x).</String>
-    <String key="ExeWrongPlatform">This binary is built for a different operating system.</String>
+    <String key="ExeWrongPlatform">This binary is built for a different operating system. On Linux a Windows build can still run through Wine or Proton - if you use them, this is not an error.</String>
     <String key="TabInfo">Info</String>
     <String key="SettingsFileChangedTitle">Settings</String>
     <String key="SettingsFileChanged">eu07.ini was changed outside the starter. Reload it?</String>
@@ -335,6 +335,9 @@
     <String key="Others">Other</String>
     <String key="SelectEXE">Select exe</String>
     <String key="SelectEXEAuto">Select automatically</String>
+    <String key="SelectEXEBrowse">Choose file…</String>
+    <String key="SelectEXEBrowseTitle">Pick the simulator executable</String>
+    <String key="SelectEXEUseAnyway">Use it anyway?</String>
     <String key="DebugMode">Debug mode</String>
     <String key="DebugModeDesc">Unlocks debug menus, extra panels and test shortcuts.</String>
     <String key="VirtualShunting">Virtual shunting</String>
@@ -534,7 +537,9 @@
     <String key="FaultNoScenery">No scenarios found.</String>
     <String key="FaultNoVehicles">No vehicles found.</String>
     <String key="FaultNoPhysics">No rolling stock data found.</String>
-    <String key="FaultNoExe">Simulator executable not found.</String>
+    <String key="FaultNoExe">Simulator executable not found in {0}.</String>
+    <String key="FaultNoExeWine">On Linux you can also pick the Windows build (eu07.exe) - it may run through Wine or Proton.</String>
+    <String key="FaultNoExePick">If the simulator lives elsewhere, such as your own build, pick it and the choice will be saved. You can also do it later on the Settings tab (Other section, the “Choose file…” button). Pick the file now?</String>
 
     <!-- About -->
     <String key="AboutTitle">About</String>

@@ -153,7 +153,12 @@
                             <ctl:SettingsSection Header="{Binding [Others], Source={x:Static starterNg:App.Loc}}">
                                 <StackPanel>
                                     <ctl:SettingRow ConfigKey="starter.exe.path" Label="{Binding [SelectEXE], Source={x:Static starterNg:App.Loc}}">
-                                        <ComboBox x:Name="SelectExeCb" SelectedIndex="0" />
+                                        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="6">
+                                            <ComboBox x:Name="SelectExeCb" SelectedIndex="0" HorizontalAlignment="Stretch" />
+                                            <Button x:Name="BrowseExeButton" Grid.Column="1" Classes="Flat" Cursor="Hand"
+                                                    Click="BrowseExeButton_OnClick"
+                                                    Content="{Binding [SelectEXEBrowse], Source={x:Static starterNg:App.Loc}}" />
+                                        </Grid>
                                     </ctl:SettingRow>
                                     <ctl:SettingRow Description="{Binding [DebugModeDesc], Source={x:Static starterNg:App.Loc}}" ConfigKey="debugmode">
                                         <CheckBox x:Name="DebugModeCb" Content="{Binding [DebugMode], Source={x:Static starterNg:App.Loc}}" />

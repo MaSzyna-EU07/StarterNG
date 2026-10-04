@@ -4,6 +4,7 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
@@ -13,6 +14,7 @@ using Avalonia.Layout;
 using Avalonia.LogicalTree;
 using Avalonia.Markup.Xaml.Styling;
 using Avalonia.Media;
+using Avalonia.Platform.Storage;
 using StarterNG.Classes;
 using StarterNG.Controls;
 using StarterNG.Infrastructure;
@@ -162,6 +164,58 @@ public partial class Settings : UserControl, ISettingsCapture
             int idx = FindComboIndexByContent(SelectExeCb, current);
             SelectExeCb.SelectedIndex = idx >= 0 ? idx : 0;
         }
+    }
+
+    private async void BrowseExeButton_OnClick(object? sender, RoutedEventArgs e) =>
+        await BrowseForExecutableAsync();
+
+    /// <summary>
+    /// Picks the simulator from anywhere, such as a build tree kept beside the data,
+    /// where the automatic search - the working directory only - cannot see it.
+    /// True when a file was picked; like any other choice here, it waits for Save.
+    /// </summary>
+    public async Task<bool> BrowseForExecutableAsync()
+    {
+        if (TopLevel.GetTopLevel(this) is not Window owner)
+            return false;
+
+        var picked = await owner.StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
+        {
+            Title = App.Loc["SelectEXEBrowseTitle"],
+            AllowMultiple = false
+        });
+        if (picked.Count == 0 || picked[0].TryGetLocalPath() is not { } path)
+            return false;
+
+        var problem = AppServices.Current.Executables.Validate(path);
+        string message = $"{path}\n\n{App.Loc[ExeProblemText.Key(problem)]}";
+        if (problem == ExeProblem.WrongPlatform)
+        {
+            // Not a dead end: Wine or Proton runs a Windows build on Linux.
+            if (!await MessageBox.Show(owner, $"{message}\n\n{App.Loc["SelectEXEUseAnyway"]}",
+                                       App.Loc["SelectEXE"], MessageBoxButtons.YesNo))
+                return false;
+        }
+        else if (problem != ExeProblem.None)
+        {
+            await MessageBox.Show(owner, message, App.Loc["SelectEXE"], MessageBoxButtons.Ok);
+            return false;
+        }
+
+        // Inside the installation the bare name is enough, and matches the list.
+        string root = Path.GetFullPath(AppServices.Current.Paths.Root);
+        string entry = string.Equals(Path.GetDirectoryName(path), root, StringComparison.Ordinal)
+            ? Path.GetFileName(path)
+            : path;
+
+        int index = FindComboIndexByContent(SelectExeCb, entry);
+        if (index < 0)
+        {
+            SelectExeCb.Items.Add(new ComboBoxItem { Content = entry });
+            index = SelectExeCb.Items.Count - 1;
+        }
+        SelectExeCb.SelectedIndex = index;
+        return true;
     }
 
     public void ReloadFromSettings() => ApplyToUi();
@@ -379,7 +433,9 @@ public partial class Settings : UserControl, ISettingsCapture
             new UartWindow().ShowDialog(owner);
     }
 
-    private void SaveButton_OnClick(object? sender, RoutedEventArgs e)
+    private void SaveButton_OnClick(object? sender, RoutedEventArgs e) => Save();
+
+    public void Save()
     {
         CaptureInto(AppServices.Current.Settings);
         AppServices.Current.SettingsStore.Save();

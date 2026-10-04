@@ -252,7 +252,7 @@
     <String key="ExeLaunchFailed">Nepodařilo se spustit simulátor</String>
     <String key="ExeNotFound">Spustitelný soubor simulátoru nebyl nalezen.</String>
     <String key="ExeNotExecutable">Soubor není označen jako spustitelný (chmod +x).</String>
-    <String key="ExeWrongPlatform">Tento binární soubor je pro jiný operační systém.</String>
+    <String key="ExeWrongPlatform">Tento binární soubor je pro jiný operační systém. Na Linuxu může verze pro Windows běžet přes Wine nebo Proton - pokud je používáte, nejde o chybu.</String>
     <String key="TabInfo">Informace</String>
     <String key="SettingsFileChangedTitle">Nastavení</String>
     <String key="SettingsFileChanged">Soubor eu07.ini byl změněn mimo starter. Načíst jej znovu?</String>
@@ -332,6 +332,9 @@
     <String key="Others">Ostatní</String>
     <String key="SelectEXE">Vybrat exe</String>
     <String key="SelectEXEAuto">Vybrat automaticky</String>
+    <String key="SelectEXEBrowse">Vybrat soubor…</String>
+    <String key="SelectEXEBrowseTitle">Vyberte spustitelný soubor simulátoru</String>
+    <String key="SelectEXEUseAnyway">Přesto jej použít?</String>
     <String key="DebugMode">Režim ladění (testovací režim)</String>
     <String key="VirtualShunting">Virtuální posun</String>
     <String key="LogMissingVehicleFiles">Zaznamenat chybějící soubory vozidel při exportu</String>
@@ -499,7 +502,9 @@
     <String key="FaultNoScenery">Nebyly nalezeny žádné scénáře.</String>
     <String key="FaultNoVehicles">Nebyla nalezena žádná vozidla.</String>
     <String key="FaultNoPhysics">Nebyla nalezena data vozového parku.</String>
-    <String key="FaultNoExe">Spustitelný soubor simulátoru nebyl nalezen.</String>
+    <String key="FaultNoExe">Spustitelný soubor simulátoru nebyl v adresáři {0} nalezen.</String>
+    <String key="FaultNoExeWine">Na Linuxu můžete vybrat i verzi pro Windows (eu07.exe) - může běžet přes Wine nebo Proton.</String>
+    <String key="FaultNoExePick">Pokud je simulátor jinde, např. jako vlastní build, vyberte jej a volba se uloží. Můžete to udělat i později na kartě Nastavení (sekce Ostatní, tlačítko „Vybrat soubor…“). Vybrat soubor nyní?</String>
 
     <!-- About -->
     <String key="AboutTitle">O programu</String>

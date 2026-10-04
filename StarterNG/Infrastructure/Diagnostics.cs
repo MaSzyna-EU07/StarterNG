@@ -53,13 +53,11 @@ public static class Diagnostics
             Dispatcher.UIThread.Post(() => _ = ReportAsync(message, title));
     }
 
-    public static List<string> CheckInstallation() =>
-        new InstallationCheck(
-                AppServices.Current.Paths,
-                AppServices.Current.Files,
-                AppServices.Current.Localization,
-                AppServices.Current.Physics,
-                AppServices.Current.Library,
-                AppServices.Current.SettingsStore)
-            .Run();
+    public static InstallationCheck InstallationCheck() =>
+        new(AppServices.Current.Paths,
+            AppServices.Current.Files,
+            AppServices.Current.Localization,
+            AppServices.Current.Physics,
+            AppServices.Current.Library,
+            AppServices.Current.SettingsStore);
 }
