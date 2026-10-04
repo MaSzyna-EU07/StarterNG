@@ -134,6 +134,8 @@ public sealed class InMemoryFileSystem : IFileSystem
     public DateTime GetLastWriteTimeUtc(string path) => LastWriteTimeUtc;
 
     /// <summary>Files added through <see cref="WithExecutable"/> carry the execute bit.</summary>
+    public long GetFileSize(string path) => Bytes(path).LongLength;
+
     public bool IsExecutable(string path) => _executable.Contains(Normalize(path));
 
     public InMemoryFileSystem WithExecutable(string path, string contents = "\u007fELF")

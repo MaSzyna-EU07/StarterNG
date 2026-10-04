@@ -43,6 +43,13 @@ public sealed class SettingsPaths
 
     public string InstallationConfigPath() => _paths.FromRoot(ConfigFileName);
 
+    /// <summary>
+    /// Where the starter keeps its own copy of the vehicle database. Per user
+    /// rather than under the installation: that one can be read-only, is a working
+    /// copy someone updates from under us, and the copy is ours, not the game's.
+    /// </summary>
+    public string VehicleCacheDirectory() => Path.Combine(UserConfigDirectory(), "vehicles");
+
     public string UserConfigDirectory() =>
         Path.GetDirectoryName(UserConfigPath()) ?? _environment.BaseDirectory;
 }

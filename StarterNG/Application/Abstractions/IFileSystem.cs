@@ -43,5 +43,7 @@ public interface IFileSystem
 
     DateTime GetLastWriteTimeUtc(string path);
 
+    long GetFileSize(string path);
+
     bool IsExecutable(string path);
 }

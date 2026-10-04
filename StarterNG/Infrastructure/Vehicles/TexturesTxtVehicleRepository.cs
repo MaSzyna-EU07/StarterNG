@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text;
 using StarterNG.Application.Abstractions;
 using StarterNG.Domain.Vehicles;
@@ -31,9 +32,9 @@ public sealed class TexturesTxtVehicleRepository : IVehicleRepository
         catalog.BeginLoad();
 
         int liveries = 0;
-        foreach (string file in TexturesFiles())
+        foreach (string file in Sources())
         {
-            var entry = ReadEntry(file);
+            var entry = Read(file);
             if (entry is null)
                 continue;
 
@@ -45,7 +46,27 @@ public sealed class TexturesTxtVehicleRepository : IVehicleRepository
         return liveries;
     }
 
-    private VehicleEntry? ReadEntry(string path)
+    /// <summary>
+    /// Every textures.txt of the installation, in name order. Sorted rather than
+    /// taken as the file system hands them over, so that which of two folders
+    /// claiming the same skin wins is the same on every machine.
+    /// </summary>
+    public IEnumerable<string> Sources()
+    {
+        foreach (string maker in Sorted(_files.GetDirectories(_paths.Dynamic)))
+        foreach (string vehicle in Sorted(_files.GetDirectories(maker)))
+        {
+            string path = Path.Combine(vehicle, TexturesFileName);
+            if (_files.FileExists(path))
+                yield return path;
+        }
+    }
+
+    private static IEnumerable<string> Sorted(IEnumerable<string> directories) =>
+        directories.OrderBy(Path.GetFileName, StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>Reads one textures.txt; a file that will not parse is logged and skipped.</summary>
+    public VehicleEntry? Read(string path)
     {
         try
         {
@@ -56,17 +77,6 @@ public sealed class TexturesTxtVehicleRepository : IVehicleRepository
         {
             _log.Log($"textures.txt {path}", ex);
             return null;
-        }
-    }
-
-    private IEnumerable<string> TexturesFiles()
-    {
-        foreach (string maker in _files.GetDirectories(_paths.Dynamic))
-        foreach (string vehicle in _files.GetDirectories(maker))
-        {
-            string path = Path.Combine(vehicle, TexturesFileName);
-            if (_files.FileExists(path))
-                yield return path;
         }
     }
 

@@ -51,6 +51,8 @@ public sealed class PhysicalFileSystem : IFileSystem
 
     public DateTime GetLastWriteTimeUtc(string path) => File.GetLastWriteTimeUtc(path);
 
+    public long GetFileSize(string path) => new FileInfo(path).Length;
+
     public bool IsExecutable(string path)
     {
         if (OperatingSystem.IsWindows())
