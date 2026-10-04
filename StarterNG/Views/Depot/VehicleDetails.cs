@@ -179,6 +179,8 @@ public sealed class VehicleDetails
             return;
 
         bool isLast = unitIdx >= _consist.Count - 1;
+        if (isLast)
+            couplerPanel.Children.Add(PanelNote(App.Loc["CouplingLastNote"]));
 
         var d = Consist.TailCar(item);
 

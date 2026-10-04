@@ -324,6 +324,10 @@ public sealed class Consist : IReadOnlyList<ConsistItem>
         int gap = _items.IndexOf(item);
         _items.Remove(item);
 
+        // The car now at the end still holds the coupler of the one taken off it.
+        if (gap == _items.Count)
+            FreeTail();
+
         if (ReferenceEquals(Selected, item))
             Selected = _items.Count == 0
                 ? null
@@ -551,6 +555,8 @@ public sealed class Consist : IReadOnlyList<ConsistItem>
 
             left.Coupling.Flags = left.Coupling.Locked ? -common : common;
         }
+
+        FreeTail();
     }
 
     public bool CanFormUnit(ConsistItem left, ConsistItem right)
@@ -597,6 +603,18 @@ public sealed class Consist : IReadOnlyList<ConsistItem>
 
     public static Dynamic HeadCar(ConsistItem item) =>
         item.Flipped ? item.Cars[^1] : item.Cars[0];
+
+    /// <summary>
+    /// Clears the coupler at the back of the consist. The simulator hangs the end
+    /// signals only on a last vehicle whose coupler is 0 - anything else couples it
+    /// to whatever stands behind - and every new car comes with 3. Its parameters,
+    /// the brake setting among them, stay.
+    /// </summary>
+    private void FreeTail()
+    {
+        if (_items.Count > 0 && _items[^1].Cars.Count > 0)
+            TailCar(_items[^1]).Coupling.Flags = 0;
+    }
 
     /// <summary>
     /// Whether a car runs turned. Its own sign is the truth - it is what the export

@@ -280,6 +280,7 @@
     <String key="TipSplit">Rozdělit jednotku na jednotlivé vozy</String>
     <String key="AppliesToUnit">Společné pro celou jednotku</String>
     <String key="CouplingUnitRear">Spřáhlo na konci jednotky</String>
+    <String key="CouplingLastNote">Poslední vozidlo: spřáhlo 0 dává koncovky. Jiný kód spojí soupravu s tím, co stojí za ní, a simulátor koncovky nenasadí.</String>
     <String key="Join">Spojit</String>
     <String key="TipJoin">Spojit toto vozidlo s následujícím do jedné jednotky</String>
     <String key="TipReorder">Přetáhněte pro změnu pořadí</String>

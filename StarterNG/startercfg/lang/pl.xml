@@ -280,6 +280,7 @@
     <String key="TipSplit">Rozdziel zespół na pojedyncze człony</String>
     <String key="AppliesToUnit">Ustawienie wspólne dla całego zespołu</String>
     <String key="CouplingUnitRear">Sprzęg na końcu zespołu</String>
+    <String key="CouplingLastNote">Ostatni pojazd: sprzęg 0 daje końcówki. Inny kod połączy skład z tym, co stoi za nim, a symulator nie założy końcówek.</String>
     <String key="Join">Złącz</String>
     <String key="TipJoin">Połącz ten pojazd z następnym w jeden zespół</String>
     <String key="TipReorder">Przeciągnij, aby zmienić kolejność</String>
