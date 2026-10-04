@@ -258,6 +258,8 @@
     <String key="SimExitQuick">Ukončil se {0:0.0} s po spuštění.</String>
     <String key="SimExitMessages">Poslední zprávy:</String>
     <String key="SimExitSeeLog">Celý průběh je v souboru log.txt ve složce simulátoru.</String>
+    <String key="SimExitDump">Simulátor uložil výpis paměti: {0}</String>
+    <String key="SimExitOpenDump">Otevřít složku s výpisem? Přiložte jej k hlášení chyby.</String>
     <String key="TabInfo">Informace</String>
     <String key="SettingsFileChangedTitle">Nastavení</String>
     <String key="SettingsFileChanged">Soubor eu07.ini byl změněn mimo starter. Načíst jej znovu?</String>

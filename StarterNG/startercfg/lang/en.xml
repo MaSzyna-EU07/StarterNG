@@ -258,6 +258,8 @@
     <String key="SimExitQuick">It closed {0:0.0} s after starting.</String>
     <String key="SimExitMessages">Last messages:</String>
     <String key="SimExitSeeLog">The full run is in log.txt in the simulator folder.</String>
+    <String key="SimExitDump">The simulator saved a memory dump: {0}</String>
+    <String key="SimExitOpenDump">Open the folder with the dump? Attach it to the bug report.</String>
     <String key="TabInfo">Info</String>
     <String key="SettingsFileChangedTitle">Settings</String>
     <String key="SettingsFileChanged">eu07.ini was changed outside the starter. Reload it?</String>

@@ -69,6 +69,23 @@ public class StartSimulationTests
     }
 
     [Fact]
+    public void Minidumps_of_this_run_are_found_in_the_installation_and_under_crashpad()
+    {
+        var (start, _, installation) = Rig(files => files
+            .WithExecutable(Build)
+            .WithFile(TestInstallation.At("crash_2026-10-04_13-03-12.dmp"), "MDMP")
+            .WithFile(TestInstallation.At("crashdumps", "reports", "1a2b.dmp"), "MDMP"));
+        installation.Files.LastWriteTimeUtc = new DateTime(2026, 10, 4, 11, 3, 12, DateTimeKind.Utc);
+
+        var thisRun = start.CrashDumpsSince(new DateTime(2026, 10, 4, 11, 3, 0, DateTimeKind.Utc), Build);
+        var later = start.CrashDumpsSince(new DateTime(2026, 10, 4, 12, 0, 0, DateTimeKind.Utc), Build);
+
+        Assert.Equal(2, thisRun.Count);
+        Assert.Contains(thisRun, dump => dump.EndsWith("crash_2026-10-04_13-03-12.dmp"));
+        Assert.Empty(later);
+    }
+
+    [Fact]
     public void The_end_of_the_simulator_log_is_read_for_a_silent_crash()
     {
         var (start, _, _) = Rig(files => files

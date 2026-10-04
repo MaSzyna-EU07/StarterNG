@@ -258,6 +258,8 @@
     <String key="SimExitQuick">Zamknął się {0:0.0} s po uruchomieniu.</String>
     <String key="SimExitMessages">Ostatnie komunikaty:</String>
     <String key="SimExitSeeLog">Pełny przebieg jest w pliku log.txt w katalogu symulatora.</String>
+    <String key="SimExitDump">Symulator zapisał zrzut pamięci: {0}</String>
+    <String key="SimExitOpenDump">Otworzyć folder ze zrzutem? Dołącz go do zgłoszenia błędu.</String>
     <String key="TabInfo">Informacje</String>
     <String key="SettingsFileChangedTitle">Ustawienia</String>
     <String key="SettingsFileChanged">Plik eu07.ini został zmieniony poza starterem. Wczytać ponownie?</String>

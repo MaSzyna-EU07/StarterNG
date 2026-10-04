@@ -258,6 +258,8 @@
     <String key="SimExitQuick">{0:0.0} másodperccel az indítás után bezárult.</String>
     <String key="SimExitMessages">Utolsó üzenetek:</String>
     <String key="SimExitSeeLog">A teljes futás a szimulátor mappájában lévő log.txt fájlban található.</String>
+    <String key="SimExitDump">A szimulátor memóriaképet mentett: {0}</String>
+    <String key="SimExitOpenDump">Megnyitod a memóriaképet tartalmazó mappát? Csatold a hibajelentéshez.</String>
     <String key="TabInfo">Információ</String>
     <String key="SettingsFileChangedTitle">Beállítások</String>
     <String key="SettingsFileChanged">Az eu07.ini fájl a starteren kívül módosult. Újratölti?</String>

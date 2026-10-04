@@ -522,14 +522,14 @@ public partial class MainWindow : Window
         GC.Collect();
         GC.WaitForPendingFinalizers();
 
-        WatchSimulator(result.Process);
+        WatchSimulator(result.Process, result.ExecutablePath);
     }
 
     /// <summary>
     /// Brings the starter back when the simulator exits. Adopts an already
     /// running simulator when we did not start it ourselves.
     /// </summary>
-    private void WatchSimulator(IProcessHandle? simulator)
+    private void WatchSimulator(IProcessHandle? simulator, string executable)
     {
         var started = DateTime.UtcNow;
         simulator ??= AppServices.Current.Processes.FindRunning(
@@ -544,7 +544,7 @@ public partial class MainWindow : Window
         _ = simulator.WaitForExitAsync().ContinueWith(_ => Dispatcher.UIThread.Post(() =>
         {
             RestoreFromSimulator();
-            ReportIfCrashed(simulator, DateTime.UtcNow - started);
+            ReportIfCrashed(simulator, executable, started);
         }), TaskScheduler.Default);
     }
 
@@ -552,12 +552,14 @@ public partial class MainWindow : Window
     /// Says why the simulator is gone when it did not end the way a session does:
     /// an error code, or a close so soon after the start that nobody played - a
     /// window that only flashed. Its own words come from the error stream, or from
-    /// its log when that stayed silent.
+    /// its log when that stayed silent, and a minidump it left is pointed at.
     /// </summary>
-    private async void ReportIfCrashed(IProcessHandle simulator, TimeSpan runTime)
+    private async void ReportIfCrashed(IProcessHandle simulator, string executable, DateTime startedUtc)
     {
         if (simulator.ExitCode is not { } code)
             return;
+
+        var runTime = DateTime.UtcNow - startedUtc;
 
         var exit = new SimulatorExit(code, runTime, simulator.ErrorTail);
         if (!exit.Failed)
@@ -579,8 +581,16 @@ public partial class MainWindow : Window
         }
         message.AppendLine().Append(App.Loc["SimExitSeeLog"]);
 
+        string? dump = AppServices.Current.StartSimulation.CrashDumpsSince(startedUtc, executable).FirstOrDefault();
+        if (dump is not null)
+            message.AppendLine().AppendLine().AppendLine(string.Format(App.Loc["SimExitDump"], dump))
+                   .Append(App.Loc["SimExitOpenDump"]);
+
         Diagnostics.Log(message.ToString().Replace(Environment.NewLine, " | "));
-        await MessageBox.Show(this, message.ToString(), App.Loc["SimExitTitle"], MessageBoxButtons.Ok);
+        bool open = await MessageBox.Show(this, message.ToString(), App.Loc["SimExitTitle"],
+                                          dump is null ? MessageBoxButtons.Ok : MessageBoxButtons.YesNo);
+        if (open && dump is not null && Path.GetDirectoryName(Path.GetFullPath(dump)) is { } folder)
+            AppServices.Current.Processes.OpenInShell(folder);
     }
 
     private async void CheckExternalSettings()

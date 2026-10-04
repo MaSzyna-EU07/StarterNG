@@ -258,6 +258,8 @@
     <String key="SimExitQuick">Он закрылся через {0:0.0} с после запуска.</String>
     <String key="SimExitMessages">Последние сообщения:</String>
     <String key="SimExitSeeLog">Полный журнал находится в файле log.txt в папке симулятора.</String>
+    <String key="SimExitDump">Симулятор сохранил дамп памяти: {0}</String>
+    <String key="SimExitOpenDump">Открыть папку с дампом? Приложите его к сообщению об ошибке.</String>
     <String key="TabInfo">Информация</String>
     <String key="SettingsFileChangedTitle">Настройки</String>
     <String key="SettingsFileChanged">Файл eu07.ini изменён вне стартера. Загрузить заново?</String>
