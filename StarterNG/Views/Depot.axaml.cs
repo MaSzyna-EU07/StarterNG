@@ -192,7 +192,12 @@ public partial class Depot : UserControl
     }
 
     /// <summary>Redraws the consist cards, e.g. after the thumbnail size changed.</summary>
-    public void RefreshConsistView() => RebuildConsist();
+    /// <summary>Redraws what depends on the thumbnail size: the consist and the class list.</summary>
+    public void RefreshConsistView()
+    {
+        _browser.InitClassComboTemplates();
+        RebuildConsist();
+    }
 
     private void RebuildConsist()
     {

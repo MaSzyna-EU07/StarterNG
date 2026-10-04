@@ -175,12 +175,18 @@ public sealed class VehicleBrowser
         Rebuild();
     }
 
+    /// <summary>
+    /// The open list shows its thumbnails at the size the consist cards use, large or
+    /// small as set; the closed box keeps a compact line. Called again when that
+    /// setting changes, so the open list follows.
+    /// </summary>
     public void InitClassComboTemplates()
     {
+        int listHeight = VehicleCardStyle.ThumbHeight;
         classCombo.ItemTemplate = new FuncDataTemplate<string>(
-            (cls, _) => ClassComboContent(cls, large: true), false);
+            (cls, _) => ClassComboContent(cls, listHeight, stacked: true), false);
         classCombo.SelectionBoxItemTemplate = new FuncDataTemplate<string>(
-            (cls, _) => ClassComboContent(cls, large: false), false);
+            (cls, _) => ClassComboContent(cls, CompactThumbHeight, stacked: false), false);
     }
 
     private void FillClassCombo()
@@ -220,14 +226,13 @@ public sealed class VehicleBrowser
         _db.Textures.FirstOrDefault(t => string.Equals(VehicleInfo.ClassOf(t), cls, StringComparison.OrdinalIgnoreCase))
             is { } t ? VehicleInfo.CategoryOf(t) : null;
 
-    private Control ClassComboContent(string cls, bool large)
+    private Control ClassComboContent(string cls, int height, bool stacked)
     {
-        int height = large ? MiniPreviewHeight : CompactThumbHeight;
         var cell = new StackPanel
         {
-            Orientation = large ? Orientation.Vertical : Orientation.Horizontal,
-            Spacing = large ? 2 : 8,
-            HorizontalAlignment = large ? HorizontalAlignment.Center : HorizontalAlignment.Left,
+            Orientation = stacked ? Orientation.Vertical : Orientation.Horizontal,
+            Spacing = stacked ? 2 : 8,
+            HorizontalAlignment = stacked ? HorizontalAlignment.Center : HorizontalAlignment.Left,
             VerticalAlignment = VerticalAlignment.Center
         };
         var bmp = _minis.Get(cls, height);
@@ -242,7 +247,7 @@ public sealed class VehicleBrowser
         cell.Children.Add(new TextBlock
         {
             Text = cls,
-            HorizontalAlignment = large ? HorizontalAlignment.Center : HorizontalAlignment.Left,
+            HorizontalAlignment = stacked ? HorizontalAlignment.Center : HorizontalAlignment.Left,
             VerticalAlignment = VerticalAlignment.Center,
             TextAlignment = TextAlignment.Center,
             TextTrimming = TextTrimming.CharacterEllipsis
