@@ -5,7 +5,8 @@ namespace StarterNG.Tests;
 
 public class SettingsStoreTests
 {
-    private const string UserIni = "/home/kolejarz/.config/MaSzyna/eu07.ini";
+    // Joined the way SettingsPaths joins it, so it matches on a Windows host too.
+    private static readonly string UserIni = Path.Combine("/home/kolejarz", ".config", "MaSzyna", "eu07.ini");
 
     private static TestInstallation WithHome(InMemoryFileSystem? files = null)
     {

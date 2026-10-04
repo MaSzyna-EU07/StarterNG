@@ -104,9 +104,9 @@ public sealed class ConsistDragging
 
     public void MiniPreviewPressed(object? sender, PointerPressedEventArgs e)
     {
-        if (_browserSelected() is null || !e.GetCurrentPoint(miniPreviewPanel).Properties.IsLeftButtonPressed)
+        if (_browserSelected() is not { } texture || !e.GetCurrentPoint(miniPreviewPanel).Properties.IsLeftButtonPressed)
             return;
-        ArmVehicleDrag(e, miniPreviewPanel, _browserSelected());
+        ArmVehicleDrag(e, miniPreviewPanel, texture);
     }
 
     public void VehicleListPressed(object? sender, PointerPressedEventArgs e)
