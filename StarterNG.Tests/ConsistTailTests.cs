@@ -56,6 +56,32 @@ public class ConsistTailTests
         Assert.Equal("0.BP", car.Cars[0].Coupling.ToString());
     }
 
+    [Fact]
+    public void A_coupler_set_by_hand_on_the_last_car_stays()
+    {
+        Append("b111-01");
+        var last = Append("b111-02");
+        last.Cars[0].Coupling.Flags = 3;
+        last.Cars[0].CouplerSetByHand = true;
+
+        _consist.AutoConnectAll();
+
+        Assert.Equal(3, last.Cars[0].Coupling.Flags);
+    }
+
+    [Fact]
+    public void A_car_set_by_hand_that_gets_a_neighbour_is_freed_again_once_it_is_last_again()
+    {
+        var first = Append("b111-01");
+        first.Cars[0].CouplerSetByHand = true;
+        var second = Append("b111-02");
+        _consist.AutoConnectAll();
+
+        _consist.Remove(second);
+
+        Assert.Equal(0, first.Cars[0].Coupling.Flags);
+    }
+
     private ConsistItem Append(string skin)
     {
         var item = new ConsistItem

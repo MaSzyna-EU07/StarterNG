@@ -235,6 +235,12 @@ public class Dynamic
 
     public bool Flipped;
 
+    /// <summary>
+    /// The coupler was set in the editor, so the consist leaves it be at the back of
+    /// the train. Not written out: in the scenery a coupler is just a coupler.
+    /// </summary>
+    public bool CouplerSetByHand;
+
     public static bool IsPantStateType(string? type) =>
         string.Equals(type, PantState, StringComparison.OrdinalIgnoreCase);
 
@@ -302,7 +308,8 @@ public class Dynamic
         LoadCount = LoadCount,
         LoadType = LoadType,
         MiniName = MiniName,
-        Flipped = Flipped
+        Flipped = Flipped,
+        CouplerSetByHand = CouplerSetByHand
     };
 
     public string ToTrainsetNode()

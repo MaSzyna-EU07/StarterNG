@@ -554,6 +554,7 @@ public sealed class Consist : IReadOnlyList<ConsistItem>
                 common &= ~Coupling.ControlMU;
 
             left.Coupling.Flags = left.Coupling.Locked ? -common : common;
+            left.CouplerSetByHand = false;
         }
 
         FreeTail();
@@ -605,15 +606,19 @@ public sealed class Consist : IReadOnlyList<ConsistItem>
         item.Flipped ? item.Cars[^1] : item.Cars[0];
 
     /// <summary>
-    /// Clears the coupler at the back of the consist. The simulator hangs the end
-    /// signals only on a last vehicle whose coupler is 0 - anything else couples it
-    /// to whatever stands behind - and every new car comes with 3. Its parameters,
-    /// the brake setting among them, stay.
+    /// Clears the coupler at the back of the consist, unless it was set in the
+    /// editor. The simulator hangs the end signals only on a last vehicle whose
+    /// coupler is 0 - anything else couples it to whatever stands behind - and every
+    /// new car comes with 3. Its parameters, the brake setting among them, stay.
     /// </summary>
     private void FreeTail()
     {
-        if (_items.Count > 0 && _items[^1].Cars.Count > 0)
-            TailCar(_items[^1]).Coupling.Flags = 0;
+        if (_items.Count == 0 || _items[^1].Cars.Count == 0)
+            return;
+
+        var tail = TailCar(_items[^1]);
+        if (!tail.CouplerSetByHand)
+            tail.Coupling.Flags = 0;
     }
 
     /// <summary>

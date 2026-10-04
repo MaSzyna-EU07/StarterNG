@@ -207,6 +207,7 @@ public sealed class VehicleDetails
             check.IsCheckedChanged += (_, _) =>
             {
                 d.Coupling.Set(bit, check.IsChecked == true);
+                d.CouplerSetByHand = true;
                 _redraw();
             };
             Grid.SetRow(check, i / 2);
@@ -229,6 +230,7 @@ public sealed class VehicleDetails
         {
             if (unitIdx <= 0) return;
             d.Coupling.Flags = Consist.TailCar(_consist[unitIdx - 1]).Coupling.Flags;
+            d.CouplerSetByHand = true;
             _redraw();
             Refresh();
         };
