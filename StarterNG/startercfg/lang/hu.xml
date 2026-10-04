@@ -367,6 +367,7 @@
     <String key="RESimp">Egyszerűsített</String>
     <String key="REOff">Vizuális réteg kikapcsolása</String>
     <String key="REExperimental">Kísérleti</String>
+    <String key="REExperimentalWarning">Figyelem: a kísérleti renderelő még fejlesztés alatt áll. Instabil lehet, a jelenet egyes részei hiányozhatnak, vagy egyes videokártyákon el sem indul. Ha a szimulátor nem indul el vagy hibásan jelenik meg, válts vissza a „Teljes” renderelőre.</String>
 
     <String key="Resolution">Felbontás</String>
     <String key="BufforResolution">Puffer felbontása</String>

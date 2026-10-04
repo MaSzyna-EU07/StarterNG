@@ -448,6 +448,13 @@ public partial class Settings : UserControl, ISettingsCapture
             SaveStatus.Text = App.Loc["SettingsSaved"];
     }
 
+    private void RenderEngineCb_OnSelectionChanged(object? sender, SelectionChangedEventArgs e)
+    {
+        if (RenderEngineWarning is not null)
+            RenderEngineWarning.IsVisible =
+                SimulatorSettings.RenderEngines.ElementAtOrDefault(RenderEngineCb.SelectedIndex) == "experimental";
+    }
+
     private UpdateChannel SelectedChannel() =>
         UpdateChannelCb.SelectedIndex == 1 ? UpdateChannel.Staging : UpdateChannel.Stable;
 

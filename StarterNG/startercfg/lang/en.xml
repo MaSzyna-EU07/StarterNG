@@ -375,6 +375,7 @@
     <String key="RESimp">Simplified</String>
     <String key="REOff">Disable visual layer</String>
     <String key="REExperimental">Experimental</String>
+    <String key="REExperimentalWarning">Note: the experimental renderer is still being developed. It may be unstable, miss parts of the scene or not start on some graphics cards. If the simulator does not start or looks wrong, go back to the “Full” renderer.</String>
 
     <String key="Resolution">Resolution</String>
     <String key="BufforResolution">Buffer resolution</String>

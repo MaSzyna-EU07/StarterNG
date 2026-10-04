@@ -248,14 +248,20 @@
                                 <StackPanel>
                                     <ctl:SettingRow ConfigKey="gfxrenderer" Label="{Binding [RenderEngine], Source={x:Static starterNg:App.Loc}}"
                                                     Description="{Binding [RenderEngineDesc], Source={x:Static starterNg:App.Loc}}">
-                                        <ComboBox x:Name="RenderEngineCb" SelectedIndex="0">
-                                            <ComboBoxItem Content="{Binding [REFull], Source={x:Static starterNg:App.Loc}}" />
-                                            <ComboBoxItem Content="{Binding [REOld], Source={x:Static starterNg:App.Loc}}" />
-                                            <ComboBoxItem Content="{Binding [RESimpShader], Source={x:Static starterNg:App.Loc}}" />
-                                            <ComboBoxItem Content="{Binding [RESimp], Source={x:Static starterNg:App.Loc}}" />
-                                            <ComboBoxItem Content="{Binding [REOff], Source={x:Static starterNg:App.Loc}}" />
-                                            <ComboBoxItem Content="{Binding [REExperimental], Source={x:Static starterNg:App.Loc}}" />
-                                        </ComboBox>
+                                        <StackPanel Spacing="6">
+                                            <ComboBox x:Name="RenderEngineCb" SelectedIndex="0"
+                                                      SelectionChanged="RenderEngineCb_OnSelectionChanged">
+                                                <ComboBoxItem Content="{Binding [REFull], Source={x:Static starterNg:App.Loc}}" />
+                                                <ComboBoxItem Content="{Binding [REOld], Source={x:Static starterNg:App.Loc}}" />
+                                                <ComboBoxItem Content="{Binding [RESimpShader], Source={x:Static starterNg:App.Loc}}" />
+                                                <ComboBoxItem Content="{Binding [RESimp], Source={x:Static starterNg:App.Loc}}" />
+                                                <ComboBoxItem Content="{Binding [REOff], Source={x:Static starterNg:App.Loc}}" />
+                                                <ComboBoxItem Content="{Binding [REExperimental], Source={x:Static starterNg:App.Loc}}" />
+                                            </ComboBox>
+                                            <TextBlock x:Name="RenderEngineWarning" IsVisible="False" TextWrapping="Wrap"
+                                                       Foreground="{StaticResource CarbonAccentBright}"
+                                                       Text="{Binding [REExperimentalWarning], Source={x:Static starterNg:App.Loc}}" />
+                                        </StackPanel>
                                     </ctl:SettingRow>
                                     <ctl:SettingRow ConfigKey="gfx.angleplatform" Description="{Binding [RenderAngleVulkanDesc], Source={x:Static starterNg:App.Loc}}">
                                         <CheckBox x:Name="RenderAngleVulkanCb" Content="{Binding [RenderAngleVulkan], Source={x:Static starterNg:App.Loc}}" />

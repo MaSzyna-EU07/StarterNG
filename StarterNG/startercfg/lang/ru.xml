@@ -367,6 +367,7 @@
     <String key="RESimp">Упрощённый</String>
     <String key="REOff">Отключить визуальный слой</String>
     <String key="REExperimental">Экспериментальный</String>
+    <String key="REExperimentalWarning">Внимание: экспериментальный рендерер находится в разработке. Он может работать нестабильно, не показывать части сцены или не запускаться на некоторых видеокартах. Если симулятор не запускается или выглядит неправильно, вернитесь к рендереру «Полный».</String>
 
     <String key="Resolution">Разрешение</String>
     <String key="BufforResolution">Разрешение буфера</String>

@@ -375,6 +375,7 @@
     <String key="RESimp">Uproszczony</String>
     <String key="REOff">Wyłącz warstwę wizualną</String>
     <String key="REExperimental">Eksperymentalny</String>
+    <String key="REExperimentalWarning">Uwaga: renderer eksperymentalny jest w trakcie rozwoju. Może działać niestabilnie, nie pokazywać części obiektów albo nie uruchomić się na niektórych kartach graficznych. Gdy symulator nie startuje lub wygląda źle, wróć do renderera „Pełny”.</String>
 
     <String key="Resolution">Rozdzielczość</String>
     <String key="BufforResolution">Rozdzielczość bufora</String>

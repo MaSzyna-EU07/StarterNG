@@ -367,6 +367,7 @@
     <String key="RESimp">Zjednodušený</String>
     <String key="REOff">Vypnout vizuální vrstvu</String>
     <String key="REExperimental">Experimentální</String>
+    <String key="REExperimentalWarning">Upozornění: experimentální renderer je ve vývoji. Může být nestabilní, nezobrazovat části scény nebo se na některých grafických kartách nespustit. Pokud se simulátor nespustí nebo vypadá špatně, vraťte se k rendereru „Plný“.</String>
 
     <String key="Resolution">Rozlišení</String>
     <String key="BufforResolution">Rozlišení bufferu</String>
