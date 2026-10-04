@@ -152,17 +152,11 @@ public sealed class Consist : IReadOnlyList<ConsistItem>
         Raise();
     }
 
-    public List<Dynamic> Flatten()
-    {
-        var flat = new List<Dynamic>();
-        foreach (var item in _items)
-        {
-            var cars = item.Flipped ? item.Cars.AsEnumerable().Reverse().ToList() : item.Cars;
-            foreach (var car in cars)
-                flat.Add(car);
-        }
-        return flat;
-    }
+    public List<Dynamic> Flatten() => _items.SelectMany(RunningOrder).ToList();
+
+    /// <summary>A card's cars in the order they run, which is the order the export writes.</summary>
+    public static IEnumerable<Dynamic> RunningOrder(ConsistItem item) =>
+        item.Flipped ? Enumerable.Reverse(item.Cars) : item.Cars;
 
     public void SyncStartingVehicle()
     {
@@ -406,9 +400,7 @@ public sealed class Consist : IReadOnlyList<ConsistItem>
         int i = _items.IndexOf(item);
         if (i < 0) return;
 
-        var order = item.Flipped
-            ? Enumerable.Reverse(item.Cars).ToList()
-            : item.Cars;
+        var order = RunningOrder(item).ToList();
 
         _items.RemoveAt(i);
         for (int c = 0; c < order.Count; c++)
@@ -417,7 +409,8 @@ public sealed class Consist : IReadOnlyList<ConsistItem>
             {
                 Cars = new List<Dynamic> { order[c] },
                 Grouped = false,
-                Flipped = item.Flipped,
+                // Each car's own way - a unit joined from both ways splits back into them.
+                Flipped = IsTurned(order[c]),
                 Driver = order[c].DriverType
             });
         }
@@ -450,13 +443,17 @@ public sealed class Consist : IReadOnlyList<ConsistItem>
 
         if (last == first) return;
 
+        // The cars as they run, each card read the way it faces, so joining vehicles
+        // that face different ways leaves every car where and how it was. The unit
+        // keeps the first card's flag; its cars are stored against that flag.
         var cars = new List<Dynamic>();
         var driver = eDriverType.Nobody;
         for (int k = first; k <= last; k++)
         {
-            cars.AddRange(_items[k].Cars);
+            var card = _items[k];
+            cars.AddRange(RunningOrder(card));
             if (driver == eDriverType.Nobody)
-                driver = _items[k].Driver;
+                driver = card.Driver;
         }
 
         bool flipped = _items[first].Flipped;
@@ -530,18 +527,14 @@ public sealed class Consist : IReadOnlyList<ConsistItem>
 
     public void AutoConnectAll()
     {
-        var flat = new List<(Dynamic car, bool flipped)>();
-        foreach (var item in _items)
-        {
-            var cars = item.Flipped ? item.Cars.AsEnumerable().Reverse() : item.Cars;
-            foreach (var c in cars)
-                flat.Add((c, item.Flipped));
-        }
+        var flat = Flatten();
 
         for (int i = 0; i < flat.Count - 1; i++)
         {
-            var (left, lf) = flat[i];
-            var (right, rf) = flat[i + 1];
+            var left = flat[i];
+            var right = flat[i + 1];
+            bool lf = IsTurned(left);
+            bool rf = IsTurned(right);
 
             var lp = _info.PhysicsFor(left);
             var rp = _info.PhysicsFor(right);
@@ -570,8 +563,8 @@ public sealed class Consist : IReadOnlyList<ConsistItem>
 
         var lp = _info.PhysicsFor(tail);
         var rp = _info.PhysicsFor(head);
-        int leftMax = lp == null ? 3 : (left.Flipped ? lp.AllowedFlagA : lp.AllowedFlagB);
-        int rightMax = rp == null ? 3 : (right.Flipped ? rp.AllowedFlagB : rp.AllowedFlagA);
+        int leftMax = lp == null ? 3 : (IsTurned(tail) ? lp.AllowedFlagA : lp.AllowedFlagB);
+        int rightMax = rp == null ? 3 : (IsTurned(head) ? rp.AllowedFlagB : rp.AllowedFlagA);
 
         return (leftMax & rightMax & Coupling.WorkshopLock) != 0 || SameSet(tail, head);
     }
@@ -604,6 +597,13 @@ public sealed class Consist : IReadOnlyList<ConsistItem>
 
     public static Dynamic HeadCar(ConsistItem item) =>
         item.Flipped ? item.Cars[^1] : item.Cars[0];
+
+    /// <summary>
+    /// Whether a car runs turned. Its own sign is the truth - it is what the export
+    /// writes - and decides which coupler is at which end; a card's flag agrees
+    /// with it except in a unit joined from vehicles facing different ways.
+    /// </summary>
+    public static bool IsTurned(Dynamic car) => car.Offset < 0;
 
     public static bool HoldsTail(ConsistItem item) =>
         item.Cars.Count > 0 && HoldsNext(TailCar(item));

@@ -55,6 +55,38 @@ public class ConsistOrientationTests
         Assert.Equal(new[] { "et40-16-b -1", "et40-16-a -1" }, Describe(consist));
     }
 
+    [Fact]
+    public void Joining_units_that_face_different_ways_leaves_every_car_as_it_was()
+    {
+        var consist = NewConsist(out var first);
+        var second = Unit(consist, "et40-16-a");
+        consist.Insert(1, second);
+        consist.Flip(second);
+        var before = Describe(consist);
+
+        consist.Join(first);
+
+        Assert.Single(consist);
+        Assert.Equal(before, Describe(consist));
+        Assert.Equal(new[] { "et40-10-a 1", "et40-10-b 1", "et40-16-b -1", "et40-16-a -1" }, before);
+    }
+
+    [Fact]
+    public void Splitting_such_a_unit_gives_each_car_its_own_way_back()
+    {
+        var consist = NewConsist(out var first);
+        var second = Unit(consist, "et40-16-a");
+        consist.Insert(1, second);
+        consist.Flip(second);
+        var before = Describe(consist);
+        consist.Join(first);
+
+        consist.Split(consist[0]);
+
+        Assert.Equal(before, Describe(consist));
+        Assert.All(consist, card => Assert.Equal(Consist.IsTurned(card.Cars[0]), card.Flipped));
+    }
+
     private Consist NewConsist(out ConsistItem unit)
     {
         var consist = new Consist(_catalog, new VehicleInfo(_catalog, _installation.Physics));
