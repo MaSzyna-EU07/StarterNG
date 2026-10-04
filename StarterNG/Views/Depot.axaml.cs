@@ -224,9 +224,10 @@ public partial class Depot : UserControl
             (_consist.SelectedCar is null || !moved.Cars.Contains(_consist.SelectedCar)))
             _cards.Activate(moved);
 
+        // The stats are read off the trainset, so it is written back first.
+        WriteBackToScenery();
         _details.Refresh();
         UpdateTrainStats();
-        WriteBackToScenery();
 
         // The cards are thrown away and rebuilt on every change, so a keyboard-driven
         // edit has to be handed its card back or focus escapes the strip.
