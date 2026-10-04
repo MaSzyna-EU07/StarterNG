@@ -35,6 +35,9 @@ public sealed class Consist : IReadOnlyList<ConsistItem>
 
     public int Count => _items.Count;
 
+    /// <summary>Every vehicle, a multi-unit counted car by car - <see cref="Count"/> counts units.</summary>
+    public int VehicleCount => _items.Sum(i => i.Cars.Count);
+
     public ConsistItem this[int index]
     {
         get => _items[index];

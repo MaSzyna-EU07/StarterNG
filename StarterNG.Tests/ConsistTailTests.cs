@@ -22,6 +22,17 @@ public class ConsistTailTests
     }
 
     [Fact]
+    public void The_vehicle_count_counts_cars_not_units()
+    {
+        Append("b111-01");
+        var pair = Append("b111-02");
+        pair.Cars.Add(pair.Cars[0].Clone());
+
+        Assert.Equal(2, _consist.Count);
+        Assert.Equal(3, _consist.VehicleCount);
+    }
+
+    [Fact]
     public void A_new_last_car_is_left_uncoupled_at_the_back()
     {
         var first = Append("b111-01");

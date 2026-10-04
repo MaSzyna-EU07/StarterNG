@@ -568,7 +568,7 @@ public sealed class VehicleDetails
 
         var count = new TextBlock
         {
-            Text = $"{App.Loc["VehicleCount"]}: {_consist.Count}",
+            Text = $"{App.Loc["VehicleCount"]}: {_consist.VehicleCount}",
             FontSize = 12,
             Foreground = DimBrush,
             VerticalAlignment = VerticalAlignment.Center
@@ -593,9 +593,7 @@ public sealed class VehicleDetails
                 ? over == ConsistReadyOverride.AlwaysReady
                 : trainset?.ReadyToGo ?? false
         };
-        ToolTip.SetTip(ready, overridden
-            ? App.Loc["ConsistReadyOverridden"]
-            : App.Loc["ConsistReadyDesc"]);
+        ToolTip.SetTip(ready, App.Loc["ConsistReadyDesc"]);
 
         ready.IsCheckedChanged += (_, _) =>
         {
@@ -605,7 +603,12 @@ public sealed class VehicleDetails
             _redraw();
         };
 
-        return Row(content: ready);
+        // A disabled box shows no tooltip, so why it is greyed out is said beside it.
+        if (!overridden)
+            return Row(content: ready);
+        var why = PanelNote(App.Loc["ConsistReadyOverridden"]);
+        why.Margin = new Thickness(0);
+        return Row(content: new StackPanel { Spacing = 2, Children = { ready, why } });
     }
 
     private Button LoadToolButton(string text, Action onClick, bool secondary = false)
