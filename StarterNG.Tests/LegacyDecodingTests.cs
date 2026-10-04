@@ -1,3 +1,4 @@
+using System.Runtime.ExceptionServices;
 using System.Text;
 using StarterNG.Infrastructure.Adapters;
 using StarterNG.Tests.Fakes;
@@ -20,6 +21,40 @@ public class LegacyDecodingTests
         // A handful of textures.txt in the wild are UTF-8; read as 1250 they turn
         // "Zakład" into "ZakĹ‚ad".
         Assert.Equal(Polish, LegacyText.Decode(Encoding.UTF8.GetBytes(Polish)));
+    }
+
+    [Fact]
+    public void A_byte_order_mark_does_not_stick_to_the_text()
+    {
+        byte[] bytes = Encoding.UTF8.GetPreamble().Concat(Encoding.UTF8.GetBytes("$a\n" + Polish)).ToArray();
+
+        Assert.Equal("$a\n" + Polish, LegacyText.Decode(bytes));
+    }
+
+    [Fact]
+    public void Telling_the_two_apart_does_not_throw()
+    {
+        // Decoding used to try strict UTF-8 and catch the failure: a first-chance
+        // exception for every 1250 file, hundreds of them on a load.
+        int thread = Environment.CurrentManagedThreadId;
+        int thrown = 0;
+        EventHandler<FirstChanceExceptionEventArgs> count = (_, e) =>
+        {
+            if (e.Exception is DecoderFallbackException && Environment.CurrentManagedThreadId == thread)
+                thrown++;
+        };
+
+        AppDomain.CurrentDomain.FirstChanceException += count;
+        try
+        {
+            LegacyText.Decode(LegacyText.CodePage1250.GetBytes(Polish));
+        }
+        finally
+        {
+            AppDomain.CurrentDomain.FirstChanceException -= count;
+        }
+
+        Assert.Equal(0, thrown);
     }
 
     [Fact]

@@ -1,5 +1,6 @@
 using System;
 using System.Text;
+using System.Text.Unicode;
 
 namespace StarterNG.Infrastructure.Adapters;
 
@@ -24,23 +25,21 @@ public static class LegacyText
     /// <summary>
     /// Decodes a game file. Most are code page 1250, but a few have been re-saved
     /// as UTF-8 over the years, and reading those as 1250 turns "Zakład" into
-    /// "ZakĹ‚ad". Valid UTF-8 is taken at its word; anything that fails a strict
-    /// decode is 1250, which cannot fail.
+    /// "ZakĹ‚ad". Valid UTF-8 is taken at its word; anything else is 1250, which
+    /// cannot fail. Checked up front rather than by catching a failed strict decode:
+    /// most files are 1250, and that was an exception per file on every load.
+    /// A byte order mark is dropped, or it would stick to the first token.
     /// </summary>
     public static string Decode(byte[] bytes)
     {
-        try
-        {
-            return Utf8Strict.GetString(bytes);
-        }
-        catch (DecoderFallbackException)
-        {
-            return CodePage1250.GetString(bytes);
-        }
+        ReadOnlySpan<byte> text = bytes;
+        if (text.StartsWith(Utf8Bom))
+            text = text[Utf8Bom.Length..];
+
+        return Utf8.IsValid(text) ? Encoding.UTF8.GetString(text) : CodePage1250.GetString(text);
     }
 
-    private static readonly Encoding Utf8Strict =
-        new UTF8Encoding(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true);
+    private static ReadOnlySpan<byte> Utf8Bom => [0xEF, 0xBB, 0xBF];
 
     private static Encoding Resolve()
     {

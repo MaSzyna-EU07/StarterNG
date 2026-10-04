@@ -709,7 +709,7 @@ public partial class Scenarios : UserControl
 
         try
         {
-            timetableContent.Text = File.ReadAllText(path, LegacyText.CodePage1250);
+            timetableContent.Text = LegacyText.Decode(File.ReadAllBytes(path));
             UpdateTimetableTab(true);
         }
         catch
