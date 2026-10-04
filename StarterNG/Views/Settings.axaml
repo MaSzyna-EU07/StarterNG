@@ -109,26 +109,6 @@
 
                             <ctl:SettingsSection Header="{Binding [Starter], Source={x:Static starterNg:App.Loc}}">
                                 <StackPanel>
-                                    <ctl:SettingRow ConfigKey="starter.checkupdates, starter.updatechannel" Description="{Binding [CheckUpdatesDesc], Source={x:Static starterNg:App.Loc}}">
-                                        <StackPanel Spacing="6">
-                                            <CheckBox x:Name="CheckUpdatesCb" Content="{Binding [CheckUpdates], Source={x:Static starterNg:App.Loc}}" />
-                                            <StackPanel Orientation="Horizontal" Spacing="8">
-                                                <ComboBox x:Name="UpdateChannelCb" SelectedIndex="0" MinWidth="160"
-                                                          SelectionChanged="UpdateChannelCb_OnSelectionChanged">
-                                                    <ComboBoxItem Content="{Binding [UpdateChannelStable], Source={x:Static starterNg:App.Loc}}" />
-                                                    <ComboBoxItem Content="{Binding [UpdateChannelStaging], Source={x:Static starterNg:App.Loc}}" />
-                                                </ComboBox>
-                                                <Button x:Name="CheckUpdatesNowButton" Classes="Flat" Cursor="Hand"
-                                                        Click="CheckUpdatesNowButton_OnClick"
-                                                        Content="{Binding [CheckUpdatesNow], Source={x:Static starterNg:App.Loc}}" />
-                                            </StackPanel>
-                                            <TextBlock x:Name="UpdateChannelWarning" IsVisible="False" TextWrapping="Wrap"
-                                                       Foreground="{StaticResource CarbonAccentBright}"
-                                                       Text="{Binding [UpdateChannelWarning], Source={x:Static starterNg:App.Loc}}" />
-                                            <TextBlock x:Name="CheckUpdatesStatus" TextWrapping="Wrap"
-                                                       Foreground="{StaticResource CarbonFgDim}" />
-                                        </StackPanel>
-                                    </ctl:SettingRow>
                                     <ctl:SettingRow ConfigKey="starter.autoclose">
                                         <CheckBox x:Name="AutoCloseStarterCb" Content="{Binding [AutoCloseStarter], Source={x:Static starterNg:App.Loc}}" />
                                     </ctl:SettingRow>

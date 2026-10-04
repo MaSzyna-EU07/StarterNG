@@ -57,7 +57,6 @@ public partial class MainWindow : Window
                                RoutingStrategies.Tunnel);
 
         SettingsView.DeveloperToolsChanged += ApplyDeveloperTab;
-        AppServices.Current.Updates.Changed += ShowUpdate;
 
         SettingsView.ThumbnailSizeChanged += () =>
         {
@@ -86,11 +85,6 @@ public partial class MainWindow : Window
 
             _openedUtc = DateTime.UtcNow;
             UpdateStartButton();
-#if !DEBUG
-            // A local build carries the bare major.minor, older than any release;
-            // the button in the settings still checks on demand.
-            _ = AppServices.Current.Updates.CheckDailyAsync();
-#endif
         };
         Activated += (_, _) => CheckExternalSettings();
     }
@@ -258,26 +252,8 @@ public partial class MainWindow : Window
         App.ApplyLanguage(code);
     }
 
-    private void ShowUpdate()
-    {
-        var update = AppServices.Current.Updates.Available;
-        UpdateButton.IsVisible = update is not null;
-        if (update is null)
-            return;
-
-        UpdateText.Text = string.Format(App.Loc["UpdateAvailable"], update.Label);
-        ToolTip.SetTip(UpdateButton, string.Format(App.Loc["UpdateAvailableTip"], update.Label));
-    }
-
-    private void UpdateButton_OnClick(object? sender, RoutedEventArgs e)
-    {
-        if (AppServices.Current.Updates.Available is { } update)
-            AppServices.Current.Processes.OpenInShell(update.PageUrl);
-    }
-
     private void OnLanguageChanged()
     {
-        ShowUpdate();
         SelectActiveLanguage();
         ScenariosView?.RebuildAfterLanguageChange();
         DepotView?.RebuildAfterLanguageChange();

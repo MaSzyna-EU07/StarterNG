@@ -363,18 +363,6 @@
     <String key="LogMissingVehicleFilesDesc">Zapisuje w logu pojazdy, których starter nie znalazł.</String>
     <String key="DeveloperTools">Pokaż zakładkę dla twórców paczek</String>
     <String key="DeveloperToolsDesc">Dodaje zakładkę ze stanem bazy pojazdów, przydatną przy przygotowywaniu paczek z taborem.</String>
-    <String key="CheckUpdates">Sprawdzaj aktualizacje startera</String>
-    <String key="CheckUpdatesDesc">Raz dziennie sprawdza na GitHubie, czy wyszła nowsza wersja startera, i pokazuje ją na górnym pasku. Kanał testowy to buildy z gałęzi staging.</String>
-    <String key="UpdateAvailable">Aktualizacja {0}</String>
-    <String key="UpdateAvailableTip">Dostępna jest wersja {0}. Kliknij, aby otworzyć stronę pobierania.</String>
-    <String key="UpdateChannelStable">Stabilne</String>
-    <String key="UpdateChannelStaging">Testowe (staging)</String>
-    <String key="UpdateChannelWarning">Uwaga: kanał dotyczy tylko startera. Symulator MaSzyna i jego pliki aktualizujesz osobno - ten wybór ich nie zmienia.</String>
-    <String key="CheckUpdatesNow">Sprawdź teraz</String>
-    <String key="UpdateChecking">Sprawdzanie…</String>
-    <String key="UpdateFound">Dostępna jest wersja {0} - przycisk pojawił się na górnym pasku.</String>
-    <String key="UpdateUpToDate">Masz najnowszą wersję ({0}).</String>
-    <String key="UpdateCheckFailed">Nie udało się połączyć z GitHubem. Spróbuj później.</String>
 
     <String key="Graphic">Grafika</String>
     <String key="RenderEngine">Silnik renderowania</String>

@@ -260,8 +260,6 @@ public partial class Settings : UserControl, ISettingsCapture
             VirtualShuntingCb.IsChecked = s.VirtualShunting;
             LogMissingVehicleFilesCb.IsChecked = s.LogMissingVehicleFiles;
             DeveloperToolsCb.IsChecked = s.DeveloperTools;
-            CheckUpdatesCb.IsChecked = s.CheckForUpdates;
-            UpdateChannelCb.SelectedIndex = s.UpdateChannel == UpdateChannel.Staging ? 1 : 0;
 
             RenderEngineCb.SelectedIndex = s.RenderEngine;
             SelectResolution(s.Width, s.Height);
@@ -361,8 +359,6 @@ public partial class Settings : UserControl, ISettingsCapture
         s.VirtualShunting = IsChecked(VirtualShuntingCb);
         s.LogMissingVehicleFiles = IsChecked(LogMissingVehicleFilesCb);
         s.DeveloperTools = IsChecked(DeveloperToolsCb);
-        s.CheckForUpdates = IsChecked(CheckUpdatesCb);
-        s.UpdateChannel = SelectedChannel();
 
         s.RenderEngine = Math.Max(0, RenderEngineCb.SelectedIndex);
         ReadResolution(s);
@@ -453,36 +449,6 @@ public partial class Settings : UserControl, ISettingsCapture
         if (RenderEngineWarning is not null)
             RenderEngineWarning.IsVisible =
                 SimulatorSettings.RenderEngines.ElementAtOrDefault(RenderEngineCb.SelectedIndex) == "experimental";
-    }
-
-    private UpdateChannel SelectedChannel() =>
-        UpdateChannelCb.SelectedIndex == 1 ? UpdateChannel.Staging : UpdateChannel.Stable;
-
-    private void UpdateChannelCb_OnSelectionChanged(object? sender, SelectionChangedEventArgs e)
-    {
-        if (UpdateChannelWarning is not null)
-            UpdateChannelWarning.IsVisible = SelectedChannel() == UpdateChannel.Staging;
-    }
-
-    /// <summary>Checks the channel picked in the list, saved or not, so it can be tried first.</summary>
-    private async void CheckUpdatesNowButton_OnClick(object? sender, RoutedEventArgs e)
-    {
-        var updates = AppServices.Current.Updates;
-        CheckUpdatesNowButton.IsEnabled = false;
-        CheckUpdatesStatus.Text = App.Loc["UpdateChecking"];
-        try
-        {
-            CheckUpdatesStatus.Text = await updates.CheckNowAsync(SelectedChannel()) switch
-            {
-                UpdateCheckOutcome.UpdateAvailable => string.Format(App.Loc["UpdateFound"], updates.Available!.Label),
-                UpdateCheckOutcome.UpToDate => string.Format(App.Loc["UpdateUpToDate"], updates.Current),
-                _ => App.Loc["UpdateCheckFailed"]
-            };
-        }
-        finally
-        {
-            CheckUpdatesNowButton.IsEnabled = true;
-        }
     }
 
     private void RedrawNavIfNeeded()

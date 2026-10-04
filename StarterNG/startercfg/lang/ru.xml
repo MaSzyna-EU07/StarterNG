@@ -356,18 +356,6 @@
     <String key="VirtualShunting">Виртуальный манёвр</String>
     <String key="LogMissingVehicleFiles">Записывать в журнал отсутствующие файлы состава при экспорте</String>
     <String key="DeveloperTools">Show the package author's tab</String>
-    <String key="CheckUpdates">Проверять обновления стартера</String>
-    <String key="CheckUpdatesDesc">Раз в день проверяет на GitHub, вышла ли новая версия стартера, и показывает её на верхней панели. Тестовый канал предлагает сборки ветки staging.</String>
-    <String key="UpdateAvailable">Обновление {0}</String>
-    <String key="UpdateAvailableTip">Доступна версия {0}. Нажмите, чтобы открыть страницу загрузки.</String>
-    <String key="UpdateChannelStable">Стабильные</String>
-    <String key="UpdateChannelStaging">Тестовые (staging)</String>
-    <String key="UpdateChannelWarning">Внимание: канал относится только к стартеру. Симулятор MaSzyna и его файлы обновляются отдельно - этот выбор их не меняет.</String>
-    <String key="CheckUpdatesNow">Проверить сейчас</String>
-    <String key="UpdateChecking">Проверка…</String>
-    <String key="UpdateFound">Доступна версия {0} - кнопка появилась на верхней панели.</String>
-    <String key="UpdateUpToDate">У вас последняя версия ({0}).</String>
-    <String key="UpdateCheckFailed">Не удалось связаться с GitHub. Попробуйте позже.</String>
 
     <String key="Graphic">Графика</String>
     <String key="RenderEngine">Движок отрисовки</String>

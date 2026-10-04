@@ -36,8 +36,6 @@ public sealed class SimulatorSettings
     public bool VirtualShunting = true;
     public bool LogMissingVehicleFiles;
     public bool DeveloperTools;
-    public bool CheckForUpdates = true;
-    public UpdateChannel UpdateChannel = UpdateChannel.Stable;
 
     public int RenderEngine;
     public int Width = 1280;

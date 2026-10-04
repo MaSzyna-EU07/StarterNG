@@ -53,9 +53,6 @@ public sealed class SettingsPaths
     /// <summary>The sceneries starred in the list.</summary>
     public string FavoritesPath() => Path.Combine(UserConfigDirectory(), "favorites.txt");
 
-    /// <summary>The day of the last update check and the release it found.</summary>
-    public string UpdateCheckPath() => Path.Combine(UserConfigDirectory(), "updatecheck.txt");
-
     public string UserConfigDirectory() =>
         Path.GetDirectoryName(UserConfigPath()) ?? _environment.BaseDirectory;
 }

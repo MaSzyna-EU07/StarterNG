@@ -57,11 +57,6 @@ public sealed class SettingsSerializer
         s.VirtualShunting = c.GetBool("ai.trainman", true);
         s.LogMissingVehicleFiles = c.GetBool("starter.logmissingvehicles", false);
         s.DeveloperTools = c.GetBool("starter.developertools", false);
-        s.CheckForUpdates = c.GetBool("starter.checkupdates", true);
-        s.UpdateChannel = string.Equals(c.GetString("starter.updatechannel", "stable"), "staging",
-                                        StringComparison.OrdinalIgnoreCase)
-            ? UpdateChannel.Staging
-            : UpdateChannel.Stable;
 
         s.RenderEngine = IndexOf(SimulatorSettings.RenderEngines, c.GetString("gfxrenderer", "full"), 0);
         s.Width = c.GetInt("width", 1280);
@@ -202,8 +197,6 @@ public sealed class SettingsSerializer
         c.SetBool("ai.trainman", s.VirtualShunting);
         c.SetBool("starter.logmissingvehicles", s.LogMissingVehicleFiles);
         c.SetBool("starter.developertools", s.DeveloperTools);
-        c.SetBool("starter.checkupdates", s.CheckForUpdates);
-        c.Set("starter.updatechannel", s.UpdateChannel == UpdateChannel.Staging ? "staging" : "stable");
 
         c.Set("gfxrenderer", SimulatorSettings.RenderEngines[Clamp(s.RenderEngine, 0, SimulatorSettings.RenderEngines.Length - 1)]);
         c.SetInt("width", s.Width);
