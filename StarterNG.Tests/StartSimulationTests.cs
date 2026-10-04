@@ -96,6 +96,18 @@ public class StartSimulationTests
     }
 
     [Fact]
+    public void The_editor_opens_the_scenery_itself_not_an_export()
+    {
+        var (start, launcher, installation) = Rig(files => files.WithExecutable(Build));
+
+        var result = start.ExecuteEditor();
+
+        Assert.Equal(SimulationStartOutcome.Started, result.Outcome);
+        Assert.Equal(new[] { "-edit", "td.scn" }, launcher.Arguments);
+        Assert.False(installation.Files.FileExists(TestInstallation.At("scenery", "$td.scn")));
+    }
+
+    [Fact]
     public void A_file_that_cannot_be_run_is_not()
     {
         var (start, launcher, _) = Rig(files => files.WithFile(Build, "\u007fELF"));

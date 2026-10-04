@@ -557,6 +557,8 @@
     <String key="WarehouseImportFile">Szerelvények hozzáadása fájlból...</String>
     <String key="StartWithoutSaving">Indítás a beállítások mentése nélkül</String>
     <String key="StartFreeFly">Indítás jármű nélkül</String>
+    <String key="StartEditor">Pályaszerkesztő indítása</String>
+    <String key="StartEditorWarning">A pályaszerkesztő (eu07 -edit) csak a szimulátor egyes verzióiban érhető el. Ha a kiválasztott szimulátor nem támogatja, a szerkesztő nem nyílik meg. Közvetlenül a(z) {0} fájlon dolgozik, nem a starter másolatán, így a mentett változások a pályába kerülnek. Elindítod?</String>
     <String key="VolumePaused">Hangerő szünet alatt</String>
     <String key="DebugLogVisible">Szimuláció menetének megjelenítése</String>
     <String key="PyScreenPriority">Kiegészítő képernyők frissítési gyakorisága</String>

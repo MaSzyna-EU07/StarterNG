@@ -469,6 +469,15 @@ public partial class MainWindow : Window
         freeFly.Click += async (_, _) => await LaunchAsync(saveSettings: true, freeFly: true);
         menu.Items.Add(freeFly);
 
+        menu.Items.Add(new Separator());
+        var editor = new MenuItem
+        {
+            Header = App.Loc["StartEditor"],
+            IsEnabled = AppServices.Current.State.CurrentScenery is not null
+        };
+        editor.Click += async (_, _) => await LaunchEditorAsync();
+        menu.Items.Add(editor);
+
         menu.Open(startButton);
     }
 
@@ -490,7 +499,28 @@ public partial class MainWindow : Window
 
         LoadingScreen.Prepare(trainset.Logo, Path.GetFileNameWithoutExtension(scenery.Path));
 
-        var result = AppServices.Current.StartSimulation.Execute(freeFly, saveSettings);
+        await FollowStartAsync(AppServices.Current.StartSimulation.Execute(freeFly, saveSettings));
+    }
+
+    /// <summary>
+    /// The scenery editor, which only some simulator builds have - said up front,
+    /// since one without it simply does not open it.
+    /// </summary>
+    private async Task LaunchEditorAsync()
+    {
+        if (AppServices.Current.State.CurrentScenery is not { } scenery)
+            return;
+
+        if (!await MessageBox.Show(this, string.Format(App.Loc["StartEditorWarning"], Path.GetFileName(scenery.Path)),
+                                   App.Loc["StartEditor"], MessageBoxButtons.YesNo))
+            return;
+
+        await FollowStartAsync(AppServices.Current.StartSimulation.ExecuteEditor());
+    }
+
+    /// <summary>Reports a start that failed, or steps aside for the simulator that started.</summary>
+    private async Task FollowStartAsync(SimulationStartResult result)
+    {
         switch (result.Outcome)
         {
             case SimulationStartOutcome.NothingSelected:

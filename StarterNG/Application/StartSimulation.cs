@@ -183,6 +183,27 @@ public sealed class StartSimulation
         if (saveSettings)
             _settings.CaptureAndSave();
 
+        string[] arguments = freeFly || string.IsNullOrEmpty(vehicle)
+            ? new[] { "-s", exportName }
+            : new[] { "-s", exportName, "-v", vehicle };
+
+        return Launch(arguments);
+    }
+
+    /// <summary>
+    /// Opens the selected scenery in the simulator's editor. The scenery file itself,
+    /// not an export: what the editor saves has to land in the scenery.
+    /// </summary>
+    public SimulationStartResult ExecuteEditor()
+    {
+        if (_state.CurrentScenery is not { } scenery)
+            return new SimulationStartResult(SimulationStartOutcome.NothingSelected);
+
+        return Launch(new[] { "-edit", Path.GetFileName(scenery.Path) });
+    }
+
+    private SimulationStartResult Launch(IReadOnlyList<string> arguments)
+    {
         string executable = Path.GetFullPath(_settings.ResolveExecutable(out var problem));
 
         // A binary for the other system is let through: on Linux a Windows build
@@ -190,10 +211,6 @@ public sealed class StartSimulation
         if (problem is not (ExeProblem.None or ExeProblem.WrongPlatform))
             return new SimulationStartResult(SimulationStartOutcome.ExecutableProblem, ExecutablePath: executable,
                                              Problem: problem);
-
-        string[] arguments = freeFly || string.IsNullOrEmpty(vehicle)
-            ? new[] { "-s", exportName }
-            : new[] { "-s", exportName, "-v", vehicle };
 
         // The installation, not the folder of the binary: a simulator picked from a
         // build tree lives beside the data, and the data is what it opens.
