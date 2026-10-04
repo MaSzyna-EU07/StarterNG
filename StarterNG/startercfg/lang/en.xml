@@ -343,6 +343,18 @@
     <String key="LogMissingVehicleFilesDesc">Writes vehicles the starter could not find into the log.</String>
     <String key="DeveloperTools">Show the package author's tab</String>
     <String key="DeveloperToolsDesc">Adds a tab with the state of the vehicle database, for preparing rolling stock packages.</String>
+    <String key="CheckUpdates">Check for starter updates</String>
+    <String key="CheckUpdatesDesc">Once a day, asks GitHub whether a newer starter has been released and shows it on the top bar. The testing channel offers builds of the staging branch.</String>
+    <String key="UpdateAvailable">Update {0}</String>
+    <String key="UpdateAvailableTip">Version {0} is available. Click to open its download page.</String>
+    <String key="UpdateChannelStable">Stable</String>
+    <String key="UpdateChannelStaging">Testing (staging)</String>
+    <String key="UpdateChannelWarning">Note: the channel applies to the starter only. The MaSzyna simulator and its files are updated separately - this choice does not change them.</String>
+    <String key="CheckUpdatesNow">Check now</String>
+    <String key="UpdateChecking">Checking…</String>
+    <String key="UpdateFound">Version {0} is available - see the button on the top bar.</String>
+    <String key="UpdateUpToDate">You have the newest version ({0}).</String>
+    <String key="UpdateCheckFailed">Could not reach GitHub. Try again later.</String>
 
     <String key="Graphic">Graphics</String>
     <String key="RenderEngine">Render engine</String>

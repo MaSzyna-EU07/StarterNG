@@ -50,6 +50,9 @@ public sealed class SettingsPaths
     /// </summary>
     public string VehicleCacheDirectory() => Path.Combine(UserConfigDirectory(), "vehicles");
 
+    /// <summary>The day of the last update check and the release it found.</summary>
+    public string UpdateCheckPath() => Path.Combine(UserConfigDirectory(), "updatecheck.txt");
+
     public string UserConfigDirectory() =>
         Path.GetDirectoryName(UserConfigPath()) ?? _environment.BaseDirectory;
 }

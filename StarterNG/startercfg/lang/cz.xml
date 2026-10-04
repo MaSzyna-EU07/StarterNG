@@ -336,6 +336,18 @@
     <String key="VirtualShunting">Virtuální posun</String>
     <String key="LogMissingVehicleFiles">Zaznamenat chybějící soubory vozidel při exportu</String>
     <String key="DeveloperTools">Show the package author's tab</String>
+    <String key="CheckUpdates">Kontrolovat aktualizace starteru</String>
+    <String key="CheckUpdatesDesc">Jednou denně zjistí na GitHubu, zda vyšla novější verze starteru, a zobrazí ji v horní liště. Testovací kanál nabízí buildy z větve staging.</String>
+    <String key="UpdateAvailable">Aktualizace {0}</String>
+    <String key="UpdateAvailableTip">Je k dispozici verze {0}. Kliknutím otevřete stránku ke stažení.</String>
+    <String key="UpdateChannelStable">Stabilní</String>
+    <String key="UpdateChannelStaging">Testovací (staging)</String>
+    <String key="UpdateChannelWarning">Upozornění: kanál se týká pouze starteru. Simulátor MaSzyna a jeho soubory se aktualizují zvlášť - tato volba je nemění.</String>
+    <String key="CheckUpdatesNow">Zkontrolovat nyní</String>
+    <String key="UpdateChecking">Kontroluji…</String>
+    <String key="UpdateFound">K dispozici je verze {0} - tlačítko je v horní liště.</String>
+    <String key="UpdateUpToDate">Máte nejnovější verzi ({0}).</String>
+    <String key="UpdateCheckFailed">Nepodařilo se připojit ke GitHubu. Zkuste to později.</String>
 
     <String key="Graphic">Grafika</String>
     <String key="RenderEngine">Vykreslovací engine</String>

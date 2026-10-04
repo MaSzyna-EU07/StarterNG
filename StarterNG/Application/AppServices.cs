@@ -1,4 +1,5 @@
 using System;
+using System.Reflection;
 using StarterNG.Application.Abstractions;
 using StarterNG.Domain.Settings;
 using StarterNG.Infrastructure.Adapters;
@@ -52,6 +53,12 @@ public sealed class AppServices
         Executables = new ExecutableLocator(files, paths, environment, log);
         SettingsStore = new SettingsStore(files, clock, log, settingsPaths, new SettingsSerializer(), Executables);
         MissingVehicleLog = new MissingVehicleLog(SettingsStore.Settings, MissingAssets, Library, log);
+        var assembly = typeof(AppServices).Assembly;
+        var version = assembly.GetName().Version ?? new Version(0, 0);
+        string? commit = UpdateCheck.CommitOf(
+            assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion);
+        Updates = new UpdateCheck(SettingsStore.Settings, new GitHubReleaseFeed(log, version), version, commit,
+                                  files, clock, log, settingsPaths.UpdateCheckPath());
         StartSimulation = new StartSimulation(State, SettingsStore, files, Processes, Random, log);
     }
 
@@ -123,6 +130,8 @@ public sealed class AppServices
     public SettingsPaths SettingsPaths { get; }
 
     public MissingVehicleLog MissingVehicleLog { get; }
+
+    public UpdateCheck Updates { get; }
 
     public StartSimulation StartSimulation { get; }
 

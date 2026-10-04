@@ -183,7 +183,8 @@ jobs:
   # assets anyone can download. main gets a release of its own per build, tagged
   # with its version - the newest is what the starter checks itself against:
   #   https://github.com/${{ github.repository }}/releases/latest/download/<file>
-  # staging keeps one rolling pre-release for testers.
+  # staging keeps one rolling pre-release, offered only to starters set to the
+  # testing channel, which tell its builds apart by commit.
   release:
     name: Release
     needs: [publish, version]

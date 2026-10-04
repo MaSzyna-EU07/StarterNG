@@ -336,6 +336,18 @@
     <String key="VirtualShunting">Virtuális tolatás</String>
     <String key="LogMissingVehicleFiles">Hiányzó járműfájlok naplózása exportáláskor</String>
     <String key="DeveloperTools">Show the package author's tab</String>
+    <String key="CheckUpdates">Starter frissítéseinek keresése</String>
+    <String key="CheckUpdatesDesc">Naponta egyszer ellenőrzi a GitHubon, hogy megjelent-e újabb starter-verzió, és megjeleníti a felső sávon. A teszt csatorna a staging ág buildjeit kínálja.</String>
+    <String key="UpdateAvailable">Frissítés: {0}</String>
+    <String key="UpdateAvailableTip">Elérhető a(z) {0} verzió. Kattints a letöltési oldal megnyitásához.</String>
+    <String key="UpdateChannelStable">Stabil</String>
+    <String key="UpdateChannelStaging">Teszt (staging)</String>
+    <String key="UpdateChannelWarning">Figyelem: a csatorna csak a startert érinti. A MaSzyna szimulátort és fájljait külön kell frissíteni - ez a választás nem módosítja őket.</String>
+    <String key="CheckUpdatesNow">Ellenőrzés most</String>
+    <String key="UpdateChecking">Ellenőrzés…</String>
+    <String key="UpdateFound">Elérhető a(z) {0} verzió - a gomb a felső sávon található.</String>
+    <String key="UpdateUpToDate">A legújabb verzió van telepítve ({0}).</String>
+    <String key="UpdateCheckFailed">Nem sikerült elérni a GitHubot. Próbáld újra később.</String>
 
     <String key="Graphic">Grafika</String>
     <String key="RenderEngine">Megjelenítő motor</String>
