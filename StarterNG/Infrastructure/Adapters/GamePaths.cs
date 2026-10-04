@@ -22,6 +22,8 @@ public sealed class GamePaths : IGamePaths
 
     public string Data => Path.Combine(Root, "data");
 
+    public string VehicleDatabase => Path.Combine(Root, "databases", "vehicles");
+
     public string StarterConfig => Path.Combine(Root, "starter");
 
     public string DiagnosticsLog => Path.Combine(StarterConfig, "bledy.txt");

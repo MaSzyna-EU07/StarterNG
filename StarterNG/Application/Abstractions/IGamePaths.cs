@@ -12,6 +12,9 @@ public interface IGamePaths
 
     string Data { get; }
 
+    /// <summary>Where the JSON vehicle database and the packages layered on it live.</summary>
+    string VehicleDatabase { get; }
+
     string StarterConfig { get; }
 
     string DiagnosticsLog { get; }

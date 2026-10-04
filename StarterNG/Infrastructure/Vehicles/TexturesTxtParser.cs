@@ -25,7 +25,10 @@ public sealed class TexturesTxtParser
 
             char first = line[0];
             if (first is '#' or '@' or '*')
+            {
+                entry.Unknown.Add(line);
                 continue;
+            }
 
             if (line.StartsWith("$a", StringComparison.OrdinalIgnoreCase))
             {
@@ -47,11 +50,17 @@ public sealed class TexturesTxtParser
             }
 
             if (line.IndexOf('=') < 0 || line.StartsWith("//", StringComparison.Ordinal))
+            {
+                entry.Unknown.Add(line);
                 continue;
+            }
 
             var texture = ParseLivery(line, directory, categorySign, archived, entry);
             if (texture is null)
+            {
+                entry.Unknown.Add(line);
                 continue;
+            }
 
             entry.Textures.Add(texture);
 
@@ -120,7 +129,8 @@ public sealed class TexturesTxtParser
                 Id = groupId,
                 Category = categorySign,
                 Mini = lead.Mini,
-                Archived = archived
+                Archived = archived,
+                Implicit = true
             });
 
         var texture = new VehicleTexture
