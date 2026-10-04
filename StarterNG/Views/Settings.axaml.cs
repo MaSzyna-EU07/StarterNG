@@ -1007,6 +1007,8 @@ public partial class Settings : UserControl, ISettingsCapture
         _capturing.Shift = e.KeyModifiers.HasFlag(KeyModifiers.Shift);
         _capturing.Ctrl = e.KeyModifiers.HasFlag(KeyModifiers.Control);
         _capturing.Key = token;
+        // As the key flyout does: the combination moves here, not doubled up.
+        ReleaseCombo(token, _capturing.Shift, _capturing.Ctrl, _capturing);
         KeyboardConfig.Instance.Dirty = true;
         MarkDirty();
         e.Handled = true;
@@ -1247,17 +1249,7 @@ public partial class Settings : UserControl, ISettingsCapture
     private void AssignSlot(string token, bool shift, bool ctrl, int selectedIndex, List<KeyBinding> commands)
     {
         KeyBinding? chosen = selectedIndex <= 0 ? null : commands[selectedIndex - 1];
-
-        foreach (var b in KeyboardConfig.Instance.Bindings)
-        {
-            if (!ReferenceEquals(b, chosen) && b.IsAssigned &&
-                string.Equals(b.Key, token, StringComparison.OrdinalIgnoreCase) &&
-                b.Shift == shift && b.Ctrl == ctrl)
-            {
-                b.Shift = b.Ctrl = false;
-                b.Key = "none";
-            }
-        }
+        ReleaseCombo(token, shift, ctrl, chosen);
 
         if (chosen is not null)
         {
@@ -1268,6 +1260,25 @@ public partial class Settings : UserControl, ISettingsCapture
 
         KeyboardConfig.Instance.Dirty = true;
         MarkDirty();
+    }
+
+    /// <summary>
+    /// Frees a key combination for <paramref name="keeper"/>: the simulator maps a
+    /// combination to one command - in driving and outside the cab alike, the
+    /// editor has its own fixed keys - so of two, one would silently never fire.
+    /// </summary>
+    private static void ReleaseCombo(string token, bool shift, bool ctrl, KeyBinding? keeper)
+    {
+        foreach (var b in KeyboardConfig.Instance.Bindings)
+        {
+            if (!ReferenceEquals(b, keeper) && b.IsAssigned &&
+                string.Equals(b.Key, token, StringComparison.OrdinalIgnoreCase) &&
+                b.Shift == shift && b.Ctrl == ctrl)
+            {
+                b.Shift = b.Ctrl = false;
+                b.Key = "none";
+            }
+        }
     }
 
     private static KeyBinding? CommandInSlot(string token, bool shift, bool ctrl) =>
