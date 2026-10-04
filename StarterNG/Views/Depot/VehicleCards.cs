@@ -406,13 +406,16 @@ public sealed class VehicleCards
         flyout.ShowAt(anchor);
     }
 
+    /// <summary>
+    /// The coupler after a unit, drawn by its state - free, coupled, multiple-unit,
+    /// permanent, and at the back of the train whether the end signals go up.
+    /// </summary>
     public Control BuildCoupler(ConsistItem item, bool trailing = false)
     {
+        var coupling = Consist.TailCar(item).Coupling;
         var glyph = new TextBlock
         {
-            Text = trailing ? "╡" : "≣",
             FontSize = 18,
-            Opacity = trailing ? 0.55 : 0.7,
             VerticalAlignment = VerticalAlignment.Center,
             HorizontalAlignment = HorizontalAlignment.Center
         };
@@ -422,24 +425,55 @@ public sealed class VehicleCards
             MinWidth = 0,
             Cursor = _hand,
             VerticalAlignment = VerticalAlignment.Center,
-            Content = glyph,
-            Flyout = new Flyout
-            {
-                Content = BuildCouplingBox(item),
-                Placement = PlacementMode.Top
-            }
+            Content = glyph
         };
         coupler.Classes.Add("Basic");
-        ToolTip.SetTip(coupler, $"{App.Loc["Coupling"]} — {App.Loc["TipReorder"]}");
+
+        void Restyle()
+        {
+            var state = CouplerLook.StateOf(coupling, trailing);
+            glyph.Text = CouplerLook.Glyph(state);
+            if (CouplerLook.Brush(state) is { } brush)
+            {
+                glyph.Foreground = brush;
+                glyph.Opacity = 1;
+            }
+            else
+            {
+                glyph.ClearValue(TextBlock.ForegroundProperty);
+                glyph.Opacity = 0.7;
+            }
+            ToolTip.SetTip(coupler, CouplerLook.Describe(coupling, trailing));
+        }
+
+        Restyle();
+        coupler.Flyout = new Flyout
+        {
+            Content = BuildCouplingBox(item, Restyle),
+            Placement = PlacementMode.Top
+        };
         return coupler;
     }
 
-    private Control BuildCouplingBox(ConsistItem item)
+    /// <summary>
+    /// Edits the coupler in place, so the flyout stays open while bits are
+    /// ticked; <paramref name="changed"/> redraws the coupler it hangs off.
+    /// </summary>
+    private Control BuildCouplingBox(ConsistItem item, Action changed)
     {
         var d = Consist.TailCar(item);
         int unitIdx = _consist.IndexOf(item);
 
         var panel = new StackPanel { Spacing = 2 };
+        var checks = new List<(CheckBox Check, int Bit)>();
+        bool syncing = false;
+
+        void Changed()
+        {
+            d.CouplerSetByHand = true;
+            changed();
+            _refreshDetails();
+        }
 
         var copy = new Button
         {
@@ -456,7 +490,11 @@ public sealed class VehicleCards
         {
             if (unitIdx <= 0) return;
             d.Coupling.Flags = Consist.TailCar(_consist[unitIdx - 1]).Coupling.Flags;
-            _redraw();
+            syncing = true;
+            foreach (var (check, bit) in checks)
+                check.IsChecked = d.Coupling.Has(bit);
+            syncing = false;
+            Changed();
         };
 
         var header = new DockPanel { Margin = new Thickness(0, 0, 0, 2) };
@@ -489,7 +527,13 @@ public sealed class VehicleCards
                 IsChecked = d.Coupling.Has(bit),
                 FontSize = 12
             };
-            check.IsCheckedChanged += (_, _) => d.Coupling.Set(bit, check.IsChecked == true);
+            check.IsCheckedChanged += (_, _) =>
+            {
+                if (syncing) return;
+                d.Coupling.Set(bit, check.IsChecked == true);
+                Changed();
+            };
+            checks.Add((check, bit));
             Grid.SetRow(check, i / 2);
             Grid.SetColumn(check, i % 2);
             grid.Children.Add(check);

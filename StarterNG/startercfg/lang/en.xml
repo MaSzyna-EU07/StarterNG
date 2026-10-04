@@ -284,10 +284,15 @@
     <String key="TipSplit">Split the unit into individual cars</String>
     <String key="AppliesToUnit">Shared by the whole unit</String>
     <String key="CouplingUnitRear">Coupler at the rear of the unit</String>
-    <String key="CouplingLastNote">Last vehicle: coupler 0 gets the end signals; any other code couples the train to whatever stands behind it, with no end signals. The starter sets 0 here after every change to the consist, unless you set the coupler by hand; “Auto” always brings 0 back.</String>
     <String key="Join">Join</String>
     <String key="TipJoin">Couple this vehicle with the next one into a single unit</String>
-    <String key="TipReorder">Drag to reorder</String>
+    <String key="CouplerCode">Coupler code: {0}</String>
+    <String key="CouplerFree">The vehicles are not coupled.</String>
+    <String key="CouplerConnects">Connected: {0}</String>
+    <String key="CouplerEndSignals">End of the train — the simulator puts up the end signals.</String>
+    <String key="CouplerCoupledBehind">The end of the train couples to whatever stands behind it ({0}) — no end signals.</String>
+    <String key="CouplerLocked">Locked — not uncoupled in shunting.</String>
+    <String key="CouplerClickToEdit">Click to change.</String>
     <String key="AddVehicle">Add</String>
     <String key="AddMany">Add several…</String>
     <String key="AddManyCount">How many times to add it</String>

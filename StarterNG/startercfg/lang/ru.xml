@@ -284,10 +284,15 @@
     <String key="TipSplit">Разделить сцеп на отдельные вагоны</String>
     <String key="AppliesToUnit">Общее для всего состава</String>
     <String key="CouplingUnitRear">Сцепка в конце состава</String>
-    <String key="CouplingLastNote">Последняя единица: сцепка 0 даёт хвостовые сигналы, другой код сцепит состав с тем, что стоит за ним, без хвостовых сигналов. Стартер ставит здесь 0 после каждого изменения состава, если вы не задали сцепку вручную; «Авто» всегда возвращает 0.</String>
     <String key="Join">Соединить</String>
     <String key="TipJoin">Соединить этот вагон со следующим в один состав</String>
-    <String key="TipReorder">Перетащите для изменения порядка</String>
+    <String key="CouplerCode">Код сцепки: {0}</String>
+    <String key="CouplerFree">Вагоны не сцеплены.</String>
+    <String key="CouplerConnects">Соединено: {0}</String>
+    <String key="CouplerEndSignals">Хвост поезда — симулятор вывесит хвостовые сигналы.</String>
+    <String key="CouplerCoupledBehind">Хвост поезда сцепится с тем, что стоит за ним ({0}) — без хвостовых сигналов.</String>
+    <String key="CouplerLocked">Заблокирована — не расцепляется при маневрах.</String>
+    <String key="CouplerClickToEdit">Нажмите, чтобы изменить.</String>
     <String key="AddVehicle">Добавить</String>
     <String key="AddMany">Добавить несколько…</String>
     <String key="AddManyCount">Сколько раз добавить единицу</String>

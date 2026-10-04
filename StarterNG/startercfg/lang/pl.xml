@@ -284,10 +284,15 @@
     <String key="TipSplit">Rozdziel zespół na pojedyncze człony</String>
     <String key="AppliesToUnit">Ustawienie wspólne dla całego zespołu</String>
     <String key="CouplingUnitRear">Sprzęg na końcu zespołu</String>
-    <String key="CouplingLastNote">Ostatni pojazd: sprzęg 0 daje końcówki, a inny kod połączy skład z tym, co stoi za nim, bez końcówek. Starter ustawia tu 0 po każdej zmianie składu, chyba że ustawisz sprzęg ręcznie; „Auto” zawsze przywraca 0.</String>
     <String key="Join">Złącz</String>
     <String key="TipJoin">Połącz ten pojazd z następnym w jeden zespół</String>
-    <String key="TipReorder">Przeciągnij, aby zmienić kolejność</String>
+    <String key="CouplerCode">Kod sprzęgu: {0}</String>
+    <String key="CouplerFree">Pojazdy nie są połączone.</String>
+    <String key="CouplerConnects">Połączone: {0}</String>
+    <String key="CouplerEndSignals">Koniec składu — symulator wystawi końcówki.</String>
+    <String key="CouplerCoupledBehind">Koniec składu sprzęgnie się z tym, co stoi za nim ({0}) — bez końcówek.</String>
+    <String key="CouplerLocked">Zablokowany — nie rozprzęga się przy manewrach.</String>
+    <String key="CouplerClickToEdit">Kliknij, aby zmienić.</String>
     <String key="AddVehicle">Dodaj</String>
     <String key="AddMany">Dodaj wiele…</String>
     <String key="AddManyCount">Ile razy dodać pojazd</String>
