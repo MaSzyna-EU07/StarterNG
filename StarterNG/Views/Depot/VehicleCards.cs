@@ -416,12 +416,11 @@ public sealed class VehicleCards
     {
         var coupling = Consist.TailCar(item).Coupling;
         var icon = new MaterialIcon { Width = 18, Height = 18, HorizontalAlignment = HorizontalAlignment.Center };
-        var bar = new Line
+        // Room for all eight, so every icon on the strip sits level.
+        var stripes = new StackPanel
         {
-            StartPoint = new Point(0, 0),
-            EndPoint = new Point(22, 0),
-            HorizontalAlignment = HorizontalAlignment.Center,
-            StrokeLineCap = PenLineCap.Round
+            Spacing = 1, Height = 23,
+            HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Top
         };
         var coupler = new Button
         {
@@ -429,20 +428,33 @@ public sealed class VehicleCards
             MinWidth = 0,
             Cursor = _hand,
             VerticalAlignment = VerticalAlignment.Center,
-            Content = new StackPanel { Spacing = 4, Children = { icon, bar } }
+            Content = new StackPanel { Spacing = 4, Children = { icon, stripes } }
         };
         coupler.Classes.Add("Basic");
 
         void Restyle()
         {
             var state = CouplerLook.StateOf(coupling, trailing);
-            var brush = CouplerLook.Brush(state);
             icon.Kind = CouplerLook.Icon(state);
-            icon.Foreground = brush;
-            bar.Opacity = CouplerLook.HasBar(state) ? 1 : 0; // kept in the layout, so every icon sits level
-            bar.Stroke = brush;
-            bar.StrokeThickness = CouplerLook.BarThickness(state);
-            bar.StrokeDashArray = state == CouplerState.Free ? new AvaloniaList<double> { 1.5, 1.5 } : null;
+            icon.Foreground = CouplerLook.Brush(state);
+
+            // A stripe per connection, the way the hoses and cables hang between
+            // the buffers; nothing coupled leaves a broken line.
+            stripes.Children.Clear();
+            foreach (int bit in CouplerLook.SetBits(coupling))
+                stripes.Children.Add(new Border
+                {
+                    Width = 22, Height = 2, CornerRadius = new CornerRadius(1),
+                    Background = CouplerLook.BitBrush(bit)
+                });
+            if (stripes.Children.Count == 0 && !trailing)
+                stripes.Children.Add(new Line
+                {
+                    StartPoint = new Point(0, 0), EndPoint = new Point(22, 0),
+                    Stroke = CouplerLook.Brush(state), StrokeThickness = 2,
+                    StrokeDashArray = new AvaloniaList<double> { 2, 2 }
+                });
+
             ToolTip.SetTip(coupler, CouplerLook.Describe(coupling, trailing));
         }
 
@@ -523,7 +535,7 @@ public sealed class VehicleCards
             int bit = 1 << i;
             var check = new CheckBox
             {
-                Content = App.Loc[CouplingBits.BitKeys[i]],
+                Content = CouplerLook.BitLabel(i),
                 IsChecked = d.Coupling.Has(bit),
                 FontSize = 12
             };
@@ -540,15 +552,8 @@ public sealed class VehicleCards
         }
         panel.Children.Add(grid);
 
-        var thermo = new CheckBox
-        {
-            Content = App.Loc["ThermoAmbient"],
-            IsChecked = d.Coupling.ThermoDynamic,
-            FontSize = 12,
-            Margin = new Thickness(0, 2, 0, 0)
-        };
-        thermo.IsCheckedChanged += (_, _) => d.Coupling.ThermoDynamic = thermo.IsChecked == true;
-        panel.Children.Add(thermo);
+        // The ambient coolant flag rides in the coupling token too, but it is the
+        // vehicle's: it sits in the vehicle panel, beside the crew and the number.
 
         return new Border { Padding = new Thickness(8), Child = panel };
     }

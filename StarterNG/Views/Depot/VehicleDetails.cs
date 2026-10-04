@@ -196,7 +196,7 @@ public sealed class VehicleDetails
             int bit = 1 << i;
             var check = new CheckBox
             {
-                Content = App.Loc[CouplingBits.BitKeys[i]],
+                Content = CouplerLook.BitLabel(i),
                 IsChecked = d.Coupling.Has(bit),
                 Classes = { "Checklist" }
             };
