@@ -95,6 +95,9 @@
     <String key="Crew">with crew</String>
     <String key="Reversed">reversed</String>
     <String key="NoVehicles">No vehicles found in dynamic/**/textures.txt.</String>
+    <String key="BrowserHint">Pick a category or type a vehicle's name.</String>
+    <String key="BrowserNoMatch">Nothing matches “{0}”.</String>
+    <String key="SearchAllVehicles">Search all vehicles…</String>
     <String key="ConsistEmpty">Add vehicles from the database on the left, or load an existing consist from a scenery file.</String>
     <String key="TipMoveLeft">Move left</String>
     <String key="TipMoveRight">Move right</String>

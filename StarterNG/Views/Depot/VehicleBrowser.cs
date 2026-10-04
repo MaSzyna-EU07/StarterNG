@@ -94,24 +94,15 @@ public sealed class VehicleBrowser
 
     private const int MiniPreviewHeight = 54;
 
-    private const int CompactThumbHeight = 24;
 
+    // In the old starter's order: traction first, then the wagons, then the rest.
     private static readonly (string LocKey, Func<string?, bool> Match)[] CategoryDefs =
     {
         ("CatElectricLoco", c => c == "e"),
         ("CatDieselLoco",   c => c == "s"),
         ("CatSteamLoco",    c => c == "p"),
-        ("CatEMU",          c => c == "z"),
         ("CatRailbus",      c => c == "a"),
-        ("CatDraisine",     c => c == "d"),
-        ("CatWork",         c => c == "r"),
-        ("CatPrototype",    c => c == "x"),
-        ("CatTram",         c => c == "t"),
-        ("CatCar",          c => c == "o"),
-        ("CatBus",          c => c == "b"),
-        ("CatTruck",        c => c == "c"),
-        ("CatPeople",       c => c == "h"),
-        ("CatAnimals",      c => c == "f"),
+        ("CatEMU",          c => c == "z"),
         ("CatWagonsA",       c => c == "A"),
         ("CatWagonsB",       c => c == "B"),
         ("CatWagonsC",       c => c == "C"),
@@ -137,6 +128,15 @@ public sealed class VehicleBrowser
         ("CatWagonsX",       c => c == "X"),
         ("CatWagonsY",       c => c == "Y"),
         ("CatWagonsZ",       c => c == "Z"),
+        ("CatWork",         c => c == "r"),
+        ("CatDraisine",     c => c == "d"),
+        ("CatTram",         c => c == "t"),
+        ("CatCar",          c => c == "o"),
+        ("CatBus",          c => c == "b"),
+        ("CatTruck",        c => c == "c"),
+        ("CatPeople",       c => c == "h"),
+        ("CatAnimals",      c => c == "f"),
+        ("CatPrototype",    c => c == "x"),
 
         ("CatOther",        IsOtherCat),
     };
@@ -148,46 +148,75 @@ public sealed class VehicleBrowser
         string.IsNullOrEmpty(c) ||
         (c is { Length: 1 } && char.IsLower(c[0]) && !NamedLowerCats.Contains(c));
 
+    /// <summary>
+    /// Only the categories something is listed in - with the archival ones hidden, the
+    /// ones holding nothing else go too - keeping the pick and its class where they stay.
+    /// </summary>
     public void PopulateCategoryCombo()
     {
-        int keep = categoryCombo.SelectedIndex;
+        var keep = (categoryCombo.SelectedItem as ComboBoxItem)?.Tag;
+        string? keepClass = _classFilter;
+
+        var present = _db.Textures
+            .Where(Listable)
+            .Select(VehicleInfo.CategoryOf)
+            .Distinct()
+            .ToList();
 
         _suppress = true;
         categoryCombo.Items.Clear();
         foreach (var (locKey, match) in CategoryDefs)
-            categoryCombo.Items.Add(new ComboBoxItem { Content = App.Loc[locKey], Tag = match });
-        categoryCombo.SelectedIndex = keep >= 0 && keep < categoryCombo.Items.Count ? keep : -1;
+            if (present.Any(match))
+                categoryCombo.Items.Add(new ComboBoxItem { Content = App.Loc[locKey], Tag = match });
+        categoryCombo.SelectedItem = categoryCombo.Items.OfType<ComboBoxItem>()
+            .FirstOrDefault(item => ReferenceEquals(item.Tag, keep));
         _suppress = false;
 
         _categoryFilter = categoryCombo.SelectedItem is ComboBoxItem { Tag: Func<string?, bool> f }
             ? f : null;
-        RebuildClassCombo();
-    }
-
-    private void RebuildClassCombo()
-    {
-        _suppress = true;
-        FillClassCombo();
-        classCombo.SelectedIndex = -1;
-        _suppress = false;
-
-        _classFilter = null;
-        Rebuild();
+        RebuildClassCombo(keepClass);
     }
 
     /// <summary>
-    /// The open list shows its thumbnails at the size the consist cards use, large or
-    /// small as set; the closed box keeps a compact line. Called again when that
-    /// setting changes, so the open list follows.
+    /// Refills the classes. Within a category one is always picked - the one kept, or
+    /// else the first - so the list shows its vehicles straight away, as the old starter
+    /// did, instead of every vehicle of the category at once.
+    /// </summary>
+    private void RebuildClassCombo(string? keepClass = null)
+    {
+        _suppress = true;
+        FillClassCombo();
+        var classes = classCombo.Items.OfType<string>().ToList();
+        classCombo.SelectedItem =
+            classes.FirstOrDefault(cls => string.Equals(cls, keepClass, StringComparison.OrdinalIgnoreCase))
+            ?? (_categoryFilter is not null ? classes.FirstOrDefault() : null);
+        _suppress = false;
+
+        _classFilter = classCombo.SelectedItem as string;
+        Rebuild();
+    }
+
+    /// <summary>A texture the browser lists at all: no set follower, no hidden archival one.</summary>
+    private bool Listable(VehicleTexture texture) =>
+        !_db.IsSetFollower(texture) &&
+        !(AppServices.Current.Settings.HideArchivalVehicles && texture.ResolvedArchived);
+
+    /// <summary>
+    /// The classes with their thumbnail above the name: in the open list at the size
+    /// the consist cards use, called again when that size changes; in the closed box
+    /// at a fixed modest one, so the class picked is seen, as in the old starter,
+    /// without taking the height the vehicle list needs.
     /// </summary>
     public void InitClassComboTemplates()
     {
-        int listHeight = VehicleCardStyle.ThumbHeight;
+        int height = VehicleCardStyle.ThumbHeight;
         classCombo.ItemTemplate = new FuncDataTemplate<string>(
-            (cls, _) => ClassComboContent(cls, listHeight, stacked: true), false);
+            (cls, _) => ClassComboContent(cls, height, stacked: true), false);
         classCombo.SelectionBoxItemTemplate = new FuncDataTemplate<string>(
-            (cls, _) => ClassComboContent(cls, CompactThumbHeight, stacked: false), false);
+            (cls, _) => ClassComboContent(cls, PickedClassThumbHeight, stacked: true), false);
     }
+
+    private const int PickedClassThumbHeight = 30;
 
     private void FillClassCombo()
     {
@@ -257,9 +286,8 @@ public sealed class VehicleBrowser
 
     private IEnumerable<string> ClassesForCategory(Func<string?, bool>? category) =>
         _db.Textures
+            .Where(Listable)
             .Where(t => category == null || category(VehicleInfo.CategoryOf(t)))
-            .Where(t => !_db.IsSetFollower(t))
-            .Where(t => !AppServices.Current.Settings.HideArchivalVehicles || !t.ResolvedArchived)
             .Select(VehicleInfo.ClassOf)
             .Where(s => !string.IsNullOrEmpty(s))
             .Distinct(StringComparer.OrdinalIgnoreCase)
@@ -319,7 +347,10 @@ public sealed class VehicleBrowser
         bool hasSearch = search.Length > 0;
 
         if (_categoryFilter == null && _classFilter == null && !hasSearch)
+        {
+            AddNote(App.Loc["BrowserHint"]);
             return;
+        }
 
         var matched = _db.Textures
             .Where(t => PassesFilters(t, search, hasSearch))
@@ -338,12 +369,15 @@ public sealed class VehicleBrowser
         }
 
         if (vehicleListBox.Items.Count == 0)
-            vehicleListBox.Items.Add(new ListBoxItem
-            {
-                Content = App.Loc["NoVehicles"],
-                IsEnabled = false
-            });
+            AddNote(hasSearch ? string.Format(App.Loc["BrowserNoMatch"], search) : App.Loc["NoVehicles"]);
     }
+
+    private void AddNote(string text) =>
+        vehicleListBox.Items.Add(new ListBoxItem
+        {
+            Content = new TextBlock { Text = text, TextWrapping = TextWrapping.Wrap, Opacity = 0.7 },
+            IsEnabled = false
+        });
 
     public void VehicleListBox_OnSelectionChanged(object? sender, SelectionChangedEventArgs e)
     {
@@ -489,23 +523,19 @@ public sealed class VehicleBrowser
 
     private bool PassesFilters(VehicleTexture t, string search, bool hasSearch)
     {
+        if (!Listable(t))
+            return false;
+
+        // A search looks through everything; the category and the class narrow the
+        // browsing, not the finding.
+        if (hasSearch)
+            return Matches(t, search);
+
         if (_categoryFilter != null && !_categoryFilter(VehicleInfo.CategoryOf(t)))
             return false;
 
-        if (_classFilter != null &&
-            !string.Equals(VehicleInfo.ClassOf(t), _classFilter, StringComparison.OrdinalIgnoreCase))
-            return false;
-
-        if (_db.IsSetFollower(t))
-            return false;
-
-        if (AppServices.Current.Settings.HideArchivalVehicles && t.ResolvedArchived)
-            return false;
-
-        if (hasSearch && !Matches(t, search))
-            return false;
-
-        return true;
+        return _classFilter == null ||
+               string.Equals(VehicleInfo.ClassOf(t), _classFilter, StringComparison.OrdinalIgnoreCase);
     }
 
     private bool Matches(VehicleTexture t, string f)
@@ -527,15 +557,20 @@ public sealed class VehicleBrowser
     // called a vehicle something none of the other panels did.
     private static string BrowserName(VehicleTexture texture) => Consist.Base(texture.Skinfile);
 
-    private string BrowserLabel(VehicleTexture texture, IReadOnlyList<VehicleTexture>? set)
+    // The file name alone, as the old starter listed it - the operator is in the
+    // texture panel - with a faint count for a set of cars.
+    private static Control BrowserLabel(VehicleTexture texture, IReadOnlyList<VehicleTexture>? set)
     {
-        string name = BrowserName(texture);
+        var name = new TextBlock { Text = BrowserName(texture) };
+        if (set is not { Count: > 1 })
+            return name;
 
-        if (!string.IsNullOrEmpty(texture.Meta?.Operator))
-            name += $"  ·  {texture.Meta!.Operator}";
-        if (set is { Count: > 1 })
-            name += $"   [{set.Count}]";
-        return name;
+        return new StackPanel
+        {
+            Orientation = Orientation.Horizontal,
+            Spacing = 6,
+            Children = { name, new TextBlock { Text = $"×{set.Count}", Opacity = 0.55 } }
+        };
     }
 
     public void SearchBox_OnTextChanged(object? sender, TextChangedEventArgs e)
@@ -550,7 +585,7 @@ public sealed class VehicleBrowser
         if (_suppress) return;
         AppServices.Current.Settings.HideArchivalVehicles = hideArchivalCheck.IsChecked ?? true;
         AppServices.Current.SettingsStore.Save();
-        Rebuild();
+        PopulateCategoryCombo();
     }
 
     public void SelectInBrowser(Dynamic car)

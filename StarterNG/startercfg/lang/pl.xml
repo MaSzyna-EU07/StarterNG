@@ -95,6 +95,9 @@
     <String key="Crew">z obsadą</String>
     <String key="Reversed">Obrócony</String>
     <String key="NoVehicles">Nie znaleziono pojazdów w dynamic/**/textures.txt.</String>
+    <String key="BrowserHint">Wybierz kategorię albo wpisz nazwę pojazdu.</String>
+    <String key="BrowserNoMatch">Nic nie pasuje do „{0}”.</String>
+    <String key="SearchAllVehicles">Szukaj we wszystkich pojazdach…</String>
     <String key="ConsistEmpty">Dodaj pojazdy z bazy po lewej stronie lub wczytaj istniejący skład z pliku scenerii.</String>
     <String key="TipMoveLeft">Przesuń w lewo</String>
     <String key="TipMoveRight">Przesuń w prawo</String>

@@ -95,6 +95,9 @@
     <String key="Crew">с бригадой</String>
     <String key="Reversed">развёрнут</String>
     <String key="NoVehicles">В dynamic/**/textures.txt подвижной состав не найден.</String>
+    <String key="BrowserHint">Выберите категорию или введите название единицы.</String>
+    <String key="BrowserNoMatch">Ничего не найдено по запросу «{0}».</String>
+    <String key="SearchAllVehicles">Искать во всех единицах…</String>
     <String key="ConsistEmpty">Добавьте единицы из базы слева или загрузите готовый состав из файла сценерии.</String>
     <String key="TipMoveLeft">Сдвинуть влево</String>
     <String key="TipMoveRight">Сдвинуть вправо</String>

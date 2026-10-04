@@ -95,6 +95,9 @@
     <String key="Crew">személyzettel</String>
     <String key="Reversed">megfordítva</String>
     <String key="NoVehicles">A dynamic/**/textures.txt fájlokban nem található jármű.</String>
+    <String key="BrowserHint">Válassz kategóriát, vagy írd be a jármű nevét.</String>
+    <String key="BrowserNoMatch">Semmi sem felel meg ennek: „{0}”.</String>
+    <String key="SearchAllVehicles">Keresés az összes járműben…</String>
     <String key="ConsistEmpty">Adjon hozzá járműveket a bal oldali adatbázisból, vagy töltsön be meglévő szerelvényt egy pályafájlból.</String>
     <String key="TipMoveLeft">Mozgatás balra</String>
     <String key="TipMoveRight">Mozgatás jobbra</String>

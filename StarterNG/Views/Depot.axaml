@@ -30,55 +30,61 @@
         <Border Grid.Column="0" Grid.Row="0" TabIndex="2" Background="{StaticResource CarbonPanelBg}"
                 BorderBrush="{StaticResource CarbonBorderLight}" BorderThickness="1"
                 CornerRadius="2" Padding="6">
-            <Grid RowDefinitions="Auto,Auto,*,Auto,Auto">
-                <DockPanel Grid.Row="0" Margin="0,0,0,6" LastChildFill="True">
-                    <CheckBox Name="hideArchivalCheck" DockPanel.Dock="Right" FontSize="12"
-                              VerticalAlignment="Center" Margin="8,0,0,0"
-                              Content="{Binding [HideArchivalVehicles], Source={x:Static starterNg:App.Loc}}"
-                              IsCheckedChanged="HideArchivalCheck_OnChanged" />
-                    <TextBox Name="searchBox" VerticalAlignment="Center"
-                             PlaceholderText="{Binding [Search], Source={x:Static starterNg:App.Loc}}"
-                             TextChanged="SearchBox_OnTextChanged" />
-                </DockPanel>
-                <Grid Grid.Row="1" RowDefinitions="Auto,Auto" RowSpacing="6" Margin="0,0,0,6">
-                    <DockPanel Grid.Row="0" LastChildFill="True">
-                        <Button Name="textureBaseButton" DockPanel.Dock="Right" Classes="Flat"
-                                Width="30" Margin="4,0,0,0" Cursor="Hand"
-                                HorizontalContentAlignment="Center"
-                                Click="TextureBaseButton_OnClick"
-                                ToolTip.Tip="{Binding [OpenTextureBase], Source={x:Static starterNg:App.Loc}}">
-                            <materialIcons:MaterialIcon Kind="Magnify" Width="15" Height="15" />
-                        </Button>
-                        <ComboBox Name="categoryCombo" HorizontalAlignment="Stretch"
-                                  PlaceholderText="{Binding [Category], Source={x:Static starterNg:App.Loc}}"
-                                  PointerWheelChanged="Combo_OnPointerWheel"
-                                  SelectionChanged="CategoryCombo_OnSelectionChanged" />
-                    </DockPanel>
-                    <ComboBox Name="classCombo" Grid.Row="1" HorizontalAlignment="Stretch"
-                              PlaceholderText="{Binding [Class], Source={x:Static starterNg:App.Loc}}"
+            <!-- The old starter's column, top to bottom: the archival switch, the category
+                 with the catalogue beside it, the class with its thumbnail, then the
+                 vehicles. The search, which it kept in a window of its own, sits above
+                 the list it fills. -->
+            <Grid RowDefinitions="Auto,Auto,Auto,Auto,*,Auto">
+                <CheckBox Name="hideArchivalCheck" Grid.Row="0" Margin="0,0,0,6" FontSize="12"
+                          Content="{Binding [HideArchivalVehicles], Source={x:Static starterNg:App.Loc}}"
+                          IsCheckedChanged="HideArchivalCheck_OnChanged" />
+
+                <DockPanel Grid.Row="1" Margin="0,0,0,6" LastChildFill="True">
+                    <Button Name="textureBaseButton" DockPanel.Dock="Right" Classes="Flat"
+                            Width="30" Margin="4,0,0,0" Cursor="Hand"
+                            HorizontalContentAlignment="Center"
+                            Click="TextureBaseButton_OnClick"
+                            ToolTip.Tip="{Binding [OpenTextureBase], Source={x:Static starterNg:App.Loc}}">
+                        <materialIcons:MaterialIcon Kind="Magnify" Width="15" Height="15" />
+                    </Button>
+                    <ComboBox Name="categoryCombo" HorizontalAlignment="Stretch"
+                              PlaceholderText="{Binding [Category], Source={x:Static starterNg:App.Loc}}"
                               PointerWheelChanged="Combo_OnPointerWheel"
-                              SelectionChanged="ClassCombo_OnSelectionChanged" />
-                </Grid>
+                              SelectionChanged="CategoryCombo_OnSelectionChanged" />
+                </DockPanel>
 
-                <Border Name="miniPreviewPanel" Grid.Row="3" Height="46"
-                        Margin="0,6,0,0"
-                        Background="{StaticResource CarbonInputBg}"
-                        BorderBrush="{StaticResource CarbonBorderLight}" BorderThickness="1"
-                        CornerRadius="2" Cursor="Hand"
-                        PointerPressed="MiniPreview_OnPointerPressed">
-                    <Image Name="miniPreview" Stretch="Uniform" Margin="6" />
-                </Border>
+                <ComboBox Name="classCombo" Grid.Row="2" Margin="0,0,0,6" HorizontalAlignment="Stretch"
+                          HorizontalContentAlignment="Center"
+                          PlaceholderText="{Binding [Class], Source={x:Static starterNg:App.Loc}}"
+                          PointerWheelChanged="Combo_OnPointerWheel"
+                          SelectionChanged="ClassCombo_OnSelectionChanged" />
 
-                <Button Name="addVehicleButton" Grid.Row="4" Classes="Flat Accent"
-                        Margin="0,8,0,0" Cursor="Hand" IsEnabled="False"
-                        HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
-                        Click="AddVehicleButton_OnClick"
-                        Content="{Binding [AddVehicle], Source={x:Static starterNg:App.Loc}}" />
+                <TextBox Name="searchBox" Grid.Row="3" Margin="0,0,0,6"
+                         PlaceholderText="{Binding [SearchAllVehicles], Source={x:Static starterNg:App.Loc}}"
+                         TextChanged="SearchBox_OnTextChanged" />
 
-                <ListBox Name="vehicleListBox" Grid.Row="2" Classes="Compact"
+                <ListBox Name="vehicleListBox" Grid.Row="4" Classes="Compact" MinHeight="60"
                          SelectionChanged="VehicleListBox_OnSelectionChanged"
                          DoubleTapped="VehicleListBox_OnDoubleTapped"
                          PointerPressed="VehicleListBox_OnPointerPressed" />
+
+                <!-- The thumbnail - drag it onto the consist - and Add share a line, so
+                     the list keeps the height. -->
+                <Grid Grid.Row="5" ColumnDefinitions="*,Auto" ColumnSpacing="6" Margin="0,6,0,0">
+                    <Border Name="miniPreviewPanel" Height="34"
+                            Background="{StaticResource CarbonInputBg}"
+                            BorderBrush="{StaticResource CarbonBorderLight}" BorderThickness="1"
+                            CornerRadius="2" Cursor="Hand"
+                            PointerPressed="MiniPreview_OnPointerPressed">
+                        <Image Name="miniPreview" Stretch="Uniform" Margin="3" />
+                    </Border>
+                    <Button Name="addVehicleButton" Grid.Column="1" Classes="Flat Accent"
+                            MinWidth="80" Cursor="Hand" IsEnabled="False"
+                            VerticalAlignment="Stretch" HorizontalContentAlignment="Center"
+                            VerticalContentAlignment="Center"
+                            Click="AddVehicleButton_OnClick"
+                            Content="{Binding [AddVehicle], Source={x:Static starterNg:App.Loc}}" />
+                </Grid>
             </Grid>
         </Border>
 
