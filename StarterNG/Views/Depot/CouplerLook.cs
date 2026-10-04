@@ -22,8 +22,8 @@ public enum CouplerState
     /// <summary>The back of the train at 0 - the simulator puts up the end signals.</summary>
     EndSignals,
 
-    /// <summary>The back of the train coupled to whatever stands behind it - no end signals.</summary>
-    CoupledBehind
+    /// <summary>The back of the train at anything but 0 - no end signals, and nothing else.</summary>
+    NoEndSignals
 }
 
 /// <summary>How a coupler is drawn on the consist strip, so its state reads at a glance.</summary>
@@ -39,7 +39,7 @@ public static class CouplerLook
     {
         int flags = coupling.AbsFlags;
         if (trailing)
-            return flags == 0 ? CouplerState.EndSignals : CouplerState.CoupledBehind;
+            return flags == 0 ? CouplerState.EndSignals : CouplerState.NoEndSignals;
         if (flags == 0)
             return CouplerState.Free;
         if (coupling.Locked || (flags & Coupling.WorkshopLock) != 0)
@@ -63,7 +63,7 @@ public static class CouplerLook
         CouplerState.MultipleUnit => Green,
         CouplerState.Permanent => Blue,
         CouplerState.EndSignals => Red,
-        CouplerState.CoupledBehind => Amber,
+        CouplerState.NoEndSignals => Amber,
         _ => null
     };
 
@@ -82,7 +82,7 @@ public static class CouplerLook
         {
             CouplerState.Free => App.Loc["CouplerFree"],
             CouplerState.EndSignals => App.Loc["CouplerEndSignals"],
-            CouplerState.CoupledBehind => string.Format(App.Loc["CouplerCoupledBehind"], connections),
+            CouplerState.NoEndSignals => App.Loc["CouplerNoEndSignals"],
             _ => string.Format(App.Loc["CouplerConnects"], connections)
         };
 

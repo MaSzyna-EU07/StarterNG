@@ -290,7 +290,7 @@
     <String key="CouplerFree">The vehicles are not coupled.</String>
     <String key="CouplerConnects">Connected: {0}</String>
     <String key="CouplerEndSignals">End of the train — the simulator puts up the end signals.</String>
-    <String key="CouplerCoupledBehind">The end of the train couples to whatever stands behind it ({0}) — no end signals.</String>
+    <String key="CouplerNoEndSignals">Anything but 0 at the back of the train — the simulator puts up no end signals.</String>
     <String key="CouplerLocked">Locked — not uncoupled in shunting.</String>
     <String key="CouplerClickToEdit">Click to change.</String>
     <String key="AddVehicle">Add</String>

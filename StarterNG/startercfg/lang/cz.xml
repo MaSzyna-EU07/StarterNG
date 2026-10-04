@@ -290,7 +290,7 @@
     <String key="CouplerFree">Vozidla nejsou spojena.</String>
     <String key="CouplerConnects">Spojeno: {0}</String>
     <String key="CouplerEndSignals">Konec soupravy — simulátor vyvěsí koncovky.</String>
-    <String key="CouplerCoupledBehind">Konec soupravy se spřáhne s tím, co stojí za ní ({0}) — bez koncovek.</String>
+    <String key="CouplerNoEndSignals">Jiný kód než 0 na konci soupravy — simulátor nevyvěsí koncovky.</String>
     <String key="CouplerLocked">Zablokováno — při posunu se nerozpojí.</String>
     <String key="CouplerClickToEdit">Klikněte pro změnu.</String>
     <String key="AddVehicle">Přidat</String>

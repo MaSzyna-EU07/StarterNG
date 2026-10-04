@@ -290,7 +290,7 @@
     <String key="CouplerFree">Вагоны не сцеплены.</String>
     <String key="CouplerConnects">Соединено: {0}</String>
     <String key="CouplerEndSignals">Хвост поезда — симулятор вывесит хвостовые сигналы.</String>
-    <String key="CouplerCoupledBehind">Хвост поезда сцепится с тем, что стоит за ним ({0}) — без хвостовых сигналов.</String>
+    <String key="CouplerNoEndSignals">Код, отличный от 0, в хвосте поезда — симулятор не вывесит хвостовые сигналы.</String>
     <String key="CouplerLocked">Заблокирована — не расцепляется при маневрах.</String>
     <String key="CouplerClickToEdit">Нажмите, чтобы изменить.</String>
     <String key="AddVehicle">Добавить</String>

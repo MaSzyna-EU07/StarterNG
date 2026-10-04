@@ -290,7 +290,7 @@
     <String key="CouplerFree">Pojazdy nie są połączone.</String>
     <String key="CouplerConnects">Połączone: {0}</String>
     <String key="CouplerEndSignals">Koniec składu — symulator wystawi końcówki.</String>
-    <String key="CouplerCoupledBehind">Koniec składu sprzęgnie się z tym, co stoi za nim ({0}) — bez końcówek.</String>
+    <String key="CouplerNoEndSignals">Kod inny niż 0 na końcu składu — symulator nie wystawi końcówek.</String>
     <String key="CouplerLocked">Zablokowany — nie rozprzęga się przy manewrach.</String>
     <String key="CouplerClickToEdit">Kliknij, aby zmienić.</String>
     <String key="AddVehicle">Dodaj</String>

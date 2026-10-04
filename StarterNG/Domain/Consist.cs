@@ -638,7 +638,7 @@ public sealed class Consist : IReadOnlyList<ConsistItem>
     /// <summary>
     /// Clears the coupler at the back of the consist, unless it was set in the
     /// editor. The simulator hangs the end signals only on a last vehicle whose
-    /// coupler is 0 - anything else couples it to whatever stands behind - and every
+    /// coupler is 0 - the code does nothing else at the back of a train - and every
     /// new car comes with 3. Its parameters, the brake setting among them, stay.
     /// </summary>
     private void FreeTail()

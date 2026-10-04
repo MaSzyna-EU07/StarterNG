@@ -290,7 +290,7 @@
     <String key="CouplerFree">A járművek nincsenek összekapcsolva.</String>
     <String key="CouplerConnects">Összekapcsolva: {0}</String>
     <String key="CouplerEndSignals">A szerelvény vége — a szimulátor kiteszi a zárjelzőket.</String>
-    <String key="CouplerCoupledBehind">A szerelvény vége összekapcsolódik a mögötte állóval ({0}) — zárjelzők nélkül.</String>
+    <String key="CouplerNoEndSignals">A szerelvény végén 0-tól eltérő kód — a szimulátor nem teszi ki a zárjelzőket.</String>
     <String key="CouplerLocked">Zárolva — tolatáskor nem bontható.</String>
     <String key="CouplerClickToEdit">Kattints a módosításhoz.</String>
     <String key="AddVehicle">Hozzáadás</String>
