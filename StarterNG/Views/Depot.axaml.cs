@@ -573,10 +573,9 @@ public partial class Depot : UserControl
         {
             Cars = unit.Select(NewVehicle).ToList(),
             Grouped = unit.Count > 1,
-            Driver = _consist.Selected.Driver,
             Flipped = _consist.Selected.Flipped
         };
-        _consist[i] = item;
+        _consist.Replace(i, item);
         _consist.Selected = item;
         _consist.AutoConnectAll();
         RebuildConsist();
@@ -607,34 +606,11 @@ public partial class Depot : UserControl
         };
 
         at = Math.Clamp(at, 0, _consist.Count);
-        MatchOccupancy(item, at);
+        _consist.Staff(item, at);
         _consist.Insert(at, item);
         _consist.Selected = item;
         _consist.AutoConnectAll();
         RebuildConsist();
-    }
-
-    private void MatchOccupancy(ConsistItem item, int position)
-    {
-        item.Driver = eDriverType.Nobody;
-        var lead = item.Cars.FirstOrDefault();
-        if (lead is null) return;
-
-        foreach (var car in item.Cars)
-            car.DriverType = eDriverType.Nobody;
-
-        var tex = _db.TextureForSkin(lead.SkinFile);
-        string? cat = tex != null ? VehicleInfo.CategoryOf(tex) : null;
-        if (!VehicleInfo.IsPoweredCategory(cat))
-            return;
-
-        bool staffed = _consist.Any(i =>
-            i.Driver is eDriverType.Headdriver or eDriverType.Reardriver);
-        if (position == 0 || !staffed)
-        {
-            item.Driver = eDriverType.Headdriver;
-            lead.DriverType = eDriverType.Headdriver;
-        }
     }
 
     private async void TextureBaseButton_OnClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)

@@ -236,6 +236,57 @@ public sealed class Consist : IReadOnlyList<ConsistItem>
     public void Insert(int at, ConsistItem item) =>
         _items.Insert(Math.Clamp(at, 0, _items.Count), item);
 
+    /// <summary>
+    /// Crew for a vehicle joining at position: a driver in cab A when it is powered
+    /// and either leads or the consist has no driver yet, nobody otherwise.
+    /// </summary>
+    public void Staff(ConsistItem item, int position)
+    {
+        item.Driver = eDriverType.Nobody;
+        foreach (var car in item.Cars)
+            car.DriverType = eDriverType.Nobody;
+
+        if (!IsPowered(item))
+            return;
+
+        bool staffed = _items.Any(other => !ReferenceEquals(other, item) &&
+                                           other.Driver is eDriverType.Headdriver or eDriverType.Reardriver);
+        if (position == 0 || !staffed)
+            Crew(item, eDriverType.Headdriver);
+    }
+
+    /// <summary>
+    /// Puts item in place of the vehicle at index. Its crew moves over where the
+    /// replacement can take it - a driver only into something powered - and the
+    /// rest is staffed as a newly added vehicle would be.
+    /// </summary>
+    public void Replace(int index, ConsistItem item)
+    {
+        var replaced = _items[index];
+        _items[index] = item;
+        Staff(item, index);
+
+        var crew = replaced.Driver;
+        if (crew == eDriverType.Passenger ||
+            (crew is eDriverType.Headdriver or eDriverType.Reardriver && IsPowered(item)))
+            Crew(item, crew);
+    }
+
+    // The crew lives on the cars - they are what is shown and exported - and the
+    // card only mirrors it.
+    private static void Crew(ConsistItem item, eDriverType crew)
+    {
+        if (item.Cars.Count == 0)
+            return;
+
+        item.Cars[0].DriverType = crew;
+        item.Driver = crew;
+    }
+
+    private bool IsPowered(ConsistItem item) =>
+        item.Cars.Count > 0 && _db.TextureForSkin(item.Cars[0].SkinFile) is { } texture &&
+        VehicleInfo.IsPoweredCategory(VehicleInfo.CategoryOf(texture));
+
     public void MoveLeft(ConsistItem item)
     {
         int i = _items.IndexOf(item);
