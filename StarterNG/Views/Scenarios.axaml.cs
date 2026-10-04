@@ -39,6 +39,7 @@ public partial class Scenarios : UserControl
     public Scenarios()
     {
         InitializeComponent();
+        SyncConsistRowHeight();
 
         Sceneries = AppServices.Current.Library.Sceneries;
 
@@ -418,8 +419,22 @@ public partial class Scenarios : UserControl
             RandomizeTexturesRequested?.Invoke(scenery);
     }
 
+    /// <summary>
+    /// The floor of the consist row, so the small thumbnails do not sit in the
+    /// height the large ones need.
+    /// </summary>
+    private const double SmallConsistRowHeight = 84;
+
+    private const double LargeConsistRowHeight = 120;
+
+    private void SyncConsistRowHeight() =>
+        scenariosGrid.RowDefinitions[1].MinHeight = AppServices.Current.Settings.LargeThumbnails
+            ? LargeConsistRowHeight
+            : SmallConsistRowHeight;
+
     public void RefreshConsistView()
     {
+        SyncConsistRowHeight();
         RefreshVehicleLabels();
         if (AppServices.Current.State.CurrentTrainset is { } trainset)
             ShowConsist(trainset);
