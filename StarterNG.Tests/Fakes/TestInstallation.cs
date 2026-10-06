@@ -26,12 +26,15 @@ public sealed class TestInstallation
         MiniTextures = new MiniTextureIndex(Files, Paths);
         Physics = new FizPhysicsRepository(Files, Paths, Log);
         Vehicles = new TexturesTxtVehicleRepository(Files, Paths, Log, new TexturesTxtParser());
+        VehicleJson = new VehicleJsonSerializer();
         Sceneries = new SceneryRepository(Files, Paths, Log, new SceneryParser(Clock, Random));
         MissingAssets = new MissingAssetScanner(Files, Paths);
-        Library = new GameLibrary(Vehicles, Sceneries, MiniTextures, Physics, Log);
-
         Environment = new FakeEnvironment();
         SettingsPaths = new SettingsPaths(Environment, Paths);
+        VehicleCache = new VehicleCacheRepository(Files, Paths, Log, Vehicles, VehicleJson,
+                                                  SettingsPaths.VehicleCacheDirectory());
+        Library = new GameLibrary(VehicleCache, Sceneries, MiniTextures, Physics, Log);
+
         Executables = new ExecutableLocator(Files, Paths, Environment, Log);
         SettingsStore = new SettingsStore(Files, Clock, Log, SettingsPaths, new SettingsSerializer(), Executables);
     }
@@ -45,6 +48,8 @@ public sealed class TestInstallation
     public MiniTextureIndex MiniTextures { get; }
     public FizPhysicsRepository Physics { get; }
     public TexturesTxtVehicleRepository Vehicles { get; }
+    public VehicleJsonSerializer VehicleJson { get; }
+    public VehicleCacheRepository VehicleCache { get; }
     public SceneryRepository Sceneries { get; }
     public MissingAssetScanner MissingAssets { get; }
     public GameLibrary Library { get; }

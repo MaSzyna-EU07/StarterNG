@@ -56,6 +56,8 @@ public partial class MainWindow : Window
         startButton.AddHandler(PointerReleasedEvent, StartButton_OnRightClick,
                                RoutingStrategies.Tunnel);
 
+        SettingsView.DeveloperToolsChanged += ApplyDeveloperTab;
+
         SettingsView.ThumbnailSizeChanged += () =>
         {
             DepotView.RefreshConsistView();
@@ -172,7 +174,7 @@ public partial class MainWindow : Window
         if (sender is not RadioButton { IsChecked: true } rb)
             return;
 
-        if (ScenariosView is null || DepotView is null || SettingsView is null)
+        if (ScenariosView is null || DepotView is null || SettingsView is null || DeveloperView is null)
             return;
 
         ShowPage(rb.Tag as string);
@@ -184,11 +186,31 @@ public partial class MainWindow : Window
         ScenariosView.IsVisible = page == "scenarios";
         DepotView.IsVisible = page == "depot";
         SettingsView.IsVisible = page == "settings";
+        DeveloperView.IsVisible = page == "developer";
+
+        if (DeveloperView.IsVisible)
+            DeveloperView.Refresh();
+    }
+
+    /// <summary>
+    /// Shows or hides the developer tab. Switching it off while it is the open one
+    /// hands the window back to the scenarios, so the top bar never ends up with
+    /// nothing selected.
+    /// </summary>
+    private void ApplyDeveloperTab()
+    {
+        bool wanted = AppServices.Current.Settings.DeveloperTools;
+        NavDeveloper.IsVisible = wanted;
+
+        if (!wanted && NavDeveloper.IsChecked == true)
+            NavScenarios.IsChecked = true;
     }
 
     private void ApplyInitialNav()
     {
-        foreach (var rb in new[] { NavScenarios, NavDepot, NavSettings })
+        ApplyDeveloperTab();
+
+        foreach (var rb in new[] { NavScenarios, NavDepot, NavSettings, NavDeveloper })
             if (rb.IsChecked == true)
             {
                 ShowPage(rb.Tag as string);
@@ -381,16 +403,30 @@ public partial class MainWindow : Window
         return trainset.Vehicles.Any(CanStart);
     }
 
-    private Task<bool> ShowExeProblem(ExeProblem problem, string exe)
-    {
-        string key = problem switch
-        {
-            ExeProblem.NotExecutable => "ExeNotExecutable",
-            ExeProblem.WrongPlatform => "ExeWrongPlatform",
-            _ => "ExeNotFound"
-        };
-        return MessageBox.Show(this, $"{exe}\n\n{App.Loc[key]}",
+    private Task<bool> ShowExeProblem(ExeProblem problem, string exe) =>
+        MessageBox.Show(this, $"{exe}\n\n{App.Loc[ExeProblemText.Key(problem)]}",
             App.Loc["ExeLaunchFailed"], MessageBoxButtons.Ok);
+
+    /// <summary>
+    /// Asks for the simulator when the installation holds none, and keeps the pick
+    /// straight away, so the question is not back on the next start.
+    /// </summary>
+    public async Task OfferExecutablePickAsync()
+    {
+        var services = AppServices.Current;
+        string paragraph = Environment.NewLine + Environment.NewLine;
+        string message = string.Format(App.Loc["FaultNoExe"], services.Executables.CanonicalName, services.Paths.Root) +
+                         paragraph + App.Loc["FaultNoExePick"];
+        if (!services.Environment.IsWindows)
+            message += paragraph + App.Loc["FaultNoExeWine"];
+
+        if (!await MessageBox.Show(this, message, App.Loc["FaultNoExeTitle"], MessageBoxButtons.YesNo,
+                                   App.Loc["FaultNoExePickNow"], App.Loc["NotNow"]))
+            return;
+
+        NavSettings.IsChecked = true;
+        if (await SettingsView.BrowseForExecutableAsync())
+            SettingsView.Save();
     }
 
     private async void StartButton_OnClick(object? sender, RoutedEventArgs e) =>
@@ -410,6 +446,15 @@ public partial class MainWindow : Window
         var freeFly = new MenuItem { Header = App.Loc["StartFreeFly"] };
         freeFly.Click += async (_, _) => await LaunchAsync(saveSettings: true, freeFly: true);
         menu.Items.Add(freeFly);
+
+        menu.Items.Add(new Separator());
+        var editor = new MenuItem
+        {
+            Header = App.Loc["StartEditor"],
+            IsEnabled = AppServices.Current.State.CurrentScenery is not null
+        };
+        editor.Click += async (_, _) => await LaunchEditorAsync();
+        menu.Items.Add(editor);
 
         menu.Open(startButton);
     }
@@ -432,7 +477,28 @@ public partial class MainWindow : Window
 
         LoadingScreen.Prepare(trainset.Logo, Path.GetFileNameWithoutExtension(scenery.Path));
 
-        var result = AppServices.Current.StartSimulation.Execute(freeFly, saveSettings);
+        await FollowStartAsync(AppServices.Current.StartSimulation.Execute(freeFly, saveSettings));
+    }
+
+    /// <summary>
+    /// The scenery editor, which only some simulator builds have - said up front,
+    /// since one without it simply does not open it.
+    /// </summary>
+    private async Task LaunchEditorAsync()
+    {
+        if (AppServices.Current.State.CurrentScenery is not { } scenery)
+            return;
+
+        if (!await MessageBox.Show(this, string.Format(App.Loc["StartEditorWarning"], Path.GetFileName(scenery.Path)),
+                                   App.Loc["StartEditor"], MessageBoxButtons.YesNo))
+            return;
+
+        await FollowStartAsync(AppServices.Current.StartSimulation.ExecuteEditor());
+    }
+
+    /// <summary>Reports a start that failed, or steps aside for the simulator that started.</summary>
+    private async Task FollowStartAsync(SimulationStartResult result)
+    {
         switch (result.Outcome)
         {
             case SimulationStartOutcome.NothingSelected:
@@ -464,15 +530,16 @@ public partial class MainWindow : Window
         GC.Collect();
         GC.WaitForPendingFinalizers();
 
-        WatchSimulator(result.Process);
+        WatchSimulator(result.Process, result.ExecutablePath);
     }
 
     /// <summary>
     /// Brings the starter back when the simulator exits. Adopts an already
     /// running simulator when we did not start it ourselves.
     /// </summary>
-    private void WatchSimulator(IProcessHandle? simulator)
+    private void WatchSimulator(IProcessHandle? simulator, string executable)
     {
+        var started = DateTime.UtcNow;
         simulator ??= AppServices.Current.Processes.FindRunning(
             Path.GetFileNameWithoutExtension(AppServices.Current.SettingsStore.ResolveExecutable()));
 
@@ -482,8 +549,56 @@ public partial class MainWindow : Window
             return;
         }
 
-        _ = simulator.WaitForExitAsync().ContinueWith(
-            _ => Dispatcher.UIThread.Post(RestoreFromSimulator), TaskScheduler.Default);
+        _ = simulator.WaitForExitAsync().ContinueWith(_ => Dispatcher.UIThread.Post(() =>
+        {
+            RestoreFromSimulator();
+            ReportIfCrashed(simulator, executable, started);
+        }), TaskScheduler.Default);
+    }
+
+    /// <summary>
+    /// Says why the simulator is gone when it did not end the way a session does:
+    /// an error code, or a close so soon after the start that nobody played - a
+    /// window that only flashed. Its own words come from the error stream, or from
+    /// its log when that stayed silent, and a minidump it left is pointed at.
+    /// </summary>
+    private async void ReportIfCrashed(IProcessHandle simulator, string executable, DateTime startedUtc)
+    {
+        if (simulator.ExitCode is not { } code)
+            return;
+
+        var runTime = DateTime.UtcNow - startedUtc;
+
+        var exit = new SimulatorExit(code, runTime, simulator.ErrorTail);
+        if (!exit.Failed)
+            return;
+
+        var words = exit.CleanErrors.Count > 0
+            ? exit.CleanErrors
+            : AppServices.Current.Aftermath.SimulatorLogTail(12);
+
+        var message = new StringBuilder();
+        message.AppendLine(string.Format(App.Loc["SimExitCode"], exit.DescribeCode()));
+        if (exit.Quick)
+            message.AppendLine(string.Format(App.Loc["SimExitQuick"], runTime.TotalSeconds));
+        if (words.Count > 0)
+        {
+            message.AppendLine().AppendLine(App.Loc["SimExitMessages"]);
+            foreach (string line in words)
+                message.AppendLine(line);
+        }
+        message.AppendLine().Append(App.Loc["SimExitSeeLog"]);
+
+        string? dump = AppServices.Current.Aftermath.CrashDumpsSince(startedUtc, executable).FirstOrDefault();
+        if (dump is not null)
+            message.AppendLine().AppendLine().AppendLine(string.Format(App.Loc["SimExitDump"], dump))
+                   .Append(App.Loc["SimExitOpenDump"]);
+
+        Diagnostics.Log(message.ToString().Replace(Environment.NewLine, " | "));
+        bool open = await MessageBox.Show(this, message.ToString(), App.Loc["SimExitTitle"],
+                                          dump is null ? MessageBoxButtons.Ok : MessageBoxButtons.YesNo);
+        if (open && dump is not null && Path.GetDirectoryName(Path.GetFullPath(dump)) is { } folder)
+            AppServices.Current.Processes.OpenInShell(folder);
     }
 
     private async void CheckExternalSettings()

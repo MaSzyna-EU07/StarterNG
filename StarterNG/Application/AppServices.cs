@@ -31,7 +31,16 @@ public sealed class AppServices
         Sceneries = new SceneryRepository(files, paths, log, new SceneryParser(clock, Random));
         SceneryImages = new SceneryImageLocator(files);
         MiniTextures = new MiniTextureIndex(files, paths);
-        Vehicles = new TexturesTxtVehicleRepository(files, paths, log, new TexturesTxtParser());
+        var settingsPaths = new SettingsPaths(environment, paths);
+        SettingsPaths = settingsPaths;
+
+        // textures.txt stays the truth; the starter reads its own JSON copy of it
+        // and rebuilds that copy whenever the installation has moved on.
+        TexturesTxt = new TexturesTxtVehicleRepository(files, paths, log, new TexturesTxtParser());
+        VehicleJson = new VehicleJsonSerializer();
+        VehicleCache = new VehicleCacheRepository(files, paths, log, TexturesTxt, VehicleJson,
+                                                  settingsPaths.VehicleCacheDirectory());
+        Vehicles = VehicleCache;
         Physics = new FizPhysicsRepository(files, paths, log);
         MissingAssets = new MissingAssetScanner(files, paths);
         SceneryTexts = new SceneryTranslations(files, log);
@@ -40,12 +49,13 @@ public sealed class AppServices
         Library = new GameLibrary(Vehicles, Sceneries, MiniTextures, Physics, log);
         State = new AppState();
 
-        var settingsPaths = new SettingsPaths(environment, paths);
         Executables = new ExecutableLocator(files, paths, environment, log);
         SettingsStore = new SettingsStore(files, clock, log, settingsPaths, new SettingsSerializer(), Executables);
-        SettingsPaths = settingsPaths;
         MissingVehicleLog = new MissingVehicleLog(SettingsStore.Settings, MissingAssets, Library, log);
-        StartSimulation = new StartSimulation(State, SettingsStore, files, Processes, Random, log);
+        Favorites = new FavoriteSceneries(files, log, settingsPaths.FavoritesPath());
+        StartSimulation = new StartSimulation(State, SettingsStore, Library.Vehicles, Executables, files, paths,
+                                              Processes, Random, log);
+        Aftermath = new SimulatorAftermath(files, paths, log);
     }
 
     public static AppServices Current =>
@@ -85,6 +95,14 @@ public sealed class AppServices
 
     public IVehicleRepository Vehicles { get; }
 
+    /// <summary>The same object as <see cref="Vehicles"/>, typed for the developer tab.</summary>
+    public VehicleCacheRepository VehicleCache { get; }
+
+    /// <summary>The legacy reader behind the cache, for tools that go to the source.</summary>
+    public TexturesTxtVehicleRepository TexturesTxt { get; }
+
+    public VehicleJsonSerializer VehicleJson { get; }
+
     public IPhysicsRepository Physics { get; }
 
     public MissingAssetScanner MissingAssets { get; }
@@ -109,7 +127,11 @@ public sealed class AppServices
 
     public MissingVehicleLog MissingVehicleLog { get; }
 
+    public FavoriteSceneries Favorites { get; }
+
     public StartSimulation StartSimulation { get; }
+
+    public SimulatorAftermath Aftermath { get; }
 
     public LocalizationService Localization { get; }
 }

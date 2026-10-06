@@ -63,6 +63,8 @@ public sealed class InMemoryFileSystem : IFileSystem
     public string[] ReadAllLines(string path) =>
         ReadAllText(path).Split('\n').Select(line => line.TrimEnd('\r')).ToArray();
 
+    public byte[] ReadAllBytes(string path) => Bytes(path);
+
     public Stream OpenRead(string path) => new MemoryStream(Bytes(path), writable: false);
 
     public void WriteAllText(string path, string contents) => WithFile(path, contents);
@@ -132,6 +134,8 @@ public sealed class InMemoryFileSystem : IFileSystem
     public DateTime GetLastWriteTimeUtc(string path) => LastWriteTimeUtc;
 
     /// <summary>Files added through <see cref="WithExecutable"/> carry the execute bit.</summary>
+    public long GetFileSize(string path) => Bytes(path).LongLength;
+
     public bool IsExecutable(string path) => _executable.Contains(Normalize(path));
 
     public InMemoryFileSystem WithExecutable(string path, string contents = "\u007fELF")

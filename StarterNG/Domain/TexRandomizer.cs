@@ -68,7 +68,7 @@ public sealed class TexRandomizer
             var item = consist[i];
             if (item.Cars.Count == 0) continue;
 
-            var current = _db.TextureForSkin(item.Cars[0].SkinFile);
+            var current = _db.TextureFor(item.Cars[0].DataFolder, item.Cars[0].SkinFile, item.Cars[0].MmdFile);
             if (current != null && _db.IsSetFollower(current))
                 continue;
 
@@ -128,13 +128,13 @@ public sealed class TexRandomizer
 
         if (index > 0)
         {
-            var prev = _db.TextureForSkin(consist[index - 1].Cars[0].SkinFile);
+            var prev = _db.TextureFor(consist[index - 1].Cars[0].DataFolder, consist[index - 1].Cars[0].SkinFile, consist[index - 1].Cars[0].MmdFile);
             if (prev != null && !string.IsNullOrEmpty(prev.ResolvedClass))
                 return prev.ResolvedClass;
         }
         if (index + 1 < consist.Count)
         {
-            var next = _db.TextureForSkin(consist[index + 1].Cars[0].SkinFile);
+            var next = _db.TextureFor(consist[index + 1].Cars[0].DataFolder, consist[index + 1].Cars[0].SkinFile, consist[index + 1].Cars[0].MmdFile);
             if (next != null && !string.IsNullOrEmpty(next.ResolvedClass))
                 return next.ResolvedClass;
         }

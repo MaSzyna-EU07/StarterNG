@@ -133,7 +133,12 @@
                             <ctl:SettingsSection Header="{Binding [Others], Source={x:Static starterNg:App.Loc}}">
                                 <StackPanel>
                                     <ctl:SettingRow ConfigKey="starter.exe.path" Label="{Binding [SelectEXE], Source={x:Static starterNg:App.Loc}}">
-                                        <ComboBox x:Name="SelectExeCb" SelectedIndex="0" />
+                                        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="6">
+                                            <ComboBox x:Name="SelectExeCb" SelectedIndex="0" HorizontalAlignment="Stretch" />
+                                            <Button x:Name="BrowseExeButton" Grid.Column="1" Classes="Flat" Cursor="Hand"
+                                                    Click="BrowseExeButton_OnClick"
+                                                    Content="{Binding [SelectEXEBrowse], Source={x:Static starterNg:App.Loc}}" />
+                                        </Grid>
                                     </ctl:SettingRow>
                                     <ctl:SettingRow Description="{Binding [DebugModeDesc], Source={x:Static starterNg:App.Loc}}" ConfigKey="debugmode">
                                         <CheckBox x:Name="DebugModeCb" Content="{Binding [DebugMode], Source={x:Static starterNg:App.Loc}}" />
@@ -143,6 +148,9 @@
                                     </ctl:SettingRow>
                                     <ctl:SettingRow ConfigKey="starter.logmissingvehicles" Description="{Binding [LogMissingVehicleFilesDesc], Source={x:Static starterNg:App.Loc}}">
                                         <CheckBox x:Name="LogMissingVehicleFilesCb" Content="{Binding [LogMissingVehicleFiles], Source={x:Static starterNg:App.Loc}}" />
+                                    </ctl:SettingRow>
+                                    <ctl:SettingRow ConfigKey="starter.developertools" Description="{Binding [DeveloperToolsDesc], Source={x:Static starterNg:App.Loc}}">
+                                        <CheckBox x:Name="DeveloperToolsCb" Content="{Binding [DeveloperTools], Source={x:Static starterNg:App.Loc}}" />
                                     </ctl:SettingRow>
                                 </StackPanel>
                             </ctl:SettingsSection>
@@ -220,14 +228,20 @@
                                 <StackPanel>
                                     <ctl:SettingRow ConfigKey="gfxrenderer" Label="{Binding [RenderEngine], Source={x:Static starterNg:App.Loc}}"
                                                     Description="{Binding [RenderEngineDesc], Source={x:Static starterNg:App.Loc}}">
-                                        <ComboBox x:Name="RenderEngineCb" SelectedIndex="0">
-                                            <ComboBoxItem Content="{Binding [REFull], Source={x:Static starterNg:App.Loc}}" />
-                                            <ComboBoxItem Content="{Binding [REOld], Source={x:Static starterNg:App.Loc}}" />
-                                            <ComboBoxItem Content="{Binding [RESimpShader], Source={x:Static starterNg:App.Loc}}" />
-                                            <ComboBoxItem Content="{Binding [RESimp], Source={x:Static starterNg:App.Loc}}" />
-                                            <ComboBoxItem Content="{Binding [REOff], Source={x:Static starterNg:App.Loc}}" />
-                                            <ComboBoxItem Content="{Binding [REExperimental], Source={x:Static starterNg:App.Loc}}" />
-                                        </ComboBox>
+                                        <StackPanel Spacing="6">
+                                            <ComboBox x:Name="RenderEngineCb" SelectedIndex="0"
+                                                      SelectionChanged="RenderEngineCb_OnSelectionChanged">
+                                                <ComboBoxItem Content="{Binding [REFull], Source={x:Static starterNg:App.Loc}}" />
+                                                <ComboBoxItem Content="{Binding [REOld], Source={x:Static starterNg:App.Loc}}" />
+                                                <ComboBoxItem Content="{Binding [RESimpShader], Source={x:Static starterNg:App.Loc}}" />
+                                                <ComboBoxItem Content="{Binding [RESimp], Source={x:Static starterNg:App.Loc}}" />
+                                                <ComboBoxItem Content="{Binding [REOff], Source={x:Static starterNg:App.Loc}}" />
+                                                <ComboBoxItem Content="{Binding [REExperimental], Source={x:Static starterNg:App.Loc}}" />
+                                            </ComboBox>
+                                            <TextBlock x:Name="RenderEngineWarning" IsVisible="False" TextWrapping="Wrap"
+                                                       Foreground="{StaticResource CarbonAccentBright}"
+                                                       Text="{Binding [REExperimentalWarning], Source={x:Static starterNg:App.Loc}}" />
+                                        </StackPanel>
                                     </ctl:SettingRow>
                                     <ctl:SettingRow ConfigKey="gfx.angleplatform" Description="{Binding [RenderAngleVulkanDesc], Source={x:Static starterNg:App.Loc}}">
                                         <CheckBox x:Name="RenderAngleVulkanCb" Content="{Binding [RenderAngleVulkan], Source={x:Static starterNg:App.Loc}}" />

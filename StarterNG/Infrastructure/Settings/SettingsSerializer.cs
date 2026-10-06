@@ -56,6 +56,7 @@ public sealed class SettingsSerializer
         s.DebugMode = c.GetBool("debugmode", false);
         s.VirtualShunting = c.GetBool("ai.trainman", true);
         s.LogMissingVehicleFiles = c.GetBool("starter.logmissingvehicles", false);
+        s.DeveloperTools = c.GetBool("starter.developertools", false);
 
         s.RenderEngine = IndexOf(SimulatorSettings.RenderEngines, c.GetString("gfxrenderer", "full"), 0);
         s.Width = c.GetInt("width", 1280);
@@ -195,6 +196,7 @@ public sealed class SettingsSerializer
         c.SetBool("debugmode", s.DebugMode);
         c.SetBool("ai.trainman", s.VirtualShunting);
         c.SetBool("starter.logmissingvehicles", s.LogMissingVehicleFiles);
+        c.SetBool("starter.developertools", s.DeveloperTools);
 
         c.Set("gfxrenderer", SimulatorSettings.RenderEngines[Clamp(s.RenderEngine, 0, SimulatorSettings.RenderEngines.Length - 1)]);
         c.SetInt("width", s.Width);

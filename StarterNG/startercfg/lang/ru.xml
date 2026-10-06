@@ -7,6 +7,7 @@
     <String key="NavScenarios">Сценарии</String>
     <String key="NavDepot">Депо</String>
     <String key="NavSettings">Настройки</String>
+    <String key="NavDeveloper">Developer</String>
     <String key="NavControls">Управление</String>
     <String key="Help">Справка</String>
     <String key="HelpWiki">Вики MaSzyna</String>
@@ -65,6 +66,9 @@
     <String key="StartNoStaffConfirm">В этом составе нет ни бригады, ни пассажира — управлять будет нечем. Всё равно запустить?</String>
     <String key="RestoreWeather">Восстановить погоду</String>
     <String key="ReloadSceneries">Перезагрузить</String>
+    <String key="Favorites">Избранное</String>
+    <String key="FavoriteAdd">Добавить в избранное</String>
+    <String key="FavoriteRemove">Удалить из избранного</String>
     <String key="OpenSceneryFolder">Открыть папку</String>
     <String key="OptionalIncludes">Дополнительные элементы</String>
     <String key="OpenTextureFolder">Открыть папку с текстурами</String>
@@ -91,6 +95,9 @@
     <String key="Crew">с бригадой</String>
     <String key="Reversed">развёрнут</String>
     <String key="NoVehicles">В dynamic/**/textures.txt подвижной состав не найден.</String>
+    <String key="BrowserHint">Выберите категорию или введите название единицы.</String>
+    <String key="BrowserNoMatch">Ничего не найдено по запросу «{0}».</String>
+    <String key="SearchAllVehicles">Искать во всех единицах…</String>
     <String key="ConsistEmpty">Добавьте единицы из базы слева или загрузите готовый состав из файла сценерии.</String>
     <String key="TipMoveLeft">Сдвинуть влево</String>
     <String key="TipMoveRight">Сдвинуть вправо</String>
@@ -103,21 +110,21 @@
     <String key="All">Все</String>
     <String key="CatDiesel">Тепловозная</String>
     <String key="CatElectric">Электрическая</String>
-    <String key="CatEMU">Электропоезд</String>
+    <String key="CatEMU">Электропоезда</String>
     <String key="CatDMU">Дизель-поезд</String>
     <String key="CatCarriagesA">Вагоны A</String>
     <String key="CatCarriagesB">Вагоны B</String>
-    <String key="CatElectricLoco">Электровоз</String>
-    <String key="CatDieselLoco">Тепловоз</String>
-    <String key="CatSteamLoco">Паровоз</String>
-    <String key="CatRailbus">Рельсовый автобус</String>
-    <String key="CatDraisine">Дрезина</String>
+    <String key="CatElectricLoco">Электровозы</String>
+    <String key="CatDieselLoco">Тепловозы</String>
+    <String key="CatSteamLoco">Паровозы</String>
+    <String key="CatRailbus">Рельсовые автобусы</String>
+    <String key="CatDraisine">Дрезины</String>
     <String key="CatWork">Путевая техника</String>
-    <String key="CatPrototype">Прототип</String>
-    <String key="CatTram">Трамвай</String>
-    <String key="CatCar">Автомобиль</String>
-    <String key="CatBus">Автобус</String>
-    <String key="CatTruck">Грузовик</String>
+    <String key="CatPrototype">Прототипы</String>
+    <String key="CatTram">Трамваи</String>
+    <String key="CatCar">Автомобили</String>
+    <String key="CatBus">Автобусы</String>
+    <String key="CatTruck">Грузовики</String>
     <String key="CatPeople">Люди</String>
     <String key="CatAnimals">Животные</String>
     <String key="CatWagonsA">Вагоны A</String>
@@ -223,6 +230,7 @@
     <String key="ReadyOverrideReady">Always ready</String>
     <String key="ConsistReadyOverridden">Overridden by "Force the consist state on launch" in Settings.</String>
     <String key="ConsistRandomType">Случайный тип</String>
+    <String key="ConsistMaxAmount">Максимальное количество</String>
     <String key="ConsistRandomAmount">Случайное количество</String>
     <String key="Set">Задать</String>
     <String key="Length">Длина</String>
@@ -251,7 +259,14 @@
     <String key="ExeLaunchFailed">Не удалось запустить симулятор</String>
     <String key="ExeNotFound">Исполняемый файл симулятора не найден.</String>
     <String key="ExeNotExecutable">Файл не помечен как исполняемый (chmod +x).</String>
-    <String key="ExeWrongPlatform">Этот исполняемый файл собран для другой операционной системы.</String>
+    <String key="ExeWrongPlatform">Этот исполняемый файл собран для другой операционной системы. В Linux версия для Windows может работать через Wine или Proton - если вы их используете, это не ошибка.</String>
+    <String key="SimExitTitle">Симулятор неожиданно завершил работу</String>
+    <String key="SimExitCode">Код выхода: {0}</String>
+    <String key="SimExitQuick">Он закрылся через {0:0.0} с после запуска.</String>
+    <String key="SimExitMessages">Последние сообщения:</String>
+    <String key="SimExitSeeLog">Полный журнал находится в файле log.txt в папке симулятора.</String>
+    <String key="SimExitDump">Симулятор сохранил дамп памяти: {0}</String>
+    <String key="SimExitOpenDump">Открыть папку с дампом? Приложите его к сообщению об ошибке.</String>
     <String key="TabInfo">Информация</String>
     <String key="SettingsFileChangedTitle">Настройки</String>
     <String key="SettingsFileChanged">Файл eu07.ini изменён вне стартера. Загрузить заново?</String>
@@ -271,8 +286,16 @@
     <String key="CouplingUnitRear">Сцепка в конце состава</String>
     <String key="Join">Соединить</String>
     <String key="TipJoin">Соединить этот вагон со следующим в один состав</String>
-    <String key="TipReorder">Перетащите для изменения порядка</String>
+    <String key="CouplerCode">Код сцепки: {0}</String>
+    <String key="CouplerFree">Вагоны не сцеплены.</String>
+    <String key="CouplerConnects">Соединено: {0}</String>
+    <String key="CouplerEndSignals">Хвост поезда — симулятор вывесит хвостовые сигналы.</String>
+    <String key="CouplerNoEndSignals">Код, отличный от 0, в хвосте поезда — симулятор не вывесит хвостовые сигналы.</String>
+    <String key="CouplerLocked">Заблокирована — не расцепляется при маневрах.</String>
+    <String key="CouplerClickToEdit">Нажмите, чтобы изменить.</String>
     <String key="AddVehicle">Добавить</String>
+    <String key="AddMany">Добавить несколько…</String>
+    <String key="AddManyCount">Сколько раз добавить единицу</String>
     <String key="TipAddVehicle">Добавить эту единицу в состав</String>
     <String key="TipAddUnit">Добавить весь сцеп в состав</String>
 
@@ -331,9 +354,13 @@
     <String key="Others">Прочее</String>
     <String key="SelectEXE">Выбрать exe</String>
     <String key="SelectEXEAuto">Выбрать автоматически</String>
+    <String key="SelectEXEBrowse">Выбрать файл…</String>
+    <String key="SelectEXEBrowseTitle">Укажите исполняемый файл симулятора</String>
+    <String key="SelectEXEUseAnyway">Использовать его всё равно?</String>
     <String key="DebugMode">Режим отладки (тестовый режим)</String>
     <String key="VirtualShunting">Виртуальный манёвр</String>
     <String key="LogMissingVehicleFiles">Записывать в журнал отсутствующие файлы состава при экспорте</String>
+    <String key="DeveloperTools">Show the package author's tab</String>
 
     <String key="Graphic">Графика</String>
     <String key="RenderEngine">Движок отрисовки</String>
@@ -343,6 +370,7 @@
     <String key="RESimp">Упрощённый</String>
     <String key="REOff">Отключить визуальный слой</String>
     <String key="REExperimental">Экспериментальный</String>
+    <String key="REExperimentalWarning">Внимание: экспериментальный рендерер находится в разработке. Он может работать нестабильно, не показывать части сцены или не запускаться на некоторых видеокартах. Если симулятор не запускается или выглядит неправильно, вернитесь к рендереру «Полный».</String>
 
     <String key="Resolution">Разрешение</String>
     <String key="BufforResolution">Разрешение буфера</String>
@@ -459,6 +487,7 @@
     <String key="KbAssigned">Назначено</String>
     <String key="KbShift">С Shift</String>
     <String key="KbCtrl">С Ctrl</String>
+    <String key="KbShiftCtrl">С Ctrl + Shift</String>
     <String key="KbReserved">Зарезервировано симулятором</String>
     <String key="BindKeyTitle">Клавиша:</String>
     <String key="BindKeyHint">Назначьте команду каждому сочетанию модификаторов для этой клавиши.</String>
@@ -485,7 +514,12 @@
     <String key="FaultNoScenery">Сценарии не найдены.</String>
     <String key="FaultNoVehicles">Транспортные средства не найдены.</String>
     <String key="FaultNoPhysics">Данные подвижного состава не найдены.</String>
-    <String key="FaultNoExe">Исполняемый файл симулятора не найден.</String>
+    <String key="FaultNoExeTitle">Симулятор не найден</String>
+    <String key="FaultNoExe">Стартер запускает симулятор ({0}) из папки, из которой запущен сам:&#10;{1}&#10;&#10;Симулятора там нет, поэтому «Старт» не сработает.</String>
+    <String key="FaultNoExePick">Если симулятор находится в другом месте, например ваша собственная сборка, укажите его. Выбор можно потом изменить в Настройках, в разделе «Прочее». Если это не папка MaSzyna, запустите стартер из правильной папки.</String>
+    <String key="FaultNoExeWine">В Linux можно указать и версию для Windows (eu07.exe) — она запустится через Wine или Proton.</String>
+    <String key="FaultNoExePickNow">Указать симулятор…</String>
+    <String key="NotNow">Не сейчас</String>
 
     <!-- About -->
     <String key="AboutTitle">О программе</String>
@@ -528,7 +562,8 @@
     <String key="WarehouseImportFile">Добавить составы из файла...</String>
     <String key="StartWithoutSaving">Запустить без сохранения настроек</String>
     <String key="StartFreeFly">Запустить без транспорта</String>
-    <String key="VolumePaused">Громкость на паузе</String>
+    <String key="StartEditor">Запустить редактор сценария</String>
+    <String key="StartEditorWarning">Редактор сценария (eu07 -edit) есть только в некоторых версиях симулятора. Если выбранный симулятор его не поддерживает, редактор не откроется. Он работает с самим файлом {0}, а не с копией стартера, поэтому сохранённые изменения попадут в сценарий. Запустить?</String>
     <String key="DebugLogVisible">Показывать ход симуляции</String>
     <String key="PyScreenPriority">Частота обновления дополнительных экранов</String>
     <String key="PyPriorityNormal">Стандартная</String>
@@ -584,4 +619,20 @@
     <String key="ShortcutMember">Выбрать секцию в сцепленной единице</String>
     <String key="ShortcutMoveVehicle">Переместить вагон в составе</String>
     <String key="ShortcutCardMenu">Открыть меню вагона</String>
+
+    <!-- Package author's tab - awaiting translation -->
+    <String key="DevDatabase">Vehicle database</String>
+    <String key="DevVehicles">Vehicle folders</String>
+    <String key="DevLiveries">Liveries</String>
+    <String key="DevWrecks">wrecks</String>
+    <String key="DevGroups">Groups</String>
+    <String key="DevSets">Fixed sets</String>
+    <String key="DevFiles">textures.txt files</String>
+    <String key="DevSource">Read from</String>
+    <String key="DevSourceCopy">the starter's copy</String>
+    <String key="DevSourceTextures">textures.txt files</String>
+    <String key="DevWritten">Copy written</String>
+    <String key="DevLocation">Copy folder</String>
+    <String key="DevRebuild">Rebuild copy</String>
+    <String key="DevRebuilt">Rebuilt</String>
 </Language>

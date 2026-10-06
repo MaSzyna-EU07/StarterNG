@@ -44,7 +44,7 @@ public sealed class LoadWeightsRepository
 
         try
         {
-            return new LoadWeightsTable(ParsePairs(_files.ReadAllText(path, LegacyText.CodePage1250)));
+            return new LoadWeightsTable(ParsePairs(LegacyText.Decode(_files.ReadAllBytes(path))));
         }
         catch (Exception ex)
         {

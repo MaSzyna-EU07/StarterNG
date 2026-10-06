@@ -35,6 +35,7 @@ public sealed class SimulatorSettings
     public bool DebugMode;
     public bool VirtualShunting = true;
     public bool LogMissingVehicleFiles;
+    public bool DeveloperTools;
 
     public int RenderEngine;
     public int Width = 1280;

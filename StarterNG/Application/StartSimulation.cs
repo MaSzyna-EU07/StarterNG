@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -6,7 +7,9 @@ using StarterNG.Application.Abstractions;
 using StarterNG.Classes;
 using StarterNG.Domain;
 using StarterNG.Domain.Settings;
+using StarterNG.Domain.Vehicles;
 using StarterNG.Infrastructure.Adapters;
+using StarterNG.Infrastructure.Settings;
 
 namespace StarterNG.Application;
 
@@ -37,17 +40,24 @@ public sealed class StartSimulation
 
     private readonly AppState _state;
     private readonly SettingsStore _settings;
+    private readonly VehicleCatalog _vehicles;
+    private readonly ExecutableLocator _executables;
     private readonly IFileSystem _files;
+    private readonly IGamePaths _paths;
     private readonly IProcessLauncher _processes;
     private readonly IRandomSource _random;
     private readonly IDiagnosticsLog _log;
 
-    public StartSimulation(AppState state, SettingsStore settings, IFileSystem files, IProcessLauncher processes,
-                           IRandomSource random, IDiagnosticsLog log)
+    public StartSimulation(AppState state, SettingsStore settings, VehicleCatalog vehicles,
+                           ExecutableLocator executables, IFileSystem files, IGamePaths paths,
+                           IProcessLauncher processes, IRandomSource random, IDiagnosticsLog log)
     {
         _state = state;
         _settings = settings;
+        _vehicles = vehicles;
+        _executables = executables;
         _files = files;
+        _paths = paths;
         _processes = processes;
         _random = random;
         _log = log;
@@ -91,7 +101,7 @@ public sealed class StartSimulation
                 break;
         }
 
-        string? vehicle = TrainsetDisplay.UniquifyForLaunch(trainset, scenery, _state.StartingVehicleName)
+        string? vehicle = TrainsetDisplay.UniquifyForLaunch(trainset, scenery, _state.StartingVehicleName, _vehicles)
                           ?? StartableVehicle(trainset, _state.StartingVehicleName);
         _state.StartingVehicleName = vehicle;
 
@@ -115,16 +125,42 @@ public sealed class StartSimulation
         if (saveSettings)
             _settings.CaptureAndSave();
 
-        string executable = Path.GetFullPath(_settings.ResolveExecutable(out var problem));
-        if (problem != ExeProblem.None)
-            return new SimulationStartResult(SimulationStartOutcome.ExecutableProblem, ExecutablePath: executable,
-                                             Problem: problem);
-
         string[] arguments = freeFly || string.IsNullOrEmpty(vehicle)
             ? new[] { "-s", exportName }
             : new[] { "-s", exportName, "-v", vehicle };
 
-        var process = _processes.Start(executable, arguments, Path.GetDirectoryName(executable), out string? error);
+        return Launch(arguments);
+    }
+
+    /// <summary>
+    /// Opens the selected scenery in the simulator's editor. The scenery file itself,
+    /// not an export: what the editor saves has to land in the scenery.
+    /// </summary>
+    public SimulationStartResult ExecuteEditor()
+    {
+        if (_state.CurrentScenery is not { } scenery)
+            return new SimulationStartResult(SimulationStartOutcome.NothingSelected);
+
+        return Launch(new[] { "-edit", Path.GetFileName(scenery.Path) });
+    }
+
+    private SimulationStartResult Launch(IReadOnlyList<string> arguments)
+    {
+        string executable = Path.GetFullPath(_settings.ResolveExecutable(out var problem));
+
+        // A binary for the other system is let through: on Linux a Windows build
+        // runs under Wine, started below, or Proton, and only the launch can tell.
+        if (problem is not (ExeProblem.None or ExeProblem.WrongPlatform))
+            return new SimulationStartResult(SimulationStartOutcome.ExecutableProblem, ExecutablePath: executable,
+                                             Problem: problem);
+
+        // The installation, not the folder of the binary: a simulator picked from a
+        // build tree lives beside the data, and the data is what it opens.
+        var (program, programArguments) = _executables.LaunchCommand(executable, arguments);
+        // Its error stream is kept for a report on a crash - unless the starter closes
+        // now, leaving nobody to read it or to report.
+        bool watched = !_settings.Settings.AutoCloseStarter;
+        var process = _processes.Start(program, programArguments, _paths.Root, watched, out string? error);
         if (process is null)
             return new SimulationStartResult(SimulationStartOutcome.LaunchFailed, ExecutablePath: executable,
                                              Detail: error);

@@ -25,7 +25,6 @@ public sealed class FizPhysicsRepository : IPhysicsRepository
     private readonly IFileSystem _files;
     private readonly IGamePaths _paths;
     private readonly IDiagnosticsLog _log;
-    private readonly Encoding _encoding;
 
     private readonly ConcurrentDictionary<string, VehiclePhysics?> _cache =
         new(StringComparer.OrdinalIgnoreCase);
@@ -38,7 +37,6 @@ public sealed class FizPhysicsRepository : IPhysicsRepository
         _files = files;
         _paths = paths;
         _log = log;
-        _encoding = LegacyText.CodePage1250;
     }
 
     public void Preload() => Index();
@@ -118,7 +116,7 @@ public sealed class FizPhysicsRepository : IPhysicsRepository
         if (depth > MaxIncludeDepth || !_files.FileExists(path))
             return;
 
-        var tokens = Tokenize(_files.ReadAllText(path, _encoding));
+        var tokens = Tokenize(LegacyText.Decode(_files.ReadAllBytes(path)));
 
         string section = "";
         string? pendingKey = null;

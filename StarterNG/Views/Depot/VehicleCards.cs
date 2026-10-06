@@ -33,6 +33,9 @@ public sealed class VehicleCards
 
     private readonly List<(Border Frame, ConsistItem Item, Dynamic Car)> _memberChrome = new();
 
+    /// <summary>Puts copies of the vehicle on a card right after it, the given number of times.</summary>
+    public Action<ConsistItem, int>? AddCopies { get; set; }
+
     private readonly List<(Button Badge, ConsistItem Item)> _driverChrome = new();
 
     public Dynamic? PressedCar { get; set; }
@@ -403,40 +406,67 @@ public sealed class VehicleCards
         flyout.ShowAt(anchor);
     }
 
+    /// <summary>
+    /// The coupler after a unit, drawn by its state - free, coupled, multiple-unit,
+    /// permanent, and at the back of the train whether the end signals go up.
+    /// </summary>
     public Control BuildCoupler(ConsistItem item, bool trailing = false)
     {
-        var glyph = new TextBlock
-        {
-            Text = trailing ? "╡" : "≣",
-            FontSize = 18,
-            Opacity = trailing ? 0.55 : 0.7,
-            VerticalAlignment = VerticalAlignment.Center,
-            HorizontalAlignment = HorizontalAlignment.Center
-        };
+        var coupling = Consist.TailCar(item).Coupling;
+        var icon = new MaterialIcon { Width = 18, Height = 18, HorizontalAlignment = HorizontalAlignment.Center };
+        var slots = CouplerLook.Slots();
         var coupler = new Button
         {
-            Padding = new Thickness(4, 6, 4, 6),
+            Padding = new Thickness(3, 6, 3, 6),
             MinWidth = 0,
             Cursor = _hand,
             VerticalAlignment = VerticalAlignment.Center,
-            Content = glyph,
-            Flyout = new Flyout
-            {
-                Content = BuildCouplingBox(item),
-                Placement = PlacementMode.Top
-            }
+            Content = new StackPanel { Spacing = 4, Children = { icon, slots } }
         };
         coupler.Classes.Add("Basic");
-        ToolTip.SetTip(coupler, $"{App.Loc["Coupling"]} — {App.Loc["TipReorder"]}");
+
+        // Between vehicles the squares say it all; the icon is for the back of the train.
+        icon.IsVisible = trailing;
+
+        void Restyle()
+        {
+            var state = CouplerLook.StateOf(coupling, trailing);
+            icon.Kind = CouplerLook.Icon(state);
+            icon.Foreground = CouplerLook.Brush(state);
+
+            CouplerLook.FillSlots(slots, coupling);
+
+            ToolTip.SetTip(coupler, CouplerLook.Describe(coupling, trailing));
+        }
+
+        Restyle();
+        coupler.Flyout = new Flyout
+        {
+            Content = BuildCouplingBox(item, Restyle),
+            Placement = PlacementMode.Top
+        };
         return coupler;
     }
 
-    private Control BuildCouplingBox(ConsistItem item)
+    /// <summary>
+    /// Edits the coupler in place, so the flyout stays open while bits are
+    /// ticked; <paramref name="changed"/> redraws the coupler it hangs off.
+    /// </summary>
+    private Control BuildCouplingBox(ConsistItem item, Action changed)
     {
         var d = Consist.TailCar(item);
         int unitIdx = _consist.IndexOf(item);
 
         var panel = new StackPanel { Spacing = 2 };
+        var checks = new List<(CheckBox Check, int Bit)>();
+        bool syncing = false;
+
+        void Changed()
+        {
+            d.CouplerSetByHand = true;
+            changed();
+            _refreshDetails();
+        }
 
         var copy = new Button
         {
@@ -453,7 +483,11 @@ public sealed class VehicleCards
         {
             if (unitIdx <= 0) return;
             d.Coupling.Flags = Consist.TailCar(_consist[unitIdx - 1]).Coupling.Flags;
-            _redraw();
+            syncing = true;
+            foreach (var (check, bit) in checks)
+                check.IsChecked = d.Coupling.Has(bit);
+            syncing = false;
+            Changed();
         };
 
         var header = new DockPanel { Margin = new Thickness(0, 0, 0, 2) };
@@ -482,26 +516,25 @@ public sealed class VehicleCards
             int bit = 1 << i;
             var check = new CheckBox
             {
-                Content = App.Loc[CouplingBits.BitKeys[i]],
+                Content = CouplerLook.BitLabel(i),
                 IsChecked = d.Coupling.Has(bit),
                 FontSize = 12
             };
-            check.IsCheckedChanged += (_, _) => d.Coupling.Set(bit, check.IsChecked == true);
+            check.IsCheckedChanged += (_, _) =>
+            {
+                if (syncing) return;
+                d.Coupling.Set(bit, check.IsChecked == true);
+                Changed();
+            };
+            checks.Add((check, bit));
             Grid.SetRow(check, i / 2);
             Grid.SetColumn(check, i % 2);
             grid.Children.Add(check);
         }
         panel.Children.Add(grid);
 
-        var thermo = new CheckBox
-        {
-            Content = App.Loc["ThermoAmbient"],
-            IsChecked = d.Coupling.ThermoDynamic,
-            FontSize = 12,
-            Margin = new Thickness(0, 2, 0, 0)
-        };
-        thermo.IsCheckedChanged += (_, _) => d.Coupling.ThermoDynamic = thermo.IsChecked == true;
-        panel.Children.Add(thermo);
+        // The ambient coolant flag rides in the coupling token too, but it is the
+        // vehicle's: it sits in the vehicle panel, beside the crew and the number.
 
         return new Border { Padding = new Thickness(8), Child = panel };
     }
@@ -565,9 +598,7 @@ public sealed class VehicleCards
 
     private void PaintDriverButton(Button btn, ConsistItem item)
     {
-        var type = ReferenceEquals(item, _consist.Selected) && item.Cars.Count > 1
-            ? _consist.ActiveCar(item).DriverType
-            : item.Driver;
+        var type = item.Driver;
 
         (string glyph, string color) = type switch
         {
@@ -587,6 +618,12 @@ public sealed class VehicleCards
         menu.Opening += (_, _) =>
         {
             menu.Items.Clear();
+
+            var addMany = new MenuItem { Header = App.Loc["AddMany"], IsEnabled = AddCopies is not null };
+            addMany.Click += (_, _) =>
+                AddManyFlyout.Show(anchor, PlacementMode.Top, count => AddCopies?.Invoke(item, count));
+            menu.Items.Add(addMany);
+            menu.Items.Add(new Separator());
 
             var num = new MenuItem { Header = App.Loc["WagonNumber"] };
             num.Click += (_, _) => ShowWagonNumberFlyout(anchor, item.Cars[0]);

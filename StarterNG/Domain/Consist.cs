@@ -35,6 +35,9 @@ public sealed class Consist : IReadOnlyList<ConsistItem>
 
     public int Count => _items.Count;
 
+    /// <summary>Every vehicle, a multi-unit counted car by car - <see cref="Count"/> counts units.</summary>
+    public int VehicleCount => _items.Sum(i => i.Cars.Count);
+
     public ConsistItem this[int index]
     {
         get => _items[index];
@@ -57,7 +60,7 @@ public sealed class Consist : IReadOnlyList<ConsistItem>
         var cars = trainset.Vehicles.Select(v =>
         {
             var c = v.Clone();
-            c.MiniName = _db.MiniForSkin(c.SkinFile) ?? c.MiniName;
+            c.MiniName = _db.MiniFor(c.DataFolder, c.SkinFile, c.MmdFile) ?? c.MiniName;
             return c;
         }).ToList();
 
@@ -83,7 +86,7 @@ public sealed class Consist : IReadOnlyList<ConsistItem>
             }
 
             VehicleSet? set = null;
-            if (_db.TextureForSkin(cars[i].SkinFile)?.Uuid is { } uuid)
+            if (_db.TextureFor(cars[i].DataFolder, cars[i].SkinFile, cars[i].MmdFile)?.Uuid is { } uuid)
                 _db.SetByTextureUuid.TryGetValue(uuid, out set);
 
             if (set?.TextureRefs is { Count: > 1 })
@@ -94,7 +97,7 @@ public sealed class Consist : IReadOnlyList<ConsistItem>
                 int j = i;
                 while (j < cars.Count && group.Count < set.TextureRefs.Count)
                 {
-                    if (_db.TextureForSkin(cars[j].SkinFile)?.Uuid is { } u
+                    if (_db.TextureFor(cars[j].DataFolder, cars[j].SkinFile, cars[j].MmdFile)?.Uuid is { } u
                         && members.Contains(u))
                         group.Add(cars[j++]);
                     else
@@ -152,17 +155,11 @@ public sealed class Consist : IReadOnlyList<ConsistItem>
         Raise();
     }
 
-    public List<Dynamic> Flatten()
-    {
-        var flat = new List<Dynamic>();
-        foreach (var item in _items)
-        {
-            var cars = item.Flipped ? item.Cars.AsEnumerable().Reverse().ToList() : item.Cars;
-            foreach (var car in cars)
-                flat.Add(car);
-        }
-        return flat;
-    }
+    public List<Dynamic> Flatten() => _items.SelectMany(RunningOrder).ToList();
+
+    /// <summary>A card's cars in the order they run, which is the order the export writes.</summary>
+    public static IEnumerable<Dynamic> RunningOrder(ConsistItem item) =>
+        item.Flipped ? Enumerable.Reverse(item.Cars) : item.Cars;
 
     public void SyncStartingVehicle()
     {
@@ -236,44 +233,138 @@ public sealed class Consist : IReadOnlyList<ConsistItem>
     public void Insert(int at, ConsistItem item) =>
         _items.Insert(Math.Clamp(at, 0, _items.Count), item);
 
+    /// <summary>
+    /// Crew for a vehicle joining at position: a driver in cab A when it is powered
+    /// and either leads or the consist has no driver yet, nobody otherwise.
+    /// </summary>
+    public void Staff(ConsistItem item, int position)
+    {
+        item.Driver = eDriverType.Nobody;
+        foreach (var car in item.Cars)
+            car.DriverType = eDriverType.Nobody;
+
+        if (!IsPowered(item))
+            return;
+
+        bool staffed = _items.Any(other => !ReferenceEquals(other, item) &&
+                                           other.Driver is eDriverType.Headdriver or eDriverType.Reardriver);
+        if (position == 0 || !staffed)
+            Crew(item, eDriverType.Headdriver);
+    }
+
+    /// <summary>
+    /// Puts item in place of the vehicle at index, facing the same way. Its crew
+    /// moves over where the replacement can take it - a driver only into something
+    /// powered - and the rest is staffed as a newly added vehicle would be.
+    /// </summary>
+    public void Replace(int index, ConsistItem item)
+    {
+        var replaced = _items[index];
+        _items[index] = item;
+        Staff(item, index);
+
+        // Facing the way the replaced vehicle did - cars and all, as Flip would.
+        if (item.Flipped != replaced.Flipped)
+            Turn(index, index);
+
+        var crew = replaced.Driver;
+        if (crew == eDriverType.Passenger ||
+            (crew is eDriverType.Headdriver or eDriverType.Reardriver && IsPowered(item)))
+            Crew(item, crew);
+    }
+
+    // The crew lives on the cars - they are what is shown and exported - and the
+    // card only mirrors it. A unit has one crew, in the car that has the cab.
+    private static void Crew(ConsistItem item, eDriverType crew)
+    {
+        if (item.Cars.Count == 0)
+            return;
+
+        foreach (var car in item.Cars)
+            car.DriverType = eDriverType.Nobody;
+        CrewCar(item, crew).DriverType = crew;
+        item.Driver = crew;
+    }
+
+    /// <summary>
+    /// Where a unit's crew sits: cab 1 is at the front of its first car and cab 2
+    /// at the back of its last - the ET42-A has only cab 1, the ET42-B only cab 2.
+    /// The unit's own order, so turning it round takes the cabs along.
+    /// </summary>
+    public static Dynamic CrewCar(ConsistItem item, eDriverType crew) =>
+        crew == eDriverType.Reardriver ? item.Cars[^1] : item.Cars[0];
+
+    /// <summary>Puts the crew into the unit, in the car its cab is in.</summary>
+    public void SetCrew(ConsistItem item, eDriverType crew)
+    {
+        Crew(item, crew);
+        if (ReferenceEquals(Selected, item))
+            SyncStartingVehicle();
+        Raise();
+        AppServices.Current.State.NotifyChanged();
+    }
+
+    private bool IsPowered(ConsistItem item) =>
+        item.Cars.Count > 0 && _db.TextureFor(item.Cars[0].DataFolder, item.Cars[0].SkinFile, item.Cars[0].MmdFile) is { } texture &&
+        VehicleInfo.IsPoweredCategory(VehicleInfo.CategoryOf(texture));
+
     public void MoveLeft(ConsistItem item)
     {
         int i = _items.IndexOf(item);
         if (i > 0)
-        {
-            (_items[i - 1], _items[i]) = (_items[i], _items[i - 1]);
-            Raise();
-        }
+            Move(i, i - 1);
     }
 
     public void MoveRight(ConsistItem item)
     {
         int i = _items.IndexOf(item);
         if (i >= 0 && i < _items.Count - 1)
-        {
-            (_items[i + 1], _items[i]) = (_items[i], _items[i + 1]);
-            Raise();
-        }
+            Move(i, i + 1);
     }
 
     public void Move(int from, int to)
     {
         if (from < 0 || from >= _items.Count) return;
 
+        var previousHead = _items[0];
         var item = _items[from];
         _items.RemoveAt(from);
         to = Math.Clamp(to, 0, _items.Count);
         _items.Insert(to, item);
 
+        HandOverLead(previousHead);
         Selected = item;
         AutoConnectAll();
         Raise();
+    }
+
+    /// <summary>
+    /// A locomotive that comes to the head of the train takes over the driver of
+    /// the one it put behind, which is left unstaffed: the train is driven from its
+    /// front, from cab A.
+    /// </summary>
+    private void HandOverLead(ConsistItem previousHead)
+    {
+        var head = _items[0];
+        if (ReferenceEquals(head, previousHead) || !IsPowered(head) ||
+            previousHead.Driver is not (eDriverType.Headdriver or eDriverType.Reardriver))
+            return;
+
+        previousHead.Driver = eDriverType.Nobody;
+        foreach (var car in previousHead.Cars)
+            car.DriverType = eDriverType.Nobody;
+
+        Crew(head, eDriverType.Headdriver);
     }
 
     public void Remove(ConsistItem item)
     {
         int gap = _items.IndexOf(item);
         _items.Remove(item);
+
+        // The car now at the end still holds the coupler of the one taken off it.
+        if (gap == _items.Count)
+            FreeTail();
 
         if (ReferenceEquals(Selected, item))
             Selected = _items.Count == 0
@@ -288,6 +379,16 @@ public sealed class Consist : IReadOnlyList<ConsistItem>
         int index = _items.IndexOf(item);
         if (index < 0) return;
 
+        var (first, last) = UnitAround(index);
+        Turn(first, last);
+
+        AutoConnectAll();
+        Raise();
+    }
+
+    /// <summary>The cards locked together with the one at index, as the range they span.</summary>
+    private (int First, int Last) UnitAround(int index)
+    {
         int first = index;
         while (first > 0 && HoldsTail(_items[first - 1]))
             first--;
@@ -296,6 +397,17 @@ public sealed class Consist : IReadOnlyList<ConsistItem>
         while (last + 1 < _items.Count && HoldsTail(_items[last]))
             last++;
 
+        return (first, last);
+    }
+
+    /// <summary>
+    /// Turns the cards first..last end for end - the flag on each card, the cars it
+    /// holds and the order of the cards. All three or nothing: the export writes the
+    /// cars in card order and each car with its own orientation, so a flag turned
+    /// alone couples a multi-car unit back to front.
+    /// </summary>
+    private void Turn(int first, int last)
+    {
         for (int k = first; k <= last; k++)
         {
             var card = _items[k];
@@ -306,36 +418,23 @@ public sealed class Consist : IReadOnlyList<ConsistItem>
 
         if (last > first)
             _items.Reverse(first, last - first + 1);
-
-        AutoConnectAll();
-        Raise();
     }
 
-    public void CycleDriver(ConsistItem item)
-    {
-        var car = ActiveCar(item);
-        car.DriverType = car.DriverType switch
+    public void CycleDriver(ConsistItem item) =>
+        SetCrew(item, item.Driver switch
         {
             eDriverType.Nobody => eDriverType.Headdriver,
             eDriverType.Headdriver => eDriverType.Reardriver,
             eDriverType.Reardriver => eDriverType.Passenger,
             _ => eDriverType.Nobody
-        };
-        item.Driver = UnitDriver(item.Cars);
-        if (ReferenceEquals(Selected, item))
-            SyncStartingVehicle();
-        Raise();
-        AppServices.Current.State.NotifyChanged();
-    }
+        });
 
     public void Split(ConsistItem item)
     {
         int i = _items.IndexOf(item);
         if (i < 0) return;
 
-        var order = item.Flipped
-            ? Enumerable.Reverse(item.Cars).ToList()
-            : item.Cars;
+        var order = RunningOrder(item).ToList();
 
         _items.RemoveAt(i);
         for (int c = 0; c < order.Count; c++)
@@ -344,7 +443,8 @@ public sealed class Consist : IReadOnlyList<ConsistItem>
             {
                 Cars = new List<Dynamic> { order[c] },
                 Grouped = false,
-                Flipped = item.Flipped,
+                // Each car's own way - a unit joined from both ways splits back into them.
+                Flipped = IsTurned(order[c]),
                 Driver = order[c].DriverType
             });
         }
@@ -377,13 +477,17 @@ public sealed class Consist : IReadOnlyList<ConsistItem>
 
         if (last == first) return;
 
+        // The cars as they run, each card read the way it faces, so joining vehicles
+        // that face different ways leaves every car where and how it was. The unit
+        // keeps the first card's flag; its cars are stored against that flag.
         var cars = new List<Dynamic>();
         var driver = eDriverType.Nobody;
         for (int k = first; k <= last; k++)
         {
-            cars.AddRange(_items[k].Cars);
+            var card = _items[k];
+            cars.AddRange(RunningOrder(card));
             if (driver == eDriverType.Nobody)
-                driver = _items[k].Driver;
+                driver = card.Driver;
         }
 
         bool flipped = _items[first].Flipped;
@@ -441,28 +545,42 @@ public sealed class Consist : IReadOnlyList<ConsistItem>
         if (start < 0) start = 0;
         if (start >= _items.Count) return;
 
-        for (int i = start; i < _items.Count; i++)
+        // Unit by unit, as Flip turns them: half a locked unit turned on its own
+        // would be coupled back to front.
+        for (int i = start; i < _items.Count;)
+        {
+            var (first, last) = UnitAround(i);
             if (rng.Next(2) == 0)
-                _items[i].Flipped = !_items[i].Flipped;
+                Turn(first, last);
+            i = last + 1;
+        }
 
         AutoConnectAll();
         Raise();
     }
 
+    /// <summary>
+    /// The Auto button: couplers picked afresh for the whole consist, hand-set ones
+    /// included, so the back of the train is 0 again.
+    /// </summary>
+    public void AutoCouple()
+    {
+        foreach (var car in Flatten())
+            car.CouplerSetByHand = false;
+
+        AutoConnectAll();
+    }
+
     public void AutoConnectAll()
     {
-        var flat = new List<(Dynamic car, bool flipped)>();
-        foreach (var item in _items)
-        {
-            var cars = item.Flipped ? item.Cars.AsEnumerable().Reverse() : item.Cars;
-            foreach (var c in cars)
-                flat.Add((c, item.Flipped));
-        }
+        var flat = Flatten();
 
         for (int i = 0; i < flat.Count - 1; i++)
         {
-            var (left, lf) = flat[i];
-            var (right, rf) = flat[i + 1];
+            var left = flat[i];
+            var right = flat[i + 1];
+            bool lf = IsTurned(left);
+            bool rf = IsTurned(right);
 
             var lp = _info.PhysicsFor(left);
             var rp = _info.PhysicsFor(right);
@@ -478,7 +596,10 @@ public sealed class Consist : IReadOnlyList<ConsistItem>
                 common &= ~Coupling.ControlMU;
 
             left.Coupling.Flags = left.Coupling.Locked ? -common : common;
+            left.CouplerSetByHand = false;
         }
+
+        FreeTail();
     }
 
     public bool CanFormUnit(ConsistItem left, ConsistItem right)
@@ -491,8 +612,8 @@ public sealed class Consist : IReadOnlyList<ConsistItem>
 
         var lp = _info.PhysicsFor(tail);
         var rp = _info.PhysicsFor(head);
-        int leftMax = lp == null ? 3 : (left.Flipped ? lp.AllowedFlagA : lp.AllowedFlagB);
-        int rightMax = rp == null ? 3 : (right.Flipped ? rp.AllowedFlagB : rp.AllowedFlagA);
+        int leftMax = lp == null ? 3 : (IsTurned(tail) ? lp.AllowedFlagA : lp.AllowedFlagB);
+        int rightMax = rp == null ? 3 : (IsTurned(head) ? rp.AllowedFlagB : rp.AllowedFlagA);
 
         return (leftMax & rightMax & Coupling.WorkshopLock) != 0 || SameSet(tail, head);
     }
@@ -502,8 +623,8 @@ public sealed class Consist : IReadOnlyList<ConsistItem>
         if (IsUnitCar(a) && IsUnitCar(b) && UnitKey(a) == UnitKey(b))
             return true;
 
-        string? ua = _db.TextureForSkin(a.SkinFile)?.Uuid;
-        string? ub = _db.TextureForSkin(b.SkinFile)?.Uuid;
+        string? ua = _db.TextureFor(a.DataFolder, a.SkinFile, a.MmdFile)?.Uuid;
+        string? ub = _db.TextureFor(b.DataFolder, b.SkinFile, b.MmdFile)?.Uuid;
         if (string.IsNullOrEmpty(ua) || string.IsNullOrEmpty(ub))
             return false;
 
@@ -525,6 +646,29 @@ public sealed class Consist : IReadOnlyList<ConsistItem>
 
     public static Dynamic HeadCar(ConsistItem item) =>
         item.Flipped ? item.Cars[^1] : item.Cars[0];
+
+    /// <summary>
+    /// Clears the coupler at the back of the consist, unless it was set in the
+    /// editor. The simulator hangs the end signals only on a last vehicle whose
+    /// coupler is 0 - the code does nothing else at the back of a train - and every
+    /// new car comes with 3. Its parameters, the brake setting among them, stay.
+    /// </summary>
+    private void FreeTail()
+    {
+        if (_items.Count == 0 || _items[^1].Cars.Count == 0)
+            return;
+
+        var tail = TailCar(_items[^1]);
+        if (!tail.CouplerSetByHand)
+            tail.Coupling.Flags = 0;
+    }
+
+    /// <summary>
+    /// Whether a car runs turned. Its own sign is the truth - it is what the export
+    /// writes - and decides which coupler is at which end; a card's flag agrees
+    /// with it except in a unit joined from vehicles facing different ways.
+    /// </summary>
+    public static bool IsTurned(Dynamic car) => car.Offset < 0;
 
     public static bool HoldsTail(ConsistItem item) =>
         item.Cars.Count > 0 && HoldsNext(TailCar(item));

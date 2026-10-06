@@ -7,6 +7,7 @@
     <String key="NavScenarios">Scenariusze</String>
     <String key="NavDepot">Zajezdnia</String>
     <String key="NavSettings">Ustawienia</String>
+    <String key="NavDeveloper">Deweloper</String>
     <String key="NavControls">Sterowanie</String>
     <String key="Help">Pomoc</String>
     <String key="HelpWiki">Wiki MaSzyna</String>
@@ -65,6 +66,9 @@
     <String key="StartNoStaffConfirm">Skład nie ma obsady ani pasażera — nie będzie czym kierować. Uruchomić mimo to?</String>
     <String key="RestoreWeather">Przywróć pogodę</String>
     <String key="ReloadSceneries">Przeładuj</String>
+    <String key="Favorites">Ulubione</String>
+    <String key="FavoriteAdd">Dodaj do ulubionych</String>
+    <String key="FavoriteRemove">Usuń z ulubionych</String>
     <String key="OpenSceneryFolder">Otwórz folder</String>
     <String key="OptionalIncludes">Elementy opcjonalne</String>
     <String key="OpenTextureFolder">Otwórz folder tekstury</String>
@@ -91,6 +95,9 @@
     <String key="Crew">z obsadą</String>
     <String key="Reversed">Obrócony</String>
     <String key="NoVehicles">Nie znaleziono pojazdów w dynamic/**/textures.txt.</String>
+    <String key="BrowserHint">Wybierz kategorię albo wpisz nazwę pojazdu.</String>
+    <String key="BrowserNoMatch">Nic nie pasuje do „{0}”.</String>
+    <String key="SearchAllVehicles">Szukaj we wszystkich pojazdach…</String>
     <String key="ConsistEmpty">Dodaj pojazdy z bazy po lewej stronie lub wczytaj istniejący skład z pliku scenerii.</String>
     <String key="TipMoveLeft">Przesuń w lewo</String>
     <String key="TipMoveRight">Przesuń w prawo</String>
@@ -107,17 +114,17 @@
     <String key="CatDMU">SZT</String>
     <String key="CatCarriagesA">Wagony A</String>
     <String key="CatCarriagesB">Wagony B</String>
-    <String key="CatElectricLoco">Lokomotywa elektryczna</String>
-    <String key="CatDieselLoco">Lokomotywa spalinowa</String>
-    <String key="CatSteamLoco">Parowóz</String>
-    <String key="CatRailbus">Szynobus</String>
-    <String key="CatDraisine">Drezyna</String>
-    <String key="CatWork">Pojazdy robocze</String>
-    <String key="CatPrototype">Prototyp</String>
-    <String key="CatTram">Tramwaj</String>
-    <String key="CatCar">Samochód osobowy</String>
-    <String key="CatBus">Autobus</String>
-    <String key="CatTruck">Samochód ciężarowy</String>
+    <String key="CatElectricLoco">Elektrowozy</String>
+    <String key="CatDieselLoco">Spalinowozy</String>
+    <String key="CatSteamLoco">Parowozy</String>
+    <String key="CatRailbus">Szynobusy</String>
+    <String key="CatDraisine">Drezyny</String>
+    <String key="CatWork">Robocze</String>
+    <String key="CatPrototype">Prototypy</String>
+    <String key="CatTram">Tramwaje</String>
+    <String key="CatCar">Samochody</String>
+    <String key="CatBus">Autobusy</String>
+    <String key="CatTruck">Ciężarówki</String>
     <String key="CatPeople">Ludzie</String>
     <String key="CatAnimals">Zwierzęta</String>
     <String key="CatWagonsA">Wagony A</String>
@@ -223,6 +230,7 @@
     <String key="ReadyOverrideReady">Zawsze gotowy</String>
     <String key="ConsistReadyOverridden">Nadpisane opcją „Wymuś stan składu przy starcie” w Ustawieniach.</String>
     <String key="ConsistRandomType">Losowy rodzaj</String>
+    <String key="ConsistMaxAmount">Maksymalna ilość</String>
     <String key="ConsistRandomAmount">Losowa ilość</String>
     <String key="Set">Ustaw</String>
     <String key="Length">Długość</String>
@@ -251,7 +259,14 @@
     <String key="ExeLaunchFailed">Nie udało się uruchomić symulatora</String>
     <String key="ExeNotFound">Nie znaleziono pliku wykonywalnego symulatora.</String>
     <String key="ExeNotExecutable">Plik nie ma prawa wykonywania (chmod +x).</String>
-    <String key="ExeWrongPlatform">To jest plik wykonywalny dla innego systemu niż uruchomiony.</String>
+    <String key="ExeWrongPlatform">To jest plik wykonywalny dla innego systemu niż uruchomiony. Na Linuksie wersja dla Windows może działać przez Wine lub Proton - jeśli ich używasz, to nie jest błąd.</String>
+    <String key="SimExitTitle">Symulator zakończył pracę nieoczekiwanie</String>
+    <String key="SimExitCode">Kod wyjścia: {0}</String>
+    <String key="SimExitQuick">Zamknął się {0:0.0} s po uruchomieniu.</String>
+    <String key="SimExitMessages">Ostatnie komunikaty:</String>
+    <String key="SimExitSeeLog">Pełny przebieg jest w pliku log.txt w katalogu symulatora.</String>
+    <String key="SimExitDump">Symulator zapisał zrzut pamięci: {0}</String>
+    <String key="SimExitOpenDump">Otworzyć folder ze zrzutem? Dołącz go do zgłoszenia błędu.</String>
     <String key="TabInfo">Informacje</String>
     <String key="SettingsFileChangedTitle">Ustawienia</String>
     <String key="SettingsFileChanged">Plik eu07.ini został zmieniony poza starterem. Wczytać ponownie?</String>
@@ -271,8 +286,16 @@
     <String key="CouplingUnitRear">Sprzęg na końcu zespołu</String>
     <String key="Join">Złącz</String>
     <String key="TipJoin">Połącz ten pojazd z następnym w jeden zespół</String>
-    <String key="TipReorder">Przeciągnij, aby zmienić kolejność</String>
+    <String key="CouplerCode">Kod sprzęgu: {0}</String>
+    <String key="CouplerFree">Pojazdy nie są połączone.</String>
+    <String key="CouplerConnects">Połączone: {0}</String>
+    <String key="CouplerEndSignals">Koniec składu — symulator wystawi końcówki.</String>
+    <String key="CouplerNoEndSignals">Kod inny niż 0 na końcu składu — symulator nie wystawi końcówek.</String>
+    <String key="CouplerLocked">Zablokowany — nie rozprzęga się przy manewrach.</String>
+    <String key="CouplerClickToEdit">Kliknij, aby zmienić.</String>
     <String key="AddVehicle">Dodaj</String>
+    <String key="AddMany">Dodaj wiele…</String>
+    <String key="AddManyCount">Ile razy dodać pojazd</String>
     <String key="TipAddVehicle">Dodaj ten pojazd do składu</String>
     <String key="TipAddUnit">Dodaj cały zespół do składu</String>
 
@@ -334,12 +357,17 @@
     <String key="Others">Inne</String>
     <String key="SelectEXE">Wybór exe</String>
     <String key="SelectEXEAuto">Wybierz automatycznie</String>
+    <String key="SelectEXEBrowse">Wybierz plik…</String>
+    <String key="SelectEXEBrowseTitle">Wskaż plik wykonywalny symulatora</String>
+    <String key="SelectEXEUseAnyway">Użyć go mimo to?</String>
     <String key="DebugMode">Tryb testowy</String>
     <String key="DebugModeDesc">Odblokowuje menu debug, dodatkowe panele i skróty testowe.</String>
     <String key="VirtualShunting">Wirtualny manewrowy</String>
     <String key="VirtualShuntingDesc">Włącza asystenta AI do sprzęgania, rozprzęgania i prostych manewrów, gdy pojazd stoi.</String>
     <String key="LogMissingVehicleFiles">Zapisuj w logu brakujące pliki pojazdów podczas eksportu</String>
     <String key="LogMissingVehicleFilesDesc">Zapisuje w logu pojazdy, których starter nie znalazł.</String>
+    <String key="DeveloperTools">Pokaż zakładkę dla twórców paczek</String>
+    <String key="DeveloperToolsDesc">Dodaje zakładkę ze stanem bazy pojazdów, przydatną przy przygotowywaniu paczek z taborem.</String>
 
     <String key="Graphic">Grafika</String>
     <String key="RenderEngine">Silnik renderowania</String>
@@ -350,6 +378,7 @@
     <String key="RESimp">Uproszczony</String>
     <String key="REOff">Wyłącz warstwę wizualną</String>
     <String key="REExperimental">Eksperymentalny</String>
+    <String key="REExperimentalWarning">Uwaga: renderer eksperymentalny jest w trakcie rozwoju. Może działać niestabilnie, nie pokazywać części obiektów albo nie uruchomić się na niektórych kartach graficznych. Gdy symulator nie startuje lub wygląda źle, wróć do renderera „Pełny”.</String>
 
     <String key="Resolution">Rozdzielczość</String>
     <String key="BufforResolution">Rozdzielczość bufora</String>
@@ -493,6 +522,7 @@
     <String key="KbAssigned">Przypisany</String>
     <String key="KbShift">Z klawiszem Shift</String>
     <String key="KbCtrl">Z klawiszem Ctrl</String>
+    <String key="KbShiftCtrl">Z Ctrl + Shift</String>
     <String key="KbReserved">Zarezerwowany przez symulator</String>
     <String key="BindKeyTitle">Klawisz:</String>
     <String key="BindKeyHint">Przypisz komendę do każdej kombinacji modyfikatorów dla tego klawisza.</String>
@@ -519,7 +549,12 @@
     <String key="FaultNoScenery">Nie znaleziono scenariuszy.</String>
     <String key="FaultNoVehicles">Nie znaleziono pojazdów.</String>
     <String key="FaultNoPhysics">Nie znaleziono danych taboru.</String>
-    <String key="FaultNoExe">Nie znaleziono pliku wykonywalnego symulatora.</String>
+    <String key="FaultNoExeTitle">Nie znaleziono symulatora</String>
+    <String key="FaultNoExe">Starter uruchamia symulator ({0}) z folderu, z którego sam został uruchomiony:&#10;{1}&#10;&#10;Nie ma tam symulatora, więc Start nie zadziała.</String>
+    <String key="FaultNoExePick">Jeśli symulator leży gdzie indziej, np. jako własny build, wskaż go. Wybór zmienisz potem w Ustawieniach, w sekcji Inne. Jeśli to nie jest folder MaSzyny, uruchom starter z właściwego folderu.</String>
+    <String key="FaultNoExeWine">Na Linuksie możesz wskazać też wersję dla Windows (eu07.exe) — uruchomi się przez Wine lub Proton.</String>
+    <String key="FaultNoExePickNow">Wskaż symulator…</String>
+    <String key="NotNow">Nie teraz</String>
 
     <!-- About -->
     <String key="AboutTitle">O programie</String>
@@ -562,7 +597,8 @@
     <String key="WarehouseImportFile">Dodaj składy z pliku...</String>
     <String key="StartWithoutSaving">Uruchom bez zapisu ustawień</String>
     <String key="StartFreeFly">Uruchom bez pojazdu</String>
-    <String key="VolumePaused">Głośność podczas pauzy</String>
+    <String key="StartEditor">Uruchom edytor scenerii</String>
+    <String key="StartEditorWarning">Edytor scenerii (eu07 -edit) mają tylko niektóre wersje symulatora. Jeśli wybrany plik symulatora go nie obsługuje, edytor się nie otworzy. Edytor pracuje na samym pliku {0}, a nie na kopii przygotowanej przez starter, więc zapisane zmiany trafią do scenerii. Uruchomić?</String>
     <String key="DebugLogVisible">Wyświetlaj log w konsoli</String>
     <String key="PyScreenPriority">Opóźnienie odświeżania ekranów dodatkowych</String>
     <String key="PyScreenPriorityDesc">Minimalny czas między aktualizacjami ekranów Python w kabinach (ms). Wyższa wartość = rzadsze odświeżanie.</String>
@@ -619,4 +655,20 @@
     <String key="ShortcutMember">Wybierz człon w zespolonej jednostce</String>
     <String key="ShortcutMoveVehicle">Przesuń pojazd w składzie</String>
     <String key="ShortcutCardMenu">Otwórz menu pojazdu</String>
+
+    <!-- Zakladka dla tworcow paczek -->
+    <String key="DevDatabase">Baza pojazdów</String>
+    <String key="DevVehicles">Katalogi pojazdów</String>
+    <String key="DevLiveries">Malowania</String>
+    <String key="DevWrecks">wraki</String>
+    <String key="DevGroups">Grupy</String>
+    <String key="DevSets">Zespoły stałe</String>
+    <String key="DevFiles">Pliki textures.txt</String>
+    <String key="DevSource">Wczytano z</String>
+    <String key="DevSourceCopy">kopii startera</String>
+    <String key="DevSourceTextures">plików textures.txt</String>
+    <String key="DevWritten">Kopia zapisana</String>
+    <String key="DevLocation">Katalog kopii</String>
+    <String key="DevRebuild">Odbuduj kopię</String>
+    <String key="DevRebuilt">Odbudowano</String>
 </Language>

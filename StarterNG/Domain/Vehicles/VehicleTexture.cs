@@ -5,9 +5,25 @@ namespace StarterNG.Domain.Vehicles;
 public sealed class VehicleEntry
 {
     public string? Uuid { get; set; }
+
+    /// <summary>
+    /// Version of the file format the entry was read from, zero when it came from
+    /// a legacy textures.txt. Kept so a file written by a newer starter is refused
+    /// outright instead of being read with half its meaning missing.
+    /// </summary>
+    public int SchemaVersion { get; set; }
+
     public List<VehicleGroup> Groups { get; } = new();
     public List<VehicleTexture> Textures { get; } = new();
     public List<VehicleSet> Sets { get; } = new();
+
+    /// <summary>
+    /// Source lines the reader did not turn into anything else - legacy headers,
+    /// comments and malformed liveries - kept verbatim so an entry written back
+    /// out does not quietly drop what its author put in the file. Content only:
+    /// blank lines and the original spacing are not preserved.
+    /// </summary>
+    public List<string> Unknown { get; } = new();
 }
 
 public sealed class VehicleGroup
@@ -17,6 +33,13 @@ public sealed class VehicleGroup
     public string? Mini { get; set; }
 
     public bool Archived { get; set; }
+
+    /// <summary>
+    /// True when nothing declared the group and it was inferred from the liveries
+    /// that share a thumbnail - which is every group textures.txt produces, as the
+    /// legacy format has no syntax for declaring one.
+    /// </summary>
+    public bool Implicit { get; set; }
 }
 
 public sealed class VehicleTexture
