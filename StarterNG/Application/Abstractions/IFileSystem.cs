@@ -17,6 +17,8 @@ public interface IFileSystem
 
     string[] ReadAllLines(string path);
 
+    byte[] ReadAllBytes(string path);
+
     Stream OpenRead(string path);
 
     void WriteAllText(string path, string contents);
@@ -40,6 +42,8 @@ public interface IFileSystem
     IReadOnlyList<string> GetFilesRecursive(string path, string searchPattern);
 
     DateTime GetLastWriteTimeUtc(string path);
+
+    long GetFileSize(string path);
 
     bool IsExecutable(string path);
 }

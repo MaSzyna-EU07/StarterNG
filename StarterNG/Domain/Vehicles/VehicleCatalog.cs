@@ -27,6 +27,17 @@ public sealed class VehicleCatalog
 
     public Dictionary<string, VehicleTexture> TextureBySkin { get; } = new();
 
+    /// <summary>
+    /// The way the old starter matched a scenery vehicle: folder, skin and model.
+    /// A skin name recurs across folders ("red" for a Clio and a crane), and one
+    /// skin may dress several models (both halves of the ET42-026).
+    /// </summary>
+    private readonly Dictionary<string, VehicleTexture> _textureByFolderSkinModel = new();
+
+    private readonly Dictionary<string, VehicleTexture> _textureByFolderSkin = new();
+
+    private readonly Dictionary<string, VehicleTexture> _textureBySkinModel = new();
+
     public void BeginLoad()
     {
         Textures.Clear();
@@ -35,6 +46,9 @@ public sealed class VehicleCatalog
         SetByTextureUuid.Clear();
         TextureByUuid.Clear();
         TextureBySkin.Clear();
+        _textureByFolderSkinModel.Clear();
+        _textureByFolderSkin.Clear();
+        _textureBySkinModel.Clear();
     }
 
     public void Ingest(VehicleEntry entry)
@@ -49,7 +63,12 @@ public sealed class VehicleCatalog
                 TextureByUuid[texture.Uuid] = texture;
 
             if (!string.IsNullOrEmpty(texture.Skinfile))
-                TextureBySkin.TryAdd(Path.GetFileNameWithoutExtension(texture.Skinfile).ToLowerInvariant(), texture);
+            {
+                TextureBySkin.TryAdd(Key(texture.Skinfile), texture);
+                _textureByFolderSkinModel.TryAdd(FolderSkinModelKey(texture.Directory, texture.Skinfile, texture.Model), texture);
+                _textureByFolderSkin.TryAdd(FolderSkinKey(texture.Directory, texture.Skinfile), texture);
+                _textureBySkinModel.TryAdd(SkinModelKey(texture.Skinfile, texture.Model), texture);
+            }
 
             if (texture.Wreck)
                 continue;
@@ -105,17 +124,47 @@ public sealed class VehicleCatalog
         return texture.TextureMini;
     }
 
-    public string? MiniForSkin(string? skinFile) =>
-        TextureForSkin(skinFile) is { } texture ? ResolveMiniName(texture) : null;
+    public string? MiniFor(string? dataFolder, string? skinFile, string? model) =>
+        TextureFor(dataFolder, skinFile, model) is { } texture ? ResolveMiniName(texture) : null;
+
+    /// <summary>
+    /// The texture a scenery vehicle wears, matched like the old starter did: by
+    /// folder, skin and model, then by less of it for a vehicle that moved.
+    /// </summary>
+    public VehicleTexture? TextureFor(string? dataFolder, string? skinFile, string? model)
+    {
+        if (string.IsNullOrEmpty(skinFile))
+            return null;
+
+        if (_textureByFolderSkinModel.TryGetValue(FolderSkinModelKey(dataFolder, skinFile, model), out var texture) ||
+            _textureByFolderSkin.TryGetValue(FolderSkinKey(dataFolder, skinFile), out texture) ||
+            _textureBySkinModel.TryGetValue(SkinModelKey(skinFile, model), out texture))
+            return texture;
+
+        return TextureForSkin(skinFile);
+    }
 
     public VehicleTexture? TextureForSkin(string? skinFile)
     {
         if (string.IsNullOrEmpty(skinFile))
             return null;
 
-        string key = Path.GetFileNameWithoutExtension(skinFile).ToLowerInvariant();
-        return TextureBySkin.TryGetValue(key, out var texture) ? texture : null;
+        return TextureBySkin.TryGetValue(Key(skinFile), out var texture) ? texture : null;
     }
+
+    private static string Key(string skinFile) => Path.GetFileNameWithoutExtension(skinFile).ToLowerInvariant();
+
+    private static string SkinModelKey(string skinFile, string? model) =>
+        Key(skinFile) + "|" + (string.IsNullOrEmpty(model) ? "" : Path.GetFileNameWithoutExtension(model).ToLowerInvariant());
+
+    private static string FolderSkinKey(string? folder, string skinFile) => Folder(folder) + "|" + Key(skinFile);
+
+    private static string FolderSkinModelKey(string? folder, string skinFile, string? model) =>
+        Folder(folder) + "|" + SkinModelKey(skinFile, model);
+
+    /// <summary>"PKP\ET42_V2" in a scenery, "pkp/et42_v2/" in the catalogue.</summary>
+    private static string Folder(string? folder) =>
+        (folder ?? "").Replace('\\', '/').Trim('/').ToLowerInvariant();
 
     public string GroupHeader(string? groupId)
     {

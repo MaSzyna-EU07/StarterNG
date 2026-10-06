@@ -4,6 +4,7 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
@@ -13,6 +14,7 @@ using Avalonia.Layout;
 using Avalonia.LogicalTree;
 using Avalonia.Markup.Xaml.Styling;
 using Avalonia.Media;
+using Avalonia.Platform.Storage;
 using StarterNG.Classes;
 using StarterNG.Controls;
 using StarterNG.Infrastructure;
@@ -34,8 +36,14 @@ public partial class Settings : UserControl, ISettingsCapture
     /// </summary>
     public event Action? ThumbnailSizeChanged;
 
+    /// <summary>Raised when the developer tab is switched on or off, so the top bar can follow.</summary>
+    public event Action? DeveloperToolsChanged;
+
     /// <summary>Thumbnail size the other tabs were last drawn at.</summary>
     private bool _drawnThumbs = AppServices.Current.Settings.LargeThumbnails;
+
+    /// <summary>Whether the top bar was last drawn with the developer tab on it.</summary>
+    private bool _shownDeveloperTools = AppServices.Current.Settings.DeveloperTools;
 
     public Settings()
     {
@@ -158,6 +166,58 @@ public partial class Settings : UserControl, ISettingsCapture
         }
     }
 
+    private async void BrowseExeButton_OnClick(object? sender, RoutedEventArgs e) =>
+        await BrowseForExecutableAsync();
+
+    /// <summary>
+    /// Picks the simulator from anywhere, such as a build tree kept beside the data,
+    /// where the automatic search - the working directory only - cannot see it.
+    /// True when a file was picked; like any other choice here, it waits for Save.
+    /// </summary>
+    public async Task<bool> BrowseForExecutableAsync()
+    {
+        if (TopLevel.GetTopLevel(this) is not Window owner)
+            return false;
+
+        var picked = await owner.StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
+        {
+            Title = App.Loc["SelectEXEBrowseTitle"],
+            AllowMultiple = false
+        });
+        if (picked.Count == 0 || picked[0].TryGetLocalPath() is not { } path)
+            return false;
+
+        var problem = AppServices.Current.Executables.Validate(path);
+        string message = $"{path}\n\n{App.Loc[ExeProblemText.Key(problem)]}";
+        if (problem == ExeProblem.WrongPlatform)
+        {
+            // Not a dead end: Wine or Proton runs a Windows build on Linux.
+            if (!await MessageBox.Show(owner, $"{message}\n\n{App.Loc["SelectEXEUseAnyway"]}",
+                                       App.Loc["SelectEXE"], MessageBoxButtons.YesNo))
+                return false;
+        }
+        else if (problem != ExeProblem.None)
+        {
+            await MessageBox.Show(owner, message, App.Loc["SelectEXE"], MessageBoxButtons.Ok);
+            return false;
+        }
+
+        // Inside the installation the bare name is enough, and matches the list.
+        string root = Path.GetFullPath(AppServices.Current.Paths.Root);
+        string entry = string.Equals(Path.GetDirectoryName(path), root, StringComparison.Ordinal)
+            ? Path.GetFileName(path)
+            : path;
+
+        int index = FindComboIndexByContent(SelectExeCb, entry);
+        if (index < 0)
+        {
+            SelectExeCb.Items.Add(new ComboBoxItem { Content = entry });
+            index = SelectExeCb.Items.Count - 1;
+        }
+        SelectExeCb.SelectedIndex = index;
+        return true;
+    }
+
     public void ReloadFromSettings() => ApplyToUi();
 
     private void ApplyToUi()
@@ -199,6 +259,7 @@ public partial class Settings : UserControl, ISettingsCapture
             DebugModeCb.IsChecked = s.DebugMode;
             VirtualShuntingCb.IsChecked = s.VirtualShunting;
             LogMissingVehicleFilesCb.IsChecked = s.LogMissingVehicleFiles;
+            DeveloperToolsCb.IsChecked = s.DeveloperTools;
 
             RenderEngineCb.SelectedIndex = s.RenderEngine;
             SelectResolution(s.Width, s.Height);
@@ -297,6 +358,7 @@ public partial class Settings : UserControl, ISettingsCapture
         s.DebugMode = IsChecked(DebugModeCb);
         s.VirtualShunting = IsChecked(VirtualShuntingCb);
         s.LogMissingVehicleFiles = IsChecked(LogMissingVehicleFilesCb);
+        s.DeveloperTools = IsChecked(DeveloperToolsCb);
 
         s.RenderEngine = Math.Max(0, RenderEngineCb.SelectedIndex);
         ReadResolution(s);
@@ -367,16 +429,36 @@ public partial class Settings : UserControl, ISettingsCapture
             new UartWindow().ShowDialog(owner);
     }
 
-    private void SaveButton_OnClick(object? sender, RoutedEventArgs e)
+    private void SaveButton_OnClick(object? sender, RoutedEventArgs e) => Save();
+
+    public void Save()
     {
         CaptureInto(AppServices.Current.Settings);
         AppServices.Current.SettingsStore.Save();
         KeyboardConfig.Instance.Save();
         RedrawThumbnailsIfNeeded();
+        RedrawNavIfNeeded();
         _dirty = false;
         UpdateSaveState();
         if (SaveStatus is not null)
             SaveStatus.Text = App.Loc["SettingsSaved"];
+    }
+
+    private void RenderEngineCb_OnSelectionChanged(object? sender, SelectionChangedEventArgs e)
+    {
+        if (RenderEngineWarning is not null)
+            RenderEngineWarning.IsVisible =
+                SimulatorSettings.RenderEngines.ElementAtOrDefault(RenderEngineCb.SelectedIndex) == "experimental";
+    }
+
+    private void RedrawNavIfNeeded()
+    {
+        bool developer = AppServices.Current.Settings.DeveloperTools;
+        if (developer == _shownDeveloperTools)
+            return;
+
+        _shownDeveloperTools = developer;
+        DeveloperToolsChanged?.Invoke();
     }
 
     private void RedrawThumbnailsIfNeeded()
@@ -722,6 +804,7 @@ public partial class Settings : UserControl, ISettingsCapture
     private static readonly IBrush KeyPlainBrush = new SolidColorBrush(Color.Parse("#2E9E1F"));
     private static readonly IBrush KeyShiftBrush = new SolidColorBrush(Color.Parse("#C9A227"));
     private static readonly IBrush KeyCtrlBrush = new SolidColorBrush(Color.Parse("#2D7FD3"));
+    private static readonly IBrush KeyShiftCtrlBrush = new SolidColorBrush(Color.Parse("#C8372D"));
     private static readonly IBrush KeyBorderBrush = new SolidColorBrush(Color.Parse("#3A424A"));
     private static readonly IBrush FgBrush = new SolidColorBrush(Color.Parse("#E6E8EA"));
     private static readonly IBrush FgDimBrush = new SolidColorBrush(Color.Parse("#9098A0"));
@@ -803,7 +886,7 @@ public partial class Settings : UserControl, ISettingsCapture
 
     private static bool MatchesFilter(KeyBinding b, string filter) =>
         TextMatch.Contains(b.Command, filter) ||
-        TextMatch.Contains(b.Description, filter);
+        TextMatch.Contains(KeyboardConfig.Instance.DescriptionOf(b), filter);
 
     private Control BuildBindingRow(KeyBinding b, HashSet<string> conflicts)
     {
@@ -924,6 +1007,8 @@ public partial class Settings : UserControl, ISettingsCapture
         _capturing.Shift = e.KeyModifiers.HasFlag(KeyModifiers.Shift);
         _capturing.Ctrl = e.KeyModifiers.HasFlag(KeyModifiers.Control);
         _capturing.Key = token;
+        // As the key flyout does: the combination moves here, not doubled up.
+        ReleaseCombo(token, _capturing.Shift, _capturing.Ctrl, _capturing);
         KeyboardConfig.Instance.Dirty = true;
         MarkDirty();
         e.Handled = true;
@@ -1035,6 +1120,7 @@ public partial class Settings : UserControl, ISettingsCapture
         if (state is { Plain: true }) colours.Add(KeyPlainBrush);
         if (state is { Shift: true }) colours.Add(KeyShiftBrush);
         if (state is { Ctrl: true }) colours.Add(KeyCtrlBrush);
+        if (state is { ShiftCtrl: true }) colours.Add(KeyShiftCtrlBrush);
 
         if (colours.Count == 0)
             return new Border { Background = KeyUnassignedBrush };
@@ -1062,12 +1148,12 @@ public partial class Settings : UserControl, ISettingsCapture
         foreach (var c in commands)
             items.Add(CommandLabel(c));
 
-        var slots = new (bool shift, bool ctrl, string labelKey)[]
+        var slots = new (bool shift, bool ctrl, string labelKey, IBrush colour)[]
         {
-            (false, false, "BindNoMod"),
-            (true,  false, "BindShift"),
-            (false, true,  "BindCtrl"),
-            (true,  true,  "BindShiftCtrl"),
+            (false, false, "BindNoMod", KeyPlainBrush),
+            (true,  false, "BindShift", KeyShiftBrush),
+            (false, true,  "BindCtrl", KeyCtrlBrush),
+            (true,  true,  "BindShiftCtrl", KeyShiftCtrlBrush),
         };
 
         var combos = new ComboBox[slots.Length];
@@ -1079,14 +1165,24 @@ public partial class Settings : UserControl, ISettingsCapture
 
         for (int i = 0; i < slots.Length; i++)
         {
-            var (shift, ctrl, labelKey) = slots[i];
+            var (shift, ctrl, labelKey, colour) = slots[i];
 
-            var lbl = new TextBlock
+            // The swatch ties the row to the key colours on the keyboard above.
+            var lbl = new StackPanel
             {
-                Text = App.Loc[labelKey],
-                Foreground = FgBrush,
+                Orientation = Orientation.Horizontal,
+                Spacing = 6,
                 VerticalAlignment = VerticalAlignment.Center,
-                Margin = new Thickness(0, 4, 12, 4)
+                Margin = new Thickness(0, 4, 12, 4),
+                Children =
+                {
+                    new Border
+                    {
+                        Width = 10, Height = 10, CornerRadius = new CornerRadius(2),
+                        Background = colour, VerticalAlignment = VerticalAlignment.Center
+                    },
+                    new TextBlock { Text = App.Loc[labelKey], Foreground = FgBrush, VerticalAlignment = VerticalAlignment.Center }
+                }
             };
             Grid.SetRow(lbl, i);
             Grid.SetColumn(lbl, 0);
@@ -1153,17 +1249,7 @@ public partial class Settings : UserControl, ISettingsCapture
     private void AssignSlot(string token, bool shift, bool ctrl, int selectedIndex, List<KeyBinding> commands)
     {
         KeyBinding? chosen = selectedIndex <= 0 ? null : commands[selectedIndex - 1];
-
-        foreach (var b in KeyboardConfig.Instance.Bindings)
-        {
-            if (!ReferenceEquals(b, chosen) && b.IsAssigned &&
-                string.Equals(b.Key, token, StringComparison.OrdinalIgnoreCase) &&
-                b.Shift == shift && b.Ctrl == ctrl)
-            {
-                b.Shift = b.Ctrl = false;
-                b.Key = "none";
-            }
-        }
+        ReleaseCombo(token, shift, ctrl, chosen);
 
         if (chosen is not null)
         {
@@ -1174,6 +1260,25 @@ public partial class Settings : UserControl, ISettingsCapture
 
         KeyboardConfig.Instance.Dirty = true;
         MarkDirty();
+    }
+
+    /// <summary>
+    /// Frees a key combination for <paramref name="keeper"/>: the simulator maps a
+    /// combination to one command - in driving and outside the cab alike, the
+    /// editor has its own fixed keys - so of two, one would silently never fire.
+    /// </summary>
+    private static void ReleaseCombo(string token, bool shift, bool ctrl, KeyBinding? keeper)
+    {
+        foreach (var b in KeyboardConfig.Instance.Bindings)
+        {
+            if (!ReferenceEquals(b, keeper) && b.IsAssigned &&
+                string.Equals(b.Key, token, StringComparison.OrdinalIgnoreCase) &&
+                b.Shift == shift && b.Ctrl == ctrl)
+            {
+                b.Shift = b.Ctrl = false;
+                b.Key = "none";
+            }
+        }
     }
 
     private static KeyBinding? CommandInSlot(string token, bool shift, bool ctrl) =>
@@ -1189,6 +1294,7 @@ public partial class Settings : UserControl, ISettingsCapture
         legend.Children.Add(LegendItem(KeyPlainBrush, App.Loc["KbAssigned"]));
         legend.Children.Add(LegendItem(KeyShiftBrush, App.Loc["KbShift"]));
         legend.Children.Add(LegendItem(KeyCtrlBrush, App.Loc["KbCtrl"]));
+        legend.Children.Add(LegendItem(KeyShiftCtrlBrush, App.Loc["KbShiftCtrl"]));
         return legend;
     }
 
@@ -1220,6 +1326,7 @@ public partial class Settings : UserControl, ISettingsCapture
         public bool Plain;
         public bool Shift;
         public bool Ctrl;
+        public bool ShiftCtrl;
         public readonly List<string> Tips = new();
     }
 
@@ -1234,9 +1341,13 @@ public partial class Settings : UserControl, ISettingsCapture
             if (!map.TryGetValue(key, out var state))
                 map[key] = state = new KeyState();
 
-            if (!b.Shift && !b.Ctrl) state.Plain = true;
-            if (b.Shift) state.Shift = true;
-            if (b.Ctrl) state.Ctrl = true;
+            switch (b.Shift, b.Ctrl)
+            {
+                case (false, false): state.Plain = true; break;
+                case (true, false): state.Shift = true; break;
+                case (false, true): state.Ctrl = true; break;
+                default: state.ShiftCtrl = true; break;
+            }
 
             state.Tips.Add($"{ComboText(b)} — {CommandLabel(b)}");
         }
@@ -1273,7 +1384,7 @@ public partial class Settings : UserControl, ISettingsCapture
     }
 
     private static string CommandLabel(KeyBinding b) =>
-        string.IsNullOrEmpty(b.Description) ? b.Command : Capitalize(b.Description);
+        KeyboardConfig.Instance.DescriptionOf(b) is { Length: > 0 } description ? Capitalize(description) : b.Command;
 
     private static string Capitalize(string s) =>
         string.IsNullOrEmpty(s) ? s : char.ToUpperInvariant(s[0]) + s.Substring(1);

@@ -1,0 +1,14 @@
+# Pull requests for new versions of the pinned actions and of the NuGet packages,
+# so a fix for a vulnerability reaches the build without anyone watching for it.
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+
+  - package-ecosystem: nuget
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5

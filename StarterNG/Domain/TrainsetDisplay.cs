@@ -67,14 +67,14 @@ public static class TrainsetDisplay
 
     public static string VehicleLabel(Dynamic v, bool head = false)
     {
-        var tex = AppServices.Current.Library.Vehicles.TextureForSkin(v.SkinFile);
+        var tex = AppServices.Current.Library.Vehicles.TextureFor(v.DataFolder, v.SkinFile, v.MmdFile);
         string? cls = string.IsNullOrEmpty(tex?.ResolvedClass) ? null : tex!.ResolvedClass;
         string? name = string.IsNullOrWhiteSpace(v.Name) ? null : v.Name;
         return (head ? name ?? cls : cls ?? name) ?? BaseSkin(v);
     }
 
     public static bool IsPowered(Dynamic v) =>
-        AppServices.Current.Library.Vehicles.TextureForSkin(v.SkinFile)?.ResolvedCategory
+        AppServices.Current.Library.Vehicles.TextureFor(v.DataFolder, v.SkinFile, v.MmdFile)?.ResolvedCategory
             is "e" or "s" or "p" or "z" or "a";
 
     private static string BaseSkin(Dynamic v) =>
@@ -199,14 +199,14 @@ public static class TrainsetDisplay
         return p.LoadAccepted.Contains(loadType, StringComparison.OrdinalIgnoreCase);
     }
 
-    public static string? UniquifyForLaunch(Trainset trainset, Scenery scenery, string? startName)
+    public static string? UniquifyForLaunch(Trainset trainset, Scenery scenery, string? startName,
+                                            VehicleCatalog db)
     {
         var used = CollectNames(scenery);
-        var db = AppServices.Current.Library.Vehicles;
 
         bool mu = trainset.Vehicles.Any(v =>
         {
-            string? cat = db.TextureForSkin(v.SkinFile)?.ResolvedCategory;
+            string? cat = db.TextureFor(v.DataFolder, v.SkinFile, v.MmdFile)?.ResolvedCategory;
             return cat is "z" or "a";
         });
 
@@ -221,18 +221,18 @@ public static class TrainsetDisplay
         if (mu)
         {
             foreach (var v in trainset.Vehicles)
-                Rename(v, used);
+                Rename(v, used, db);
             return target?.Name;
         }
 
         if (target != null)
-            Rename(target, used);
+            Rename(target, used, db);
         return target?.Name;
     }
 
-    public static string PreferredBaseName(Dynamic v)
+    public static string PreferredBaseName(Dynamic v, VehicleCatalog db)
     {
-        var tex = AppServices.Current.Library.Vehicles.TextureForSkin(v.SkinFile);
+        var tex = db.TextureFor(v.DataFolder, v.SkinFile, v.MmdFile);
         if (tex != null)
         {
 
@@ -294,11 +294,11 @@ public static class TrainsetDisplay
         return (n, "");
     }
 
-    private static void Rename(Dynamic v, HashSet<string> used)
+    private static void Rename(Dynamic v, HashSet<string> used, VehicleCatalog db)
     {
         var (_, number) = SplitWagonNumber(v.Name);
         if (!string.IsNullOrEmpty(v.Name))
             used.Remove(v.Name!);
-        v.Name = EnsureUnique(PreferredBaseName(v), used) + number;
+        v.Name = EnsureUnique(PreferredBaseName(v, db), used) + number;
     }
 }

@@ -117,4 +117,48 @@ public class VehicleCatalogTests
     /// <summary>Builds an entry through the real parser, for catalogue-level tests.</summary>
     private static VehicleEntry ParsedEntry(string directory, params string[] lines) =>
         new StarterNG.Infrastructure.Vehicles.TexturesTxtParser().Parse(directory, lines)!;
+
+    // The ET42-026: one skin for both halves, told apart by the model.
+    private static VehicleCatalog SharedSkinPair()
+    {
+        var files = new InMemoryFileSystem()
+            .WithFile(TexturesFile("pkp", "et42_v2"),
+                      "!=e,ET42-A,ET42-B\n^2\n112E-026.mat=112E-A,ET42-A,ET42-026-A\n112E-026.mat=112E-B,ET42-B,ET42-026-B");
+        var installation = new TestInstallation(files);
+        installation.Vehicles.Load(installation.Library.Vehicles);
+        return installation.Library.Vehicles;
+    }
+
+    [Fact]
+    public void A_skin_shared_by_two_models_is_found_by_the_model()
+    {
+        var catalog = SharedSkinPair();
+
+        Assert.Equal("ET42-026-A", catalog.TextureFor(@"PKP\ET42_V2", "112E-026", "112E-A")!.TextureMini);
+        Assert.Equal("ET42-026-B", catalog.TextureFor(@"PKP\ET42_V2", "112E-026", "112E-B")!.TextureMini);
+    }
+
+    [Fact]
+    public void The_second_half_on_a_shared_skin_follows_the_first_in_its_set()
+    {
+        var catalog = SharedSkinPair();
+        var b = catalog.TextureFor(@"PKP\ET42_V2", "112E-026", "112E-B")!;
+
+        Assert.True(catalog.IsSetFollower(b));
+        Assert.Equal(new[] { "112E-A", "112E-B" }, catalog.ResolveSet(b)!.Select(t => t.Model));
+    }
+
+    [Fact]
+    public void A_skin_name_used_in_two_folders_is_found_by_the_folder()
+    {
+        var files = new InMemoryFileSystem()
+            .WithFile(TexturesFile("road", "clio"), "red.mat=clio,CLIO")
+            .WithFile(TexturesFile("industrial", "wls50_v1"), "red.mat=wls50,WLS50");
+        var installation = new TestInstallation(files);
+        installation.Vehicles.Load(installation.Library.Vehicles);
+        var catalog = installation.Library.Vehicles;
+
+        Assert.Equal("clio", catalog.TextureFor(@"road\clio", "red", "clio")!.Model);
+        Assert.Equal("wls50", catalog.TextureFor("industrial/wls50_v1", "red", "wls50.mmd")!.Model);
+    }
 }

@@ -13,6 +13,9 @@ on:
 
   workflow_dispatch:
 
+# Read-only unless a job says otherwise; only the release writes. Actions are
+# pinned to full commits - a tag can be moved under us, a commit cannot - and
+# checkout leaves no token behind for the pull request code that runs next.
 permissions:
   contents: read
 
@@ -20,10 +23,97 @@ env:
   DOTNET_CLI_TELEMETRY_OPTOUT: 1
   DOTNET_NOLOGO: true
   PROJECT_PATH: StarterNG/StarterNG.csproj
+  TEST_PROJECT_PATH: StarterNG.Tests/StarterNG.Tests.csproj
 
 jobs:
+  # On both systems the packages are built for: paths, encodings and the file
+  # system differ, and that is where these tests earn their keep.
+  test:
+    name: Tests (${{ matrix.name }})
+
+    strategy:
+      fail-fast: false
+
+      matrix:
+        include:
+          - name: Windows x64
+            os: windows-2022
+
+          - name: Linux x64
+            os: ubuntu-22.04
+
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Setup .NET 9
+        uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          dotnet-version: 9.0.x
+
+      - name: Test
+        run: >
+          dotnet test
+          "${{ env.TEST_PROJECT_PATH }}"
+          -c Release
+
+      # A known vulnerability in a NuGet package, direct or pulled in, fails the run.
+      - name: Audit packages
+        if: runner.os == 'Linux'
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          dotnet list StarterNG.sln package --vulnerable --include-transitive 2>&1 | tee audit.txt
+          if grep -q "has the following vulnerable packages" audit.txt; then
+            echo "::error::Vulnerable NuGet packages, listed above"
+            exit 1
+          fi
+
+  # Major and minor are set by hand in the project file; the patch is the number
+  # of commits, so every build of main is higher than the one before and no bot
+  # has to commit a bump back to the branch.
+  version:
+    name: Version
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    outputs:
+      number: ${{ steps.number.outputs.number }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Number this build
+        id: number
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          prefix=$(sed -n 's:.*<VersionPrefix>\([0-9][0-9]*\.[0-9][0-9]*\)</VersionPrefix>.*:\1:p' "$PROJECT_PATH")
+          if [ -z "$prefix" ]; then
+            echo "::error file=$PROJECT_PATH::No major.minor <VersionPrefix> in the project file"
+            exit 1
+          fi
+
+          number="$prefix.$(git rev-list --count HEAD)"
+          echo "number=$number" >> "$GITHUB_OUTPUT"
+          echo "Version $number"
+
   publish:
     name: ${{ matrix.name }}
+
+    # A failing test stops the packages, and with them the release.
+    needs: [test, version]
 
     strategy:
       fail-fast: false
@@ -43,13 +133,16 @@ jobs:
             package: artifacts/StarterNG-linux-x64.tar.gz
 
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
 
       - name: Setup .NET 9
-        uses: actions/setup-dotnet@v6
+        uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
         with:
           dotnet-version: 9.0.x
 
@@ -68,6 +161,9 @@ jobs:
           -r "${{ matrix.rid }}"
 
       - name: Publish NativeAOT
+        shell: bash
+        env:
+          VERSION: ${{ needs.version.outputs.number }}
         run: >
           dotnet publish
           "${{ env.PROJECT_PATH }}"
@@ -77,6 +173,7 @@ jobs:
           --no-restore
           -p:PublishAot=true
           -p:PublishTrimmed=true
+          -p:Version="$VERSION"
           -o "publish/${{ matrix.rid }}"
 
       - name: Package Windows build
@@ -100,8 +197,11 @@ jobs:
             -czf "${{ matrix.package }}" \
             .
 
+      # A fork's pull request is built, to prove it builds, but its binaries are not
+      # handed out under the repository's name.
       - name: Upload artifact
-        uses: actions/upload-artifact@v7
+        if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: ${{ matrix.artifact }}
           path: ${{ matrix.package }}
@@ -109,22 +209,26 @@ jobs:
           archive: false
 
   # Workflow artifacts are only reachable for signed-in users with repository
-  # access, so every build of a release branch also lands in a rolling
-  # pre-release, whose assets anyone can download:
-  #   https://github.com/${{ github.repository }}/releases/download/<tag>/<file>
-  # main -> "latest", staging -> "staging"; the two never overwrite each other.
+  # access, so every build of a release branch also lands in a release, whose
+  # assets anyone can download. main gets a release of its own per build, tagged
+  # with its version - the newest is what the starter checks itself against:
+  #   https://github.com/${{ github.repository }}/releases/latest/download/<file>
+  # staging keeps one rolling pre-release, offered only to starters set to the
+  # testing channel, which tell its builds apart by commit.
   release:
-    name: Rolling pre-release
-    needs: publish
+    name: Release
+    needs: [publish, version]
     if: github.event_name == 'push'
     runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    # Two pushes in a row release one after the other, not over each other.
+    concurrency:
+      group: release-${{ github.ref }}
+      cancel-in-progress: false
 
     permissions:
       contents: write
-
-    env:
-      RELEASE_TAG: ${{ github.ref_name == 'main' && 'latest' || 'staging' }}
-      RELEASE_NAME: ${{ github.ref_name == 'main' && 'Latest build' || 'Staging build' }}
 
     steps:
       # v8, not v7: the packages are uploaded with archive: false, and only v8
@@ -132,28 +236,69 @@ jobs:
       # Windows .zip a file - unpacked, its contents would end up in the release
       # instead of the package.
       - name: Collect the packages
-        uses: actions/download-artifact@v8
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           path: dist
           merge-multiple: true
           skip-decompress: true
 
-      # Recreated rather than edited, so the tag follows its branch and no asset
-      # from an older build is left behind.
-      - name: Replace the rolling pre-release
+      - name: Checksum the packages
+        working-directory: dist
+        run: sha256sum StarterNG-windows-x64.zip StarterNG-linux-x64.tar.gz | tee SHA256SUMS.txt
+
+      - name: Publish the release
+        if: github.ref_name == 'main'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: v${{ needs.version.outputs.number }}
+          VERSION: ${{ needs.version.outputs.number }}
         run: |
           set -euo pipefail
 
           ls -l dist
 
-          gh release delete "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --yes --cleanup-tag || true
-          gh release create "$RELEASE_TAG" \
+          # A re-run of the same commit finds its release already there and refreshes
+          # it; a release of the same number for another commit - main rewritten - is
+          # left alone rather than given packages that are not its own.
+          if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" > /dev/null 2>&1; then
+            tagged=$(gh api "repos/$GITHUB_REPOSITORY/commits/$TAG" --jq .sha)
+            if [ "$tagged" != "$GITHUB_SHA" ]; then
+              echo "::error::$TAG already belongs to $tagged, not to $GITHUB_SHA"
+              exit 1
+            fi
+            gh release upload "$TAG" dist/* --repo "$GITHUB_REPOSITORY" --clobber
+            exit 0
+          fi
+
+          gh release create "$TAG" \
             dist/StarterNG-windows-x64.zip \
             dist/StarterNG-linux-x64.tar.gz \
+            dist/SHA256SUMS.txt \
+            --repo "$GITHUB_REPOSITORY" \
+            --target "$GITHUB_SHA" \
+            --title "StarterNG $VERSION" \
+            --generate-notes \
+            --latest
+
+      # Recreated rather than edited, so the tag follows its branch and no asset
+      # from an older build is left behind.
+      - name: Replace the staging pre-release
+        if: github.ref_name == 'staging'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VERSION: ${{ needs.version.outputs.number }}
+        run: |
+          set -euo pipefail
+
+          ls -l dist
+
+          gh release delete staging --repo "$GITHUB_REPOSITORY" --yes --cleanup-tag || true
+          gh release create staging \
+            dist/StarterNG-windows-x64.zip \
+            dist/StarterNG-linux-x64.tar.gz \
+            dist/SHA256SUMS.txt \
             --repo "$GITHUB_REPOSITORY" \
             --target "$GITHUB_SHA" \
             --prerelease \
-            --title "$RELEASE_NAME" \
+            --title "Staging build $VERSION" \
             --notes "Automatic build of $GITHUB_REF_NAME (${GITHUB_SHA::7}), $(date -u '+%Y-%m-%d %H:%M UTC')."

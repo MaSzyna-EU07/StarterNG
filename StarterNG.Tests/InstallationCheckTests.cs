@@ -40,4 +40,38 @@ public class InstallationCheckTests
         Assert.DoesNotContain(faults, fault => fault.StartsWith("missing "));
         Assert.DoesNotContain("FaultNoWeights", faults);
     }
+
+    [Fact]
+    public void A_missing_simulator_is_asked_for_rather_than_called_a_broken_installation()
+    {
+        // The simulator may be a build kept elsewhere, or a Windows build for Wine.
+        var installation = new TestInstallation();
+        var check = Check(installation);
+
+        Assert.DoesNotContain("FaultNoExe", check.Run());
+        Assert.True(check.ExecutableMissing());
+    }
+
+    [Fact]
+    public void A_simulator_in_the_installation_is_not_missing()
+    {
+        var installation = new TestInstallation(new InMemoryFileSystem().WithExecutable(TestInstallation.At("eu07")));
+
+        Assert.False(Check(installation).ExecutableMissing());
+    }
+
+    [Fact]
+    public void A_simulator_picked_from_elsewhere_is_not_missing()
+    {
+        string build = Path.Combine(Path.GetTempPath(), "maszyna", "bin", "eu07_2026-10-04_fc195880");
+        var installation = new TestInstallation(new InMemoryFileSystem().WithExecutable(build));
+        installation.SettingsStore.Settings.SelectExeAutomatically = false;
+        installation.SettingsStore.Settings.ExecutablePath = build;
+
+        Assert.False(Check(installation).ExecutableMissing());
+    }
+
+    private static InstallationCheck Check(TestInstallation installation) =>
+        new(installation.Paths, installation.Files, installation.Strings, installation.Physics, installation.Library,
+            installation.SettingsStore);
 }

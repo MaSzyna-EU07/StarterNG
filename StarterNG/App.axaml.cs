@@ -176,13 +176,17 @@ public partial class App : Avalonia.Application
                             $"{Loc["FaultLoadData"]}{Environment.NewLine}{Environment.NewLine}{Loc["FaultDetail"]} {inner.Message}");
                     }
 
-                    var faults = Diagnostics.CheckInstallation();
+                    var check = Diagnostics.InstallationCheck();
+                    var faults = check.Run();
                     if (faults.Count > 0)
                     {
                         await Diagnostics.ReportAsync(
                             string.Join(Environment.NewLine, faults) + Environment.NewLine + Environment.NewLine +
                             Loc["FaultBadInstall"]);
                     }
+
+                    if (check.ExecutableMissing())
+                        await main.OfferExecutablePickAsync();
                 });
             });
         }

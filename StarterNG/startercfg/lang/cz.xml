@@ -7,6 +7,7 @@
     <String key="NavScenarios">Scénáře</String>
     <String key="NavDepot">Depo</String>
     <String key="NavSettings">Nastavení</String>
+    <String key="NavDeveloper">Developer</String>
     <String key="NavControls">Ovládání</String>
     <String key="Help">Nápověda</String>
     <String key="HelpWiki">Wiki MaSzyna</String>
@@ -65,6 +66,9 @@
     <String key="StartNoStaffConfirm">Tato souprava nemá osádku ani cestujícího — nebude co řídit. Přesto spustit?</String>
     <String key="RestoreWeather">Obnovit počasí</String>
     <String key="ReloadSceneries">Načíst znovu</String>
+    <String key="Favorites">Oblíbené</String>
+    <String key="FavoriteAdd">Přidat do oblíbených</String>
+    <String key="FavoriteRemove">Odebrat z oblíbených</String>
     <String key="OpenSceneryFolder">Otevřít složku</String>
     <String key="OptionalIncludes">Volitelné prvky</String>
     <String key="OpenTextureFolder">Otevřít složku s texturami</String>
@@ -91,6 +95,9 @@
     <String key="Crew">s osádkou</String>
     <String key="Reversed">otočeno</String>
     <String key="NoVehicles">Ve složce dynamic/**/textures.txt nebyla nalezena žádná vozidla.</String>
+    <String key="BrowserHint">Vyberte kategorii nebo napište název vozidla.</String>
+    <String key="BrowserNoMatch">Nic neodpovídá „{0}“.</String>
+    <String key="SearchAllVehicles">Hledat ve všech vozidlech…</String>
     <String key="ConsistEmpty">Přidejte vozidla z databáze vlevo nebo načtěte existující soupravu ze souboru scenérie.</String>
     <String key="TipMoveLeft">Posunout doleva</String>
     <String key="TipMoveRight">Posunout doprava</String>
@@ -103,21 +110,21 @@
     <String key="All">Vše</String>
     <String key="CatDiesel">Motorová</String>
     <String key="CatElectric">Elektrická</String>
-    <String key="CatEMU">Elektrická jednotka</String>
+    <String key="CatEMU">Elektrické jednotky</String>
     <String key="CatDMU">Motorová jednotka</String>
     <String key="CatCarriagesA">Vozy A</String>
     <String key="CatCarriagesB">Vozy B</String>
-    <String key="CatElectricLoco">Elektrická lokomotiva</String>
-    <String key="CatDieselLoco">Motorová lokomotiva</String>
-    <String key="CatSteamLoco">Parní lokomotiva</String>
-    <String key="CatRailbus">Motorový vůz</String>
-    <String key="CatDraisine">Drezína</String>
-    <String key="CatWork">Pracovní vozidla</String>
-    <String key="CatPrototype">Prototyp</String>
-    <String key="CatTram">Tramvaj</String>
-    <String key="CatCar">Automobil</String>
-    <String key="CatBus">Autobus</String>
-    <String key="CatTruck">Nákladní auto</String>
+    <String key="CatElectricLoco">Elektrické lokomotivy</String>
+    <String key="CatDieselLoco">Motorové lokomotivy</String>
+    <String key="CatSteamLoco">Parní lokomotivy</String>
+    <String key="CatRailbus">Motorové vozy</String>
+    <String key="CatDraisine">Drezíny</String>
+    <String key="CatWork">Pracovní vozy</String>
+    <String key="CatPrototype">Prototypy</String>
+    <String key="CatTram">Tramvaje</String>
+    <String key="CatCar">Automobily</String>
+    <String key="CatBus">Autobusy</String>
+    <String key="CatTruck">Nákladní automobily</String>
     <String key="CatPeople">Lidé</String>
     <String key="CatAnimals">Zvířata</String>
     <String key="CatWagonsA">Vagony A</String>
@@ -223,6 +230,7 @@
     <String key="ReadyOverrideReady">Always ready</String>
     <String key="ConsistReadyOverridden">Overridden by "Force the consist state on launch" in Settings.</String>
     <String key="ConsistRandomType">Náhodný druh</String>
+    <String key="ConsistMaxAmount">Maximální množství</String>
     <String key="ConsistRandomAmount">Náhodné množství</String>
     <String key="Set">Nastavit</String>
     <String key="Length">Délka</String>
@@ -251,7 +259,14 @@
     <String key="ExeLaunchFailed">Nepodařilo se spustit simulátor</String>
     <String key="ExeNotFound">Spustitelný soubor simulátoru nebyl nalezen.</String>
     <String key="ExeNotExecutable">Soubor není označen jako spustitelný (chmod +x).</String>
-    <String key="ExeWrongPlatform">Tento binární soubor je pro jiný operační systém.</String>
+    <String key="ExeWrongPlatform">Tento binární soubor je pro jiný operační systém. Na Linuxu může verze pro Windows běžet přes Wine nebo Proton - pokud je používáte, nejde o chybu.</String>
+    <String key="SimExitTitle">Simulátor se neočekávaně ukončil</String>
+    <String key="SimExitCode">Návratový kód: {0}</String>
+    <String key="SimExitQuick">Ukončil se {0:0.0} s po spuštění.</String>
+    <String key="SimExitMessages">Poslední zprávy:</String>
+    <String key="SimExitSeeLog">Celý průběh je v souboru log.txt ve složce simulátoru.</String>
+    <String key="SimExitDump">Simulátor uložil výpis paměti: {0}</String>
+    <String key="SimExitOpenDump">Otevřít složku s výpisem? Přiložte jej k hlášení chyby.</String>
     <String key="TabInfo">Informace</String>
     <String key="SettingsFileChangedTitle">Nastavení</String>
     <String key="SettingsFileChanged">Soubor eu07.ini byl změněn mimo starter. Načíst jej znovu?</String>
@@ -271,8 +286,16 @@
     <String key="CouplingUnitRear">Spřáhlo na konci jednotky</String>
     <String key="Join">Spojit</String>
     <String key="TipJoin">Spojit toto vozidlo s následujícím do jedné jednotky</String>
-    <String key="TipReorder">Přetáhněte pro změnu pořadí</String>
+    <String key="CouplerCode">Kód spřáhla: {0}</String>
+    <String key="CouplerFree">Vozidla nejsou spojena.</String>
+    <String key="CouplerConnects">Spojeno: {0}</String>
+    <String key="CouplerEndSignals">Konec soupravy — simulátor vyvěsí koncovky.</String>
+    <String key="CouplerNoEndSignals">Jiný kód než 0 na konci soupravy — simulátor nevyvěsí koncovky.</String>
+    <String key="CouplerLocked">Zablokováno — při posunu se nerozpojí.</String>
+    <String key="CouplerClickToEdit">Klikněte pro změnu.</String>
     <String key="AddVehicle">Přidat</String>
+    <String key="AddMany">Přidat vícekrát…</String>
+    <String key="AddManyCount">Kolikrát vozidlo přidat</String>
     <String key="TipAddVehicle">Přidat toto vozidlo do soupravy</String>
     <String key="TipAddUnit">Přidat celou jednotku do soupravy</String>
 
@@ -331,9 +354,13 @@
     <String key="Others">Ostatní</String>
     <String key="SelectEXE">Vybrat exe</String>
     <String key="SelectEXEAuto">Vybrat automaticky</String>
+    <String key="SelectEXEBrowse">Vybrat soubor…</String>
+    <String key="SelectEXEBrowseTitle">Vyberte spustitelný soubor simulátoru</String>
+    <String key="SelectEXEUseAnyway">Přesto jej použít?</String>
     <String key="DebugMode">Režim ladění (testovací režim)</String>
     <String key="VirtualShunting">Virtuální posun</String>
     <String key="LogMissingVehicleFiles">Zaznamenat chybějící soubory vozidel při exportu</String>
+    <String key="DeveloperTools">Show the package author's tab</String>
 
     <String key="Graphic">Grafika</String>
     <String key="RenderEngine">Vykreslovací engine</String>
@@ -343,6 +370,7 @@
     <String key="RESimp">Zjednodušený</String>
     <String key="REOff">Vypnout vizuální vrstvu</String>
     <String key="REExperimental">Experimentální</String>
+    <String key="REExperimentalWarning">Upozornění: experimentální renderer je ve vývoji. Může být nestabilní, nezobrazovat části scény nebo se na některých grafických kartách nespustit. Pokud se simulátor nespustí nebo vypadá špatně, vraťte se k rendereru „Plný“.</String>
 
     <String key="Resolution">Rozlišení</String>
     <String key="BufforResolution">Rozlišení bufferu</String>
@@ -459,6 +487,7 @@
     <String key="KbAssigned">Přiřazeno</String>
     <String key="KbShift">Se Shiftem</String>
     <String key="KbCtrl">S Ctrl</String>
+    <String key="KbShiftCtrl">S Ctrl + Shift</String>
     <String key="KbReserved">Vyhrazeno simulátorem</String>
     <String key="BindKeyTitle">Klávesa:</String>
     <String key="BindKeyHint">Přiřaďte příkaz ke každé kombinaci modifikátorů této klávesy.</String>
@@ -485,7 +514,12 @@
     <String key="FaultNoScenery">Nebyly nalezeny žádné scénáře.</String>
     <String key="FaultNoVehicles">Nebyla nalezena žádná vozidla.</String>
     <String key="FaultNoPhysics">Nebyla nalezena data vozového parku.</String>
-    <String key="FaultNoExe">Spustitelný soubor simulátoru nebyl nalezen.</String>
+    <String key="FaultNoExeTitle">Simulátor nebyl nalezen</String>
+    <String key="FaultNoExe">Starter spouští simulátor ({0}) ze složky, ze které byl sám spuštěn:&#10;{1}&#10;&#10;Simulátor tam není, takže Start nebude fungovat.</String>
+    <String key="FaultNoExePick">Pokud je simulátor jinde, např. jako vlastní build, vyberte jej. Volbu můžete později změnit v Nastavení, v sekci Ostatní. Pokud to není složka MaSzyny, spusťte starter ze správné složky.</String>
+    <String key="FaultNoExeWine">Na Linuxu můžete vybrat i verzi pro Windows (eu07.exe) — poběží přes Wine nebo Proton.</String>
+    <String key="FaultNoExePickNow">Vybrat simulátor…</String>
+    <String key="NotNow">Teď ne</String>
 
     <!-- About -->
     <String key="AboutTitle">O programu</String>
@@ -528,7 +562,8 @@
     <String key="WarehouseImportFile">Přidat soupravy ze souboru...</String>
     <String key="StartWithoutSaving">Spustit bez uložení nastavení</String>
     <String key="StartFreeFly">Spustit bez vozidla</String>
-    <String key="VolumePaused">Hlasitost při pauze</String>
+    <String key="StartEditor">Spustit editor scenérie</String>
+    <String key="StartEditorWarning">Editor scenérie (eu07 -edit) mají jen některé verze simulátoru. Pokud ho vybraný simulátor nepodporuje, editor se neotevře. Editor pracuje přímo se souborem {0}, ne s kopií od starteru, takže uložené změny se zapíší do scenérie. Spustit?</String>
     <String key="DebugLogVisible">Zobrazovat průběh simulace</String>
     <String key="PyScreenPriority">Frekvence obnovení doplňkových obrazovek</String>
     <String key="PyPriorityNormal">Standardní</String>
@@ -584,4 +619,20 @@
     <String key="ShortcutMember">Vybrat člen ve spojené jednotce</String>
     <String key="ShortcutMoveVehicle">Posunout vozidlo v soupravě</String>
     <String key="ShortcutCardMenu">Otevřít nabídku vozidla</String>
+
+    <!-- Package author's tab - awaiting translation -->
+    <String key="DevDatabase">Vehicle database</String>
+    <String key="DevVehicles">Vehicle folders</String>
+    <String key="DevLiveries">Liveries</String>
+    <String key="DevWrecks">wrecks</String>
+    <String key="DevGroups">Groups</String>
+    <String key="DevSets">Fixed sets</String>
+    <String key="DevFiles">textures.txt files</String>
+    <String key="DevSource">Read from</String>
+    <String key="DevSourceCopy">the starter's copy</String>
+    <String key="DevSourceTextures">textures.txt files</String>
+    <String key="DevWritten">Copy written</String>
+    <String key="DevLocation">Copy folder</String>
+    <String key="DevRebuild">Rebuild copy</String>
+    <String key="DevRebuilt">Rebuilt</String>
 </Language>

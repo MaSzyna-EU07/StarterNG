@@ -37,6 +37,10 @@
                                      Tag="settings"
                                      IsCheckedChanged="Nav_OnCheckedChanged"
                                      Content="{Binding [NavSettings], Source={x:Static starterNg:App.Loc}}" />
+                        <RadioButton x:Name="NavDeveloper" GroupName="nav" Theme="{StaticResource NavTab}"
+                                     Tag="developer" IsVisible="False"
+                                     IsCheckedChanged="Nav_OnCheckedChanged"
+                                     Content="{Binding [NavDeveloper], Source={x:Static starterNg:App.Loc}}" />
                         <Button Classes="Basic" Click="openLastLogClick" Width="48" Cursor="Hand"
                                 HorizontalContentAlignment="Center"
                                 ToolTip.Tip="{Binding [ShowLatestLogTooltip], Source={x:Static starterNg:App.Loc}}">
@@ -93,6 +97,7 @@
             <views:Scenarios x:Name="ScenariosView" />
             <views:Depot x:Name="DepotView" IsVisible="False" />
             <views:Settings x:Name="SettingsView" IsVisible="False" />
+            <views:Developer x:Name="DeveloperView" IsVisible="False" />
         </Panel>
     </DockPanel>
 </Window>

@@ -1,0 +1,65 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:starterNg="clr-namespace:StarterNG"
+             x:CompileBindings="True"
+             mc:Ignorable="d" d:DesignWidth="1000" d:DesignHeight="700"
+             x:Class="StarterNG.Views.Developer">
+    <!-- Read-only view of what the starter made of the installation: the counts a
+         package author needs before slicing anything out of it, and the state of
+         the JSON copy those packages will be generated from. -->
+    <StackPanel Margin="3" Spacing="3">
+        <Border Background="{StaticResource CarbonPanelBg}" BorderBrush="{StaticResource CarbonBorderLight}"
+                BorderThickness="1" CornerRadius="2" Padding="10" HorizontalAlignment="Left" MinWidth="440">
+            <StackPanel Spacing="8">
+                <TextBlock Text="{Binding [DevDatabase], Source={x:Static starterNg:App.Loc}}"
+                           FontWeight="Bold" FontSize="14" />
+
+                <Grid ColumnDefinitions="190,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto"
+                      RowSpacing="4">
+                    <TextBlock Grid.Row="0" Grid.Column="0" Foreground="{StaticResource CarbonFgDim}"
+                               Text="{Binding [DevVehicles], Source={x:Static starterNg:App.Loc}}" />
+                    <TextBlock Grid.Row="0" Grid.Column="1" x:Name="VehiclesValue" />
+
+                    <TextBlock Grid.Row="1" Grid.Column="0" Foreground="{StaticResource CarbonFgDim}"
+                               Text="{Binding [DevLiveries], Source={x:Static starterNg:App.Loc}}" />
+                    <TextBlock Grid.Row="1" Grid.Column="1" x:Name="LiveriesValue" />
+
+                    <TextBlock Grid.Row="2" Grid.Column="0" Foreground="{StaticResource CarbonFgDim}"
+                               Text="{Binding [DevGroups], Source={x:Static starterNg:App.Loc}}" />
+                    <TextBlock Grid.Row="2" Grid.Column="1" x:Name="GroupsValue" />
+
+                    <TextBlock Grid.Row="3" Grid.Column="0" Foreground="{StaticResource CarbonFgDim}"
+                               Text="{Binding [DevSets], Source={x:Static starterNg:App.Loc}}" />
+                    <TextBlock Grid.Row="3" Grid.Column="1" x:Name="SetsValue" />
+
+                    <TextBlock Grid.Row="4" Grid.Column="0" Foreground="{StaticResource CarbonFgDim}"
+                               Text="{Binding [DevFiles], Source={x:Static starterNg:App.Loc}}" />
+                    <TextBlock Grid.Row="4" Grid.Column="1" x:Name="FilesValue" />
+
+                    <TextBlock Grid.Row="5" Grid.Column="0" Foreground="{StaticResource CarbonFgDim}"
+                               Text="{Binding [DevSource], Source={x:Static starterNg:App.Loc}}" />
+                    <TextBlock Grid.Row="5" Grid.Column="1" x:Name="SourceValue" />
+
+                    <TextBlock Grid.Row="6" Grid.Column="0" Foreground="{StaticResource CarbonFgDim}"
+                               Text="{Binding [DevWritten], Source={x:Static starterNg:App.Loc}}" />
+                    <TextBlock Grid.Row="6" Grid.Column="1" x:Name="WrittenValue" />
+
+                    <TextBlock Grid.Row="7" Grid.Column="0" Foreground="{StaticResource CarbonFgDim}"
+                               Text="{Binding [DevLocation], Source={x:Static starterNg:App.Loc}}"
+                               VerticalAlignment="Top" />
+                    <SelectableTextBlock Grid.Row="7" Grid.Column="1" x:Name="LocationValue"
+                                         TextWrapping="Wrap" FontSize="11" />
+                </Grid>
+
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                    <Button x:Name="RebuildButton" Click="RebuildButton_OnClick" Cursor="Hand"
+                            Content="{Binding [DevRebuild], Source={x:Static starterNg:App.Loc}}" />
+                    <TextBlock x:Name="RebuildStatus" VerticalAlignment="Center"
+                               Foreground="{StaticResource CarbonFgDim}" />
+                </StackPanel>
+            </StackPanel>
+        </Border>
+    </StackPanel>
+</UserControl>

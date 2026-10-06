@@ -97,7 +97,7 @@ public sealed class VehicleDetails
 
         BuildGeneralInfo(_consist.Selected);
 
-        if (_db.TextureForSkin(_consist.ActiveCar(_consist.Selected).SkinFile) is { } tex)
+        if (_db.TextureFor(_consist.ActiveCar(_consist.Selected).DataFolder, _consist.ActiveCar(_consist.Selected).SkinFile, _consist.ActiveCar(_consist.Selected).MmdFile) is { } tex)
             _showTextureInfo(tex, consistTexturePanel);
         else
             consistTexturePanel.Children.Add(PanelNote(App.Loc["NoTextureInfo"]));
@@ -178,8 +178,6 @@ public sealed class VehicleDetails
         if (unitIdx < 0)
             return;
 
-        bool isLast = unitIdx >= _consist.Count - 1;
-
         var d = Consist.TailCar(item);
 
         // Two columns: the tab is wide enough and the list is short enough
@@ -198,13 +196,14 @@ public sealed class VehicleDetails
             int bit = 1 << i;
             var check = new CheckBox
             {
-                Content = App.Loc[CouplingBits.BitKeys[i]],
+                Content = CouplerLook.BitLabel(i),
                 IsChecked = d.Coupling.Has(bit),
                 Classes = { "Checklist" }
             };
             check.IsCheckedChanged += (_, _) =>
             {
                 d.Coupling.Set(bit, check.IsChecked == true);
+                d.CouplerSetByHand = true;
                 _redraw();
             };
             Grid.SetRow(check, i / 2);
@@ -227,6 +226,7 @@ public sealed class VehicleDetails
         {
             if (unitIdx <= 0) return;
             d.Coupling.Flags = Consist.TailCar(_consist[unitIdx - 1]).Coupling.Flags;
+            d.CouplerSetByHand = true;
             _redraw();
             Refresh();
         };
@@ -238,13 +238,13 @@ public sealed class VehicleDetails
             Cursor = _hand,
             HorizontalAlignment = HorizontalAlignment.Stretch,
             HorizontalContentAlignment = HorizontalAlignment.Center,
-            IsEnabled = _consist.Count > 1 && !isLast
+            IsEnabled = _consist.Count > 0
         };
         auto.Classes.Add("Flat");
         ToolTip.SetTip(auto, App.Loc["TipAutoCoupler"]);
         auto.Click += (_, _) =>
         {
-            _consist.AutoConnectAll();
+            _consist.AutoCouple();
             _redraw();
             Refresh();
         };
@@ -262,17 +262,16 @@ public sealed class VehicleDetails
     }
 
     /// <summary>
-    /// The vehicle's own settings. Every write path is unchanged: crew and wagon number
-    /// go through the unit's active car, the coolant flag to its first car only.
+    /// The vehicle's own settings: the crew is the unit's and sits where its cab is,
+    /// the wagon number goes through the unit's active car, the coolant flag to its
+    /// first car only.
     /// </summary>
     private Control BuildVehicleSection(ConsistItem item)
     {
         var driver = new ComboBox { FontSize = 12, MinWidth = 0 };
         foreach (string key in new[] { "DriverHead", "DriverRear", "DriverPassenger", "DriverNobody" })
             driver.Items.Add(new ComboBoxItem { Content = App.Loc[key] });
-        var crewCar = _consist.ActiveCar(item);
-
-        driver.SelectedIndex = crewCar.DriverType switch
+        driver.SelectedIndex = item.Driver switch
         {
             eDriverType.Headdriver => 0,
             eDriverType.Reardriver => 1,
@@ -288,14 +287,9 @@ public sealed class VehicleDetails
                 2 => eDriverType.Passenger,
                 _ => eDriverType.Nobody
             };
-            if (picked == crewCar.DriverType) return;
+            if (picked == item.Driver) return;
 
-            crewCar.DriverType = picked;
-            item.Driver = Consist.UnitDriver(item.Cars);
-            if (ReferenceEquals(_consist.Selected, item))
-                _consist.SyncStartingVehicle();
-            _redraw();
-            AppServices.Current.State.NotifyChanged();
+            _consist.SetCrew(item, picked);
         };
         driver.MinWidth = 0;
         driver.HorizontalAlignment = HorizontalAlignment.Stretch;
@@ -559,6 +553,8 @@ public sealed class VehicleDetails
         var tools = Stack(
             LoadToolButton(App.Loc["ConsistRandomType"],
                 () => { _cargo.RandomTypes(_consist); _redraw(); }, secondary: true),
+            LoadToolButton(App.Loc["ConsistMaxAmount"],
+                () => { _cargo.MaxAmounts(_consist); _redraw(); }, secondary: true),
             LoadToolButton(App.Loc["ConsistRandomAmount"],
                 () => { _cargo.RandomAmounts(_consist); _redraw(); }, secondary: true));
 
@@ -566,7 +562,7 @@ public sealed class VehicleDetails
 
         var count = new TextBlock
         {
-            Text = $"{App.Loc["VehicleCount"]}: {_consist.Count}",
+            Text = $"{App.Loc["VehicleCount"]}: {_consist.VehicleCount}",
             FontSize = 12,
             Foreground = DimBrush,
             VerticalAlignment = VerticalAlignment.Center
@@ -591,9 +587,7 @@ public sealed class VehicleDetails
                 ? over == ConsistReadyOverride.AlwaysReady
                 : trainset?.ReadyToGo ?? false
         };
-        ToolTip.SetTip(ready, overridden
-            ? App.Loc["ConsistReadyOverridden"]
-            : App.Loc["ConsistReadyDesc"]);
+        ToolTip.SetTip(ready, App.Loc["ConsistReadyDesc"]);
 
         ready.IsCheckedChanged += (_, _) =>
         {
@@ -603,7 +597,12 @@ public sealed class VehicleDetails
             _redraw();
         };
 
-        return Row(content: ready);
+        // A disabled box shows no tooltip, so why it is greyed out is said beside it.
+        if (!overridden)
+            return Row(content: ready);
+        var why = PanelNote(App.Loc["ConsistReadyOverridden"]);
+        why.Margin = new Thickness(0);
+        return Row(content: new StackPanel { Spacing = 2, Children = { ready, why } });
     }
 
     private Button LoadToolButton(string text, Action onClick, bool secondary = false)

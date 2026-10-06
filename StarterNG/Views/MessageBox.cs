@@ -13,7 +13,10 @@ public enum MessageBoxButtons
 
 public static class MessageBox
 {
-    public static async Task<bool> Show(Window owner, string message, string title, MessageBoxButtons buttons)
+    /// <param name="yesText">A label that says what the answer does, in place of "Yes".</param>
+    /// <param name="noText">Likewise in place of "No".</param>
+    public static async Task<bool> Show(Window owner, string message, string title, MessageBoxButtons buttons,
+                                        string? yesText = null, string? noText = null)
     {
         var win = new Window
         {
@@ -32,6 +35,11 @@ public static class MessageBox
         var noBtn = new Button { Content = App.Loc["No"], MinWidth = 80, Cursor = new Avalonia.Input.Cursor(Avalonia.Input.StandardCursorType.Hand) };
         noBtn.Classes.Add("Flat");
         noBtn.Click += (_, _) => win.Close();
+
+        if (yesText is not null)
+            yesBtn.Content = yesText;
+        if (noText is not null)
+            noBtn.Content = noText;
 
         if (buttons == MessageBoxButtons.Ok)
         {

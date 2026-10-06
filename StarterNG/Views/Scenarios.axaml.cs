@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
@@ -15,6 +16,7 @@ using Avalonia.Interactivity;
 using Avalonia.Layout;
 using Avalonia.Markup.Xaml;
 using Avalonia.Media.Imaging;
+using Avalonia.VisualTree;
 using StarterNG.Classes;
 using StarterNG.Domain;
 using StarterNG.Application;
@@ -39,6 +41,7 @@ public partial class Scenarios : UserControl
     public Scenarios()
     {
         InitializeComponent();
+        SyncConsistRowHeight();
 
         Sceneries = AppServices.Current.Library.Sceneries;
 
@@ -70,8 +73,9 @@ public partial class Scenarios : UserControl
         bool includeArchival = archivalSwitch.IsChecked != true;
         bool expandGroups = AppServices.Current.Settings.AutoExpandSceneryTree;
 
+        var favorites = AppServices.Current.Favorites;
         var nodes = new SceneryTreeBuilder(AppServices.Current.SceneryTexts)
-            .Build(Sceneries, includeArchival, App.Loc.CurrentLangCode);
+            .Build(Sceneries, includeArchival, App.Loc.CurrentLangCode, favorites.Contains, App.Loc["Favorites"]);
 
         foreach (var node in nodes)
             sceneryList.Items.Add(ToTreeItem(node, expandGroups));
@@ -90,6 +94,47 @@ public partial class Scenarios : UserControl
             item.Items.Add(ToTreeItem(child, expandGroups));
 
         return item;
+    }
+
+    private Scenery? SelectedScenery =>
+        sceneryList.SelectedItem is TreeViewItem { Tag: int index } && index < Sceneries.Count
+            ? Sceneries[index]
+            : null;
+
+    // A right click picks the scenery under it, so the menu speaks of that one. A
+    // group has nothing to star, and the menu is not opened on it at all - it would
+    // otherwise act on whatever scenery was selected before.
+    private void SceneryList_OnContextRequested(object? sender, ContextRequestedEventArgs e)
+    {
+        switch ((e.Source as Visual).FindAncestorOfType<TreeViewItem>(includeSelf: true))
+        {
+            case { Tag: int } item:
+                sceneryList.SelectedItem = item;
+                break;
+            case not null:
+                e.Handled = true;
+                break;
+        }
+    }
+
+    private void SceneryMenu_OnOpening(object? sender, CancelEventArgs e)
+    {
+        var scenery = SelectedScenery;
+        favoriteMenuItem.IsEnabled = scenery is not null;
+        favoriteMenuItem.Header = App.Loc[scenery is not null && AppServices.Current.Favorites.Contains(scenery)
+            ? "FavoriteRemove"
+            : "FavoriteAdd"];
+    }
+
+    private void ToggleFavorite_OnClick(object? sender, RoutedEventArgs e)
+    {
+        if (SelectedScenery is not { } scenery)
+            return;
+
+        AppServices.Current.Favorites.Toggle(scenery);
+        BuildSceneryTree();
+        AppServices.Current.Settings.LastScenery = Path.GetFileNameWithoutExtension(scenery.Path);
+        RestoreLastScenery();
     }
 
     private void RestoreLastScenery()
@@ -318,14 +363,14 @@ public partial class Scenarios : UserControl
             foreach (var v in ts.Vehicles)
             {
                 if (string.IsNullOrEmpty(v.SkinFile)) continue;
-                if (db.TextureForSkin(v.SkinFile) is null)
+                if (db.TextureFor(v.DataFolder, v.SkinFile, v.MmdFile) is null)
                     lines.Add($"# unknown texture: {v.Name} ({v.SkinFile})");
             }
         }
 
         foreach (var v in scenery.LooseVehicles)
         {
-            if (db.TextureForSkin(v.SkinFile) is null)
+            if (db.TextureFor(v.DataFolder, v.SkinFile, v.MmdFile) is null)
                 lines.Add($"# unknown loose texture: {v.Name} ({v.SkinFile})");
         }
 
@@ -418,8 +463,22 @@ public partial class Scenarios : UserControl
             RandomizeTexturesRequested?.Invoke(scenery);
     }
 
+    /// <summary>
+    /// The floor of the consist row, so the small thumbnails do not sit in the
+    /// height the large ones need.
+    /// </summary>
+    private const double SmallConsistRowHeight = 84;
+
+    private const double LargeConsistRowHeight = 120;
+
+    private void SyncConsistRowHeight() =>
+        scenariosGrid.RowDefinitions[1].MinHeight = AppServices.Current.Settings.LargeThumbnails
+            ? LargeConsistRowHeight
+            : SmallConsistRowHeight;
+
     public void RefreshConsistView()
     {
+        SyncConsistRowHeight();
         RefreshVehicleLabels();
         if (AppServices.Current.State.CurrentTrainset is { } trainset)
             ShowConsist(trainset);
@@ -709,7 +768,7 @@ public partial class Scenarios : UserControl
 
         try
         {
-            timetableContent.Text = File.ReadAllText(path, LegacyText.CodePage1250);
+            timetableContent.Text = LegacyText.Decode(File.ReadAllBytes(path));
             UpdateTimetableTab(true);
         }
         catch
@@ -801,7 +860,7 @@ public partial class Scenarios : UserControl
         foreach (var train in trainset.Vehicles)
         {
 
-            string miniName = db.MiniForSkin(train.SkinFile) ?? train.SkinFile;
+            string miniName = db.MiniFor(train.DataFolder, train.SkinFile, train.MmdFile) ?? train.SkinFile;
             if (!AppServices.Current.MiniTextures.Has(miniName) && AppServices.Current.MiniTextures.Has(train.SkinFile))
                 miniName = train.SkinFile;
             int thumbH = AppServices.Current.Settings.LargeThumbnails ? 64 : 32;
@@ -1102,10 +1161,10 @@ public partial class Scenarios : UserControl
         var db = AppServices.Current.Library.Vehicles;
         StarterNG.Infrastructure.StatsBar.Fill(trainStats, TrainsetDisplay.StatsFields(
             trainset,
-            car => AppServices.Current.Physics.For(car.DataFolder, db.TextureForSkin(car.SkinFile)?.Model)
+            car => AppServices.Current.Physics.For(car.DataFolder, db.TextureFor(car.DataFolder, car.SkinFile, car.MmdFile)?.Model)
                    ?? AppServices.Current.Physics.For(car.DataFolder, car.MmdFile)
                    ?? AppServices.Current.Physics.For(car.DataFolder, car.SkinFile),
-            car => db.TextureForSkin(car.SkinFile)?.ResolvedCategory));
+            car => db.TextureFor(car.DataFolder, car.SkinFile, car.MmdFile)?.ResolvedCategory));
     }
 
     private void RefreshSelectedConsist()

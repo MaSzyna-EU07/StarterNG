@@ -50,6 +50,7 @@ public partial class TextureBaseWindow : Window
         modelList.SelectionChanged += (_, _) => Refresh();
 
         textureList.ContextRequested += TextureList_OnContextRequested;
+        textureList.AddHandler(PointerReleasedEvent, TextureList_OnPointerReleased, handledEventsToo: true);
         Refresh();
     }
 
@@ -133,7 +134,16 @@ public partial class TextureBaseWindow : Window
     {
         if (textureList.SelectedItem is not TextureRow row) return;
         Picked = row.Texture;
-        Close();
+    }
+
+    // DoubleTapped is raised from the second press, while the list still holds the
+    // pointer. Closing there leaves the capture on a dead window and on Windows the
+    // owner stops taking clicks. The release ends the gesture and drops the capture,
+    // so that is where the window goes.
+    private void TextureList_OnPointerReleased(object? sender, PointerReleasedEventArgs e)
+    {
+        if (Picked != null)
+            Close();
     }
 
     private void TextureList_OnContextRequested(object? sender, ContextRequestedEventArgs e)
