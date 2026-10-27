@@ -50,7 +50,7 @@ public sealed class AppServices
         State = new AppState();
 
         Executables = new ExecutableLocator(files, paths, environment, log);
-        SettingsStore = new SettingsStore(files, clock, log, settingsPaths, new SettingsSerializer(), Executables);
+        SettingsStore = new SettingsStore(files, clock, log, settingsPaths, new SettingsSerializer(dlssPlatform: !environment.IsMacOS), Executables);
         MissingVehicleLog = new MissingVehicleLog(SettingsStore.Settings, MissingAssets, Library, log);
         Favorites = new FavoriteSceneries(files, log, settingsPaths.FavoritesPath());
         StartSimulation = new StartSimulation(State, SettingsStore, Library.Vehicles, Executables, files, paths,

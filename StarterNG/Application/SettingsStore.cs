@@ -75,6 +75,68 @@ public sealed class SettingsStore
         TouchConfigAge();
     }
 
+    /// <summary>Whether the simulator can have DLSS on this platform at all.</summary>
+    public bool DlssPlatform => _serializer.DlssPlatform;
+
+    /// <summary>
+    /// Takes the settings of another eu07.ini (a backup, a file from another machine)
+    /// into the current ones, keeping what belongs to this installation: the chosen
+    /// simulator, the last scenery and the window state. The lines of this user's
+    /// file the starter does not manage stay as they are. Nothing is written until Save.
+    /// </summary>
+    public bool ImportFrom(string path)
+    {
+        ConfigFile imported;
+        try
+        {
+            imported = ConfigFile.Parse(_files.ReadAllText(path, _encoding));
+        }
+        catch (Exception ex)
+        {
+            _log.Log($"importing {path}", ex);
+            return false;
+        }
+
+        var s = Settings;
+        bool selectAutomatically = s.SelectExeAutomatically;
+        string executable = s.ExecutablePath;
+        string lastScenery = s.LastScenery;
+        bool maximized = s.WindowMaximized;
+
+        _serializer.Read(s, imported);
+
+        s.SelectExeAutomatically = selectAutomatically;
+        s.ExecutablePath = executable;
+        s.LastScenery = lastScenery;
+        s.WindowMaximized = maximized;
+        return true;
+    }
+
+    /// <summary>
+    /// Writes the settings as a complete eu07.ini somewhere else - this user's file
+    /// with the settings applied - leaving the file itself and its state alone.
+    /// </summary>
+    public bool ExportTo(string path)
+    {
+        var copy = ConfigFile.Parse(_config.ToText());
+        _serializer.Write(Settings, copy);
+
+        try
+        {
+            string? directory = Path.GetDirectoryName(path);
+            if (!string.IsNullOrEmpty(directory))
+                _files.CreateDirectory(directory);
+
+            _files.WriteAllText(path, copy.ToText(), _encoding);
+            return true;
+        }
+        catch (Exception ex)
+        {
+            _log.Log($"exporting {path}", ex);
+            return false;
+        }
+    }
+
     public void CaptureAndSave()
     {
         _capture?.CaptureInto(Settings);

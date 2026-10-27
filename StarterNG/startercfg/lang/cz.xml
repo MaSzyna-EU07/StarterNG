@@ -364,20 +364,12 @@
 
     <String key="Graphic">Grafika</String>
     <String key="RenderEngine">Vykreslovací engine</String>
-    <String key="REFull">Plný</String>
-    <String key="REOld">Starý</String>
-    <String key="RESimpShader">Zjednodušený shader</String>
-    <String key="RESimp">Zjednodušený</String>
-    <String key="REOff">Vypnout vizuální vrstvu</String>
-    <String key="REExperimental">Experimentální</String>
-    <String key="REExperimentalWarning">Upozornění: experimentální renderer je ve vývoji. Může být nestabilní, nezobrazovat části scény nebo se na některých grafických kartách nespustit. Pokud se simulátor nespustí nebo vypadá špatně, vraťte se k rendereru „Plný“.</String>
 
     <String key="Resolution">Rozlišení</String>
     <String key="BufforResolution">Rozlišení bufferu</String>
     <String key="MaxTexResolution">Maximální rozlišení textur</String>
     <String key="MaxTexCabResolution">Maximální rozlišení textur kabiny</String>
     <String key="TexFilteringQuality">Kvalita filtrování textur</String>
-    <String key="Multisampling">Multisampling</String>
     <String key="QualityVeryLow">Velmi nízká</String>
     <String key="QualityLow">Nízká</String>
     <String key="QualityNormal">Normální</String>
@@ -401,7 +393,6 @@
     <String key="ShadowLimitNone">Bez omezení</String>
     <String key="ShadowLimitShort">Zkrácené</String>
     <String key="FullscreenWindowed">Automatické rozlišení (celá obrazovka bez okrajů)</String>
-    <String key="RenderAngleVulkan">Použít renderer ANGLE Vulkan</String>
     <String key="VSync">VSync</String>
     <String key="SmokeDisplay">Zobrazení kouře</String>
     <String key="SmokeParticlesMultiplier">Násobitel částic kouře</String>
@@ -411,12 +402,10 @@
     <String key="AdditionalShadersEffects">Další efekty shaderů</String>
     <String key="ReflectionsCubeMap">Odrazy jako cubemapa</String>
     <String key="SkipPipeline">SkipPipeline</String>
-    <String key="RenderVBO">Vykreslování VBO</String>
     <String key="RenderShadows">Vykreslovat stíny</String>
     <String key="ReflectionsFramerate">Frekvence obnovy odrazů</String>
     <String key="ShadowsResolution">Rozlišení stínů</String>
     <String key="ShaderRange">Dosah stínů</String>
-    <String key="CabShadowsRange">Dosah zdrojů stínů v kabině</String>
 
     <String key="ShadowDisplay">Zobrazovat stíny</String>
     <String key="CSROnlyImportant">Jen důležité</String>
@@ -458,7 +447,6 @@
     <String key="Advanced">Pokročilé</String>
     <String key="CompressTextures">Komprimovat textury TGA</String>
     <String key="ScaleSpeculars">Škálovat odlesky (kompatibilita starých modelů)</String>
-    <String key="UseGLES">Použít OpenGL ES</String>
     <String key="ShaderGamma">Gama korekce v shaderech</String>
     <String key="ScreenMipmaps">Generovat mipmapy pro textury displejů v kabině (Python)</String>
     <String key="ExtendedModelConversion">Rozšířený převod modelů E3D (experimentální)</String>
@@ -590,7 +578,6 @@
     <String key="RuleNew">— nové pravidlo —</String>
     <String key="RuleRemove">Odebrat z pravidla</String>
     <String key="CatAll">Vše</String>
-    <String key="GfxColResolution">Rozlišení a textury</String>
     <String key="GfxColRendering">Vykreslování</String>
     <String key="GfxColShadows">Stíny</String>
     <String key="GfxColReflections">Odrazy a pohled</String>

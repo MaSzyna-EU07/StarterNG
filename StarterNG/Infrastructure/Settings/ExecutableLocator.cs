@@ -246,6 +246,37 @@ public sealed class ExecutableLocator
         return extension.Length == 0 || extension is ".exe" or ".x86_64" or ".run" or ".appimage";
     }
 
+    /// <summary>
+    /// Whether the NVIDIA libraries of DLSS and of its frame generation sit next to
+    /// the simulator, where it loads them from; without them it runs with TAA.
+    /// The names follow the build: a Windows one wants the DLLs, a Linux one the .so files.
+    /// </summary>
+    public (bool Dlss, bool FrameGeneration) DlssLibraries(string executable)
+    {
+        try
+        {
+            // Resolve hands back either a path of its own search or the bare name of the pick.
+            string full = _files.FileExists(executable) ? executable : FullPath(executable);
+            string? directory = Path.GetDirectoryName(full);
+            if (string.IsNullOrEmpty(directory) || !_files.DirectoryExists(directory))
+                return (false, false);
+
+            bool windowsBuild = _files.FileExists(full)
+                ? Format(full) == BinaryFormat.PortableExecutable
+                : _environment.IsWindows;
+
+            return windowsBuild
+                ? (Has(directory, "nvngx_dlss.dll"), Has(directory, "nvngx_dlssg.dll"))
+                : (Has(directory, "libnvidia-ngx-dlss.so*"), Has(directory, "libnvidia-ngx-dlssg.so*"));
+        }
+        catch (Exception)
+        {
+            return (false, false);
+        }
+    }
+
+    private bool Has(string directory, string pattern) => _files.GetFiles(directory, pattern).Count > 0;
+
     private string FullPath(string path) =>
         Path.IsPathRooted(path) ? path : Path.Combine(_paths.Root, path);
 }

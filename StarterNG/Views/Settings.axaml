@@ -53,6 +53,16 @@
                                 HorizontalContentAlignment="Center"
                                 Content="{Binding [ProfileSaveAs], Source={x:Static starterNg:App.Loc}}"
                                 Click="ProfileSaveAsButton_OnClick" />
+                        <TextBlock Classes="FieldLabel" Margin="0,8,0,0"
+                                   Text="{Binding [SettingsFile], Source={x:Static starterNg:App.Loc}}" />
+                        <Button x:Name="ImportIniBtn" Classes="Flat" HorizontalAlignment="Stretch"
+                                HorizontalContentAlignment="Center"
+                                Content="{Binding [ImportIni], Source={x:Static starterNg:App.Loc}}"
+                                Click="ImportIniButton_OnClick" />
+                        <Button x:Name="ExportIniBtn" Classes="Flat" HorizontalAlignment="Stretch"
+                                HorizontalContentAlignment="Center"
+                                Content="{Binding [ExportIni], Source={x:Static starterNg:App.Loc}}"
+                                Click="ExportIniButton_OnClick" />
                     </StackPanel>
 
                     <ListBox x:Name="CategoryList" Classes="SettingsNav" SelectedIndex="0"
@@ -60,6 +70,7 @@
                              SelectionChanged="CategoryList_OnSelectionChanged">
                         <ListBoxItem Tag="general" Content="{Binding [General], Source={x:Static starterNg:App.Loc}}" />
                         <ListBoxItem Tag="graphics" Content="{Binding [Graphic], Source={x:Static starterNg:App.Loc}}" />
+                        <ListBoxItem Tag="effects" Content="{Binding [Effects], Source={x:Static starterNg:App.Loc}}" />
                         <ListBoxItem Tag="sound" Content="{Binding [Sounds], Source={x:Static starterNg:App.Loc}}" />
                         <ListBoxItem Tag="physics" Content="{Binding [Physics], Source={x:Static starterNg:App.Loc}}" />
                         <ListBoxItem Tag="devices" Content="{Binding [Communication], Source={x:Static starterNg:App.Loc}}" />
@@ -158,9 +169,34 @@
 
                         <!-- ============================ GRAPHICS =========================== -->
                         <StackPanel Tag="graphics" IsVisible="False">
-                            <TextBlock Classes="CategoryCaption" IsVisible="False"
-                                       Text="{Binding [Graphic], Source={x:Static starterNg:App.Loc}}" />
-                            <ctl:SettingsSection Header="{Binding [GfxColResolution], Source={x:Static starterNg:App.Loc}}">
+                            <TextBlock Classes="CategoryCaption" IsVisible="False" Text="{Binding [Graphic], Source={x:Static starterNg:App.Loc}}" />
+                            <ctl:SettingsSection Header="{Binding [GfxColQuality], Source={x:Static starterNg:App.Loc}}">
+                                <StackPanel>
+                                    <ctl:SettingRow Label="{Binding [QualityPreset], Source={x:Static starterNg:App.Loc}}" Description="{Binding [QualityPresetDesc], Source={x:Static starterNg:App.Loc}}">
+                                        <ComboBox x:Name="QualityPresetCb" SelectedIndex="0" SelectionChanged="QualityPresetCb_OnSelectionChanged">
+                                            <ComboBoxItem Content="{Binding [PresetLowest], Source={x:Static starterNg:App.Loc}}" />
+                                            <ComboBoxItem Content="{Binding [PresetLow], Source={x:Static starterNg:App.Loc}}" />
+                                            <ComboBoxItem Content="{Binding [PresetMedium], Source={x:Static starterNg:App.Loc}}" />
+                                            <ComboBoxItem Content="{Binding [PresetHigh], Source={x:Static starterNg:App.Loc}}" />
+                                            <ComboBoxItem Content="{Binding [PresetUltra], Source={x:Static starterNg:App.Loc}}" />
+                                            <ComboBoxItem Content="{Binding [PresetCustom], Source={x:Static starterNg:App.Loc}}" />
+                                        </ComboBox>
+                                    </ctl:SettingRow>
+                                    <ctl:SettingRow ConfigKey="gfxrenderer" Label="{Binding [RenderEngine], Source={x:Static starterNg:App.Loc}}" Description="{Binding [RenderEngineDesc], Source={x:Static starterNg:App.Loc}}">
+                                        <StackPanel Spacing="6">
+                                            <ComboBox x:Name="RenderEngineCb" SelectedIndex="0">
+                                                <ComboBoxItem Tag="full" Content="{Binding [REOpenGL], Source={x:Static starterNg:App.Loc}}" />
+                                                <ComboBoxItem Tag="vulkan" Content="{Binding [REVulkan], Source={x:Static starterNg:App.Loc}}" />
+                                            </ComboBox>
+                                            <TextBlock x:Name="RenderEngineNote" Classes="SettingNote" IsVisible="False" />
+                                        </StackPanel>
+                                    </ctl:SettingRow>
+                                    <ctl:SettingRow x:Name="VulkanDeviceRow" ConfigKey="gfx.vulkan.device" Label="{Binding [VulkanDevice], Source={x:Static starterNg:App.Loc}}" Description="{Binding [VulkanDeviceDesc], Source={x:Static starterNg:App.Loc}}">
+                                        <TextBox x:Name="VulkanDeviceTb" PlaceholderText="{Binding [VulkanDeviceAuto], Source={x:Static starterNg:App.Loc}}" />
+                                    </ctl:SettingRow>
+                                </StackPanel>
+                            </ctl:SettingsSection>
+                            <ctl:SettingsSection Header="{Binding [GfxColImage], Source={x:Static starterNg:App.Loc}}">
                                 <StackPanel>
                                     <ctl:SettingRow ConfigKey="width, height" Label="{Binding [Resolution], Source={x:Static starterNg:App.Loc}}">
                                         <ComboBox x:Name="ResolutionCb" SelectedIndex="0">
@@ -175,202 +211,99 @@
                                     <ctl:SettingRow ConfigKey="fullscreenwindowed">
                                         <CheckBox x:Name="FullscreenWindowedCb" Content="{Binding [FullscreenWindowed], Source={x:Static starterNg:App.Loc}}" />
                                     </ctl:SettingRow>
-                                    <ctl:SettingRow ConfigKey="starter.bufferscale" Label="{Binding [BufforResolution], Source={x:Static starterNg:App.Loc}}"
-                                                    Description="{Binding [BufforResolutionDesc], Source={x:Static starterNg:App.Loc}}"
-                                                    ValueText="{Binding #bufferScale.Value, StringFormat='{}{0:0}%'}">
-                                        <Slider Name="bufferScale" Minimum="50" Maximum="200" TickFrequency="1"
-                                                IsSnapToTickEnabled="True" Value="100" />
+                                    <ctl:SettingRow x:Name="BufferScaleRow" ConfigKey="gfx.buffer.percent" Label="{Binding [BufforResolution], Source={x:Static starterNg:App.Loc}}" Description="{Binding [BufforResolutionDesc], Source={x:Static starterNg:App.Loc}}" ValueText="{Binding #bufferScale.Value, StringFormat='{}{0:0}%'}">
+                                        <Slider Name="bufferScale" Minimum="25" Maximum="200" TickFrequency="1" IsSnapToTickEnabled="True" Value="100" />
                                     </ctl:SettingRow>
-                                    <ctl:SettingRow ConfigKey="maxtexturesize" x:Name="TexResolutionRow"
-                                                    Label="{Binding [MaxTexResolution], Source={x:Static starterNg:App.Loc}}">
-                                        <Slider Name="textureResolutionSlider" Minimum="9" Maximum="14" TickFrequency="1"
-                                                IsSnapToTickEnabled="True" Value="12"
-                                                ValueChanged="TextureResolutionSlider_OnValueChanged" />
+                                    <ctl:SettingRow ConfigKey="gfx.antialiasing" Label="{Binding [AntiAliasing], Source={x:Static starterNg:App.Loc}}" Description="{Binding [AntiAliasingDesc], Source={x:Static starterNg:App.Loc}}">
+                                        <StackPanel Spacing="6">
+                                            <ComboBox x:Name="AntiAliasingCb" SelectedIndex="0">
+                                                <ComboBoxItem Tag="off" Content="{Binding [MsaaNone], Source={x:Static starterNg:App.Loc}}" />
+                                                <ComboBoxItem Tag="msaax2" Content="MSAA x2" />
+                                                <ComboBoxItem Tag="msaax4" Content="MSAA x4" />
+                                                <ComboBoxItem Tag="msaax8" Content="MSAA x8" />
+                                                <ComboBoxItem Tag="taa" Content="{Binding [AaTaa], Source={x:Static starterNg:App.Loc}}" />
+                                                <ComboBoxItem Tag="dlss" Content="{Binding [AaDlss], Source={x:Static starterNg:App.Loc}}" />
+                                                <ComboBoxItem Tag="dlaa" Content="{Binding [AaDlaa], Source={x:Static starterNg:App.Loc}}" />
+                                            </ComboBox>
+                                            <TextBlock x:Name="AntiAliasingNote" Classes="SettingNote" IsVisible="False" />
+                                        </StackPanel>
                                     </ctl:SettingRow>
-                                    <ctl:SettingRow ConfigKey="maxcabtexturesize" x:Name="CabTexResolutionRow"
-                                                    Label="{Binding [MaxTexCabResolution], Source={x:Static starterNg:App.Loc}}">
-                                        <Slider Name="cabTextureResolutionSlider" Minimum="9" Maximum="14" TickFrequency="1"
-                                                IsSnapToTickEnabled="True" Value="12"
-                                                ValueChanged="CabTextureResolutionSlider_OnValueChanged" />
+                                    <ctl:SettingRow x:Name="DlssPresetRow" ConfigKey="gfx.dlss.preset" Label="{Binding [DlssPreset], Source={x:Static starterNg:App.Loc}}" Description="{Binding [DlssPresetDesc], Source={x:Static starterNg:App.Loc}}">
+                                        <ComboBox x:Name="DlssPresetCb" SelectedIndex="0">
+                                            <ComboBoxItem Tag="default" Content="{Binding [DlssPresetDefault], Source={x:Static starterNg:App.Loc}}" />
+                                            <ComboBoxItem Tag="j" Content="J" />
+                                            <ComboBoxItem Tag="k" Content="K" />
+                                            <ComboBoxItem Tag="l" Content="L" />
+                                            <ComboBoxItem Tag="m" Content="M" />
+                                        </ComboBox>
                                     </ctl:SettingRow>
-                                    <ctl:SettingRow ConfigKey="anisotropicfiltering" x:Name="TexFilteringRow"
-                                                    Label="{Binding [TexFilteringQuality], Source={x:Static starterNg:App.Loc}}"
-                                                    Description="{Binding [TexFilteringQualityDesc], Source={x:Static starterNg:App.Loc}}">
-                                        <Slider x:Name="TexFilteringSlider" Minimum="1" Maximum="5" TickFrequency="1"
-                                                IsSnapToTickEnabled="True" Value="4"
-                                                ValueChanged="QualitySlider_OnValueChanged" />
+                                    <ctl:SettingRow x:Name="FrameGenerationRow" ConfigKey="gfx.framegeneration" Label="{Binding [FrameGeneration], Source={x:Static starterNg:App.Loc}}" Description="{Binding [FrameGenerationDesc], Source={x:Static starterNg:App.Loc}}">
+                                        <StackPanel Spacing="6">
+                                            <ComboBox x:Name="FrameGenerationCb" SelectedIndex="0">
+                                                <ComboBoxItem Tag="1" Content="{Binding [LevelOff], Source={x:Static starterNg:App.Loc}}" />
+                                                <ComboBoxItem Tag="2" Content="x2" />
+                                                <ComboBoxItem Tag="3" Content="x3" />
+                                                <ComboBoxItem Tag="4" Content="x4" />
+                                            </ComboBox>
+                                            <TextBlock x:Name="FrameGenerationNote" Classes="SettingNote" IsVisible="False" />
+                                        </StackPanel>
                                     </ctl:SettingRow>
-                                    <ctl:SettingRow ConfigKey="multisampling" x:Name="MultisamplingRow"
-                                                    Label="{Binding [Multisampling], Source={x:Static starterNg:App.Loc}}"
-                                                    Description="{Binding [MultisamplingDesc], Source={x:Static starterNg:App.Loc}}">
-                                        <Slider x:Name="MultisamplingSlider" Minimum="1" Maximum="4" TickFrequency="1"
-                                                IsSnapToTickEnabled="True" Value="3"
-                                                ValueChanged="QualitySlider_OnValueChanged" />
-                                    </ctl:SettingRow>
-                                    <ctl:SettingRow ConfigKey="splinefidelity" x:Name="TrackCurvesRow"
-                                                    Label="{Binding [TrackCurvesQuality], Source={x:Static starterNg:App.Loc}}"
-                                                    Description="{Binding [TrackCurvesQualityDesc], Source={x:Static starterNg:App.Loc}}">
-                                        <Slider x:Name="TrackCurvesSlider" Minimum="1" Maximum="4" TickFrequency="1"
-                                                IsSnapToTickEnabled="True" Value="4"
-                                                ValueChanged="QualitySlider_OnValueChanged" />
-                                    </ctl:SettingRow>
-                                    <ctl:SettingRow ConfigKey="gfx.drawrange.factor.max" x:Name="RenderRangeRow"
-                                                    Label="{Binding [RenderRange], Source={x:Static starterNg:App.Loc}}"
-                                                    Description="{Binding [RenderRangeDesc], Source={x:Static starterNg:App.Loc}}">
-                                        <Slider x:Name="RenderRangeSlider" Minimum="1" Maximum="3" TickFrequency="1"
-                                                IsSnapToTickEnabled="True" Value="1"
-                                                ValueChanged="QualitySlider_OnValueChanged" />
+                                    <ctl:SettingRow x:Name="ReflexRow" ConfigKey="gfx.reflex" Label="{Binding [Reflex], Source={x:Static starterNg:App.Loc}}" Description="{Binding [ReflexDesc], Source={x:Static starterNg:App.Loc}}">
+                                        <StackPanel Spacing="6">
+                                            <ComboBox x:Name="ReflexCb" SelectedIndex="0">
+                                                <ComboBoxItem Tag="0" Content="{Binding [LevelOff], Source={x:Static starterNg:App.Loc}}" />
+                                                <ComboBoxItem Tag="1" Content="{Binding [ReflexOn], Source={x:Static starterNg:App.Loc}}" />
+                                                <ComboBoxItem Tag="2" Content="{Binding [ReflexBoost], Source={x:Static starterNg:App.Loc}}" />
+                                            </ComboBox>
+                                            <TextBlock x:Name="ReflexNote" Classes="SettingNote" IsVisible="False" />
+                                        </StackPanel>
                                     </ctl:SettingRow>
                                 </StackPanel>
                             </ctl:SettingsSection>
-
+                            <ctl:SettingsSection Header="{Binding [GfxColTextures], Source={x:Static starterNg:App.Loc}}">
+                                <StackPanel>
+                                    <ctl:SettingRow x:Name="TexResolutionRow" ConfigKey="maxtexturesize" Label="{Binding [MaxTexResolution], Source={x:Static starterNg:App.Loc}}">
+                                        <Slider Name="textureResolutionSlider" Minimum="9" Maximum="13" TickFrequency="1" IsSnapToTickEnabled="True" Value="12" ValueChanged="TextureResolutionSlider_OnValueChanged" />
+                                    </ctl:SettingRow>
+                                    <ctl:SettingRow x:Name="CabTexResolutionRow" ConfigKey="maxcabtexturesize" Label="{Binding [MaxTexCabResolution], Source={x:Static starterNg:App.Loc}}">
+                                        <Slider Name="cabTextureResolutionSlider" Minimum="9" Maximum="13" TickFrequency="1" IsSnapToTickEnabled="True" Value="12" ValueChanged="CabTextureResolutionSlider_OnValueChanged" />
+                                    </ctl:SettingRow>
+                                    <ctl:SettingRow x:Name="TexFilteringRow" ConfigKey="anisotropicfiltering" Label="{Binding [TexFilteringQuality], Source={x:Static starterNg:App.Loc}}" Description="{Binding [TexFilteringQualityDesc], Source={x:Static starterNg:App.Loc}}">
+                                        <Slider x:Name="TexFilteringSlider" Minimum="1" Maximum="5" TickFrequency="1" IsSnapToTickEnabled="True" Value="4" ValueChanged="QualitySlider_OnValueChanged" />
+                                    </ctl:SettingRow>
+                                    <ctl:SettingRow x:Name="TrackCurvesRow" ConfigKey="splinefidelity" Label="{Binding [TrackCurvesQuality], Source={x:Static starterNg:App.Loc}}" Description="{Binding [TrackCurvesQualityDesc], Source={x:Static starterNg:App.Loc}}">
+                                        <Slider x:Name="TrackCurvesSlider" Minimum="1" Maximum="4" TickFrequency="1" IsSnapToTickEnabled="True" Value="4" ValueChanged="QualitySlider_OnValueChanged" />
+                                    </ctl:SettingRow>
+                                    <ctl:SettingRow x:Name="RenderRangeRow" ConfigKey="gfx.drawrange.factor.max" Label="{Binding [RenderRange], Source={x:Static starterNg:App.Loc}}" Description="{Binding [RenderRangeDesc], Source={x:Static starterNg:App.Loc}}">
+                                        <Slider x:Name="RenderRangeSlider" Minimum="1" Maximum="3" TickFrequency="1" IsSnapToTickEnabled="True" Value="1" ValueChanged="QualitySlider_OnValueChanged" />
+                                    </ctl:SettingRow>
+                                </StackPanel>
+                            </ctl:SettingsSection>
                             <ctl:SettingsSection Header="{Binding [GfxColRendering], Source={x:Static starterNg:App.Loc}}">
                                 <StackPanel>
-                                    <ctl:SettingRow ConfigKey="gfxrenderer" Label="{Binding [RenderEngine], Source={x:Static starterNg:App.Loc}}"
-                                                    Description="{Binding [RenderEngineDesc], Source={x:Static starterNg:App.Loc}}">
-                                        <StackPanel Spacing="6">
-                                            <ComboBox x:Name="RenderEngineCb" SelectedIndex="0"
-                                                      SelectionChanged="RenderEngineCb_OnSelectionChanged">
-                                                <ComboBoxItem Content="{Binding [REFull], Source={x:Static starterNg:App.Loc}}" />
-                                                <ComboBoxItem Content="{Binding [REOld], Source={x:Static starterNg:App.Loc}}" />
-                                                <ComboBoxItem Content="{Binding [RESimpShader], Source={x:Static starterNg:App.Loc}}" />
-                                                <ComboBoxItem Content="{Binding [RESimp], Source={x:Static starterNg:App.Loc}}" />
-                                                <ComboBoxItem Content="{Binding [REOff], Source={x:Static starterNg:App.Loc}}" />
-                                                <ComboBoxItem Content="{Binding [REExperimental], Source={x:Static starterNg:App.Loc}}" />
-                                            </ComboBox>
-                                            <TextBlock x:Name="RenderEngineWarning" IsVisible="False" TextWrapping="Wrap"
-                                                       Foreground="{StaticResource CarbonAccentBright}"
-                                                       Text="{Binding [REExperimentalWarning], Source={x:Static starterNg:App.Loc}}" />
-                                        </StackPanel>
+                                    <ctl:SettingRow ConfigKey="vsync" Description="{Binding [VSyncDesc], Source={x:Static starterNg:App.Loc}}">
+                                        <CheckBox x:Name="VSyncCb" Content="{Binding [VSync], Source={x:Static starterNg:App.Loc}}" />
                                     </ctl:SettingRow>
-                                    <ctl:SettingRow ConfigKey="gfx.angleplatform" Description="{Binding [RenderAngleVulkanDesc], Source={x:Static starterNg:App.Loc}}">
-                                        <CheckBox x:Name="RenderAngleVulkanCb" Content="{Binding [RenderAngleVulkan], Source={x:Static starterNg:App.Loc}}" />
+                                    <ctl:SettingRow ConfigKey="fpslimit" ValueText="{Binding #FpsLimitSlider.Value, StringFormat='{}{0:0} FPS'}" Margin="0,0,0,4">
+                                        <CheckBox x:Name="FpsLimitEnableCb" Content="{Binding [FpsLimitEnable], Source={x:Static starterNg:App.Loc}}" />
+                                    </ctl:SettingRow>
+                                    <ctl:SettingRow ConfigKey="fpslimit">
+                                        <Slider x:Name="FpsLimitSlider" Minimum="1" Maximum="100" TickFrequency="1" IsSnapToTickEnabled="True" Value="30" IsEnabled="{Binding #FpsLimitEnableCb.IsChecked}" />
+                                    </ctl:SettingRow>
+                                    <ctl:SettingRow ConfigKey="fieldofview" Label="{Binding [FieldOfView], Source={x:Static starterNg:App.Loc}}" Description="{Binding [FieldOfViewDesc], Source={x:Static starterNg:App.Loc}}" ValueText="{Binding #fovSlider.Value, StringFormat='{}{0:0}°'}">
+                                        <Slider Name="fovSlider" Minimum="15" Maximum="75" TickFrequency="5" IsSnapToTickEnabled="True" Value="45" />
                                     </ctl:SettingRow>
                                     <ctl:SettingRow ConfigKey="gfx.extraeffects">
                                         <CheckBox x:Name="AdditionalShadersCb" Content="{Binding [AdditionalShadersEffects], Source={x:Static starterNg:App.Loc}}" />
                                     </ctl:SettingRow>
-                                    <ctl:SettingRow ConfigKey="gfx.postfx.chromaticaberration.enabled">
-                                        <CheckBox x:Name="ChromaticAberrationCb" Content="{Binding [ChromaticAberration], Source={x:Static starterNg:App.Loc}}" />
-                                    </ctl:SettingRow>
-                                    <ctl:SettingRow ConfigKey="gfx.postfx.motionblur.enabled">
-                                        <CheckBox x:Name="MotionBlurCb" Content="{Binding [MotionBlur], Source={x:Static starterNg:App.Loc}}" />
-                                    </ctl:SettingRow>
                                     <ctl:SettingRow ConfigKey="gfx.skippipeline" Description="{Binding [SkipPipelineDesc], Source={x:Static starterNg:App.Loc}}">
-                                        <CheckBox x:Name="SkipPipelineCb" Content="{Binding [SkipPipeline], Source={x:Static starterNg:App.Loc}}" />
-                                    </ctl:SettingRow>
-                                    <ctl:SettingRow ConfigKey="usevbo" Description="{Binding [RenderVBODesc], Source={x:Static starterNg:App.Loc}}">
-                                        <CheckBox x:Name="RenderVBOCb" Content="{Binding [RenderVBO], Source={x:Static starterNg:App.Loc}}" />
-                                    </ctl:SettingRow>
-                                    <ctl:SettingRow ConfigKey="vsync" Description="{Binding [VSyncDesc], Source={x:Static starterNg:App.Loc}}">
-                                        <CheckBox x:Name="VSyncCb" Content="{Binding [VSync], Source={x:Static starterNg:App.Loc}}" />
-                                    </ctl:SettingRow>
-
-                                    <ctl:SettingRow ConfigKey="fpslimit" Margin="0,0,0,4"
-                                                    ValueText="{Binding #FpsLimitSlider.Value, StringFormat='{}{0:0} FPS'}">
-                                        <CheckBox x:Name="FpsLimitEnableCb" Content="{Binding [FpsLimitEnable], Source={x:Static starterNg:App.Loc}}" />
-                                    </ctl:SettingRow>
-                                    <ctl:SettingRow ConfigKey="fpslimit">
-                                        <Slider x:Name="FpsLimitSlider" Minimum="1" Maximum="100" TickFrequency="1"
-                                                IsSnapToTickEnabled="True" Value="30"
-                                                IsEnabled="{Binding #FpsLimitEnableCb.IsChecked}" />
-                                    </ctl:SettingRow>
-
-                                    <ctl:SettingRow ConfigKey="gfx.smoke" Margin="0,0,0,4">
-                                        <CheckBox x:Name="SmokeDisplayCb" Content="{Binding [SmokeDisplay], Source={x:Static starterNg:App.Loc}}" />
-                                    </ctl:SettingRow>
-                                    <ctl:SettingRow ConfigKey="gfx.smoke.fidelity" x:Name="SmokeParticlesRow"
-                                                    Label="{Binding [SmokeParticlesMultiplier], Source={x:Static starterNg:App.Loc}}"
-                                                    IsEnabled="{Binding #SmokeDisplayCb.IsChecked}">
-                                        <Slider x:Name="SmokeParticlesSlider" Minimum="1" Maximum="4" TickFrequency="1"
-                                                IsSnapToTickEnabled="True" Value="2"
-                                                ValueChanged="QualitySlider_OnValueChanged" />
-                                    </ctl:SettingRow>
-
-                                    <ctl:SettingRow Description="{Binding [DynamicLightsDesc], Source={x:Static starterNg:App.Loc}}" ConfigKey="dynamiclights" Label="{Binding [DynamicLights], Source={x:Static starterNg:App.Loc}}"
-                                                    ValueText="{Binding #DynamicLightsSlider.Value, StringFormat='{}{0:0}'}">
-                                        <Slider x:Name="DynamicLightsSlider" Minimum="0" Maximum="7" TickFrequency="1"
-                                                IsSnapToTickEnabled="True" Value="7" />
-                                    </ctl:SettingRow>
-                                    <ctl:SettingRow ConfigKey="fieldofview" Label="{Binding [FieldOfView], Source={x:Static starterNg:App.Loc}}"
-                                                    Description="{Binding [FieldOfViewDesc], Source={x:Static starterNg:App.Loc}}"
-                                                    ValueText="{Binding #fovSlider.Value, StringFormat='{}{0:0}°'}">
-                                        <Slider Name="fovSlider" Minimum="15" Maximum="75" TickFrequency="5"
-                                                IsSnapToTickEnabled="True" Value="45" />
-                                    </ctl:SettingRow>
-                                </StackPanel>
-                            </ctl:SettingsSection>
-
-                            <ctl:SettingsSection Header="{Binding [GfxColShadows], Source={x:Static starterNg:App.Loc}}">
-                                <ctl:SettingsSection.Toggle>
-                                    <CheckBox x:Name="RenderShadowsCb" FontSize="12" MinHeight="0"
-                                              Content="{Binding [RenderShadows], Source={x:Static starterNg:App.Loc}}" />
-                                </ctl:SettingsSection.Toggle>
-                                <StackPanel IsEnabled="{Binding #RenderShadowsCb.IsChecked}">
-                                    <ctl:SettingRow Description="{Binding [ShadowDisplayDesc], Source={x:Static starterNg:App.Loc}}" ConfigKey="gfx.shadow.rank.cutoff" Label="{Binding [ShadowDisplay], Source={x:Static starterNg:App.Loc}}">
-                                        <ComboBox x:Name="ShadowDisplayCb" SelectedIndex="0">
-                                            <ComboBoxItem Content="{Binding [CSROnlyImportant], Source={x:Static starterNg:App.Loc}}" />
-                                            <ComboBoxItem Content="{Binding [CSRLimited], Source={x:Static starterNg:App.Loc}}" />
-                                            <ComboBoxItem Content="{Binding [CSRAll], Source={x:Static starterNg:App.Loc}}" />
-                                        </ComboBox>
-                                    </ctl:SettingRow>
-                                    <ctl:SettingRow ConfigKey="shadowtune" x:Name="ShadowResolutionRow"
-                                                    Label="{Binding [ShadowsResolution], Source={x:Static starterNg:App.Loc}}">
-                                        <Slider Name="shaderResolutionSlider" Minimum="9" Maximum="14" TickFrequency="1"
-                                                IsSnapToTickEnabled="True" Value="12"
-                                                ValueChanged="shaderResolutionSlider_OnValueChanged" />
-                                    </ctl:SettingRow>
-                                    <ctl:SettingRow ConfigKey="shadowtune" x:Name="ShadowRangeRow"
-                                                    Label="{Binding [ShaderRange], Source={x:Static starterNg:App.Loc}}">
-                                        <Slider Name="shaderRange" Minimum="25" Maximum="400" TickFrequency="5"
-                                                IsSnapToTickEnabled="True" Value="150"
-                                                ValueChanged="QualitySlider_OnValueChanged" />
-                                    </ctl:SettingRow>
-                                    <ctl:SettingRow ConfigKey="gfx.shadows.cab.range" x:Name="CabShadowRangeRow"
-                                                    Label="{Binding [CabShadowsRange], Source={x:Static starterNg:App.Loc}}"
-                                                    Description="{Binding [CabShadowsRangeDesc], Source={x:Static starterNg:App.Loc}}">
-                                        <Slider Name="cabShaderSourceRange" Minimum="0" Maximum="100" TickFrequency="10"
-                                                IsSnapToTickEnabled="True" Value="30"
-                                                ValueChanged="QualitySlider_OnValueChanged" />
-                                    </ctl:SettingRow>
-                                    <ctl:SettingRow ConfigKey="gfx.shadow.angle.min" Label="{Binding [ShadowAngleLimit], Source={x:Static starterNg:App.Loc}}"
-                                                    Description="{Binding [ShadowAngleLimitDesc], Source={x:Static starterNg:App.Loc}}"
-                                                    ValueText="{Binding #ShadowAngleLimitSlider.Value, StringFormat='{}{0:0.0}'}">
-                                        <StackPanel>
-                                            <Slider x:Name="ShadowAngleLimitSlider" Minimum="0.2" Maximum="1.0"
-                                                    TickFrequency="0.1" Value="0.2" HorizontalAlignment="Stretch" />
-                                            <DockPanel>
-                                                <TextBlock DockPanel.Dock="Right" Classes="FieldHint"
-                                                           Text="{Binding [ShadowLimitShort], Source={x:Static starterNg:App.Loc}}" />
-                                                <TextBlock Classes="FieldHint"
-                                                           Text="{Binding [ShadowLimitNone], Source={x:Static starterNg:App.Loc}}" />
-                                            </DockPanel>
+                                        <StackPanel Spacing="6">
+                                            <CheckBox x:Name="SkipPipelineCb" Content="{Binding [SkipPipeline], Source={x:Static starterNg:App.Loc}}" />
+                                            <TextBlock x:Name="SkipPipelineNote" Classes="SettingNote" IsVisible="False" />
                                         </StackPanel>
                                     </ctl:SettingRow>
                                 </StackPanel>
                             </ctl:SettingsSection>
-
-                            <ctl:SettingsSection Header="{Binding [GfxColReflections], Source={x:Static starterNg:App.Loc}}">
-                                <StackPanel>
-                                    <ctl:SettingRow ConfigKey="gfx.envmap.enabled" Description="{Binding [ReflectionsCubeMapDesc], Source={x:Static starterNg:App.Loc}}">
-                                        <CheckBox x:Name="ReflectionsCubeMapCb" Content="{Binding [ReflectionsCubeMap], Source={x:Static starterNg:App.Loc}}" />
-                                    </ctl:SettingRow>
-                                    <ctl:SettingRow ConfigKey="gfx.reflections.fidelity" Label="{Binding [ReflectionsDetails], Source={x:Static starterNg:App.Loc}}"
-                                                    Description="{Binding [ReflectionsDetailsDesc], Source={x:Static starterNg:App.Loc}}">
-                                        <ComboBox x:Name="ReflectionsDetailsCb" SelectedIndex="0">
-                                            <ComboBoxItem Content="{Binding [RDTerrain], Source={x:Static starterNg:App.Loc}}" />
-                                            <ComboBoxItem Content="{Binding [RDTerrainModels], Source={x:Static starterNg:App.Loc}}" />
-                                            <ComboBoxItem Content="{Binding [RDTerrainModelsVehicles], Source={x:Static starterNg:App.Loc}}" />
-                                        </ComboBox>
-                                    </ctl:SettingRow>
-                                    <ctl:SettingRow ConfigKey="gfx.reflections.framerate" x:Name="ReflectionsFramerateRow"
-                                                    Label="{Binding [ReflectionsFramerate], Source={x:Static starterNg:App.Loc}}">
-                                        <Slider Name="reflectionsFramerate" Minimum="5" Maximum="120" TickFrequency="5"
-                                                IsSnapToTickEnabled="True" Value="30"
-                                                ValueChanged="QualitySlider_OnValueChanged" />
-                                    </ctl:SettingRow>
-                                </StackPanel>
-                            </ctl:SettingsSection>
-
                             <ctl:SettingsSection Header="{Binding [GfxColScripts], Source={x:Static starterNg:App.Loc}}">
                                 <StackPanel>
                                     <ctl:SettingRow ConfigKey="python.enabled" Description="{Binding [RenderScreensDesc], Source={x:Static starterNg:App.Loc}}">
@@ -379,13 +312,195 @@
                                     <ctl:SettingRow ConfigKey="python.threadedupload">
                                         <CheckBox x:Name="RenderScreensThreadCb" Content="{Binding [RenderScreensThread], Source={x:Static starterNg:App.Loc}}" />
                                     </ctl:SettingRow>
-                                    <ctl:SettingRow ConfigKey="python.updatetime" Label="{Binding [PyScreenPriority], Source={x:Static starterNg:App.Loc}}"
-                                                    Description="{Binding [PyScreenPriorityDesc], Source={x:Static starterNg:App.Loc}}">
+                                    <ctl:SettingRow ConfigKey="python.updatetime" Label="{Binding [PyScreenPriority], Source={x:Static starterNg:App.Loc}}" Description="{Binding [PyScreenPriorityDesc], Source={x:Static starterNg:App.Loc}}">
                                         <ComboBox x:Name="PyScreenPriorityCb">
                                             <ComboBoxItem Tag="200" Content="{Binding [PyPriorityNormal], Source={x:Static starterNg:App.Loc}}" />
                                             <ComboBoxItem Tag="400" Content="{Binding [PyPriorityLower], Source={x:Static starterNg:App.Loc}}" />
                                             <ComboBoxItem Tag="800" Content="{Binding [PyPriorityLowest], Source={x:Static starterNg:App.Loc}}" />
                                             <ComboBoxItem Tag="1600" Content="{Binding [PyPriorityIdle], Source={x:Static starterNg:App.Loc}}" />
+                                        </ComboBox>
+                                    </ctl:SettingRow>
+                                </StackPanel>
+                            </ctl:SettingsSection>
+                        </StackPanel>
+
+                        <!-- ============================ EFFECTS ============================ -->
+                        <StackPanel Tag="effects" IsVisible="False">
+                            <TextBlock Classes="CategoryCaption" IsVisible="False" Text="{Binding [Effects], Source={x:Static starterNg:App.Loc}}" />
+                            <ctl:SettingsSection Header="{Binding [GfxColShadows], Source={x:Static starterNg:App.Loc}}">
+                                <ctl:SettingsSection.Toggle>
+                                    <CheckBox x:Name="RenderShadowsCb" FontSize="12" MinHeight="0" Content="{Binding [RenderShadows], Source={x:Static starterNg:App.Loc}}" />
+                                </ctl:SettingsSection.Toggle>
+                                <StackPanel IsEnabled="{Binding #RenderShadowsCb.IsChecked}">
+                                    <ctl:SettingRow ConfigKey="gfx.shadow.rank.cutoff" Label="{Binding [ShadowDisplay], Source={x:Static starterNg:App.Loc}}" Description="{Binding [ShadowDisplayDesc], Source={x:Static starterNg:App.Loc}}">
+                                        <ComboBox x:Name="ShadowDisplayCb" SelectedIndex="0">
+                                            <ComboBoxItem Content="{Binding [CSROnlyImportant], Source={x:Static starterNg:App.Loc}}" />
+                                            <ComboBoxItem Content="{Binding [CSRLimited], Source={x:Static starterNg:App.Loc}}" />
+                                            <ComboBoxItem Content="{Binding [CSRAll], Source={x:Static starterNg:App.Loc}}" />
+                                        </ComboBox>
+                                    </ctl:SettingRow>
+                                    <ctl:SettingRow x:Name="ShadowResolutionRow" ConfigKey="shadowtune" Label="{Binding [ShadowsResolution], Source={x:Static starterNg:App.Loc}}">
+                                        <Slider Name="shaderResolutionSlider" Minimum="9" Maximum="13" TickFrequency="1" IsSnapToTickEnabled="True" Value="11" ValueChanged="shaderResolutionSlider_OnValueChanged" />
+                                    </ctl:SettingRow>
+                                    <ctl:SettingRow x:Name="ShadowRangeRow" ConfigKey="shadowtune" Label="{Binding [ShaderRange], Source={x:Static starterNg:App.Loc}}">
+                                        <Slider Name="shaderRange" Minimum="75" Maximum="400" TickFrequency="5" IsSnapToTickEnabled="True" Value="250" ValueChanged="QualitySlider_OnValueChanged" />
+                                    </ctl:SettingRow>
+                                    <ctl:SettingRow ConfigKey="gfx.shadow.sdsm" Description="{Binding [ShadowSdsmDesc], Source={x:Static starterNg:App.Loc}}">
+                                        <CheckBox x:Name="ShadowSdsmCb" Content="{Binding [ShadowSdsm], Source={x:Static starterNg:App.Loc}}" />
+                                    </ctl:SettingRow>
+                                    <ctl:SettingRow ConfigKey="gfx.shadow.angle.min" Label="{Binding [ShadowAngleLimit], Source={x:Static starterNg:App.Loc}}" Description="{Binding [ShadowAngleLimitDesc], Source={x:Static starterNg:App.Loc}}" ValueText="{Binding #ShadowAngleLimitSlider.Value, StringFormat='{}{0:0.0}'}">
+                                        <StackPanel>
+                                            <Slider x:Name="ShadowAngleLimitSlider" Minimum="0.2" Maximum="1.0" TickFrequency="0.1" Value="0.2" HorizontalAlignment="Stretch" />
+                                            <DockPanel>
+                                                <TextBlock DockPanel.Dock="Right" Classes="FieldHint" Text="{Binding [ShadowLimitShort], Source={x:Static starterNg:App.Loc}}" />
+                                                <TextBlock Classes="FieldHint" Text="{Binding [ShadowLimitNone], Source={x:Static starterNg:App.Loc}}" />
+                                            </DockPanel>
+                                        </StackPanel>
+                                    </ctl:SettingRow>
+                                </StackPanel>
+                            </ctl:SettingsSection>
+                            <ctl:SettingsSection Header="{Binding [GfxColLights], Source={x:Static starterNg:App.Loc}}">
+                                <StackPanel>
+                                    <ctl:SettingRow ConfigKey="gfx.lights.clustered" Description="{Binding [LightsClusteredDesc], Source={x:Static starterNg:App.Loc}}">
+                                        <CheckBox x:Name="LightsClusteredCb" Content="{Binding [LightsClustered], Source={x:Static starterNg:App.Loc}}" />
+                                    </ctl:SettingRow>
+                                    <ctl:SettingRow x:Name="DynamicLightsRow" ConfigKey="dynamiclights" Label="{Binding [DynamicLights], Source={x:Static starterNg:App.Loc}}" Description="{Binding [DynamicLightsDesc], Source={x:Static starterNg:App.Loc}}" ValueText="{Binding #DynamicLightsSlider.Value, StringFormat='{}{0:0}'}">
+                                        <Slider x:Name="DynamicLightsSlider" Minimum="0" Maximum="7" TickFrequency="1" IsSnapToTickEnabled="True" Value="7" />
+                                    </ctl:SettingRow>
+                                    <ctl:SettingRow ConfigKey="gfx.lights.shadows" Label="{Binding [LightShadows], Source={x:Static starterNg:App.Loc}}" Description="{Binding [LightShadowsDesc], Source={x:Static starterNg:App.Loc}}">
+                                        <ComboBox x:Name="LightShadowsCb" SelectedIndex="0">
+                                            <ComboBoxItem Tag="0" Content="{Binding [LevelOff], Source={x:Static starterNg:App.Loc}}" />
+                                            <ComboBoxItem Tag="1" Content="{Binding [LevelLow], Source={x:Static starterNg:App.Loc}}" />
+                                            <ComboBoxItem Tag="2" Content="{Binding [LevelMedium], Source={x:Static starterNg:App.Loc}}" />
+                                            <ComboBoxItem Tag="3" Content="{Binding [LevelHigh], Source={x:Static starterNg:App.Loc}}" />
+                                        </ComboBox>
+                                    </ctl:SettingRow>
+                                    <ctl:SettingRow ConfigKey="gfx.contactshadows" Label="{Binding [ContactShadows], Source={x:Static starterNg:App.Loc}}" Description="{Binding [ContactShadowsDesc], Source={x:Static starterNg:App.Loc}}">
+                                        <ComboBox x:Name="ContactShadowsCb" SelectedIndex="0">
+                                            <ComboBoxItem Tag="0" Content="{Binding [LevelOff], Source={x:Static starterNg:App.Loc}}" />
+                                            <ComboBoxItem Tag="1" Content="{Binding [LevelLow], Source={x:Static starterNg:App.Loc}}" />
+                                            <ComboBoxItem Tag="2" Content="{Binding [LevelMedium], Source={x:Static starterNg:App.Loc}}" />
+                                            <ComboBoxItem Tag="3" Content="{Binding [LevelHigh], Source={x:Static starterNg:App.Loc}}" />
+                                        </ComboBox>
+                                    </ctl:SettingRow>
+                                    <ctl:SettingRow ConfigKey="gfx.postfx.ao" Label="{Binding [AmbientOcclusion], Source={x:Static starterNg:App.Loc}}" Description="{Binding [AmbientOcclusionDesc], Source={x:Static starterNg:App.Loc}}">
+                                        <ComboBox x:Name="AmbientOcclusionCb" SelectedIndex="0">
+                                            <ComboBoxItem Tag="0" Content="{Binding [LevelOff], Source={x:Static starterNg:App.Loc}}" />
+                                            <ComboBoxItem Tag="1" Content="SSAO" />
+                                            <ComboBoxItem Tag="2" Content="GTAO" />
+                                        </ComboBox>
+                                    </ctl:SettingRow>
+                                    <ctl:SettingRow x:Name="AoQualityRow" ConfigKey="gfx.postfx.ao.quality" Label="{Binding [AmbientOcclusionQuality], Source={x:Static starterNg:App.Loc}}">
+                                        <ComboBox x:Name="AoQualityCb" SelectedIndex="0">
+                                            <ComboBoxItem Tag="2 3" Content="{Binding [QualityLow], Source={x:Static starterNg:App.Loc}}" />
+                                            <ComboBoxItem Tag="3 4" Content="{Binding [QualityNormal], Source={x:Static starterNg:App.Loc}}" />
+                                            <ComboBoxItem Tag="4 6" Content="{Binding [QualityHigh], Source={x:Static starterNg:App.Loc}}" />
+                                            <ComboBoxItem Tag="6 8" Content="{Binding [QualityVeryHigh], Source={x:Static starterNg:App.Loc}}" />
+                                        </ComboBox>
+                                    </ctl:SettingRow>
+                                </StackPanel>
+                            </ctl:SettingsSection>
+                            <ctl:SettingsSection Header="{Binding [GfxColReflections], Source={x:Static starterNg:App.Loc}}">
+                                <StackPanel>
+                                    <ctl:SettingRow ConfigKey="gfx.envmap.enabled" Description="{Binding [ReflectionsCubeMapDesc], Source={x:Static starterNg:App.Loc}}">
+                                        <CheckBox x:Name="ReflectionsCubeMapCb" Content="{Binding [ReflectionsCubeMap], Source={x:Static starterNg:App.Loc}}" />
+                                    </ctl:SettingRow>
+                                    <ctl:SettingRow ConfigKey="gfx.ssr" Label="{Binding [Ssr], Source={x:Static starterNg:App.Loc}}" Description="{Binding [SsrDesc], Source={x:Static starterNg:App.Loc}}">
+                                        <ComboBox x:Name="SsrCb" SelectedIndex="0">
+                                            <ComboBoxItem Tag="0" Content="{Binding [LevelOff], Source={x:Static starterNg:App.Loc}}" />
+                                            <ComboBoxItem Tag="1" Content="{Binding [LevelLow], Source={x:Static starterNg:App.Loc}}" />
+                                            <ComboBoxItem Tag="2" Content="{Binding [LevelMedium], Source={x:Static starterNg:App.Loc}}" />
+                                            <ComboBoxItem Tag="3" Content="{Binding [LevelHigh], Source={x:Static starterNg:App.Loc}}" />
+                                        </ComboBox>
+                                    </ctl:SettingRow>
+                                    <ctl:SettingRow x:Name="RayTracingRow" ConfigKey="gfx.raytracing" Description="{Binding [RayTracingDesc], Source={x:Static starterNg:App.Loc}}">
+                                        <StackPanel Spacing="6">
+                                            <CheckBox x:Name="RayTracingCb" Content="{Binding [RayTracing], Source={x:Static starterNg:App.Loc}}" />
+                                            <TextBlock x:Name="RayTracingNote" Classes="SettingNote" IsVisible="False" />
+                                        </StackPanel>
+                                    </ctl:SettingRow>
+                                    <ctl:SettingRow x:Name="RayTracingRangeRow" ConfigKey="gfx.raytracing.range" Label="{Binding [RayTracingRange], Source={x:Static starterNg:App.Loc}}" ValueText="{Binding #RayTracingRangeSlider.Value, StringFormat='{}{0:0} m'}">
+                                        <Slider x:Name="RayTracingRangeSlider" Minimum="50" Maximum="2000" TickFrequency="50" IsSnapToTickEnabled="True" Value="500" />
+                                    </ctl:SettingRow>
+                                    <ctl:SettingRow ConfigKey="gfx.reflections.fidelity" Label="{Binding [ReflectionsDetails], Source={x:Static starterNg:App.Loc}}" Description="{Binding [ReflectionsDetailsDesc], Source={x:Static starterNg:App.Loc}}">
+                                        <ComboBox x:Name="ReflectionsDetailsCb" SelectedIndex="0">
+                                            <ComboBoxItem Content="{Binding [RDTerrain], Source={x:Static starterNg:App.Loc}}" />
+                                            <ComboBoxItem Content="{Binding [RDTerrainModels], Source={x:Static starterNg:App.Loc}}" />
+                                            <ComboBoxItem Content="{Binding [RDTerrainModelsVehicles], Source={x:Static starterNg:App.Loc}}" />
+                                        </ComboBox>
+                                    </ctl:SettingRow>
+                                    <ctl:SettingRow x:Name="ReflectionsFramerateRow" ConfigKey="gfx.reflections.framerate" Label="{Binding [ReflectionsFramerate], Source={x:Static starterNg:App.Loc}}">
+                                        <Slider Name="reflectionsFramerate" Minimum="5" Maximum="120" TickFrequency="5" IsSnapToTickEnabled="True" Value="30" ValueChanged="QualitySlider_OnValueChanged" />
+                                    </ctl:SettingRow>
+                                </StackPanel>
+                            </ctl:SettingsSection>
+                            <ctl:SettingsSection Header="{Binding [GfxColAtmosphere], Source={x:Static starterNg:App.Loc}}">
+                                <StackPanel>
+                                    <ctl:SettingRow ConfigKey="gfx.fog" Description="{Binding [VolumetricFogDesc], Source={x:Static starterNg:App.Loc}}">
+                                        <CheckBox x:Name="VolumetricFogCb" Content="{Binding [VolumetricFog], Source={x:Static starterNg:App.Loc}}" />
+                                    </ctl:SettingRow>
+                                    <ctl:SettingRow x:Name="FogQualityRow" ConfigKey="gfx.fog.quality" Label="{Binding [FogQuality], Source={x:Static starterNg:App.Loc}}">
+                                        <ComboBox x:Name="FogQualityCb" SelectedIndex="0">
+                                            <ComboBoxItem Tag="1" Content="{Binding [LevelLow], Source={x:Static starterNg:App.Loc}}" />
+                                            <ComboBoxItem Tag="2" Content="{Binding [LevelMedium], Source={x:Static starterNg:App.Loc}}" />
+                                            <ComboBoxItem Tag="3" Content="{Binding [LevelHigh], Source={x:Static starterNg:App.Loc}}" />
+                                            <ComboBoxItem Tag="4" Content="{Binding [LevelUltra], Source={x:Static starterNg:App.Loc}}" />
+                                        </ComboBox>
+                                    </ctl:SettingRow>
+                                    <ctl:SettingRow ConfigKey="gfx.clouds" Label="{Binding [Clouds], Source={x:Static starterNg:App.Loc}}" Description="{Binding [CloudsDesc], Source={x:Static starterNg:App.Loc}}">
+                                        <ComboBox x:Name="CloudsCb" SelectedIndex="0">
+                                            <ComboBoxItem Tag="0" Content="{Binding [LevelOff], Source={x:Static starterNg:App.Loc}}" />
+                                            <ComboBoxItem Tag="1" Content="{Binding [LevelLow], Source={x:Static starterNg:App.Loc}}" />
+                                            <ComboBoxItem Tag="2" Content="{Binding [LevelMedium], Source={x:Static starterNg:App.Loc}}" />
+                                            <ComboBoxItem Tag="3" Content="{Binding [LevelHigh], Source={x:Static starterNg:App.Loc}}" />
+                                            <ComboBoxItem Tag="4" Content="{Binding [LevelUltra], Source={x:Static starterNg:App.Loc}}" />
+                                        </ComboBox>
+                                    </ctl:SettingRow>
+                                    <ctl:SettingRow x:Name="CloudShadowsRow" ConfigKey="gfx.clouds.shadows">
+                                        <CheckBox x:Name="CloudShadowsCb" Content="{Binding [CloudShadows], Source={x:Static starterNg:App.Loc}}" />
+                                    </ctl:SettingRow>
+                                </StackPanel>
+                            </ctl:SettingsSection>
+                            <ctl:SettingsSection Header="{Binding [GfxColPostFx], Source={x:Static starterNg:App.Loc}}">
+                                <StackPanel>
+                                    <ctl:SettingRow ConfigKey="gfx.postfx.bloom">
+                                        <CheckBox x:Name="BloomCb" Content="{Binding [Bloom], Source={x:Static starterNg:App.Loc}}" />
+                                    </ctl:SettingRow>
+                                    <ctl:SettingRow ConfigKey="gfx.postfx.autoexposure" Description="{Binding [AutoExposureDesc], Source={x:Static starterNg:App.Loc}}">
+                                        <CheckBox x:Name="AutoExposureCb" Content="{Binding [AutoExposure], Source={x:Static starterNg:App.Loc}}" />
+                                    </ctl:SettingRow>
+                                    <ctl:SettingRow ConfigKey="gfx.postfx.motionblur.enabled">
+                                        <CheckBox x:Name="MotionBlurCb" Content="{Binding [MotionBlur], Source={x:Static starterNg:App.Loc}}" />
+                                    </ctl:SettingRow>
+                                    <ctl:SettingRow ConfigKey="gfx.postfx.chromaticaberration.enabled">
+                                        <CheckBox x:Name="ChromaticAberrationCb" Content="{Binding [ChromaticAberration], Source={x:Static starterNg:App.Loc}}" />
+                                    </ctl:SettingRow>
+                                </StackPanel>
+                            </ctl:SettingsSection>
+                            <ctl:SettingsSection Header="{Binding [GfxColNature], Source={x:Static starterNg:App.Loc}}">
+                                <StackPanel>
+                                    <ctl:SettingRow ConfigKey="gfx.grass" Margin="0,0,0,4">
+                                        <CheckBox x:Name="GrassCb" Content="{Binding [Grass], Source={x:Static starterNg:App.Loc}}" />
+                                    </ctl:SettingRow>
+                                    <ctl:SettingRow x:Name="GrassDistanceRow" ConfigKey="gfx.grass.distance" Label="{Binding [GrassDistance], Source={x:Static starterNg:App.Loc}}" ValueText="{Binding #GrassDistanceSlider.Value, StringFormat='{}{0:0} m'}">
+                                        <Slider x:Name="GrassDistanceSlider" Minimum="20" Maximum="300" TickFrequency="10" IsSnapToTickEnabled="True" Value="60" />
+                                    </ctl:SettingRow>
+                                    <ctl:SettingRow x:Name="GrassDensityRow" ConfigKey="gfx.grass.density" Label="{Binding [GrassDensity], Source={x:Static starterNg:App.Loc}}" ValueText="{Binding #GrassDensitySlider.Value, StringFormat='{}{0:0.00}'}">
+                                        <Slider x:Name="GrassDensitySlider" Minimum="0.25" Maximum="2.0" TickFrequency="0.25" IsSnapToTickEnabled="True" Value="1.0" />
+                                    </ctl:SettingRow>
+                                    <ctl:SettingRow ConfigKey="gfx.smoke" Margin="0,0,0,4">
+                                        <CheckBox x:Name="SmokeDisplayCb" Content="{Binding [SmokeDisplay], Source={x:Static starterNg:App.Loc}}" />
+                                    </ctl:SettingRow>
+                                    <ctl:SettingRow x:Name="SmokeParticlesRow" ConfigKey="gfx.smoke.fidelity" Label="{Binding [SmokeParticlesMultiplier], Source={x:Static starterNg:App.Loc}}" IsEnabled="{Binding #SmokeDisplayCb.IsChecked}">
+                                        <Slider x:Name="SmokeParticlesSlider" Minimum="1" Maximum="4" TickFrequency="1" IsSnapToTickEnabled="True" Value="2" ValueChanged="QualitySlider_OnValueChanged" />
+                                    </ctl:SettingRow>
+                                    <ctl:SettingRow ConfigKey="gfx.precipitation.particles" Label="{Binding [Precipitation], Source={x:Static starterNg:App.Loc}}" Description="{Binding [PrecipitationDesc], Source={x:Static starterNg:App.Loc}}">
+                                        <ComboBox x:Name="PrecipitationCb" SelectedIndex="0">
+                                            <ComboBoxItem Tag="16384" Content="{Binding [QualityVeryLow], Source={x:Static starterNg:App.Loc}}" />
+                                            <ComboBoxItem Tag="32768" Content="{Binding [QualityLow], Source={x:Static starterNg:App.Loc}}" />
+                                            <ComboBoxItem Tag="65536" Content="{Binding [QualityNormal], Source={x:Static starterNg:App.Loc}}" />
+                                            <ComboBoxItem Tag="131072" Content="{Binding [QualityHigh], Source={x:Static starterNg:App.Loc}}" />
+                                            <ComboBoxItem Tag="262144" Content="{Binding [QualityVeryHigh], Source={x:Static starterNg:App.Loc}}" />
                                         </ComboBox>
                                     </ctl:SettingRow>
                                 </StackPanel>

@@ -364,20 +364,12 @@
 
     <String key="Graphic">Графика</String>
     <String key="RenderEngine">Движок отрисовки</String>
-    <String key="REFull">Полный</String>
-    <String key="REOld">Старый</String>
-    <String key="RESimpShader">Упрощённый шейдер</String>
-    <String key="RESimp">Упрощённый</String>
-    <String key="REOff">Отключить визуальный слой</String>
-    <String key="REExperimental">Экспериментальный</String>
-    <String key="REExperimentalWarning">Внимание: экспериментальный рендерер находится в разработке. Он может работать нестабильно, не показывать части сцены или не запускаться на некоторых видеокартах. Если симулятор не запускается или выглядит неправильно, вернитесь к рендереру «Полный».</String>
 
     <String key="Resolution">Разрешение</String>
     <String key="BufforResolution">Разрешение буфера</String>
     <String key="MaxTexResolution">Максимальное разрешение текстур</String>
     <String key="MaxTexCabResolution">Максимальное разрешение текстур кабины</String>
     <String key="TexFilteringQuality">Качество фильтрации текстур</String>
-    <String key="Multisampling">Multisampling</String>
     <String key="QualityVeryLow">Очень низкое</String>
     <String key="QualityLow">Низкое</String>
     <String key="QualityNormal">Нормальное</String>
@@ -401,7 +393,6 @@
     <String key="ShadowLimitNone">Без ограничений</String>
     <String key="ShadowLimitShort">Укороченные</String>
     <String key="FullscreenWindowed">Автоматическое разрешение (полный экран без рамки)</String>
-    <String key="RenderAngleVulkan">Использовать рендерер ANGLE Vulkan</String>
     <String key="VSync">VSync</String>
     <String key="SmokeDisplay">Отображение дыма</String>
     <String key="SmokeParticlesMultiplier">Множитель частиц дыма</String>
@@ -411,12 +402,10 @@
     <String key="AdditionalShadersEffects">Дополнительные эффекты шейдеров</String>
     <String key="ReflectionsCubeMap">Отражения как кубическая карта</String>
     <String key="SkipPipeline">SkipPipeline</String>
-    <String key="RenderVBO">Отрисовка VBO</String>
     <String key="RenderShadows">Отрисовывать тени</String>
     <String key="ReflectionsFramerate">Частота обновления отражений</String>
     <String key="ShadowsResolution">Разрешение теней</String>
     <String key="ShaderRange">Дальность теней</String>
-    <String key="CabShadowsRange">Дальность источников теней в кабине</String>
 
     <String key="ShadowDisplay">Показывать тени</String>
     <String key="CSROnlyImportant">Только важные</String>
@@ -458,7 +447,6 @@
     <String key="Advanced">Дополнительно</String>
     <String key="CompressTextures">Сжимать текстуры TGA</String>
     <String key="ScaleSpeculars">Масштабировать блики (совместимость со старыми моделями)</String>
-    <String key="UseGLES">Использовать OpenGL ES</String>
     <String key="ShaderGamma">Гамма-коррекция в шейдерах</String>
     <String key="ScreenMipmaps">Создавать мипмапы для текстур экранов кабины (Python)</String>
     <String key="ExtendedModelConversion">Расширенное преобразование моделей E3D (экспериментально)</String>
@@ -590,7 +578,6 @@
     <String key="RuleNew">— новое правило —</String>
     <String key="RuleRemove">Удалить из правила</String>
     <String key="CatAll">Все</String>
-    <String key="GfxColResolution">Разрешение и текстуры</String>
     <String key="GfxColRendering">Рендеринг</String>
     <String key="GfxColShadows">Тени</String>
     <String key="GfxColReflections">Отражения и вид</String>

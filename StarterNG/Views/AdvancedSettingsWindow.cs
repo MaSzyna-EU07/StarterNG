@@ -23,7 +23,6 @@ public sealed class AdvancedSettingsWindow : Window
     private readonly CheckBox _mipmaps = new();
     private readonly CheckBox _scaleSpeculars = new();
     private readonly CheckBox _shaderGamma = new();
-    private readonly CheckBox _useGles = new();
     private readonly CheckBox _convertModels = new();
     private readonly CheckBox _resourceMove = new();
     private readonly CheckBox _resourceSweep = new();
@@ -46,7 +45,6 @@ public sealed class AdvancedSettingsWindow : Window
         _mipmaps.Content = App.Loc["ScreenMipmaps"];
         _scaleSpeculars.Content = App.Loc["ScaleSpeculars"];
         _shaderGamma.Content = App.Loc["ShaderGamma"];
-        _useGles.Content = App.Loc["UseGLES"];
         _convertModels.Content = App.Loc["ExtendedModelConversion"];
         _resourceMove.Content = App.Loc["GfxResourceMove"];
         _resourceSweep.Content = App.Loc["GfxResourceSweep"];
@@ -111,7 +109,7 @@ public sealed class AdvancedSettingsWindow : Window
         var sp = new StackPanel { Margin = new Avalonia.Thickness(10), Spacing = 8 };
         foreach (var c in new Control[]
                  {
-                     _compressTex, _scaleSpeculars, _useGles, _shaderGamma, _mipmaps,
+                     _compressTex, _scaleSpeculars, _shaderGamma, _mipmaps,
                      _convertModels, _resourceMove, _resourceSweep, _ignoreIrrelevant
                  })
             sp.Children.Add(c);
@@ -161,7 +159,6 @@ public sealed class AdvancedSettingsWindow : Window
         _mipmaps.IsChecked = s.ScreenMipmaps;
         _scaleSpeculars.IsChecked = s.ScaleSpeculars;
         _shaderGamma.IsChecked = s.ShaderGamma;
-        _useGles.IsChecked = s.UseGLES;
         _convertModels.IsChecked = s.ExtendedModelConversion;
         _resourceMove.IsChecked = s.GfxResourceMove;
         _resourceSweep.IsChecked = s.GfxResourceSweep;
@@ -177,7 +174,6 @@ public sealed class AdvancedSettingsWindow : Window
         s.ScreenMipmaps = _mipmaps.IsChecked == true;
         s.ScaleSpeculars = _scaleSpeculars.IsChecked == true;
         s.ShaderGamma = _shaderGamma.IsChecked == true;
-        s.UseGLES = _useGles.IsChecked == true;
         s.ExtendedModelConversion = _convertModels.IsChecked == true;
         s.GfxResourceMove = _resourceMove.IsChecked == true;
         s.GfxResourceSweep = _resourceSweep.IsChecked == true;
