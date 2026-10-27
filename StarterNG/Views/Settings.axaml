@@ -229,13 +229,16 @@
                                         </StackPanel>
                                     </ctl:SettingRow>
                                     <ctl:SettingRow x:Name="DlssPresetRow" ConfigKey="gfx.dlss.preset" Label="{Binding [DlssPreset], Source={x:Static starterNg:App.Loc}}" Description="{Binding [DlssPresetDesc], Source={x:Static starterNg:App.Loc}}">
-                                        <ComboBox x:Name="DlssPresetCb" SelectedIndex="0">
-                                            <ComboBoxItem Tag="default" Content="{Binding [DlssPresetDefault], Source={x:Static starterNg:App.Loc}}" />
-                                            <ComboBoxItem Tag="j" Content="J" />
-                                            <ComboBoxItem Tag="k" Content="K" />
-                                            <ComboBoxItem Tag="l" Content="L" />
-                                            <ComboBoxItem Tag="m" Content="M" />
-                                        </ComboBox>
+                                        <StackPanel Spacing="6">
+                                            <ComboBox x:Name="DlssPresetCb" SelectedIndex="0">
+                                                <ComboBoxItem Tag="default" Content="{Binding [DlssPresetDefault], Source={x:Static starterNg:App.Loc}}" />
+                                                <ComboBoxItem Tag="k" Content="{Binding [DlssPresetK], Source={x:Static starterNg:App.Loc}}" />
+                                                <ComboBoxItem Tag="j" Content="{Binding [DlssPresetJ], Source={x:Static starterNg:App.Loc}}" />
+                                                <ComboBoxItem Tag="m" Content="{Binding [DlssPresetM], Source={x:Static starterNg:App.Loc}}" />
+                                                <ComboBoxItem Tag="l" Content="{Binding [DlssPresetL], Source={x:Static starterNg:App.Loc}}" />
+                                            </ComboBox>
+                                            <TextBlock x:Name="DlssPresetInfo" Classes="FieldHint" TextWrapping="Wrap" />
+                                        </StackPanel>
                                     </ctl:SettingRow>
                                     <ctl:SettingRow x:Name="FrameGenerationRow" ConfigKey="gfx.framegeneration" Label="{Binding [FrameGeneration], Source={x:Static starterNg:App.Loc}}" Description="{Binding [FrameGenerationDesc], Source={x:Static starterNg:App.Loc}}">
                                         <StackPanel Spacing="6">

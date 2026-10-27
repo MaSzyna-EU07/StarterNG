@@ -41,6 +41,8 @@ public partial class Settings
     private void InitGraphics()
     {
         RenderEngineCb.SelectionChanged += (_, _) => OnBackendChanged();
+        // The notes are worked out here, not bound, so they follow a change of language by hand.
+        App.Loc.LanguageChanged += UpdateGraphicsState;
     }
 
     private void ApplyGraphicsToUi(SimulatorSettings s)
@@ -266,6 +268,14 @@ public partial class Settings
             GrassDistanceRow.IsEnabled = s.Grass;
             GrassDensityRow.IsEnabled = s.Grass;
 
+            DlssPresetInfo.Text = App.Loc[(SelectedTag(DlssPresetCb) ?? "default") switch
+            {
+                "k" => "DlssPresetInfoK",
+                "j" => "DlssPresetInfoJ",
+                "m" => "DlssPresetInfoM",
+                "l" => "DlssPresetInfoL",
+                _ => "DlssPresetInfoDefault"
+            }];
             SetNote(RenderEngineNote, vulkan ? App.Loc["REVulkanNote"] : App.Loc["REOpenGLNote"]);
             SetNote(AntiAliasingNote, AntiAliasingRemark(s, dlss));
             SetNote(FrameGenerationNote, FrameGenerationRemark(s, dlss));
