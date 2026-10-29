@@ -84,6 +84,11 @@ public partial class Settings
         SelectTag(ContactShadowsCb, s.ContactShadows.ToString(Invariant));
         SelectTag(AmbientOcclusionCb, s.AmbientOcclusion.ToString(Invariant));
         SelectOrAddTag(AoQualityCb, $"{s.AoSlices} {s.AoSteps}", $"{s.AoSlices} / {s.AoSteps}");
+        AoLightingCb.IsChecked = s.AoLighting;
+        SelectTag(CabProbeCb, s.CabProbe.ToString(Invariant));
+        CabProbeIntervalNud.Value = s.CabProbeInterval;
+        CabProbeBounceSlider.Value = s.CabProbeBounce;
+        CabProbeReflectionsCb.IsChecked = s.CabProbeReflections;
 
         ReflectionsCubeMapCb.IsChecked = s.EnvMap;
         SelectTag(SsrCb, s.Ssr.ToString(Invariant));
@@ -152,6 +157,15 @@ public partial class Settings
         var ao = (SelectedTag(AoQualityCb) ?? "3 4").Split(' ');
         s.AoSlices = ao.Length > 0 && int.TryParse(ao[0], NumberStyles.Integer, Invariant, out int slices) ? slices : 3;
         s.AoSteps = ao.Length > 1 && int.TryParse(ao[1], NumberStyles.Integer, Invariant, out int steps) ? steps : 4;
+        s.AoLighting = IsChecked(AoLightingCb);
+        s.CabProbe = TagInt(CabProbeCb, 2);
+        s.CabProbeInterval = (int)(CabProbeIntervalNud.Value ?? 4);
+        s.CabProbeBounce = CabProbeBounceSlider.Value;
+        s.CabProbeReflections = IsChecked(CabProbeReflectionsCb);
+        // Not on screen: kept as read, for the dependencies.
+        var read = AppServices.Current.Settings;
+        s.CabLampLight = read.CabLampLight;
+        s.DepthPrepassScene = read.DepthPrepassScene;
 
         s.EnvMap = IsChecked(ReflectionsCubeMapCb);
         s.Ssr = TagInt(SsrCb, 2);
@@ -263,6 +277,11 @@ public partial class Settings
             RayTracingRangeRow.IsEnabled = vulkan && s.RayTracing;
             DynamicLightsRow.IsEnabled = GraphicsRules.DynamicLightsUsed(s);
             AoQualityRow.IsEnabled = s.AmbientOcclusion > 0;
+            AoLightingRow.IsEnabled = GraphicsRules.AoLightingUsed(s);
+            bool probe = GraphicsRules.CabProbeUsed(s);
+            CabProbeIntervalRow.IsEnabled = probe;
+            CabProbeReflectionsRow.IsEnabled = probe;
+            CabProbeBounceRow.IsEnabled = GraphicsRules.CabProbeLights(s);
             FogQualityRow.IsEnabled = s.VolumetricFog;
             CloudShadowsRow.IsEnabled = s.Clouds > 0;
             GrassDistanceRow.IsEnabled = s.Grass;
@@ -280,6 +299,8 @@ public partial class Settings
             SetNote(AntiAliasingNote, AntiAliasingRemark(s, dlss));
             SetNote(FrameGenerationNote, FrameGenerationRemark(s, dlss));
             SetNote(ReflexNote, GraphicsRules.ReflexForced(s, DlssPlatform) ? App.Loc["ReflexForcedNote"] : "");
+            SetNote(AoLightingNote, AoLightingRemark(s));
+            SetNote(CabProbeNote, GraphicsRules.CabProbeUsed(s) && !GraphicsRules.CabProbeLights(s) ? App.Loc["CabProbeReflectionsOnlyNote"] : "");
             SetNote(RayTracingNote, vulkan ? "" : App.Loc["VulkanOnlyNote"]);
             SetNote(SkipPipelineNote, GraphicsRules.TemporalWithoutPipeline(s) ? App.Loc["TemporalNeedsPipelineNote"] : "");
 
@@ -300,6 +321,15 @@ public partial class Settings
         if (dlss && !DlssLibraries(s).Dlss)
             return string.Format(App.Loc["DlssMissingLibraryNote"], DlssLibraryName(frameGeneration: false));
         return "";
+    }
+
+    private static string AoLightingRemark(SimulatorSettings s)
+    {
+        if (!GraphicsRules.AoLightingUsed(s) || !s.AoLighting)
+            return "";
+        if (s.SkipPipeline)
+            return App.Loc["AoNeedsPipelineNote"];
+        return GraphicsRules.AoLightingAddsDepthPrepass(s) ? App.Loc["AoLightingPrepassNote"] : "";
     }
 
     private string FrameGenerationRemark(SimulatorSettings s, bool dlss)

@@ -393,6 +393,12 @@
                                             <ComboBoxItem Tag="2" Content="GTAO" />
                                         </ComboBox>
                                     </ctl:SettingRow>
+                                    <ctl:SettingRow x:Name="AoLightingRow" ConfigKey="gfx.postfx.ao.lighting" Description="{Binding [AoLightingDesc], Source={x:Static starterNg:App.Loc}}">
+                                        <StackPanel Spacing="6">
+                                            <CheckBox x:Name="AoLightingCb" Content="{Binding [AoLighting], Source={x:Static starterNg:App.Loc}}" />
+                                            <TextBlock x:Name="AoLightingNote" Classes="SettingNote" IsVisible="False" />
+                                        </StackPanel>
+                                    </ctl:SettingRow>
                                     <ctl:SettingRow x:Name="AoQualityRow" ConfigKey="gfx.postfx.ao.quality" Label="{Binding [AmbientOcclusionQuality], Source={x:Static starterNg:App.Loc}}">
                                         <ComboBox x:Name="AoQualityCb" SelectedIndex="0">
                                             <ComboBoxItem Tag="2 3" Content="{Binding [QualityLow], Source={x:Static starterNg:App.Loc}}" />
@@ -400,6 +406,26 @@
                                             <ComboBoxItem Tag="4 6" Content="{Binding [QualityHigh], Source={x:Static starterNg:App.Loc}}" />
                                             <ComboBoxItem Tag="6 8" Content="{Binding [QualityVeryHigh], Source={x:Static starterNg:App.Loc}}" />
                                         </ComboBox>
+                                    </ctl:SettingRow>
+                                    <ctl:SettingRow ConfigKey="gfx.cabprobe" Label="{Binding [CabProbe], Source={x:Static starterNg:App.Loc}}" Description="{Binding [CabProbeDesc], Source={x:Static starterNg:App.Loc}}">
+                                        <StackPanel Spacing="6">
+                                            <ComboBox x:Name="CabProbeCb" SelectedIndex="0">
+                                                <ComboBoxItem Tag="0" Content="{Binding [CabProbeOff], Source={x:Static starterNg:App.Loc}}" />
+                                                <ComboBoxItem Tag="1" Content="{Binding [CabProbeLow], Source={x:Static starterNg:App.Loc}}" />
+                                                <ComboBoxItem Tag="2" Content="{Binding [CabProbeMedium], Source={x:Static starterNg:App.Loc}}" />
+                                                <ComboBoxItem Tag="3" Content="{Binding [CabProbeHigh], Source={x:Static starterNg:App.Loc}}" />
+                                            </ComboBox>
+                                            <TextBlock x:Name="CabProbeNote" Classes="SettingNote" IsVisible="False" />
+                                        </StackPanel>
+                                    </ctl:SettingRow>
+                                    <ctl:SettingRow x:Name="CabProbeIntervalRow" ConfigKey="gfx.cabprobe.interval" Label="{Binding [CabProbeInterval], Source={x:Static starterNg:App.Loc}}" Description="{Binding [CabProbeIntervalDesc], Source={x:Static starterNg:App.Loc}}">
+                                        <NumericUpDown x:Name="CabProbeIntervalNud" Minimum="1" Maximum="120" Value="4" Increment="1" FormatString="0" />
+                                    </ctl:SettingRow>
+                                    <ctl:SettingRow x:Name="CabProbeBounceRow" ConfigKey="gfx.cabprobe.bounce" Label="{Binding [CabProbeBounce], Source={x:Static starterNg:App.Loc}}" Description="{Binding [CabProbeBounceDesc], Source={x:Static starterNg:App.Loc}}" ValueText="{Binding #CabProbeBounceSlider.Value, StringFormat='{}{0:0.0}'}">
+                                        <Slider x:Name="CabProbeBounceSlider" Minimum="0" Maximum="4" TickFrequency="0.1" IsSnapToTickEnabled="True" Value="1" />
+                                    </ctl:SettingRow>
+                                    <ctl:SettingRow x:Name="CabProbeReflectionsRow" ConfigKey="gfx.cabprobe.reflections" Description="{Binding [CabProbeReflectionsDesc], Source={x:Static starterNg:App.Loc}}">
+                                        <CheckBox x:Name="CabProbeReflectionsCb" Content="{Binding [CabProbeReflections], Source={x:Static starterNg:App.Loc}}" />
                                     </ctl:SettingRow>
                                 </StackPanel>
                             </ctl:SettingsSection>

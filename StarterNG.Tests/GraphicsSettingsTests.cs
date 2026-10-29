@@ -402,4 +402,140 @@ public class GraphicsSettingsTests
         c.Set("b", "9");
         Assert.Equal("b 9\nc 3\na 1\n", c.ToText().Replace("\r\n", "\n"));
     }
+
+    [Fact]
+    public void The_ao_lighting_and_cab_probe_keys_survive_a_round_trip_in_the_simulators_form()
+    {
+        var s = Read("gfx.postfx.ao.lighting no\ngfx.cabprobe high\ngfx.cabprobe.interval 12\ngfx.cabprobe.bounce 2.5\ngfx.cabprobe.reflections no\n");
+
+        Assert.False(s.AoLighting);
+        Assert.Equal(3, s.CabProbe);
+        Assert.Equal(12, s.CabProbeInterval);
+        Assert.Equal(2.5, s.CabProbeBounce);
+        Assert.False(s.CabProbeReflections);
+
+        string text = Write(s);
+        Assert.Equal("gfx.postfx.ao.lighting no", Line(text, "gfx.postfx.ao.lighting"));
+        Assert.Equal("gfx.cabprobe high", Line(text, "gfx.cabprobe"));
+        Assert.Equal("gfx.cabprobe.interval 12", Line(text, "gfx.cabprobe.interval"));
+        Assert.Equal("gfx.cabprobe.bounce 2.5", Line(text, "gfx.cabprobe.bounce"));
+        Assert.Equal("gfx.cabprobe.reflections no", Line(text, "gfx.cabprobe.reflections"));
+
+        var again = Read(text);
+        Assert.Equal((s.AoLighting, s.CabProbe, s.CabProbeInterval, s.CabProbeBounce, s.CabProbeReflections),
+                     (again.AoLighting, again.CabProbe, again.CabProbeInterval, again.CabProbeBounce, again.CabProbeReflections));
+    }
+
+    [Fact]
+    public void Missing_ao_lighting_and_cab_probe_keys_take_the_simulators_defaults_and_are_written_like_its_export()
+    {
+        var s = Read("");
+
+        Assert.Equal((true, 2, 4, 1.0, true), (s.AoLighting, s.CabProbe, s.CabProbeInterval, s.CabProbeBounce, s.CabProbeReflections));
+
+        string text = Write(s);
+        Assert.Equal("gfx.postfx.ao.lighting yes", Line(text, "gfx.postfx.ao.lighting"));
+        Assert.Equal("gfx.cabprobe medium", Line(text, "gfx.cabprobe"));
+        Assert.Equal("gfx.cabprobe.interval 4", Line(text, "gfx.cabprobe.interval"));
+        Assert.Equal("gfx.cabprobe.bounce 1", Line(text, "gfx.cabprobe.bounce"));
+        Assert.Equal("gfx.cabprobe.reflections yes", Line(text, "gfx.cabprobe.reflections"));
+    }
+
+    [Fact]
+    public void Unknown_ao_lighting_and_cab_probe_values_fall_back_to_the_simulators_defaults()
+    {
+        var s = Read("gfx.postfx.ao.lighting maybe\ngfx.cabprobe bogus\ngfx.cabprobe.interval abc\ngfx.cabprobe.bounce x\ngfx.cabprobe.reflections ?\n");
+
+        Assert.Equal((true, 2, 4, 1.0, true), (s.AoLighting, s.CabProbe, s.CabProbeInterval, s.CabProbeBounce, s.CabProbeReflections));
+    }
+
+    [Theory]
+    [InlineData("no", 0)]
+    [InlineData("0", 0)]
+    [InlineData("low", 1)]
+    [InlineData("1", 1)]
+    [InlineData("medium", 2)]
+    [InlineData("yes", 2)]
+    [InlineData("2", 2)]
+    [InlineData("high", 3)]
+    [InlineData("3", 3)]
+    public void The_cab_probe_level_is_read_with_the_aliases_the_simulator_takes(string value, int expected)
+    {
+        Assert.Equal(expected, Read($"gfx.cabprobe {value}\n").CabProbe);
+    }
+
+    [Fact]
+    public void The_cab_probe_numbers_are_kept_within_the_simulators_ranges()
+    {
+        var s = Read("gfx.cabprobe.interval 500\ngfx.cabprobe.bounce 9\n");
+        Assert.Equal((120, 4.0), (s.CabProbeInterval, s.CabProbeBounce));
+
+        s = Read("gfx.cabprobe.interval 0\ngfx.cabprobe.bounce -1\n");
+        Assert.Equal((1, 0.0), (s.CabProbeInterval, s.CabProbeBounce));
+    }
+
+    [Fact]
+    public void The_ao_lighting_counts_with_gtao_only()
+    {
+        Assert.True(GraphicsRules.AoLightingUsed(Read("gfx.postfx.ao gtao\n")));
+        Assert.False(GraphicsRules.AoLightingUsed(Read("gfx.postfx.ao ssao\n")));
+        Assert.False(GraphicsRules.AoLightingUsed(Read("gfx.postfx.ao no\n")));
+    }
+
+    [Theory]
+    [InlineData("gfx.ssr no\ngfx.contactshadows no\n", true)]
+    [InlineData("gfx.ssr low\ngfx.contactshadows no\n", false)]
+    [InlineData("gfx.ssr no\ngfx.contactshadows low\n", false)]
+    [InlineData("gfx.ssr no\ngfx.contactshadows no\ngfx.depthprepass.scene yes\n", false)]
+    [InlineData("gfx.ssr no\ngfx.contactshadows no\ngfx.postfx.ao.lighting no\n", false)]
+    [InlineData("gfx.ssr no\ngfx.contactshadows no\ngfx.postfx.ao ssao\n", false)]
+    public void The_ao_lighting_adds_the_depth_pass_only_when_nothing_else_draws_it(string text, bool expected)
+    {
+        Assert.Equal(expected, GraphicsRules.AoLightingAddsDepthPrepass(Read(text)));
+    }
+
+    [Theory]
+    [InlineData("gfx.cabprobe medium\n", true, true)]
+    [InlineData("gfx.cabprobe no\n", false, false)]
+    [InlineData("gfx.cabprobe low\ngfx.lights.clustered no\n", true, false)]
+    [InlineData("gfx.cabprobe high\ngfx.lights.cab no\n", true, false)]
+    public void The_cab_probe_lights_the_cab_only_with_its_lamp_as_a_light(string text, bool used, bool lights)
+    {
+        var s = Read(text);
+
+        Assert.Equal(used, GraphicsRules.CabProbeUsed(s));
+        Assert.Equal(lights, GraphicsRules.CabProbeLights(s));
+    }
+
+    [Theory]
+    [InlineData(GraphicsPreset.Lowest, false, 0, 4, false)]
+    [InlineData(GraphicsPreset.Low, false, 0, 4, false)]
+    [InlineData(GraphicsPreset.Medium, false, 1, 8, true)]
+    [InlineData(GraphicsPreset.High, true, 2, 4, true)]
+    [InlineData(GraphicsPreset.Ultra, true, 3, 2, true)]
+    public void A_preset_sets_the_ao_lighting_and_the_cab_probe(GraphicsPreset preset, bool aoLighting, int probe, int interval, bool reflections)
+    {
+        var s = new SimulatorSettings { CabProbeBounce = 2.5 };
+
+        GraphicsPresets.Apply(s, preset, true);
+
+        Assert.Equal((aoLighting, probe, interval, reflections), (s.AoLighting, s.CabProbe, s.CabProbeInterval, s.CabProbeReflections));
+        Assert.Equal(2.5, s.CabProbeBounce);
+        Assert.Equal(preset, GraphicsPresets.Detect(s, true));
+
+        string text = Write(s);
+        Assert.Equal(preset, GraphicsPresets.Detect(Read(text), true));
+    }
+
+    [Fact]
+    public void An_import_keeps_the_lamp_switch_of_the_users_own_file()
+    {
+        var installation = WithIni("gfx.lights.cab no\n");
+        installation.Files.WithFile("/backup/eu07.ini", "gfx.lights.cab yes\ngfx.cabprobe high\n");
+
+        Assert.True(installation.SettingsStore.ImportFrom("/backup/eu07.ini"));
+
+        Assert.False(installation.SettingsStore.Settings.CabLampLight);
+        Assert.Equal(3, installation.SettingsStore.Settings.CabProbe);
+    }
 }

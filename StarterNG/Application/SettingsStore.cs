@@ -102,6 +102,9 @@ public sealed class SettingsStore
         string executable = s.ExecutablePath;
         string lastScenery = s.LastScenery;
         bool maximized = s.WindowMaximized;
+        // Only read for the dependencies and never written, so they stay as this user's file has them.
+        bool cabLampLight = s.CabLampLight;
+        bool depthPrepassScene = s.DepthPrepassScene;
 
         _serializer.Read(s, imported);
 
@@ -109,6 +112,8 @@ public sealed class SettingsStore
         s.ExecutablePath = executable;
         s.LastScenery = lastScenery;
         s.WindowMaximized = maximized;
+        s.CabLampLight = cabLampLight;
+        s.DepthPrepassScene = depthPrepassScene;
         return true;
     }
 

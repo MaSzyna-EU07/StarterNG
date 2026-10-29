@@ -718,6 +718,23 @@
     <String key="AmbientOcclusion">Ambient occlusion</String>
     <String key="AmbientOcclusionDesc">Darkens corners and creases. GTAO is more accurate than the older SSAO.</String>
     <String key="AmbientOcclusionQuality">Occlusion quality</String>
+    <String key="AoLighting">AO in the ambient light (not over the image)</String>
+    <String key="AoLightingDesc">GTAO only. The occlusion darkens the ambient light and reflections while the sun, headlights and lamps stay bright. Off: the AO multiplies the finished image – cheaper.</String>
+    <String key="AoLightingPrepassNote">Needs the depth of the whole scene before its colour; without SSR and contact shadows that is an extra pass (CPU cost on OpenGL).</String>
+    <String key="AoNeedsPipelineNote">With the post-processing pipeline skipped the AO does not work.</String>
+    <String key="CabProbe">Cab probe (bounced light and interior reflections)</String>
+    <String key="CabProbeDesc">A cubemap of the cab lit by its lamp (64 / 128 / 256 px per face, about 0.5 / 2 / 8 MB). Gives the light bounced off the cab instead of the fixed gfx.lights.cab.bounce, and the interior reflected in the windows and glossy parts. Off: the old behaviour, no cost.</String>
+    <String key="CabProbeOff">Off</String>
+    <String key="CabProbeLow">Low</String>
+    <String key="CabProbeMedium">Medium</String>
+    <String key="CabProbeHigh">High</String>
+    <String key="CabProbeReflectionsOnlyNote">Without the clustered lighting and the cab lamp as a light (gfx.lights.cab) the probe gives the reflections only.</String>
+    <String key="CabProbeInterval">Refresh every N frames</String>
+    <String key="CabProbeIntervalDesc">How often the probe is drawn anew (moving parts, desk lamps). More = cheaper. A change of the lamp or the cab refreshes it at once.</String>
+    <String key="CabProbeBounce">Bounced light strength</String>
+    <String key="CabProbeBounceDesc">How much of the lamp light bounced off the cab lights it again.</String>
+    <String key="CabProbeReflections">The cab reflects itself</String>
+    <String key="CabProbeReflectionsDesc">Windows and glossy parts show the cab interior instead of the sky where SSR finds nothing.</String>
     <String key="Ssr">Screen space reflections (SSR)</String>
     <String key="SsrDesc">Reflections of what is on screen on wet and smooth surfaces.</String>
     <String key="RayTracing">Ray traced reflections</String>

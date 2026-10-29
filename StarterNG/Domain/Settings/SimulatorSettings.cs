@@ -72,6 +72,15 @@ public sealed class SimulatorSettings
     public int AmbientOcclusion = 2;
     public int AoSlices = 3;
     public int AoSteps = 4;
+    public bool AoLighting = true;
+    public int CabProbe = 2;
+    public int CabProbeInterval = 4;
+    public double CabProbeBounce = 1.0;
+    public bool CabProbeReflections = true;
+
+    // Read from eu07.ini only, for the dependencies shown: the starter offers no switch for them.
+    public bool CabLampLight { get; internal set; } = true;
+    public bool DepthPrepassScene { get; internal set; }
     public int Ssr = 2;
     public bool RayTracing;
     public int RayTracingRange = 500;

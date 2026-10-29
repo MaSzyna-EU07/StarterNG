@@ -718,6 +718,23 @@
     <String key="AmbientOcclusion">Okluzja otoczenia</String>
     <String key="AmbientOcclusionDesc">Przyciemnia zakamarki i styki powierzchni. GTAO jest dokładniejsze od starszego SSAO.</String>
     <String key="AmbientOcclusionQuality">Jakość okluzji</String>
+    <String key="AoLighting">AO w świetle otoczenia (zamiast na obrazie)</String>
+    <String key="AoLightingDesc">Tylko z GTAO. Okluzja przyciemnia światło i odbicia otoczenia, a słońce, reflektory i lampy zostają jasne. Wyłączone: AO mnoży gotowy obraz – taniej.</String>
+    <String key="AoLightingPrepassNote">Wymaga głębi całej sceny przed kolorem; bez SSR i cieni kontaktowych to dodatkowy przebieg (koszt CPU w OpenGL).</String>
+    <String key="AoNeedsPipelineNote">Przy pominiętym potoku postprocessingu AO nie działa.</String>
+    <String key="CabProbe">Próbka kabiny (odbite światło i odbicia wnętrza)</String>
+    <String key="CabProbeDesc">Cubemapa kabiny oświetlonej jej lampą (64 / 128 / 256 px na ścianę, ok. 0,5 / 2 / 8 MB). Daje światło odbite od kabiny zamiast stałego gfx.lights.cab.bounce i odbicia wnętrza w szybach i błyszczących elementach. Wyłączona: stare zachowanie, bez kosztu.</String>
+    <String key="CabProbeOff">Wyłączona</String>
+    <String key="CabProbeLow">Niska</String>
+    <String key="CabProbeMedium">Średnia</String>
+    <String key="CabProbeHigh">Wysoka</String>
+    <String key="CabProbeReflectionsOnlyNote">Bez oświetlenia klastrowego i lampy kabiny jako światła (gfx.lights.cab) próbka daje tylko odbicia.</String>
+    <String key="CabProbeInterval">Odświeżanie co N klatek</String>
+    <String key="CabProbeIntervalDesc">Jak często próbka jest rysowana na nowo (ruchome elementy, lampki pulpitu). Więcej = taniej. Zmiana lampy lub kabiny odświeża ją od razu.</String>
+    <String key="CabProbeBounce">Siła odbitego światła</String>
+    <String key="CabProbeBounceDesc">Ile światła lampy odbitego od kabiny oświetla ją ponownie.</String>
+    <String key="CabProbeReflections">Kabina odbija siebie</String>
+    <String key="CabProbeReflectionsDesc">W szybach i błyszczących elementach widać wnętrze kabiny zamiast nieba tam, gdzie SSR nic nie znajduje.</String>
     <String key="Ssr">Odbicia w przestrzeni ekranu (SSR)</String>
     <String key="SsrDesc">Odbicia tego, co widać na ekranie, na mokrych i gładkich powierzchniach.</String>
     <String key="RayTracing">Odbicia ray tracing</String>

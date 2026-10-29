@@ -98,6 +98,13 @@ public sealed class SettingsSerializer
         var aoQuality = c.GetTokens("gfx.postfx.ao.quality");
         s.AoSlices = aoQuality.Length >= 1 ? ParseInt(aoQuality[0], 3) : 3;
         s.AoSteps = aoQuality.Length >= 2 ? ParseInt(aoQuality[1], 4) : 4;
+        s.AoLighting = c.GetBool("gfx.postfx.ao.lighting", true);
+        s.CabProbe = ParseCabProbe(FirstToken(c, "gfx.cabprobe"));
+        s.CabProbeInterval = c.GetInt("gfx.cabprobe.interval", 4);
+        s.CabProbeBounce = c.GetDouble("gfx.cabprobe.bounce", 1.0);
+        s.CabProbeReflections = c.GetBool("gfx.cabprobe.reflections", true);
+        s.CabLampLight = c.GetBool("gfx.lights.cab", true);
+        s.DepthPrepassScene = c.GetBool("gfx.depthprepass.scene", false);
         s.Ssr = ParseLevel(FirstToken(c, "gfx.ssr"), 2, 3);
         s.RayTracing = c.GetBool("gfx.raytracing", false);
         s.RayTracingRange = (int)Math.Round(c.GetDouble("gfx.raytracing.range", 500));
@@ -275,6 +282,11 @@ public sealed class SettingsSerializer
         c.SetBool("gfx.lights.clustered", s.LightsClustered);
         c.Set("gfx.postfx.ao", s.AmbientOcclusion switch { 1 => "ssao", 2 => "gtao", _ => "no" });
         c.Set("gfx.postfx.ao.quality", $"{s.AoSlices} {s.AoSteps}");
+        c.SetBool("gfx.postfx.ao.lighting", s.AoLighting);
+        c.Set("gfx.cabprobe", LevelToken(s.CabProbe));
+        c.SetInt("gfx.cabprobe.interval", s.CabProbeInterval);
+        c.SetDouble("gfx.cabprobe.bounce", s.CabProbeBounce);
+        c.SetBool("gfx.cabprobe.reflections", s.CabProbeReflections);
         c.Set("gfx.ssr", LevelToken(s.Ssr));
         c.SetBool("gfx.raytracing", s.RayTracing);
         c.SetInt("gfx.raytracing.range", s.RayTracingRange);
@@ -464,6 +476,15 @@ public sealed class SettingsSerializer
         3 => "high",
         4 => "ultra",
         _ => "no"
+    };
+
+    // As the simulator reads it, but a value it does not know keeps its default (medium) rather than turning the probe off.
+    private static int ParseCabProbe(string value) => value switch
+    {
+        "no" or "false" or "off" or "0" => 0,
+        "low" or "1" => 1,
+        "high" or "3" => 3,
+        _ => 2
     };
 
     private static int ParseAmbientOcclusion(string value) => value switch
