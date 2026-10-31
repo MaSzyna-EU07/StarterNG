@@ -38,7 +38,7 @@ public partial class MainWindow : Window
         ExtendClientAreaToDecorationsHint = true;
         ExtendClientAreaTitleBarHeightHint = TitleBarHeight;
 
-        if (AppServices.Current.Settings.WindowMaximized)
+        if (AppServices.Current.Settings.WindowMaximized || wantsMaximized())
             WindowState = WindowState.Maximized;
 
         PropertyChanged += (_, e) =>
@@ -307,6 +307,19 @@ public partial class MainWindow : Window
         menu.Items.Add(about);
 
         menu.Open(HelpButton);
+    }
+
+    private bool wantsMaximized()
+    {
+        // make sure the window fills the whole screen on gamescope sessions
+        if (Environment.GetEnvironmentVariable("XDG_CURRENT_DESKTOP") == "gamescope")
+            return true;
+
+        // catch being launched via Steam Big Picture mode as well
+        if (Environment.GetEnvironmentVariable("SteamGamepadUI") == "1")
+            return true;
+
+        return false;
     }
 
     private void linkClick(object? sender, RoutedEventArgs e)
@@ -627,6 +640,6 @@ public partial class MainWindow : Window
         if (!IsVisible)
             Show();
         if (WindowState == WindowState.Minimized)
-            WindowState = WindowState.Normal;
+            WindowState = wantsMaximized() ? WindowState.Maximized : WindowState.Normal;
     }
 }
