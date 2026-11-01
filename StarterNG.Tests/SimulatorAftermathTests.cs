@@ -32,8 +32,39 @@ public class SimulatorAftermathTests
         var installation = new TestInstallation(new InMemoryFileSystem()
             .WithFile(TestInstallation.At("log.txt"), "first\r\nsecond\r\n\r\nthird\r\n"));
 
-        var tail = new SimulatorAftermath(installation.Files, installation.Paths, installation.Log).SimulatorLogTail(2);
+        var started = installation.Files.LastWriteTimeUtc.AddMinutes(-1);
+
+        var tail = new SimulatorAftermath(installation.Files, installation.Paths, installation.Log)
+            .SimulatorLogTail(2, started);
 
         Assert.Equal(new[] { "second", "third" }, tail);
+    }
+
+    [Fact]
+    public void A_log_not_written_since_the_start_says_nothing_of_this_run()
+    {
+        // Dead before it opened its log: what is there is the session before.
+        var installation = new TestInstallation(new InMemoryFileSystem()
+            .WithFile(TestInstallation.At("log.txt"), "yesterday's error\r\n"));
+        var started = installation.Files.LastWriteTimeUtc.AddMinutes(10);
+
+        var tail = new SimulatorAftermath(installation.Files, installation.Paths, installation.Log)
+            .SimulatorLogTail(2, started);
+
+        Assert.Empty(tail);
+    }
+
+    [Fact]
+    public void A_log_written_a_moment_before_the_start_was_taken_counts()
+    {
+        // The start is taken just after the launch, as for the crash dumps.
+        var installation = new TestInstallation(new InMemoryFileSystem()
+            .WithFile(TestInstallation.At("log.txt"), "opening\r\n"));
+        var started = installation.Files.LastWriteTimeUtc.AddSeconds(3);
+
+        var tail = new SimulatorAftermath(installation.Files, installation.Paths, installation.Log)
+            .SimulatorLogTail(2, started);
+
+        Assert.Equal(new[] { "opening" }, tail);
     }
 }

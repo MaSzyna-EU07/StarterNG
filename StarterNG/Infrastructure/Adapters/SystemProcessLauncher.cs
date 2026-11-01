@@ -18,7 +18,8 @@ public sealed class SystemProcessLauncher : IProcessLauncher
     }
 
     public IProcessHandle? Start(string executablePath, IReadOnlyList<string> arguments, string? workingDirectory,
-                                 bool captureErrors, out string? error)
+                                 IReadOnlyDictionary<string, string> environment, bool captureErrors,
+                                 out string? error)
     {
         var info = new ProcessStartInfo
         {
@@ -29,6 +30,8 @@ public sealed class SystemProcessLauncher : IProcessLauncher
         };
         foreach (string argument in arguments)
             info.ArgumentList.Add(argument);
+        foreach (var (name, value) in environment)
+            info.Environment[name] = value;
 
         try
         {
@@ -84,6 +87,22 @@ public sealed class SystemProcessLauncher : IProcessLauncher
         {
             _log.Log($"lookup {processName}", ex);
             return null;
+        }
+    }
+
+    public bool IsRunning(string processName)
+    {
+        try
+        {
+            var found = Process.GetProcessesByName(processName);
+            foreach (var process in found)
+                process.Dispose();
+            return found.Length > 0;
+        }
+        catch (Exception ex)
+        {
+            _log.Log($"lookup {processName}", ex);
+            return false;
         }
     }
 

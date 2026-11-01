@@ -10,6 +10,9 @@ namespace StarterNG.Application;
 /// <summary>What a simulator that went down left behind: its log and its crash dumps.</summary>
 public sealed class SimulatorAftermath
 {
+    // A little slack: the start is taken just after the launch, not before it.
+    private static readonly TimeSpan StartSlack = TimeSpan.FromSeconds(5);
+
     private readonly IFileSystem _files;
     private readonly IGamePaths _paths;
     private readonly IDiagnosticsLog _log;
@@ -42,8 +45,7 @@ public sealed class SimulatorAftermath
             if (_files.DirectoryExists(crashpad))
                 dumps.AddRange(_files.GetFilesRecursive(crashpad, "*.dmp"));
 
-            // A little slack: the start is taken just after the launch, not before it.
-            var since = startedUtc - TimeSpan.FromSeconds(5);
+            var since = startedUtc - StartSlack;
             return dumps.Distinct(StringComparer.OrdinalIgnoreCase)
                         .Where(dump => _files.GetLastWriteTimeUtc(dump) >= since)
                         .OrderByDescending(_files.GetLastWriteTimeUtc)
@@ -56,13 +58,17 @@ public sealed class SimulatorAftermath
         }
     }
 
-    /// <summary>The end of the simulator's own log, for when it died without a word on its error stream.</summary>
-    public IReadOnlyList<string> SimulatorLogTail(int count)
+    /// <summary>
+    /// The end of the simulator's own log, for when it died without a word on its
+    /// error stream. A log not written since the start is the session before's, the
+    /// simulator having died before opening its own: it says nothing about this one.
+    /// </summary>
+    public IReadOnlyList<string> SimulatorLogTail(int count, DateTime startedUtc)
     {
         string path = _paths.FromRoot("log.txt");
         try
         {
-            if (!_files.FileExists(path))
+            if (!_files.FileExists(path) || _files.GetLastWriteTimeUtc(path) < startedUtc - StartSlack)
                 return Array.Empty<string>();
 
             var lines = LegacyText.Decode(_files.ReadAllBytes(path))
