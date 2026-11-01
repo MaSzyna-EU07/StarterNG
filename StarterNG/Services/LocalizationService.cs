@@ -275,13 +275,15 @@ public class LocalizationService : INotifyPropertyChanged, ILocalizedStrings
     /// </summary>
     private void ReadOldKeyDescriptions(string code)
     {
-        if (string.IsNullOrEmpty(_folders.OldStarter))
+        if (string.IsNullOrEmpty(_folders.OldStarter) || !Directory.Exists(_folders.OldStarter))
             return;
 
-        string path = Path.Combine(_folders.OldStarter, $"lang-{code}.txt");
         try
         {
-            if (!File.Exists(path))
+            // The list holds codes in lower case and the file may be lang-ZH.txt; on Linux those differ.
+            string? path = Directory.EnumerateFiles(_folders.OldStarter, "lang-*.txt")
+                .FirstOrDefault(file => string.Equals(Path.GetFileNameWithoutExtension(file), $"lang-{code}", StringComparison.OrdinalIgnoreCase));
+            if (path is null)
                 return;
 
             bool inDescriptions = false;
@@ -304,7 +306,7 @@ public class LocalizationService : INotifyPropertyChanged, ILocalizedStrings
         }
         catch (Exception ex)
         {
-            _log.Log($"reading {path}", ex);
+            _log.Log($"reading lang-{code}.txt", ex);
         }
     }
 
