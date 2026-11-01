@@ -12,7 +12,7 @@
         <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
         <!-- Major and minor only: CI adds the patch, the number of commits, so every
              build of main is a higher version without anyone bumping it. -->
-        <VersionPrefix>1.4</VersionPrefix>
+        <VersionPrefix>1.5</VersionPrefix>
         <AssemblyName>Starter</AssemblyName>
         <Company>eu07.pl</Company>
     </PropertyGroup>
