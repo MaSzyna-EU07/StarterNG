@@ -20,6 +20,12 @@
         <SolidColorBrush x:Key="CarbonBorderDark" Color="#0E0F12" />
         <SolidColorBrush x:Key="CarbonFg" Color="#E6E8EA" />
         <SolidColorBrush x:Key="CarbonFgDim" Color="#9098A0" />
+        <SolidColorBrush x:Key="TextControlPlaceholderForeground" Color="#9098A0" />
+        <SolidColorBrush x:Key="TextControlPlaceholderForegroundPointerOver" Color="#9098A0" />
+        <SolidColorBrush x:Key="TextControlPlaceholderForegroundFocused" Color="#9098A0" />
+        <SolidColorBrush x:Key="ComboBoxPlaceHolderForeground" Color="#9098A0" />
+        <SolidColorBrush x:Key="ComboBoxPlaceHolderForegroundPointerOver" Color="#9098A0" />
+        <SolidColorBrush x:Key="ComboBoxPlaceHolderForegroundFocused" Color="#9098A0" />
         <SolidColorBrush x:Key="CarbonAccent" Color="#177f00" />
         <SolidColorBrush x:Key="CarbonAccentHover" Color="#41c400" />
         <SolidColorBrush x:Key="CarbonAccentBright" Color="#41c400" />
@@ -43,6 +49,7 @@
                                                       VerticalAlignment="Center" />
                                     <TextBlock Text="{TemplateBinding Header}"
                                                FontWeight="SemiBold"
+                                               TextTrimming="CharacterEllipsis"
                                                VerticalAlignment="Center"
                                                Foreground="{StaticResource CarbonFg}" />
                                 </DockPanel>
@@ -311,6 +318,7 @@
         <Setter Property="MinHeight" Value="25" />
         <Setter Property="FontSize" Value="12" />
         <Setter Property="Padding" Value="10,2" />
+        <Setter Property="VerticalContentAlignment" Value="Center" />
         <Setter Property="CornerRadius" Value="2" />
     </Style>
     <!-- Checklist rows only sit tighter; the size comes from the theme above. -->
@@ -324,9 +332,6 @@
     <Style Selector="RadioButton">
         <Setter Property="MinHeight" Value="0" />
         <Setter Property="FontSize" Value="12" />
-    </Style>
-    <Style Selector="RadioButton /template/ Grid:not(#RootGrid)">
-        <Setter Property="Height" Value="20" />
     </Style>
     <Style Selector="Label">
         <Setter Property="FontSize" Value="12" />
@@ -491,6 +496,14 @@
     <Style Selector="CheckBox:focus-visible /template/ Border#NormalRectangle">
         <Setter Property="BorderBrush" Value="{StaticResource CarbonAccentBright}" />
     </Style>
+    <!-- The condition is what lets this win: the theme sets the half opacity in its template. -->
+    <Style Selector="TextBox:not(:disabled) /template/ TextBlock#PART_Placeholder">
+        <Setter Property="Opacity" Value="1" />
+    </Style>
+    <Style Selector="ComboBox:not(:disabled) /template/ TextBlock#PlaceholderTextBlock">
+        <Setter Property="Opacity" Value="1" />
+    </Style>
+
     <Style Selector="TextBox:focus /template/ Border#PART_BorderElement">
         <Setter Property="BorderBrush" Value="{StaticResource CarbonAccentBright}" />
     </Style>

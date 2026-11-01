@@ -1,13 +1,10 @@
-using StarterNG.Infrastructure.Sceneries;
+using StarterNG.Domain.Sceneries;
 using StarterNG.Tests.Fakes;
 
 namespace StarterNG.Tests;
 
 public class SceneryParserTests
 {
-    private static SceneryParser Parser(DateTime? now = null) =>
-        new(new FixedClock(now ?? new DateTime(2026, 5, 4, 9, 15, 0)), new StubRandom());
-
     [Fact]
     public void Directives_become_the_scenery_headline()
     {
@@ -19,7 +16,7 @@ public class SceneryParserTests
             //$i images/kato.jpg
             """;
 
-        var scenery = Parser().Parse("scenery/kato.scn", scn);
+        var scenery = TestScenery.Parser().Parse("scenery/kato.scn", scn);
 
         Assert.Equal("Śląsk", scenery.Group);
         Assert.Equal("Osobowy do Katowic", scenery.Name);
@@ -32,7 +29,7 @@ public class SceneryParserTests
     [Fact]
     public void The_a_directive_marks_a_scenery_archival()
     {
-        var scenery = Parser().Parse("scenery/old.scn", "//$a\n//$n Stary\n");
+        var scenery = TestScenery.Parser().Parse("scenery/old.scn", "//$a\n//$n Stary\n");
 
         Assert.True(scenery.Archival);
     }
@@ -46,7 +43,7 @@ public class SceneryParserTests
             //$f doc/notes.txt
             """;
 
-        var scenery = Parser().Parse("scenery/x.scn", scn);
+        var scenery = TestScenery.Parser().Parse("scenery/x.scn", scn);
 
         Assert.Collection(scenery.Attachments,
             first =>
@@ -76,7 +73,7 @@ public class SceneryParserTests
             FirstInit
             """;
 
-        var scenery = Parser().Parse("scenery/x.scn", scn);
+        var scenery = TestScenery.Parser().Parse("scenery/x.scn", scn);
 
         var include = Assert.Single(scenery.Includes);
         Assert.Equal("zima.inc", include.FilePath);
@@ -95,7 +92,7 @@ public class SceneryParserTests
             endoptional
             """;
 
-        var include = Assert.Single(Parser().Parse("scenery/x.scn", scn).Includes);
+        var include = Assert.Single(TestScenery.Parser().Parse("scenery/x.scn", scn).Includes);
 
         Assert.Equal(2, include.Kind);
         Assert.False(include.Selected);
@@ -112,7 +109,7 @@ public class SceneryParserTests
             FirstInit
             """;
 
-        var scenery = Parser().Parse("scenery/x.scn", scn);
+        var scenery = TestScenery.Parser().Parse("scenery/x.scn", scn);
 
         var trainset = Assert.Single(scenery.Trainsets);
         Assert.True(trainset.Parsed);
@@ -126,11 +123,11 @@ public class SceneryParserTests
     public void Vehicles_outside_a_trainset_are_collected_as_loose()
     {
         const string scn = """
-            node -1 -1 wagon_1 dynamic PKP/111A 111a 111a.mmd none 0 nobody 0 enddynamic
+            node -1 -1 wagon_1 dynamic PKP/111A 111a 111a.mmd none 0 nobody 0 0 enddynamic
             FirstInit
             """;
 
-        var scenery = Parser().Parse("scenery/x.scn", scn);
+        var scenery = TestScenery.Parser().Parse("scenery/x.scn", scn);
 
         var vehicle = Assert.Single(scenery.LooseVehicles);
         Assert.Equal("wagon_1", vehicle.Name);
@@ -142,13 +139,43 @@ public class SceneryParserTests
     [Fact]
     public void A_malformed_loose_vehicle_is_reported_and_left_in_place()
     {
-        const string scn = "node x -1 wagon_1 dynamic PKP/111A 111a 111a.mmd none 0 nobody 0 enddynamic\n";
+        const string scn = "node x -1 wagon_1 dynamic PKP/111A 111a 111a.mmd none 0 nobody 0 0 enddynamic\n";
 
-        var scenery = Parser().Parse("scenery/x.scn", scn);
+        var scenery = TestScenery.Parser().Parse("scenery/x.scn", scn);
 
         Assert.Empty(scenery.LooseVehicles);
         Assert.Equal(new[] { "wagon_1" }, scenery.LooseVehicleNames);
-        Assert.Contains(scenery.Faults, fault => fault.Contains("wagon_1"));
+        var fault = Assert.Single(scenery.Faults);
+        Assert.Equal((SceneryFaultKind.NotANumber, "wagon_1", "x", 1), (fault.Kind, fault.Subject, fault.Token, fault.Line));
         Assert.Contains("enddynamic", scenery.Template);
+    }
+
+    [Fact]
+    public void Directives_in_a_file_put_in_place_are_not_the_scenery_s_own()
+    {
+        const string included = """
+            //$n Auta
+            //$l Inne
+            //$d Opis aut
+            //$f doc/auta.pdf Auta
+            //$i auta.jpg
+            //$a
+            trainset auto road1 0 50
+            endtrainset
+            """;
+        string text = SceneryIncludes.Inline("//$d Opis scenerii\n//$f doc/mapa.png Mapa\nFirstInit\ninclude auta.scm end\n",
+                                             name => (name, included));
+
+        var scenery = TestScenery.Parser().Parse("scenery/x.scn", text);
+
+        Assert.Equal("Opis scenerii", scenery.Description);
+        Assert.Equal("doc/mapa.png", Assert.Single(scenery.Attachments).FilePath);
+        Assert.Null(scenery.Name);
+        Assert.Null(scenery.Group);
+        Assert.Null(scenery.ImageName);
+        Assert.False(scenery.Archival);
+        // The file's own trainset is still listed, and its text still written for a start.
+        Assert.Equal("auta.scm", Assert.Single(scenery.Trainsets).SourceFile);
+        Assert.Contains("//$d Opis aut", scenery.BuildExportContent(skipDecorTrainsets: false, new StubRandom()));
     }
 }

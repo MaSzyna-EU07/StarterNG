@@ -1,13 +1,13 @@
 using System;
 using System.Collections.Generic;
-using System.Globalization;
 using System.IO;
-using System.Linq;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Text.Json.Serialization.Metadata;
 using System.Text.RegularExpressions;
+using StarterNG.Application;
+using StarterNG.Application.Abstractions;
 using StarterNG.Infrastructure.Adapters;
 
 namespace StarterNG.Classes;
@@ -54,18 +54,14 @@ public static class PresetStore
 
     public static PresetSort SortMode { get; set; } = PresetSort.Name;
 
-    private static readonly JsonSerializerOptions Options = new()
-    {
-        WriteIndented = true,
-        TypeInfoResolver = PresetJsonContext.Default,
-    };
+    private static PresetFile? _disk;
 
-    private static JsonTypeInfo<PresetCollection> TypeInfo =>
-        (JsonTypeInfo<PresetCollection>)Options.GetTypeInfo(typeof(PresetCollection));
+    private static PresetFile Disk =>
+        _disk ??= new PresetFile(AppServices.Current.Files, AppServices.Current.Log, FilePath);
 
     public static IReadOnlyList<TrainsetPreset> All()
     {
-        var list = Load().Presets.ToList();
+        var list = Disk.Presets();
         if (SortMode == PresetSort.Track)
             list.Sort((a, b) => string.Compare(TrackOf(a), TrackOf(b), StringComparison.OrdinalIgnoreCase));
         else
@@ -73,25 +69,9 @@ public static class PresetStore
         return list;
     }
 
-    public static void Save(string? name, string? entry)
-    {
-        name = name?.Trim() ?? "";
-        if (name.Length == 0 || string.IsNullOrWhiteSpace(entry))
-            return;
+    public static void Save(string? name, string? entry) => Disk.Save(name, entry);
 
-        var col = Load();
-        col.Presets.RemoveAll(p => string.Equals(p.Name, name, StringComparison.OrdinalIgnoreCase));
-        col.Presets.Add(new TrainsetPreset { Name = name, Entry = entry! });
-        col.Presets.Sort((a, b) => string.Compare(a.Name, b.Name, StringComparison.OrdinalIgnoreCase));
-        Persist(col);
-    }
-
-    public static void Delete(string name)
-    {
-        var col = Load();
-        if (col.Presets.RemoveAll(p => string.Equals(p.Name, name, StringComparison.OrdinalIgnoreCase)) > 0)
-            Persist(col);
-    }
+    public static void Delete(string name) => Disk.Delete(name);
 
     public static int ImportMagazyn(string? path = null)
     {
@@ -162,35 +142,95 @@ public static class PresetStore
 
     private static string Sanitize(string name) =>
         string.IsNullOrWhiteSpace(name) ? "preset" : name.Replace(' ', '_');
+}
 
-    private static PresetCollection Load()
+/// <summary>The presets as one file holds them; <see cref="PresetStore"/> is the player's own.</summary>
+public sealed class PresetFile
+{
+    private static readonly JsonSerializerOptions Options = new()
     {
-        try
-        {
-            if (File.Exists(FilePath))
-            {
-                var col = JsonSerializer.Deserialize(File.ReadAllText(FilePath), TypeInfo);
-                if (col?.Presets != null)
-                    return col;
-            }
-        }
-        catch (Exception ex)
-        {
-            StarterNG.Infrastructure.Diagnostics.Log($"reading {FilePath}", ex);
-        }
-        return new PresetCollection();
+        WriteIndented = true,
+        TypeInfoResolver = PresetJsonContext.Default,
+    };
+
+    private static JsonTypeInfo<PresetCollection> TypeInfo =>
+        (JsonTypeInfo<PresetCollection>)Options.GetTypeInfo(typeof(PresetCollection));
+
+    private readonly IFileSystem _files;
+    private readonly IDiagnosticsLog _log;
+    private readonly string _path;
+
+    public PresetFile(IFileSystem files, IDiagnosticsLog log, string path)
+    {
+        _files = files;
+        _log = log;
+        _path = path;
     }
 
-    private static void Persist(PresetCollection col)
+    public List<TrainsetPreset> Presets()
     {
+        TryRead(out var col);
+        return col.Presets;
+    }
+
+    public void Save(string? name, string? entry)
+    {
+        name = name?.Trim() ?? "";
+        if (name.Length == 0 || string.IsNullOrWhiteSpace(entry))
+            return;
+
+        bool read = TryRead(out var col);
+        col.Presets.RemoveAll(p => string.Equals(p.Name, name, StringComparison.OrdinalIgnoreCase));
+        col.Presets.Add(new TrainsetPreset { Name = name, Entry = entry! });
+        col.Presets.Sort((a, b) => string.Compare(a.Name, b.Name, StringComparison.OrdinalIgnoreCase));
+        Persist(col, read);
+    }
+
+    public void Delete(string name)
+    {
+        bool read = TryRead(out var col);
+        if (col.Presets.RemoveAll(p => string.Equals(p.Name, name, StringComparison.OrdinalIgnoreCase)) > 0)
+            Persist(col, read);
+    }
+
+    /// <summary>The file's presets; false, with none, when there is a file but they cannot be had from it.</summary>
+    private bool TryRead(out PresetCollection col)
+    {
+        col = new PresetCollection();
         try
         {
-            Directory.CreateDirectory(Path.GetDirectoryName(FilePath)!);
-            File.WriteAllText(FilePath, JsonSerializer.Serialize(col, TypeInfo));
+            if (!_files.FileExists(_path))
+                return true;
+
+            var read = JsonSerializer.Deserialize(_files.ReadAllText(_path), TypeInfo);
+            if (read?.Presets != null)
+            {
+                col = read;
+                return true;
+            }
+            _log.Log($"reading {_path}: no presets in it");
         }
         catch (Exception ex)
         {
-            StarterNG.Infrastructure.Diagnostics.Log($"saving {FilePath}", ex);
+            _log.Log($"reading {_path}", ex);
+        }
+        return false;
+    }
+
+    // What was not read is not in the list: written over, those presets are gone, so
+    // a copy goes first and without one the file stays - the new preset waits.
+    private void Persist(PresetCollection col, bool read)
+    {
+        try
+        {
+            _files.CreateDirectory(Path.GetDirectoryName(_path)!);
+            if (!read)
+                _files.KeepAside(_path, _log);
+            _files.WriteAllTextAtomic(_path, JsonSerializer.Serialize(col, TypeInfo));
+        }
+        catch (Exception ex)
+        {
+            _log.Log($"saving {_path}", ex);
         }
     }
 }

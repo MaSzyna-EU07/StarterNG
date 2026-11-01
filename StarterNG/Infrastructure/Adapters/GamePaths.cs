@@ -10,7 +10,24 @@ public sealed class GamePaths : IGamePaths
         Root = root;
     }
 
-    public static GamePaths ForCurrentDirectory() => new(Directory.GetCurrentDirectory());
+    /// <summary>
+    /// The working directory, which is how the game's own shortcuts point at it - or
+    /// the starter's folder where only that one holds a game, as when started from a
+    /// shortcut set up elsewhere. Moved there too: more than these paths go by it.
+    /// </summary>
+    public static GamePaths ForCurrentDirectory()
+    {
+        string current = Directory.GetCurrentDirectory();
+        string own = System.AppContext.BaseDirectory;
+        if (HoldsGame(current) || !HoldsGame(own))
+            return new GamePaths(current);
+
+        Directory.SetCurrentDirectory(own);
+        return new GamePaths(Directory.GetCurrentDirectory());
+    }
+
+    private static bool HoldsGame(string folder) =>
+        Directory.Exists(Path.Combine(folder, "scenery")) && Directory.Exists(Path.Combine(folder, "dynamic"));
 
     public string Root { get; }
 

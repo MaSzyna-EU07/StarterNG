@@ -74,6 +74,70 @@ public class PhysicsAndAssetsTests
         Assert.NotNull(installation.Physics.For("pkp/ep07/", "ep07"));
     }
 
+    [Theory]
+    [InlineData("pkp/21xm_v1/")]
+    [InlineData("pkp/21xm_v1")]
+    [InlineData("PKP\\21XM_V1")]
+    [InlineData("dynamic/pkp/21xm_v1/")]
+    public void Two_fiz_files_of_one_name_are_told_apart_by_their_folder(string folder)
+    {
+        // As in the game: dynamic/**/21xm_v1/214m.fiz and sa134_v1/214m.fiz.
+        var installation = new TestInstallation(new InMemoryFileSystem()
+            .WithFile(Fiz("pkp", "21xm_v1", "214m"), "Param: M=51000\nDimensions: L=24.38")
+            .WithFile(Fiz("pkp", "sa134_v1", "214m"), "Param: M=48000\nDimensions: L=24.5"));
+
+        var physics = installation.Physics.For(folder, "214m.e3d")!;
+
+        Assert.Equal(51000, physics.Mass);
+        Assert.Equal(24.38, physics.Length);
+        Assert.Equal(48000, installation.Physics.For("pkp/sa134_v1/", "214m")!.Mass);
+        // Asked again, the first answer has not stuck to the name.
+        Assert.Equal(51000, installation.Physics.For(folder, "214m")!.Mass);
+    }
+
+    [Fact]
+    public void A_folder_without_the_fiz_falls_back_to_the_name_alone()
+    {
+        var installation = new TestInstallation(new InMemoryFileSystem()
+            .WithFile(Fiz("pkp", "ep07", "ep07"), "Param: M=80000"));
+
+        Assert.Equal(80000, installation.Physics.For("pkp/other/", "ep07")!.Mass);
+        Assert.Equal(80000, installation.Physics.For(null, "ep07")!.Mass);
+    }
+
+    [Fact]
+    public void The_fallback_to_a_name_two_folders_share_is_the_same_on_every_machine()
+    {
+        var installation = new TestInstallation(new InMemoryFileSystem()
+            .WithFile(Fiz("zz", "b", "214m"), "Param: M=2")
+            .WithFile(Fiz("aa", "a", "214m"), "Param: M=1"));
+
+        Assert.Equal(1, installation.Physics.For("elsewhere/", "214m")!.Mass);
+    }
+
+    [Fact]
+    public void A_dumb_variant_in_the_vehicles_own_folder_goes_before_a_namesake_elsewhere()
+    {
+        var installation = new TestInstallation(new InMemoryFileSystem()
+            .WithFile(Fiz("pkp", "ep07", "ep07dumb"), "Param: M=1000")
+            .WithFile(Fiz("pkp", "other", "ep07"), "Param: M=2000"));
+
+        Assert.Equal(1000, installation.Physics.For("pkp/ep07/", "ep07")!.Mass);
+    }
+
+    [Fact]
+    public void Two_folders_sharing_a_name_count_once_among_what_is_indexed()
+    {
+        var installation = new TestInstallation(new InMemoryFileSystem()
+            .WithFile(Fiz("pkp", "a", "214m"), "Param: M=1")
+            .WithFile(Fiz("pkp", "b", "214m"), "Param: M=2")
+            .WithFile(Fiz("pkp", "c", "ep07"), "Param: M=3"));
+
+        installation.Physics.Preload();
+
+        Assert.Equal(2, installation.Physics.IndexedCount);
+    }
+
     [Fact]
     public void An_unknown_model_has_no_physics_and_an_empty_installation_indexes_nothing()
     {

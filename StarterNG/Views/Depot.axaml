@@ -8,6 +8,25 @@
              x:CompileBindings="True"
              mc:Ignorable="d" d:DesignWidth="1000" d:DesignHeight="700"
              x:Class="StarterNG.Views.Depot">
+    <UserControl.Styles>
+        <Style Selector="Button.ConsistTool">
+            <Setter Property="Width" Value="26" />
+            <Setter Property="Height" Value="22" />
+            <Setter Property="MinWidth" Value="0" />
+            <Setter Property="MinHeight" Value="0" />
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="HorizontalContentAlignment" Value="Center" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+        </Style>
+        <Style Selector="Button.ConsistTool:disabled">
+            <Setter Property="Opacity" Value="0.35" />
+        </Style>
+        <Style Selector="Button.ConsistTool materialIcons|MaterialIcon">
+            <Setter Property="Width" Value="16" />
+            <Setter Property="Height" Value="16" />
+        </Style>
+    </UserControl.Styles>
     <!-- TabIndex follows the workflow - pick a consist, browse, build the train,
          then the editors - not the column order the grid happens to have. -->
     <Grid Name="depotGrid" Margin="0" ColumnSpacing="3" RowSpacing="3">
@@ -20,10 +39,13 @@
              but shrinks with everything else towards the 666 px floor instead of
              being clipped. The consist row measures itself, so a whole card fits
              whether the thumbnails are the small ones or the large ones. Row 1's
-             cap fits the seven lines of the texture tab. -->
+             cap fits the seven lines of the texture tab and the coupling tab with
+             its buttons, and no more: what it leaves goes to the vehicle list.
+             Row 0's floor is what the left column needs with a usable list; below
+             it the list ran over the search box. Row 1's tabs scroll instead. -->
         <Grid.RowDefinitions>
-            <RowDefinition Height="*" MinHeight="150" />
-            <RowDefinition Height="1.57*" MinHeight="120" MaxHeight="240" />
+            <RowDefinition Height="*" MinHeight="264" />
+            <RowDefinition Height="1.57*" MinHeight="120" MaxHeight="172" />
             <RowDefinition Height="Auto" MinHeight="140" MaxHeight="230" />
         </Grid.RowDefinitions>
 
@@ -68,9 +90,10 @@
                          DoubleTapped="VehicleListBox_OnDoubleTapped"
                          PointerPressed="VehicleListBox_OnPointerPressed" />
 
-                <!-- The thumbnail - drag it onto the consist - and Add share a line, so
-                     the list keeps the height. -->
-                <Grid Grid.Row="5" ColumnDefinitions="*,Auto" ColumnSpacing="6" Margin="0,6,0,0">
+                <!-- The thumbnail - drag it onto the consist - Replace and Add share a
+                     line, so the list keeps the height. Replace is what a double-click
+                     on the list does, as in the old starter, put where it is seen. -->
+                <Grid Grid.Row="5" ColumnDefinitions="*,Auto,Auto" ColumnSpacing="6" Margin="0,6,0,0">
                     <Border Name="miniPreviewPanel" Height="34"
                             Background="{StaticResource CarbonInputBg}"
                             BorderBrush="{StaticResource CarbonBorderLight}" BorderThickness="1"
@@ -78,7 +101,14 @@
                             PointerPressed="MiniPreview_OnPointerPressed">
                         <Image Name="miniPreview" Stretch="Uniform" Margin="3" />
                     </Border>
-                    <Button Name="addVehicleButton" Grid.Column="1" Classes="Flat Accent"
+                    <Button Name="replaceVehicleButton" Grid.Column="1" Classes="Flat"
+                            Cursor="Hand" IsEnabled="{Binding #addVehicleButton.IsEnabled}"
+                            VerticalAlignment="Stretch" HorizontalContentAlignment="Center"
+                            VerticalContentAlignment="Center"
+                            Click="ReplaceVehicleButton_OnClick"
+                            ToolTip.Tip="{Binding [TipReplaceVehicle], Source={x:Static starterNg:App.Loc}}"
+                            Content="{Binding [ReplaceVehicle], Source={x:Static starterNg:App.Loc}}" />
+                    <Button Name="addVehicleButton" Grid.Column="2" Classes="Flat Accent"
                             MinWidth="80" Cursor="Hand" IsEnabled="False"
                             VerticalAlignment="Stretch" HorizontalContentAlignment="Center"
                             VerticalContentAlignment="Center"
@@ -94,7 +124,9 @@
                 Background="{StaticResource CarbonPanelBg}"
                 BorderBrush="{StaticResource CarbonBorderLight}"
                 BorderThickness="1" CornerRadius="2" Padding="6">
-            <TabControl>
+            <!-- The tab picks what the consist strip edits: a consist of the scenery,
+                 or a consist kept in the warehouse. -->
+            <TabControl Name="consistSourceTabs" SelectionChanged="ConsistSourceTabs_OnSelectionChanged">
                 <TabItem Name="sceneryConsistsTab"
                          Header="{Binding [SceneryConsists], Source={x:Static starterNg:App.Loc}}">
                     <DockPanel LastChildFill="True">
@@ -117,15 +149,18 @@
                                  KeyDown="SceneryConsistList_OnKeyDown" />
                     </DockPanel>
                 </TabItem>
-                <TabItem Header="{Binding [WarehouseConsists], Source={x:Static starterNg:App.Loc}}">
+                <TabItem Name="warehouseTab"
+                         Header="{Binding [WarehouseConsists], Source={x:Static starterNg:App.Loc}}">
                     <DockPanel LastChildFill="True">
                         <Button Name="removeFromWarehouseButton" DockPanel.Dock="Bottom" Classes="Flat"
                                 Margin="0,6,0,0" HorizontalAlignment="Stretch" Cursor="Hand"
                                 HorizontalContentAlignment="Center"
                                 Click="RemoveFromWarehouseButton_OnClick"
                                 Content="{Binding [RemoveFromWarehouse], Source={x:Static starterNg:App.Loc}}" />
-                        <ListBox Name="warehouseList" Classes="Compact"
-                                 DoubleTapped="WarehouseList_OnDoubleTapped" />
+                        <TextBlock DockPanel.Dock="Bottom" Margin="2,6,0,0" FontSize="12" Opacity="0.6"
+                                   TextWrapping="Wrap"
+                                   Text="{Binding [WarehouseEditHint], Source={x:Static starterNg:App.Loc}}" />
+                        <ListBox Name="warehouseList" Classes="Compact" />
                     </DockPanel>
                 </TabItem>
             </TabControl>
@@ -206,13 +241,72 @@
             </TabControl>
         </Border>
 
-        <HeaderedContentControl Grid.Row="2" Grid.ColumnSpan="3" TabIndex="3" Theme="{StaticResource GroupBox}"
+        <HeaderedContentControl Name="consistGroup" Grid.Row="2" Grid.ColumnSpan="3" TabIndex="3"
+                                Theme="{StaticResource GroupBox}"
                                 Header="{Binding [Consist], Source={x:Static starterNg:App.Loc}}">
             <!-- Mass, length and the rest ride in the title bar instead of taking
                  a row of their own above the cards. -->
             <HeaderedContentControl.Tag>
-                <StackPanel Name="trainStats" Orientation="Horizontal"
-                            VerticalAlignment="Center" />
+                <StackPanel Orientation="Horizontal" Spacing="16" VerticalAlignment="Center">
+                    <!-- What acts on the whole consist, where the consist is: undo first,
+                         then the random tools that were only in the list's menu. -->
+                    <StackPanel Name="consistTools" Orientation="Horizontal" Spacing="2"
+                                VerticalAlignment="Center">
+                        <Button Name="undoButton" Classes="Basic ConsistTool" IsEnabled="False"
+                                Click="UndoButton_OnClick"
+                                ToolTip.Tip="{Binding [ConsistUndo], Source={x:Static starterNg:App.Loc}}">
+                            <materialIcons:MaterialIcon Kind="Undo" />
+                        </Button>
+                        <Button Name="redoButton" Classes="Basic ConsistTool" IsEnabled="False"
+                                Click="RedoButton_OnClick"
+                                ToolTip.Tip="{Binding [ConsistRedo], Source={x:Static starterNg:App.Loc}}">
+                            <materialIcons:MaterialIcon Kind="Redo" />
+                        </Button>
+                        <Border Width="1" Margin="6,3" Background="{StaticResource CarbonBorderLight}" />
+                        <Button Classes="Basic ConsistTool" Click="RandomOrderButton_OnClick"
+                                ToolTip.Tip="{Binding [TipRandomizeOrder], Source={x:Static starterNg:App.Loc}}">
+                            <materialIcons:MaterialIcon Kind="ShuffleVariant" />
+                        </Button>
+                        <Button Classes="Basic ConsistTool" Click="RandomOrientButton_OnClick"
+                                ToolTip.Tip="{Binding [TipRandomizeOrientation], Source={x:Static starterNg:App.Loc}}">
+                            <materialIcons:MaterialIcon Kind="SwapHorizontalVariant" />
+                        </Button>
+                        <Button Classes="Basic ConsistTool" Click="RandomTexturesButton_OnClick"
+                                ToolTip.Tip="{Binding [TipRandomizeTextures], Source={x:Static starterNg:App.Loc}}">
+                            <materialIcons:MaterialIcon Kind="Palette" />
+                        </Button>
+                        <Border Width="1" Margin="6,3" Background="{StaticResource CarbonBorderLight}" />
+                        <!-- A scenery consist only: saved into the scenery file, or put
+                             back as the file has it; a warehouse consist saves itself. -->
+                        <Button Name="saveToSceneryButton" Classes="Basic ConsistTool" IsEnabled="False"
+                                Click="SaveToSceneryButton_OnClick"
+                                ToolTip.Tip="{Binding [SaveToScenery], Source={x:Static starterNg:App.Loc}}">
+                            <materialIcons:MaterialIcon Kind="ContentSaveOutline" />
+                        </Button>
+                        <Button Name="revertSceneryButton" Classes="Basic ConsistTool" IsEnabled="False"
+                                Click="RevertSceneryButton_OnClick"
+                                ToolTip.Tip="{Binding [RevertFromScenery], Source={x:Static starterNg:App.Loc}}">
+                            <materialIcons:MaterialIcon Kind="FileRestoreOutline" />
+                        </Button>
+                        <Button Name="addToWarehouseToolButton" Classes="Basic ConsistTool"
+                                Click="AddToWarehouseButton_OnClick"
+                                ToolTip.Tip="{Binding [AddToWarehouse], Source={x:Static starterNg:App.Loc}}">
+                            <materialIcons:MaterialIcon Kind="ArchiveArrowDownOutline" />
+                        </Button>
+                        <Button Classes="Basic ConsistTool" Click="ClearConsistButton_OnClick"
+                                ToolTip.Tip="{Binding [ConsistRemoveAll], Source={x:Static starterNg:App.Loc}}">
+                            <materialIcons:MaterialIcon Kind="DeleteSweepOutline" />
+                        </Button>
+                    </StackPanel>
+                    <!-- Read only: the scenery's author turns a trainset round, and
+                         the starter keeps it that way. -->
+                    <TextBlock Name="reversedBadge" IsVisible="False" VerticalAlignment="Center"
+                               FontSize="12" Foreground="#E0A030"
+                               Text="{Binding [ConsistReversed], Source={x:Static starterNg:App.Loc}}"
+                               ToolTip.Tip="{Binding [ConsistReversedTip], Source={x:Static starterNg:App.Loc}}" />
+                    <StackPanel Name="trainStats" Orientation="Horizontal"
+                                VerticalAlignment="Center" />
+                </StackPanel>
             </HeaderedContentControl.Tag>
             <DockPanel LastChildFill="True">
                 <Panel Name="consistDropTarget">
@@ -220,8 +314,7 @@
                                TextWrapping="Wrap" MaxWidth="520" Opacity="0.6" TextAlignment="Center"
                                Text="{Binding [ConsistEmpty], Source={x:Static starterNg:App.Loc}}" />
                     <ScrollViewer Name="consistScroll"
-                                  HorizontalScrollBarVisibility="Visible" VerticalScrollBarVisibility="Disabled"
-                                  Padding="0,0,0,4">
+                                  HorizontalScrollBarVisibility="Visible" VerticalScrollBarVisibility="Disabled">
                         <Panel>
                             <!-- Tab reaches the strip once and lands on the selected
                                  card; the arrow keys walk it from there. -->

@@ -11,6 +11,10 @@ using StarterNG.Classes;
 
 namespace StarterNG.Views;
 
+/// <summary>
+/// The warehouse tab: consists kept for later. The one selected is the one the
+/// consist strip edits, and the menu puts it into the scenery's selected consist.
+/// </summary>
 public sealed class Warehouse
 {
     private readonly ListBox _list;
@@ -19,6 +23,16 @@ public sealed class Warehouse
     private readonly Func<Trainset?> _target;
     private readonly Action<Trainset, List<Dynamic>> _apply;
 
+    /// <summary>Set while the list is rebuilt, which clears and restores the selection.</summary>
+    private bool _refreshing;
+
+    /// <summary>Another consist is selected, or none - not raised mid-rebuild.</summary>
+    public event Action? SelectionChanged;
+
+    /// <summary>A consist got a new name: the old one, then the new one.</summary>
+    public event Action<string, string>? Renamed;
+
+    /// <param name="target">The scenery consist the menu's actions put a warehouse consist into.</param>
     public Warehouse(ListBox list, Button removeButton, Cursor hand,
                          Func<Trainset?> target, Action<Trainset, List<Dynamic>> apply)
     {
@@ -27,11 +41,20 @@ public sealed class Warehouse
         _hand = hand;
         _target = target;
         _apply = apply;
+
+        _list.SelectionChanged += (_, _) =>
+        {
+            if (!_refreshing)
+                SelectionChanged?.Invoke();
+        };
     }
 
-    public void Refresh()
+    /// <param name="select">The consist to select; the one selected now otherwise.</param>
+    public void Refresh(string? select = null)
     {
-        string? current = SelectedName();
+        string? current = select ?? SelectedName();
+        string? before = SelectedName();
+        _refreshing = true;
         _list.Items.Clear();
 
         foreach (var preset in PresetStore.All())
@@ -52,9 +75,15 @@ public sealed class Warehouse
 
         _list.ContextMenu ??= BuildMenu();
         _removeButton.IsEnabled = _list.Items.Count > 0;
+        _refreshing = false;
+
+        if (!string.Equals(before, SelectedName(), StringComparison.Ordinal))
+            SelectionChanged?.Invoke();
     }
 
     private string? SelectedName() => (_list.SelectedItem as ListBoxItem)?.Tag as string;
+
+    public TrainsetPreset? SelectedPreset() => SelectedName() is { } name ? PresetNamed(name) : null;
 
     private static TrainsetPreset? PresetNamed(string name) =>
         PresetStore.All().FirstOrDefault(p => string.Equals(p.Name, name, StringComparison.Ordinal));
@@ -68,20 +97,14 @@ public sealed class Warehouse
             bool hasPreset = SelectedName() != null;
             bool hasTarget = _target() != null;
 
-            void Add(string key, Action run, bool enabled = true)
-            {
-                var mi = new MenuItem { Header = App.Loc[key], IsEnabled = enabled };
-                mi.Click += (_, _) => run();
-                menu.Items.Add(mi);
-            }
-
-            Add("WarehouseApply", ApplySelected, hasPreset && hasTarget);
-            Add("WarehouseAppend", AppendSelected, hasPreset && hasTarget);
-            Add("ChangeName", RenameSelected, hasPreset);
+            menu.AddItem(App.Loc["WarehouseUseInScenery"], ApplySelected, hasPreset && hasTarget);
+            menu.AddItem(App.Loc["WarehouseAppendToScenery"], AppendSelected, hasPreset && hasTarget);
+            menu.AddItem(App.Loc["ChangeName"], RenameSelected, hasPreset);
+            menu.AddItem(App.Loc["RemoveFromWarehouse"], () => _ = RemoveSelectedAsync(), hasPreset);
 
             menu.Items.Add(new Separator());
-            Add("PresetImportMagazyn", () => _ = ImportMagazynAsync());
-            Add("WarehouseImportFile", () => _ = ImportFileAsync());
+            menu.AddItem(App.Loc["PresetImportMagazyn"], () => _ = ImportMagazynAsync());
+            menu.AddItem(App.Loc["WarehouseImportFile"], () => _ = ImportFileAsync());
 
             menu.Items.Add(new Separator());
             var sort = new MenuItem { Header = App.Loc["PresetSort"] };
@@ -92,68 +115,41 @@ public sealed class Warehouse
         return menu;
     }
 
-    private MenuItem SortItem(PresetSort mode, string locKey)
-    {
-        var item = new MenuItem
-        {
-            Header = (PresetStore.SortMode == mode ? "● " : "○ ") + App.Loc[locKey]
-        };
-        item.Click += (_, _) => { PresetStore.SortMode = mode; Refresh(); };
-        return item;
-    }
+    private MenuItem SortItem(PresetSort mode, string locKey) =>
+        MenuItems.Item((PresetStore.SortMode == mode ? "● " : "○ ") + App.Loc[locKey],
+                       () => { PresetStore.SortMode = mode; Refresh(); });
 
-    public async Task SaveCurrentAsync()
-    {
-        if (_target() is not { } trainset)
-            return;
-
-        string name = trainset.Name;
-        if (string.IsNullOrWhiteSpace(name))
-            name = App.Loc["PresetEmpty"];
-
-        try
-        {
-            PresetStore.Save(name, ConsistText.Serialize(trainset));
-        }
-        catch (Exception ex)
-        {
-            await Infrastructure.Diagnostics.ReportAsync(PresetStore.FilePath, ex);
-            return;
-        }
-        Refresh();
-    }
+    /// <summary>Asks for a name at the button pressed, and says where the consist went.</summary>
+    public void SaveCurrent(Control anchor) =>
+        ConsistContextMenu.ShowSaveFlyout(anchor, _target(), atPointer: false, saved: name => Refresh(name));
 
     public void ApplySelected()
     {
-        if (SelectedName() is not { } name || _target() is not { } target)
-            return;
-
-        if (PresetNamed(name) is not { } preset)
+        if (_target() is not { } target || SelectedPreset() is not { } preset)
             return;
 
         if (ConsistText.VehiclesFrom(preset.Entry) is { } vehicles)
-            _apply(target, vehicles);
+            _apply(target, ConsistContextMenu.KeepCrew(target, vehicles));
     }
 
     public void AppendSelected()
     {
-        if (SelectedName() is not { } name || _target() is not { } target)
+        if (_target() is not { } target)
             return;
 
-        var vehicles = ConsistText.VehiclesFrom(PresetNamed(name)?.Entry);
+        var vehicles = ConsistText.VehiclesFrom(SelectedPreset()?.Entry);
         if (vehicles is null || vehicles.Count == 0)
             return;
 
-        var merged = new List<Dynamic>(target.Vehicles);
-        merged.AddRange(vehicles);
-        _apply(target, merged);
+        _apply(target, Domain.Consist.Joined(target.Vehicles, vehicles));
     }
 
     public void RenameSelected()
     {
-        if (SelectedName() is not { } name || PresetNamed(name) is not { } preset)
+        if (SelectedPreset() is not { } preset)
             return;
 
+        string name = preset.Name;
         var nameBox = new TextBox { Text = name, MinWidth = 240 };
         var ok = new Button { Content = App.Loc["Ok"], Cursor = _hand };
         ok.Classes.Add("Accent");
@@ -169,16 +165,23 @@ public sealed class Warehouse
         panel.Children.Add(ok);
 
         var flyout = new Flyout { Content = panel };
-        ok.Click += (_, _) =>
+        ok.Click += async (_, _) =>
         {
             string? fresh = nameBox.Text?.Trim();
-            if (!string.IsNullOrEmpty(fresh) && !string.Equals(fresh, name, StringComparison.Ordinal))
-            {
-                PresetStore.Save(fresh, preset.Entry);
-                PresetStore.Delete(name);
-                Refresh();
-            }
             flyout.Hide();
+            if (string.IsNullOrEmpty(fresh) || string.Equals(fresh, name, StringComparison.Ordinal))
+                return;
+
+            // Differing only in case is this very entry, not another one written over.
+            if (!string.Equals(fresh, name, StringComparison.OrdinalIgnoreCase) &&
+                !await ConsistContextMenu.MayOverwritePresetAsync(_list, fresh))
+                return;
+
+            // Deleted first: a new name differing only in case is the same entry.
+            PresetStore.Delete(name);
+            PresetStore.Save(fresh, preset.Entry);
+            Renamed?.Invoke(name, fresh);
+            Refresh(fresh);
         };
         flyout.ShowAt(_list);
         nameBox.Focus();
@@ -214,7 +217,7 @@ public sealed class Warehouse
 
     public async Task RemoveSelectedAsync()
     {
-        if (SelectedName() is not { } name)
+        if (SelectedName() is not { } name || !await ConsistContextMenu.MayRemovePresetAsync(_list, name))
             return;
 
         try

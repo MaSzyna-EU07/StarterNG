@@ -1,5 +1,7 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.IO;
 using System.Threading.Tasks;
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
@@ -51,6 +53,25 @@ public static class Diagnostics
             _ = ReportAsync(message, title);
         else
             Dispatcher.UIThread.Post(() => _ = ReportAsync(message, title));
+    }
+
+    /// <summary>Opens a file or folder the way the system does; a dialog says if it is not there or will not open.</summary>
+    public static void OpenOrReport(string path)
+    {
+        if (!File.Exists(path) && !Directory.Exists(path))
+        {
+            ReportOnUiThread(string.Format(App.Loc["FaultFileNotFound"], path));
+            return;
+        }
+
+        try
+        {
+            Process.Start(new ProcessStartInfo(path) { UseShellExecute = true });
+        }
+        catch (Exception ex)
+        {
+            _ = ReportAsync(path, ex);
+        }
     }
 
     public static InstallationCheck InstallationCheck() =>

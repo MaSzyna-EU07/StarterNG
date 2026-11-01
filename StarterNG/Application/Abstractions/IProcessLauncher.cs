@@ -20,14 +20,17 @@ public interface IProcessHandle
 public interface IProcessLauncher
 {
     /// <summary>
-    /// Starts a process. With captureErrors its error stream is kept for the
-    /// handle - only for a process the starter outlives: a write to a pipe nobody
-    /// reads any more can kill the writer.
+    /// Starts a process, with <paramref name="environment"/> added to the starter's
+    /// own. With captureErrors its error stream is kept for the handle - only for a
+    /// process the starter outlives: a write to a pipe nobody reads any more can
+    /// kill the writer.
     /// </summary>
     IProcessHandle? Start(string executablePath, IReadOnlyList<string> arguments, string? workingDirectory,
-                          bool captureErrors, out string? error);
+                          IReadOnlyDictionary<string, string> environment, bool captureErrors, out string? error);
 
     bool OpenInShell(string pathOrUrl);
 
     IProcessHandle? FindRunning(string processName);
+
+    bool IsRunning(string processName);
 }

@@ -17,6 +17,27 @@ public static class TrainsetDisplay
         trainset.Vehicles.Count == 0 ||
         trainset.Vehicles.All(v => string.IsNullOrWhiteSpace(v.Name) && string.IsNullOrWhiteSpace(v.SkinFile));
 
+    /// <summary>
+    /// Whether "drivable only" lists the consist. The one picked and one with changes
+    /// not saved stay whatever their crew: emptying a consist must not take away the
+    /// row it is filled again or saved from.
+    /// </summary>
+    public static bool ListedAsDrivable(Trainset trainset, Trainset? current) =>
+        UData.StaffedTrain(trainset) || ReferenceEquals(trainset, current) || SceneryTrainsetText.IsModified(trainset);
+
+    /// <summary>A consist the simulator drives itself: its description starts with a dash.</summary>
+    public static bool IsAi(Trainset trainset) =>
+        !string.IsNullOrEmpty(trainset.Description) &&
+        trainset.Description.TrimStart().StartsWith("-", StringComparison.Ordinal);
+
+    /// <summary>Whether a list of the scenery's consists shows it, under the two filters those lists have.</summary>
+    public static bool ListedIn(Trainset trainset, bool showAi, bool drivableOnly, Trainset? current) =>
+        (showAi || !IsAi(trainset)) && (!drivableOnly || ListedAsDrivable(trainset, current));
+
+    /// <summary>The consist's row in those lists: what it is made of, or the track of one with nothing on it.</summary>
+    public static string ListLabel(Trainset trainset) =>
+        CompositionText(trainset) ?? string.Format(App.Loc["EmptyTrainset"], trainset.Track ?? "");
+
     public static string? CompositionText(Trainset trainset)
     {
         if (IsEmpty(trainset))

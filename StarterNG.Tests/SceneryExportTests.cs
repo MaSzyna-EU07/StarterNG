@@ -1,13 +1,9 @@
-using StarterNG.Infrastructure.Sceneries;
 using StarterNG.Tests.Fakes;
 
 namespace StarterNG.Tests;
 
 public class SceneryExportTests
 {
-    private static SceneryParser Parser() =>
-        new(new FixedClock(new DateTime(2026, 1, 1, 12, 0, 0)), new StubRandom());
-
     [Fact]
     public void An_untouched_scenery_exports_its_trainsets_back_verbatim()
     {
@@ -18,13 +14,52 @@ public class SceneryExportTests
             endtrainset
             FirstInit
             """;
-        var scenery = Parser().Parse("scenery/x.scn", scn);
+        var scenery = TestScenery.Parser().Parse("scenery/x.scn", scn);
 
         string exported = scenery.BuildExportContent(skipDecorTrainsets: false, new StubRandom());
 
         Assert.DoesNotContain("{{0}}", exported);
         Assert.Contains("trainset pociag tor_1", exported);
         Assert.Contains("endtrainset", exported);
+    }
+
+    [Fact]
+    public void A_consist_emptied_stays_out_of_the_export()
+    {
+        const string scn = """
+            //$n Test
+            trainset pociag tor_1 10 0
+            node -1 -1 ep07-001 dynamic PKP/EP07 ep07 ep07.mmd 0 headdriver 0
+            endtrainset
+            FirstInit
+            """;
+        var scenery = TestScenery.Parser().Parse("scenery/x.scn", scn);
+
+        scenery.Trainsets[0].RemoveVehicles();
+        string exported = scenery.BuildExportContent(skipDecorTrainsets: false, new StubRandom());
+
+        Assert.DoesNotContain("trainset pociag", exported);
+        Assert.DoesNotContain("ep07-001", exported);
+        Assert.Contains("FirstInit", exported);
+    }
+
+    [Fact]
+    public void An_entry_that_could_not_be_read_goes_when_emptied_too()
+    {
+        const string scn = """
+            //$n Test
+            trainset pociag tor_1 10 0
+            node -1 -1 ep07-001 dynamic PKP/EP07 ep07 ep07.mmd 0 headdriver 0
+            endtrainset
+            FirstInit
+            """;
+        var scenery = TestScenery.Parser().Parse("scenery/x.scn", scn);
+        scenery.Trainsets[0].Parsed = false;
+
+        scenery.Trainsets[0].RemoveVehicles();
+        string exported = scenery.BuildExportContent(skipDecorTrainsets: false, new StubRandom());
+
+        Assert.DoesNotContain("ep07-001", exported);
     }
 
     [Fact]
@@ -36,7 +71,7 @@ public class SceneryExportTests
             endoptional
             FirstInit
             """;
-        var scenery = Parser().Parse("scenery/x.scn", scn);
+        var scenery = TestScenery.Parser().Parse("scenery/x.scn", scn);
 
         string exported = scenery.BuildExportContent(skipDecorTrainsets: false, new StubRandom());
 
@@ -54,7 +89,7 @@ public class SceneryExportTests
             endoptional
             FirstInit
             """;
-        var scenery = Parser().Parse("scenery/x.scn", scn);
+        var scenery = TestScenery.Parser().Parse("scenery/x.scn", scn);
         scenery.Includes[0].Selected = false;
 
         string exported = scenery.BuildExportContent(skipDecorTrainsets: false, new StubRandom());
@@ -71,7 +106,7 @@ public class SceneryExportTests
             endoptional
             FirstInit
             """;
-        var scenery = Parser().Parse("scenery/x.scn", scn);
+        var scenery = TestScenery.Parser().Parse("scenery/x.scn", scn);
 
         scenery.HasCompanionTimetable = false;
         Assert.Contains("include rozklad.inc",
@@ -95,7 +130,7 @@ public class SceneryExportTests
             time 8:30 0 0 endtime
             FirstInit
             """;
-        var scenery = Parser().Parse("scenery/x.scn", scn);
+        var scenery = TestScenery.Parser().Parse("scenery/x.scn", scn);
 
         scenery.Weather.Day = 200;
         scenery.Weather.Temperature = 25;
@@ -120,7 +155,7 @@ public class SceneryExportTests
             endtrainset
             FirstInit
             """;
-        var scenery = Parser().Parse("scenery/x.scn", scn);
+        var scenery = TestScenery.Parser().Parse("scenery/x.scn", scn);
 
         Assert.True(scenery.Trainsets[0].Decor);
         Assert.DoesNotContain("trainset ai_1",
@@ -136,11 +171,28 @@ public class SceneryExportTests
             node -1 -1 wagon_1 dynamic PKP/111A 111a 111a.mmd none 0 nobody 0 enddynamic
             FirstInit
             """;
-        var scenery = Parser().Parse("scenery/x.scn", scn);
+        var scenery = TestScenery.Parser().Parse("scenery/x.scn", scn);
 
         string exported = scenery.BuildExportContent(skipDecorTrainsets: false, new StubRandom());
 
         Assert.Contains("wagon_1", exported);
         Assert.Contains("enddynamic", exported);
+    }
+
+    [Theory]
+    [InlineData(0, "3 0 enddynamic")]
+    [InlineData(3, "3 3 pantstate enddynamic")]
+    public void A_load_type_is_written_only_after_a_count_above_zero(int count, string tail)
+    {
+        // After a 0 the simulator would read the type as a destination and take
+        // the next vehicle with it.
+        var car = new StarterNG.Classes.Dynamic
+        {
+            Name = "en57", DataFolder = "pkp/en57", SkinFile = "s", MmdFile = "m",
+            LoadType = StarterNG.Classes.Dynamic.PantState, LoadCount = count
+        };
+        car.Coupling.Flags = 3;
+
+        Assert.EndsWith(tail + "\n", car.ToTrainsetNode());
     }
 }

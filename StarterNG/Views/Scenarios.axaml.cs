@@ -5,7 +5,6 @@ using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Linq;
-using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Avalonia;
@@ -14,8 +13,8 @@ using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Layout;
-using Avalonia.Markup.Xaml;
 using Avalonia.Media.Imaging;
+using Avalonia.Threading;
 using Avalonia.VisualTree;
 using StarterNG.Classes;
 using StarterNG.Domain;
@@ -29,6 +28,8 @@ namespace StarterNG.Views;
 public partial class Scenarios : UserControl
 {
     public List<Scenery> Sceneries;
+
+    private readonly VehicleInfo _info = new(AppServices.Current.Library.Vehicles, AppServices.Current.Physics);
 
     private Scenery? _currentScenery;
 
@@ -62,8 +63,25 @@ public partial class Scenarios : UserControl
 
     private void OnReentered()
     {
-        RefreshVehicleLabels();
+        RefreshVehicleList();
         RefreshSelectedConsist();
+    }
+
+    /// <summary>
+    /// The list again, as the depot page may have picked another consist or filled
+    /// one. Selecting its row counts as no pick here: the vehicle to start in stays.
+    /// </summary>
+    private void RefreshVehicleList()
+    {
+        if (SelectedScenery is not { } scenery)
+            return;
+
+        var state = AppServices.Current.State;
+        var trainset = state.CurrentTrainset;
+        string? vehicle = state.StartingVehicleName;
+        PopulateVehicleList(scenery);
+        if (ReferenceEquals(state.CurrentTrainset, trainset))
+            state.StartingVehicleName = vehicle;
     }
 
     private void BuildSceneryTree()
@@ -81,11 +99,11 @@ public partial class Scenarios : UserControl
             sceneryList.Items.Add(ToTreeItem(node, expandGroups));
     }
 
-    private static TreeViewItem ToTreeItem(SceneryTreeNode node, bool expandGroups)
+    private TreeViewItem ToTreeItem(SceneryTreeNode node, bool expandGroups)
     {
         var item = new TreeViewItem
         {
-            Header = node.Label,
+            Header = node.IsGroup ? node.Label : SceneryHeader(node.Label, Sceneries[node.SceneryIndex]),
             Tag = node.IsGroup ? null : node.SceneryIndex,
             IsExpanded = node.IsGroup && expandGroups
         };
@@ -94,6 +112,27 @@ public partial class Scenarios : UserControl
             item.Items.Add(ToTreeItem(child, expandGroups));
 
         return item;
+    }
+
+    /// <summary>The scenery's name, marked when its files hold mistakes.</summary>
+    private object SceneryHeader(string label, Scenery scenery)
+    {
+        if (scenery.Faults.Count == 0)
+            return label;
+
+        var mark = new Material.Icons.Avalonia.MaterialIcon
+        {
+            Kind = Material.Icons.MaterialIconKind.AlertOutline,
+            Width = 13,
+            Height = 13,
+            Margin = new Thickness(5, 0, 0, 0),
+            Foreground = (Avalonia.Media.IBrush)Resources["SyntaxFaultBrush"]!
+        };
+        var header = new StackPanel { Orientation = Orientation.Horizontal };
+        header.Children.Add(new TextBlock { Text = label, VerticalAlignment = VerticalAlignment.Center });
+        header.Children.Add(mark);
+        ToolTip.SetTip(mark, string.Format(App.Loc["SyntaxTreeTip"], scenery.Faults.Count));
+        return header;
     }
 
     private Scenery? SelectedScenery =>
@@ -215,14 +254,11 @@ public partial class Scenarios : UserControl
         AppServices.Current.SettingsStore.Save();
     }
 
-    private static string TrainsetListLabel(Trainset trainset) =>
-        TrainsetDisplay.CompositionText(trainset)
-        ?? string.Format(App.Loc["EmptyTrainset"], trainset.Track ?? "");
-
-    private static Control TrainsetListContent(Trainset trainset) =>
+    /// <summary>A consist's label in a list of them, here and on the depot page.</summary>
+    internal static TextBlock TrainsetListContent(Trainset trainset) =>
         new Avalonia.Controls.TextBlock
         {
-            Text = TrainsetListLabel(trainset),
+            Text = TrainsetDisplay.ListLabel(trainset),
             TextTrimming = Avalonia.Media.TextTrimming.CharacterEllipsis,
             TextWrapping = Avalonia.Media.TextWrapping.NoWrap
         };
@@ -233,13 +269,14 @@ public partial class Scenarios : UserControl
 
         bool showAi = AppServices.Current.Settings.ShowAiVehicles;
         bool drivableOnly = AppServices.Current.Settings.DrivableOnly;
+        var current = AppServices.Current.State.CurrentTrainset;
+        ListBoxItem? currentRow = null;
 
         for (int i = 0; i < scn.Trainsets.Count; i++)
         {
             var trainset = scn.Trainsets[i];
 
-            if (IsAiTrainset(trainset) && !showAi) continue;
-            if (drivableOnly && !UData.StaffedTrain(trainset)) continue;
+            if (!TrainsetDisplay.ListedIn(trainset, showAi, drivableOnly, current)) continue;
 
             var listItem = new ListBoxItem
             {
@@ -250,17 +287,27 @@ public partial class Scenarios : UserControl
             listItem.ContextMenu = ConsistContextMenu.Build(
                 listItem,
                 () => trainset,
-                vehicles => ApplyConsist(listItem, trainset, vehicles));
+                vehicles => ApplyConsist(trainset, vehicles, listItem),
+                removeAll: () => ApplyConsist(trainset, new List<Dynamic>(), listItem));
             vehicleList.Items.Add(listItem);
+
+            if (ReferenceEquals(trainset, current))
+                currentRow = listItem;
         }
 
         if (vehicleList.Items.Count > 0)
-            vehicleList.SelectedIndex = 0;
+            vehicleList.SelectedItem = currentRow ?? vehicleList.Items[0];
+        else
+            ClearConsistStrip();
     }
 
-    private static bool IsAiTrainset(Trainset trainset) =>
-        !string.IsNullOrEmpty(trainset.Description) &&
-        trainset.Description.TrimStart().StartsWith("-", StringComparison.Ordinal);
+    /// <summary>No consist to show: what the scenery before had listed is not left standing.</summary>
+    private void ClearConsistStrip()
+    {
+        consistStack.Children.Clear();
+        _stripTrainset = null;
+        trainStats.Children.Clear();
+    }
 
     private void ArchivalSwitch_OnChanged(object? sender, RoutedEventArgs e)
     {
@@ -273,20 +320,39 @@ public partial class Scenarios : UserControl
         RestoreLastScenery();
     }
 
-    private void ApplyConsist(ListBoxItem item, Trainset trainset, List<Dynamic> vehicles)
+    /// <param name="row">
+    /// The list row it was chosen on, which may be of a consist not the picked one.
+    /// Without one it comes from the strip, which redraws whichever consist it shows.
+    /// </param>
+    private void ApplyConsist(Trainset trainset, List<Dynamic> vehicles, ListBoxItem? row = null)
     {
         trainset.Vehicles = vehicles;
-        item.Content = TrainsetListContent(trainset);
-        if (ReferenceEquals(AppServices.Current.State.CurrentTrainset, trainset))
+        if (row is null)
+        {
+            RedrawConsist(trainset);
+        }
+        else
+        {
+            row.Content = TrainsetListContent(trainset);
+            if (!ReferenceEquals(AppServices.Current.State.CurrentTrainset, trainset))
+                return;
+
             ShowConsist(trainset);
+        }
+        AppServices.Current.State.NotifyChanged();
+    }
+
+    private void RedrawConsist(Trainset trainset)
+    {
+        RefreshVehicleLabels();
+        ShowConsist(trainset);
     }
 
     private void RefreshVehicleLabels()
     {
-        if (sceneryList.SelectedItem is not TreeViewItem { Tag: int tag } || tag >= Sceneries.Count)
+        if (SelectedScenery is not { } scn)
             return;
 
-        var scn = Sceneries[tag];
         foreach (var obj in vehicleList.Items)
         {
             if (obj is ListBoxItem { Tag: int vi } lbi && vi < scn.Trainsets.Count)
@@ -313,6 +379,20 @@ public partial class Scenarios : UserControl
         }
         Scenery selectedScn = Sceneries[tag];
 
+        // A scenery picked from code stays out of sight otherwise; after layout, as its group may have just opened.
+        Dispatcher.UIThread.Post(item.BringIntoView, DispatcherPriority.Loaded);
+
+        // The scenery is the one started from now on, whether or not it lists a
+        // consist: left as it was, a scenery with none - or none the filters show -
+        // started the one picked before.
+        var state = AppServices.Current.State;
+        if (!ReferenceEquals(state.CurrentScenery, selectedScn))
+        {
+            state.CurrentScenery = selectedScn;
+            state.CurrentTrainset = null;
+            state.StartingVehicleName = null;
+        }
+
         ShowSceneryInfo(selectedScn);
         ShowWeather(selectedScn);
         PersistLastScenery(selectedScn);
@@ -320,7 +400,7 @@ public partial class Scenarios : UserControl
         missionDescription.Text = "";
         timetableContent.Text = App.Loc["NoTimetable"];
 
-        PopulateVehicleList(selectedScn);
+        RefreshVehicleList();
     }
 
     private void ShowSceneryInfo(Scenery scenery)
@@ -348,18 +428,36 @@ public partial class Scenarios : UserControl
 
         PopulateAttachments(scenery);
         PopulateFaults(scenery);
+        LogUnknownTextures(scenery);
     }
+
+    /// <summary>Most a scenery's faults the tab lists; the rest are only counted.</summary>
+    private const int FaultsShown = 500;
 
     private void PopulateFaults(Scenery scenery)
     {
-        var lines = new List<string>();
-        lines.AddRange(scenery.Faults);
+        var faults = scenery.Faults;
+        faultsTab.IsVisible = faults.Count > 0;
+        if (faults.Count == 0)
+        {
+            if (infoTabs.SelectedItem == faultsTab)
+                infoTabs.SelectedIndex = 0;
+            faultsText.Text = "";
+        }
+        else
+        {
+            faultsTabHeader.Text = string.Format(App.Loc["SyntaxTab"], faults.Count);
+            faultsText.Text = SceneryFaultText.Format(faults, FaultsShown, key => App.Loc[key]);
+        }
+    }
 
+    // Textures the vehicle library does not know are no fault of the text, only noted.
+    private static void LogUnknownTextures(Scenery scenery)
+    {
+        var lines = new List<string>();
         var db = AppServices.Current.Library.Vehicles;
         foreach (var ts in scenery.Trainsets)
         {
-            if (!ts.Parsed)
-                lines.Add($"# unparsed trainset: {ts.Name}");
             foreach (var v in ts.Vehicles)
             {
                 if (string.IsNullOrEmpty(v.SkinFile)) continue;
@@ -393,6 +491,9 @@ public partial class Scenarios : UserControl
             };
             btn.Classes.Add("Flat");
             ToolTip.SetTip(btn, att.FilePath);
+            // A button that does nothing is no way to say the file is not there.
+            btn.IsEnabled = File.Exists(Path.GetFullPath(att.FilePath));
+            ToolTip.SetShowOnDisabled(btn, true);
             btn.Click += (_, _) => OpenAttachment(att.FilePath);
             attachmentsPanel.Children.Add(btn);
         }
@@ -421,13 +522,19 @@ public partial class Scenarios : UserControl
         BuildSceneryTree();
         if (!string.IsNullOrEmpty(selected))
         {
-            AppServices.Current.Settings.LastScenery =
-                Path.GetFileNameWithoutExtension(selected);
+            RememberScenery(selected);
             RestoreLastScenery();
         }
         if (AppServices.Current.State.CurrentScenery != null)
             ShowSceneryInfo(AppServices.Current.State.CurrentScenery);
         RefreshSelectedConsist();
+    }
+
+    /// <summary>The one the tree opens on next, if there was one.</summary>
+    private static void RememberScenery(string? path)
+    {
+        if (!string.IsNullOrEmpty(path))
+            AppServices.Current.Settings.LastScenery = Path.GetFileNameWithoutExtension(path);
     }
 
     private bool _reloading;
@@ -438,15 +545,18 @@ public partial class Scenarios : UserControl
         _reloading = true;
         try
         {
+            // Reading the files again drops every change not saved to them.
+            if (Sceneries.Any(s => s.Trainsets.Any(SceneryTrainsetText.IsModified)) &&
+                TopLevel.GetTopLevel(this) is Window owner &&
+                !await MessageBox.Show(owner, App.Loc["ReloadSceneriesConfirm"],
+                                       App.Loc["ReloadSceneries"], MessageBoxButtons.YesNo))
+                return;
+
             string? selected = AppServices.Current.State.CurrentScenery?.Path;
             await Task.Run(() => AppServices.Current.Library.ReloadSceneries());
             Sceneries = AppServices.Current.Library.Sceneries;
             BuildSceneryTree();
-            if (!string.IsNullOrEmpty(selected))
-            {
-                AppServices.Current.Settings.LastScenery =
-                    Path.GetFileNameWithoutExtension(selected);
-            }
+            RememberScenery(selected);
             RestoreLastScenery();
         }
         finally
@@ -454,6 +564,62 @@ public partial class Scenarios : UserControl
             _reloading = false;
         }
     }
+
+    /// <summary>
+    /// The scenery files changed outside the starter: the list follows, and only a
+    /// consist edited here whose text changed in the file too has to ask.
+    /// </summary>
+    /// <param name="mayAsk">False while the window is in the background: asked once it is back.</param>
+    public async Task FollowSceneryFilesAsync(IReadOnlyList<SceneryChange> changes, bool mayAsk)
+    {
+        if (_reloading) return;
+
+        var watch = AppServices.Current.SceneryFiles;
+        bool followed = false;
+        foreach (var change in changes)
+        {
+            var judgement = watch.Judge(change);
+            if (judgement.Verdict == SceneryVerdict.Leave)
+                continue;
+
+            if (judgement.Verdict == SceneryVerdict.AskFirst)
+            {
+                if (!mayAsk || TopLevel.GetTopLevel(this) is not Window owner)
+                    continue;
+
+                string names = string.Join(", ", judgement.Lost.Select(t => t.Name));
+                if (!await MessageBox.Show(owner,
+                        string.Format(App.Loc["SceneryFileChangedConfirm"], Path.GetFileName(change.Current!.Path), names),
+                        App.Loc["SceneryFileChangedTitle"], MessageBoxButtons.YesNo))
+                {
+                    change.Current!.Sources = change.Fresh!.Sources;
+                    continue;
+                }
+            }
+
+            watch.Apply(change);
+            followed = true;
+        }
+
+        if (followed)
+            RebuildKeepingGroupsOpen();
+    }
+
+    private void RebuildKeepingGroupsOpen()
+    {
+        var open = TreeGroups(sceneryList.Items).Where(g => g.IsExpanded).Select(g => g.Header).ToHashSet();
+        string? selected = AppServices.Current.State.CurrentScenery?.Path;
+
+        BuildSceneryTree();
+        foreach (var group in TreeGroups(sceneryList.Items))
+            group.IsExpanded = open.Contains(group.Header);
+
+        RememberScenery(selected);
+        RestoreLastScenery();
+    }
+
+    private static IEnumerable<TreeViewItem> TreeGroups(ItemCollection items) =>
+        items.OfType<TreeViewItem>().Where(i => i.Tag is null).SelectMany(i => TreeGroups(i.Items).Prepend(i));
 
     public event Action<Scenery>? RandomizeTexturesRequested;
 
@@ -519,29 +685,14 @@ public partial class Scenarios : UserControl
         string dir = scn != null
             ? (Path.GetDirectoryName(Path.GetFullPath(scn.Path)) ?? "scenery")
             : Path.GetFullPath("scenery");
-        if (!Directory.Exists(dir))
-        {
-            StarterNG.Infrastructure.Diagnostics.ReportOnUiThread(string.Format(App.Loc["FaultFileNotFound"], dir));
-            return;
-        }
-        try
-        {
-            Process.Start(new ProcessStartInfo(dir) { UseShellExecute = true });
-        }
-        catch (Exception ex)
-        {
-            StarterNG.Infrastructure.Diagnostics.ReportOnUiThread(
-                $"{dir}{Environment.NewLine}{Environment.NewLine}{App.Loc["FaultDetail"]} {ex.Message}");
-        }
+        StarterNG.Infrastructure.Diagnostics.OpenOrReport(dir);
     }
 
     private void VehicleList_OnSelectionChanged(object? sender, SelectionChangedEventArgs e)
     {
 
-        var tItem = sceneryList.SelectedItem as TreeViewItem;
-        if (tItem?.Tag is not int tTag)
+        if (SelectedScenery is not { } selectedScn)
             return;
-        Scenery selectedScn = Sceneries[tTag];
 
         ListBoxItem? vItem = vehicleList.SelectedItem as ListBoxItem;
         if (vItem?.Tag is not int vTag)
@@ -827,14 +978,8 @@ public partial class Scenarios : UserControl
         ContextMenu VehicleMenu(Dynamic vehicle) => ConsistContextMenu.Build(
             consistStack,
             () => trainset,
-            vehicles =>
-            {
-                trainset.Vehicles = vehicles;
-                RefreshVehicleLabels();
-                ShowConsist(trainset);
-                UpdateTrainStats(trainset);
-            },
-            removeAll: null,
+            vehicles => ApplyConsist(trainset, vehicles),
+            removeAll: () => ApplyConsist(trainset, new List<Dynamic>()),
             getVehicle: () => vehicle,
             removeVehicle: v =>
             {
@@ -851,9 +996,7 @@ public partial class Scenarios : UserControl
                     AppServices.Current.State.NotifyChanged();
                 }
 
-                RefreshVehicleLabels();
-                ShowConsist(trainset);
-                UpdateTrainStats(trainset);
+                RedrawConsist(trainset);
             });
 
         var db = AppServices.Current.Library.Vehicles;
@@ -1127,9 +1270,7 @@ public partial class Scenarios : UserControl
 
         vehicles.InsertRange(target, block);
 
-        RefreshVehicleLabels();
-        ShowConsist(trainset);
-        UpdateTrainStats(trainset);
+        RedrawConsist(trainset);
     }
 
     private static bool HoldsNext(Dynamic car) =>
@@ -1158,13 +1299,8 @@ public partial class Scenarios : UserControl
             return;
         }
 
-        var db = AppServices.Current.Library.Vehicles;
         StarterNG.Infrastructure.StatsBar.Fill(trainStats, TrainsetDisplay.StatsFields(
-            trainset,
-            car => AppServices.Current.Physics.For(car.DataFolder, db.TextureFor(car.DataFolder, car.SkinFile, car.MmdFile)?.Model)
-                   ?? AppServices.Current.Physics.For(car.DataFolder, car.MmdFile)
-                   ?? AppServices.Current.Physics.For(car.DataFolder, car.SkinFile),
-            car => db.TextureFor(car.DataFolder, car.SkinFile, car.MmdFile)?.ResolvedCategory));
+            trainset, _info.PhysicsFor, _info.CategoryOf));
     }
 
     private void RefreshSelectedConsist()

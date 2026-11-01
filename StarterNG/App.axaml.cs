@@ -1,10 +1,7 @@
 using System;
 using System.Globalization;
-using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using Avalonia;
-using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
 using Avalonia.Threading;
@@ -30,6 +27,7 @@ public partial class App : Avalonia.Application
         AvaloniaXamlLoader.Load(this);
 
         AppServices.Current.SettingsStore.Load();
+        AppServices.Current.SettingsStore.StartAtHighWithoutOwnSettings();
 
         KeyboardConfig.Instance.Load();
 
@@ -48,6 +46,10 @@ public partial class App : Avalonia.Application
         // actually display.
         string requestedCode = AppServices.Current.Settings.LanguageCode;
 
+        // Subscribed before any view, so the views rebuild in the new culture.
+        Loc.LanguageChanged += () => ApplyCulture(Loc.CurrentLangCode);
+
+        Loc.Keep(requestedCode);
         ApplyLanguage(langName);
 
         // The starter ships no translation for this code, so its own interface
@@ -60,15 +62,26 @@ public partial class App : Avalonia.Application
 
     public static void ApplyLanguage(string langNameOrCode)
     {
-
         var resolvedName = Loc.Load(langNameOrCode);
 
         // The service is the authority on which language actually loaded: the code
         // goes to eu07.ini for the simulator, the name to the picker.
         AppServices.Current.Settings.Language = resolvedName;
         AppServices.Current.Settings.LanguageCode = Loc.CurrentLangCode;
+    }
 
-        ApplyCulture(Loc.CurrentLangCode);
+    /// <summary>
+    /// A language picked by the user, written to eu07.ini straight away as the old
+    /// starter did - not left waiting for the Save button of a different tab.
+    /// Only what is already in the settings goes with it, not other unsaved edits.
+    /// </summary>
+    public static void ChangeLanguage(string code)
+    {
+        if (string.Equals(code, Loc.CurrentLangCode, StringComparison.OrdinalIgnoreCase))
+            return;
+
+        ApplyLanguage(code);
+        AppServices.Current.SettingsStore.Save();
     }
 
     private static void ApplyCulture(string langCode)
@@ -88,10 +101,11 @@ public partial class App : Avalonia.Application
             culture = CultureInfo.InvariantCulture;
         }
 
+        // Only the defaults: a culture set on the thread is an async local, so one set
+        // from the picker's handler was undone as soon as the handler returned, and
+        // the UI kept the first language's decimal comma and month names.
         CultureInfo.DefaultThreadCurrentCulture = culture;
         CultureInfo.DefaultThreadCurrentUICulture = culture;
-        CultureInfo.CurrentCulture = culture;
-        CultureInfo.CurrentUICulture = culture;
     }
 
     public override void OnFrameworkInitializationCompleted()
@@ -187,6 +201,9 @@ public partial class App : Avalonia.Application
 
                     if (check.ExecutableMissing())
                         await main.OfferExecutablePickAsync();
+
+                    if (CpuFeatures.LacksAvx2 && AppServices.Current.Settings.CpuNotice)
+                        await main.ShowCpuNoticeAsync();
                 });
             });
         }

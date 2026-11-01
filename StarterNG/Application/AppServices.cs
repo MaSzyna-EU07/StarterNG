@@ -1,6 +1,8 @@
 using System;
+using System.IO;
 using StarterNG.Application.Abstractions;
 using StarterNG.Domain.Settings;
+using StarterNG.Infrastructure;
 using StarterNG.Infrastructure.Adapters;
 using StarterNG.Infrastructure.Sceneries;
 using StarterNG.Infrastructure.Settings;
@@ -25,37 +27,54 @@ public sealed class AppServices
 
         var log = new FileDiagnosticsLog(files, clock, paths);
         Log = log;
-        Random = new SystemRandomSource();
+        var random = new SystemRandomSource();
         Processes = new SystemProcessLauncher(log);
-        Localization = new LocalizationService(log);
-        Sceneries = new SceneryRepository(files, paths, log, new SceneryParser(clock, Random));
-        SceneryImages = new SceneryImageLocator(files);
-        MiniTextures = new MiniTextureIndex(files, paths);
         var settingsPaths = new SettingsPaths(environment, paths);
         SettingsPaths = settingsPaths;
+        // The player's own first: the game folder may need rights to write to, the user folder never.
+        Localization = new LocalizationService(log, folders: new LanguageFolders(
+            new[]
+            {
+                Path.Combine(settingsPaths.UserConfigDirectory(), "starter", "lang"),
+                paths.FromRoot("starter", "lang"),
+                LocalizationService.LangDirectory,
+                paths.FromRoot("startercfg", "lang")
+            },
+            paths.FromRoot("starter"),
+            paths.FromRoot("lang")));
+        Sceneries = new SceneryRepository(files, paths, log, new SceneryParser(clock, random));
+        SceneryImages = new SceneryImageLocator(files);
+        MiniTextures = new MiniTextureIndex(files, paths);
 
         // textures.txt stays the truth; the starter reads its own JSON copy of it
         // and rebuilds that copy whenever the installation has moved on.
-        TexturesTxt = new TexturesTxtVehicleRepository(files, paths, log, new TexturesTxtParser());
-        VehicleJson = new VehicleJsonSerializer();
-        VehicleCache = new VehicleCacheRepository(files, paths, log, TexturesTxt, VehicleJson,
-                                                  settingsPaths.VehicleCacheDirectory());
-        Vehicles = VehicleCache;
+        var texturesTxt = new TexturesTxtVehicleRepository(files, paths, log, new TexturesTxtParser());
+        var vehicleJson = new VehicleJsonSerializer();
+        Vehicles = new VehicleCacheRepository(files, paths, log, texturesTxt, vehicleJson,
+                                              settingsPaths.VehicleCacheDirectory());
         Physics = new FizPhysicsRepository(files, paths, log);
-        MissingAssets = new MissingAssetScanner(files, paths);
+        var missingAssets = new MissingAssetScanner(files, paths);
         SceneryTexts = new SceneryTranslations(files, log);
         Timetables = new TimetableLocator(files);
         LoadWeights = new LoadWeightsRepository(files, paths, log);
         Library = new GameLibrary(Vehicles, Sceneries, MiniTextures, Physics, log);
         State = new AppState();
+        SceneryFiles = new SceneryFileWatch(files, Sceneries, Library, State);
 
         Executables = new ExecutableLocator(files, paths, environment, log);
-        SettingsStore = new SettingsStore(files, clock, log, settingsPaths, new SettingsSerializer(), Executables);
-        MissingVehicleLog = new MissingVehicleLog(SettingsStore.Settings, MissingAssets, Library, log);
+        SettingsStore = new SettingsStore(files, clock, log, settingsPaths, new SettingsSerializer(dlssPlatform: !environment.IsMacOS), Executables);
+        MissingVehicleLog = new MissingVehicleLog(SettingsStore.Settings, missingAssets, Library, log);
         Favorites = new FavoriteSceneries(files, log, settingsPaths.FavoritesPath());
-        StartSimulation = new StartSimulation(State, SettingsStore, Library.Vehicles, Executables, files, paths,
-                                              Processes, Random, log);
+        Tapes = new HaslerTapes(files, paths, log, clock, Timetables,
+                                () => Processes.IsRunning(Path.GetFileNameWithoutExtension(SettingsStore.ResolveExecutable())));
+        Gpus = new LinuxGpus(files, environment);
+        GraphicsCards = new GraphicsCards(files, environment, Gpus);
+        Displays = new Displays(files, environment);
+        StartSimulation = new StartSimulation(State, SettingsStore, Library.Vehicles, Executables,
+                                              files, paths, Processes, random, log, Gpus, environment,
+                                              new WineConfigLink(files, environment, settingsPaths, log), Tapes);
         Aftermath = new SimulatorAftermath(files, paths, log);
+        SaveTrainset = new SaveSceneryTrainset(files, log);
     }
 
     public static AppServices Current =>
@@ -85,9 +104,9 @@ public sealed class AppServices
 
     public IProcessLauncher Processes { get; }
 
-    public IRandomSource Random { get; }
-
     public ISceneryRepository Sceneries { get; }
+
+    public SceneryFileWatch SceneryFiles { get; }
 
     public SceneryImageLocator SceneryImages { get; }
 
@@ -95,17 +114,7 @@ public sealed class AppServices
 
     public IVehicleRepository Vehicles { get; }
 
-    /// <summary>The same object as <see cref="Vehicles"/>, typed for the developer tab.</summary>
-    public VehicleCacheRepository VehicleCache { get; }
-
-    /// <summary>The legacy reader behind the cache, for tools that go to the source.</summary>
-    public TexturesTxtVehicleRepository TexturesTxt { get; }
-
-    public VehicleJsonSerializer VehicleJson { get; }
-
     public IPhysicsRepository Physics { get; }
-
-    public MissingAssetScanner MissingAssets { get; }
 
     public ISceneryTranslations SceneryTexts { get; }
 
@@ -123,6 +132,12 @@ public sealed class AppServices
 
     public ExecutableLocator Executables { get; }
 
+    public LinuxGpus Gpus { get; }
+
+    public GraphicsCards GraphicsCards { get; }
+
+    public Displays Displays { get; }
+
     public SettingsPaths SettingsPaths { get; }
 
     public MissingVehicleLog MissingVehicleLog { get; }
@@ -132,6 +147,10 @@ public sealed class AppServices
     public StartSimulation StartSimulation { get; }
 
     public SimulatorAftermath Aftermath { get; }
+
+    public HaslerTapes Tapes { get; }
+
+    public SaveSceneryTrainset SaveTrainset { get; }
 
     public LocalizationService Localization { get; }
 }

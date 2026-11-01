@@ -4,6 +4,7 @@ using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
+using StarterNG.Domain.Sceneries;
 
 namespace StarterNG.Classes;
 
@@ -58,6 +59,28 @@ public class Trainset
 
     public string? Mini;
 
+    /// <summary>
+    /// "reversed" ahead of the vehicles: the simulator turns the whole trainset round -
+    /// the first vehicle stays at the offset and leads towards the track's point 1,
+    /// every vehicle turned. The author's to set; the starter keeps it as found.
+    /// </summary>
+    public bool Reversed { get; private set; }
+
+    /// <summary>
+    /// The file the trainset is written in, as the scenery's include names it, for
+    /// one from a file put in place by <see cref="Domain.Sceneries.SceneryIncludes"/>;
+    /// null for the scenery's own.
+    /// </summary>
+    public string? SourceFile { get; init; }
+
+    /// <summary>
+    /// Where the speed, each vehicle and the <c>endtrainset</c> stand in the text, read
+    /// word by word as the fields above are - comments left out, a word taken for a
+    /// field whatever it says. With no <c>endtrainset</c> the end is the end of the text.
+    /// Known only of a trainset that was <see cref="Parsed"/>.
+    /// </summary>
+    internal (SceneryCode.Token? Speed, List<(int Start, int End)> Vehicles, int End) Layout { get; private set; }
+
     public Trainset(string trainsetEntry)
     {
         RawEntry = trainsetEntry;
@@ -77,11 +100,7 @@ public class Trainset
 
     private void ParseEntry(string trainsetEntry)
     {
-        List<string> tokens = Regex
-            .Matches(trainsetEntry, @"/\*[\s\S]*?\*/|//[^\r\n]*|[^\s\r\n]+")
-            .Select(m => m.Value)
-            .Where(t => !t.StartsWith("//") && !t.StartsWith("/*"))
-            .ToList();
+        List<SceneryCode.Token> tokens = SceneryCode.Tokens(SceneryCode.Mask(trainsetEntry, out _));
 
         var match = Regex.Match(
             trainsetEntry,
@@ -99,65 +118,91 @@ public class Trainset
         if (mini.Success)
             Mini = mini.Groups[1].Value.Trim();
 
+        // The simulator reads its words in lower case: "Trainset" is a trainset too.
+        bool Is(int at, string word) => tokens[at].Is(word);
+
+        SceneryCode.Token? speed = null;
+        var spans = new List<(int Start, int End)>();
+        int end = trainsetEntry.Length;
+
         for (int i = 0; i < tokens.Count; i++)
         {
-            if (tokens[i] == "endtrainset")
-                break;
-
-            if (tokens[i] == "trainset")
+            if (Is(i, "endtrainset"))
             {
-                this.Name = tokens[++i];
-                this.Track = tokens[++i];
-                this.Offset = float.Parse(tokens[++i], CultureInfo.InvariantCulture);
-                this.Velocity = float.Parse(tokens[++i], CultureInfo.InvariantCulture);
+                end = tokens[i].Index;
+                break;
+            }
+
+            if (Is(i, "trainset"))
+            {
+                this.Name = tokens[++i].Text;
+                this.Track = tokens[++i].Text;
+                this.Offset = float.Parse(tokens[++i].Text, CultureInfo.InvariantCulture);
+                speed = tokens[++i];
+                this.Velocity = float.Parse(tokens[i].Text, CultureInfo.InvariantCulture);
                 this.OriginalVelocity = this.Velocity;
                 continue;
             }
 
-            if (tokens[i] == "assignments")
+            // Ahead of the vehicles; the simulator refuses it after the first one.
+            if (Is(i, "reversed"))
             {
-                while (i < tokens.Count && tokens[i] != "endassignment")
-                    i++;
-                i++;
+                Reversed |= Vehicles.Count == 0;
                 continue;
             }
 
-            if (tokens[i] == "node")
+            if (Is(i, "assignment") || Is(i, "assignments"))
             {
+                while (i < tokens.Count && !Is(i, "endassignment"))
+                    i++;
+                continue;
+            }
+
+            if (Is(i, "node"))
+            {
+                int start = tokens[i].Index;
                 Dynamic nodeDynamic = new Dynamic();
-                nodeDynamic.RangeMax = float.Parse(tokens[++i], CultureInfo.InvariantCulture);
-                nodeDynamic.RangeMin = float.Parse(tokens[++i], CultureInfo.InvariantCulture);
-                nodeDynamic.Name = tokens[++i];
+                nodeDynamic.RangeMax = float.Parse(tokens[++i].Text, CultureInfo.InvariantCulture);
+                nodeDynamic.RangeMin = float.Parse(tokens[++i].Text, CultureInfo.InvariantCulture);
+                nodeDynamic.Name = tokens[++i].Text;
                 i++;
-                nodeDynamic.DataFolder = tokens[++i];
-                nodeDynamic.SkinFile = Dynamic.StripSkinExtension(tokens[++i]);
-                nodeDynamic.MmdFile = tokens[++i];
-                nodeDynamic.Offset = float.Parse(tokens[++i], CultureInfo.InvariantCulture);
+                nodeDynamic.DataFolder = tokens[++i].Text;
+                nodeDynamic.SkinFile = Dynamic.StripSkinExtension(tokens[++i].Text);
+                nodeDynamic.MmdFile = tokens[++i].Text;
+                nodeDynamic.Offset = float.Parse(tokens[++i].Text, CultureInfo.InvariantCulture);
 
-                nodeDynamic.DriverType = tokens[++i] switch
-                {
-                    "headdriver" => eDriverType.Headdriver,
-                    "reardriver" => eDriverType.Reardriver,
-                    "passenger"  => eDriverType.Passenger,
-                    _            => eDriverType.Nobody
-                };
+                nodeDynamic.DriverType = Dynamic.ParseDriver(tokens[++i].Text);
 
-                nodeDynamic.Coupling = Coupling.Parse(tokens[++i]);
+                nodeDynamic.Coupling = Coupling.Parse(tokens[++i].Text);
 
+                // A missing enddynamic does not take the next vehicle with it.
                 var trailing = new List<string>();
-                while (i + 1 < tokens.Count && tokens[i + 1] != "enddynamic")
-                    trailing.Add(tokens[++i]);
+                while (i + 1 < tokens.Count && !Is(i + 1, "enddynamic") && !Is(i + 1, "node") &&
+                       !Is(i + 1, "endtrainset"))
+                    trailing.Add(tokens[++i].Text);
                 nodeDynamic.ReadTrailing(trailing);
 
-                i++;
+                if (i + 1 < tokens.Count && Is(i + 1, "enddynamic"))
+                    i++;
 
                 Vehicles.Add(nodeDynamic);
+                spans.Add((start, tokens[i].End));
             }
         }
+
+        Layout = (speed, spans, end);
     }
 
     public string ToSceneryEntry() =>
         Parsed ? GetTrainsetEntry() + "endtrainset\n" : RawEntry;
+
+    /// <summary>No vehicles, in the export too: an entry that could not be read goes out as its raw text.</summary>
+    public void RemoveVehicles()
+    {
+        Vehicles = new List<Dynamic>();
+        if (!Parsed)
+            RawEntry = string.Empty;
+    }
 
     public string GetTrainsetEntry()
     {
@@ -177,13 +222,11 @@ public class Trainset
         sb.Append(Track).Append(' ');
         sb.Append(Offset.ToString(CultureInfo.InvariantCulture)).Append(' ');
         sb.Append(Velocity.ToString(CultureInfo.InvariantCulture));
+        if (Reversed)
+            sb.Append(" reversed");
         sb.Append('\n');
 
-        string entry = sb.ToString();
-        foreach (Dynamic vehicle in Vehicles)
-            entry += vehicle.ToTrainsetNode();
-
-        return entry;
+        return sb.Append(Dynamic.ToTrainsetNodes(Vehicles)).ToString();
     }
 }
 
@@ -200,12 +243,6 @@ public class Dynamic
     public eDriverType DriverType;
 
     public Coupling Coupling = new();
-
-    public byte couplingData
-    {
-        get => (byte)(Coupling.AbsFlags & 0xFF);
-        set => Coupling.Flags = value;
-    }
 
     public const string PantState = "pantstate";
 
@@ -244,8 +281,6 @@ public class Dynamic
     public static bool IsPantStateType(string? type) =>
         string.Equals(type, PantState, StringComparison.OrdinalIgnoreCase);
 
-    public bool IsPantState => IsPantStateType(LoadType);
-
     internal void ReadTrailing(List<string> t)
     {
         int p = 0;
@@ -278,14 +313,33 @@ public class Dynamic
         return dot > 0 ? token[..dot] : token;
     }
 
+    internal static eDriverType ParseDriver(string word) => word.ToLowerInvariant() switch
+    {
+        "headdriver" => eDriverType.Headdriver,
+        "reardriver" => eDriverType.Reardriver,
+        "passenger"  => eDriverType.Passenger,
+        _            => eDriverType.Nobody
+    };
+
+    private string DriverWord => DriverType switch
+    {
+        eDriverType.Headdriver => "headdriver",
+        eDriverType.Reardriver => "reardriver",
+        eDriverType.Passenger  => "passenger",
+        _                      => "nobody"
+    };
+
     internal string WriteTrailing()
     {
         var sb = new StringBuilder();
 
-        bool loaded = !string.IsNullOrEmpty(LoadType);
+        bool loaded = !string.IsNullOrEmpty(LoadType) && LoadCount > 0;
         sb.Append(' ').Append((loaded ? LoadCount : 0).ToString(CultureInfo.InvariantCulture));
 
-        if (loaded && (LoadCount > 0 || IsPantState))
+        // The simulator reads a type only after a count above 0. One after a 0 it
+        // takes for a destination, and with it the next vehicle, up to its enddynamic.
+        // Pantographs set to none are the simulator's default anyway.
+        if (loaded)
             sb.Append(' ').Append(LoadType);
 
         return sb.ToString();
@@ -314,37 +368,26 @@ public class Dynamic
 
     public string ToTrainsetNode()
     {
-        string driver = DriverType switch
-        {
-            eDriverType.Headdriver => "headdriver",
-            eDriverType.Reardriver => "reardriver",
-            eDriverType.Passenger  => "passenger",
-            _                      => "nobody"
-        };
-
         return
-            $"node {RangeMax} {RangeMin} {Name} dynamic " +
+            $"node {RangeMax.ToString(CultureInfo.InvariantCulture)} " +
+            $"{RangeMin.ToString(CultureInfo.InvariantCulture)} {Name} dynamic " +
             $"{DataFolder} {SkinFile} {MmdFile} " +
             $"{Offset.ToString(CultureInfo.InvariantCulture)} " +
-            $"{driver} {Coupling}{WriteTrailing()} enddynamic\n";
+            $"{DriverWord} {Coupling}{WriteTrailing()} enddynamic\n";
     }
+
+    public static string ToTrainsetNodes(IEnumerable<Dynamic> vehicles) =>
+        string.Concat(vehicles.Select(v => v.ToTrainsetNode()));
 
     public string ToLooseNode()
     {
-        string driver = DriverType switch
-        {
-            eDriverType.Headdriver => "headdriver",
-            eDriverType.Reardriver => "reardriver",
-            eDriverType.Passenger => "passenger",
-            _ => "nobody"
-        };
         string path = string.IsNullOrEmpty(PathName) ? "none" : PathName;
         string vel = (HasVelocity ? Velocity : 0f).ToString(CultureInfo.InvariantCulture);
         return
             $"node {RangeMax.ToString(CultureInfo.InvariantCulture)} " +
             $"{RangeMin.ToString(CultureInfo.InvariantCulture)} {Name} dynamic " +
             $"{DataFolder} {SkinFile} {MmdFile} {path} " +
-            $"{Offset.ToString(CultureInfo.InvariantCulture)} {driver} {vel}" +
+            $"{Offset.ToString(CultureInfo.InvariantCulture)} {DriverWord} {vel}" +
             $"{WriteTrailing()} enddynamic\n";
     }
 }
