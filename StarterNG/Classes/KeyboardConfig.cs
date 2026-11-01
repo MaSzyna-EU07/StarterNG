@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text;
 using StarterNG.Infrastructure.Adapters;
 
@@ -23,6 +24,20 @@ public sealed class KeyBinding
     public bool IsAssigned =>
         !string.IsNullOrEmpty(Key) &&
         !Key.Equals("none", StringComparison.OrdinalIgnoreCase);
+
+    /// <summary>The combination in a form to compare, however the key is spelled.</summary>
+    public string ComboKey => $"{(Ctrl ? 1 : 0)}|{(Shift ? 1 : 0)}|{Key.ToLowerInvariant()}";
+
+    public void Clear()
+    {
+        Shift = Ctrl = false;
+        Key = "none";
+    }
+
+    public bool IsOn(string token, bool shift, bool ctrl) =>
+        IsAssigned &&
+        string.Equals(Key, token, StringComparison.OrdinalIgnoreCase) &&
+        Shift == shift && Ctrl == ctrl;
 }
 
 public sealed class KeyboardConfig
@@ -119,18 +134,65 @@ public sealed class KeyboardConfig
     }
 
     /// <summary>
-    /// The description to show: the bundled one with Polish letters when the file's
-    /// is the same text without them, the file's own when someone wrote their own.
+    /// The description to show: the file's own when someone wrote their own, else
+    /// the <paramref name="translated"/> one for the starter's language, else the
+    /// bundled one with Polish letters.
     /// </summary>
-    public string DescriptionOf(KeyBinding binding)
+    public string DescriptionOf(KeyBinding binding, Func<string, string>? translated = null)
     {
-        if (_polishDescriptions.TryGetValue(binding.Command, out string? polish) &&
-            (string.IsNullOrEmpty(binding.Description) ||
-             string.Equals(StripPolish(polish), binding.Description.Trim(), StringComparison.OrdinalIgnoreCase)))
-            return polish;
+        bool stock = string.IsNullOrEmpty(binding.Description);
+        if (_polishDescriptions.TryGetValue(binding.Command, out string? polish))
+            stock |= string.Equals(StripPolish(polish), binding.Description.Trim(), StringComparison.OrdinalIgnoreCase);
+        if (!stock)
+            return binding.Description;
 
-        return binding.Description;
+        if (translated?.Invoke(binding.Command) is { Length: > 0 } text)
+            return text;
+
+        return polish ?? binding.Description;
     }
+
+    public KeyBinding? BindingAt(string token, bool shift, bool ctrl) =>
+        Bindings.FirstOrDefault(b => b.IsOn(token, shift, ctrl));
+
+    /// <summary>
+    /// Puts <paramref name="binding"/> on a key combination, or nothing for null, and
+    /// frees it from the rest: the simulator maps a combination to one command - in
+    /// driving and outside the cab alike, the editor has its own fixed keys - so of
+    /// two, one would silently never fire.
+    /// </summary>
+    public void Put(KeyBinding? binding, string token, bool shift, bool ctrl)
+    {
+        foreach (var b in Bindings)
+            if (!ReferenceEquals(b, binding) && b.IsOn(token, shift, ctrl))
+                b.Clear();
+
+        if (binding is null)
+            return;
+
+        binding.Key = token;
+        binding.Shift = shift;
+        binding.Ctrl = ctrl;
+    }
+
+    /// <summary>The <see cref="KeyBinding.ComboKey"/> of each combination more than one binding is on.</summary>
+    public HashSet<string> ConflictingCombos()
+    {
+        var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var dup = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var b in Bindings)
+        {
+            if (!b.IsAssigned)
+                continue;
+            string k = b.ComboKey;
+            if (!seen.Add(k))
+                dup.Add(k);
+        }
+        return dup;
+    }
+
+    public int BindingsOnNumpad() =>
+        Bindings.Count(b => b.IsAssigned && b.Key.StartsWith(KeyMap.NumpadPrefix, StringComparison.OrdinalIgnoreCase));
 
     public static string StripPolish(string text)
     {

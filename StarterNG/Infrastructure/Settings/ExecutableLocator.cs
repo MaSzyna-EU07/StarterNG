@@ -124,6 +124,9 @@ public sealed class ExecutableLocator
             if (!_files.FileExists(path))
                 return ExeProblem.NotFound;
 
+            if (_environment.IsLinux && Format(path) == BinaryFormat.Unknown)
+                return ExeProblem.NotAProgram;
+
             bool foreign = !MatchesPlatform(path);
 
             // Started through Wine, a Windows build needs no execute bit of its own.
@@ -183,7 +186,8 @@ public sealed class ExecutableLocator
         return null;
     }
 
-    private bool RunsThroughWine(string path)
+    /// <summary>Whether <paramref name="path"/> is a Windows build the starter hands to Wine.</summary>
+    public bool RunsThroughWine(string path)
     {
         try
         {
@@ -206,7 +210,8 @@ public sealed class ExecutableLocator
     {
         Unknown,
         Elf,
-        PortableExecutable
+        PortableExecutable,
+        Script
     }
 
     private BinaryFormat Format(string path)
@@ -220,8 +225,24 @@ public sealed class ExecutableLocator
             return BinaryFormat.PortableExecutable;
         if (head[0] == 0x7F && head[1] == 0x45 && head[2] == 0x4C && head[3] == 0x46)
             return BinaryFormat.Elf;
+        if (head[0] == (byte)'#' && head[1] == (byte)'!')
+            return BinaryFormat.Script;
 
         return BinaryFormat.Unknown;
+    }
+
+    // Linux starts nothing else, and on a Windows partition every file has the execute
+    // bit: only what is inside tells a program from a note called eu07_todo.
+    private bool IsProgramOnLinux(string path)
+    {
+        try
+        {
+            return Format(path) != BinaryFormat.Unknown;
+        }
+        catch (Exception)
+        {
+            return false;
+        }
     }
 
     private bool IsExeOnLinux(string path) =>
@@ -240,12 +261,34 @@ public sealed class ExecutableLocator
         // A Windows build is offered only where Wine can start it, and after any
         // native one - see the ordering in Resolve.
         if (_environment.IsLinux)
-            return extension.Length == 0 || extension is ".x86_64" or ".run" or ".appimage" ||
-                   (IsExeOnLinux(path) && Wine() is not null);
+            return (extension.Length == 0 || extension is ".x86_64" or ".run" or ".appimage" ||
+                    (IsExeOnLinux(path) && Wine() is not null)) && IsProgramOnLinux(path);
 
         return extension.Length == 0 || extension is ".exe" or ".x86_64" or ".run" or ".appimage";
     }
 
-    private string FullPath(string path) =>
+    /// <summary>A path as <see cref="Resolve"/> gives it, which may be relative to the installation.</summary>
+    public string FullPath(string path) =>
         Path.IsPathRooted(path) ? path : Path.Combine(_paths.Root, path);
+
+    /// <summary>
+    /// Whether the binary is a Windows build, which runs the Windows code of the
+    /// simulator even under Wine. One that cannot be read is taken to suit the host.
+    /// </summary>
+    public bool IsWindowsBuild(string path)
+    {
+        try
+        {
+            return Format(FullPath(path)) switch
+            {
+                BinaryFormat.PortableExecutable => true,
+                BinaryFormat.Elf => false,
+                _ => _environment.IsWindows
+            };
+        }
+        catch (Exception)
+        {
+            return _environment.IsWindows;
+        }
+    }
 }

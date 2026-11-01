@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Text;
@@ -17,13 +16,16 @@ public sealed class SettingsSerializer
         s.Language = s.LanguageCode;
         s.Fullscreen = c.GetBool("fullscreen", false);
         s.PauseWhenInactive = c.GetBool("inactivepause", true);
+        s.NetworkServer = c.Has("network.server");
+        s.FpsAverage = c.GetDouble("fpsaverage", 0);
         s.PauseOnStart = c.GetBool("pause", false);
 
         var mouse = c.GetTokens("mousescale");
         if (mouse.Length >= 1 && double.TryParse(mouse[0], NumberStyles.Float, CultureInfo.InvariantCulture, out double mx))
         {
             s.InvertMouseHorizontal = mx < 0;
-            s.CursorSensitivity = Clamp((int)Math.Round(Math.Abs(mx)), 1, 5);
+            s.MouseScaleXMagnitude = Math.Abs(mx);
+            s.CursorSensitivity = SensitivityStep(mx);
         }
         if (mouse.Length >= 2 && double.TryParse(mouse[1], NumberStyles.Float, CultureInfo.InvariantCulture, out double my))
         {
@@ -35,20 +37,27 @@ public sealed class SettingsSerializer
         s.FeedbackMode = Clamp(c.GetInt("feedbackmode", 1), 0, 5);
         s.FeedbackPort = c.GetInt("feedbackport", 888);
         s.UartEnabled = c.Has("uart");
-        s.UartPort = c.GetString("uart", "");
-        s.UartTune = c.GetString("uarttune", "");
+        var uart = c.GetTokens("uart");
+        s.UartPort = uart.ElementAtOrDefault(0) ?? "";
+        s.UartBaud = ParseInt(uart.ElementAtOrDefault(1) ?? "", 0) is > 0 and var baud ? baud : Uart.DefaultBaud;
+        s.UartUpdateTime = uart.Length >= 3 &&
+                           double.TryParse(uart[2], NumberStyles.Float, CultureInfo.InvariantCulture, out double every) &&
+                           every >= 0
+            ? every
+            : Uart.DefaultUpdateTime;
+        s.UartTune = Uart.TuneInFile(c.GetString("uarttune", ""));
         s.UartDebug = c.GetBool("uartdebug", false);
         if (c.Has("uartfeature"))
         {
-            var uartTokens = (c.GetRaw("uartfeature") ?? "").Split('|', StringSplitOptions.RemoveEmptyEntries);
-            var uf = new HashSet<string>(uartTokens, StringComparer.OrdinalIgnoreCase);
+            var uf = Uart.FeaturesOn(c.GetRaw("uartfeature"));
             s.UartMain = uf.Contains("main"); s.UartScnd = uf.Contains("scnd"); s.UartTrain = uf.Contains("train");
             s.UartLocal = uf.Contains("local"); s.UartRadioVolume = uf.Contains("radiovolume"); s.UartRadioChannel = uf.Contains("radiochannel");
+            s.UartDynamicBrake = uf.Contains("dynamicbrake");
         }
         else
         {
             s.UartMain = s.UartScnd = s.UartTrain = s.UartLocal = true;
-            s.UartRadioVolume = s.UartRadioChannel = false;
+            s.UartRadioVolume = s.UartRadioChannel = s.UartDynamicBrake = false;
         }
 
         s.SelectExeAutomatically = c.GetBool("starter.exe.auto", true);
@@ -56,16 +65,15 @@ public sealed class SettingsSerializer
         s.DebugMode = c.GetBool("debugmode", false);
         s.VirtualShunting = c.GetBool("ai.trainman", true);
         s.LogMissingVehicleFiles = c.GetBool("starter.logmissingvehicles", false);
-        s.DeveloperTools = c.GetBool("starter.developertools", false);
 
-        s.RenderEngine = IndexOf(SimulatorSettings.RenderEngines, c.GetString("gfxrenderer", "full"), 0);
+        s.RenderEngine = SimulatorSettings.RenderEngineOf(c.GetString("gfxrenderer", "full"));
         s.Width = c.GetInt("width", 1280);
         s.Height = c.GetInt("height", 720);
         s.BufferScalePercent = Clamp(c.GetInt("starter.bufferscale", 100), 50, 200);
         s.MaxTextureSize = c.GetInt("maxtexturesize", 4096);
         s.MaxCabTextureSize = c.GetInt("maxcabtexturesize", 4096);
-        s.TextureFiltering = c.GetInt("anisotropicfiltering", 8);
-        s.Multisampling = Clamp(c.GetInt("multisampling", 2), 0, 3);
+        s.TextureFiltering = Math.Max(1, c.GetDouble("anisotropicfiltering", 8));
+        s.Multisampling = Clamp(c.GetInt("multisampling", 2), 0, 4);
         s.DynamicLights = Clamp(c.GetInt("dynamiclights", 7), 0, 7);
         s.DrawRangeFactor = c.GetDouble("gfx.drawrange.factor.max", 3.0);
         s.VSync = c.GetBool("vsync", false);
@@ -77,21 +85,27 @@ public sealed class SettingsSerializer
         s.EnvMap = c.GetBool("gfx.envmap.enabled", true);
         s.UseVbo = c.GetBool("usevbo", true);
         s.RenderShadows = c.GetBool("shadows", true);
-        s.ReflectionsFramerate = c.GetInt("gfx.reflections.framerate", 60);
+        // A negative rate counts as its size; none at all, as never.
+        double reflections = Math.Abs(c.GetDouble("gfx.reflections.framerate", 1 / 300.0));
+        s.ReflectionsFramerate = reflections > 0 ? reflections : 1 / 300.0;
 
+        // map size, unread, projection range, unread
         var shadowTune = c.GetTokens("shadowtune");
         if (shadowTune.Length >= 1) s.ShadowMapResolution = ParseInt(shadowTune[0], 2048);
-        if (shadowTune.Length >= 2) s.ShadowProjectionRange = ParseInt(shadowTune[1], 250);
-        if (shadowTune.Length >= 4) s.ShadowTuneExtra = new[] { shadowTune[2], shadowTune[3] };
+        if (shadowTune.Length >= 3) s.ShadowProjectionRange = (int)Math.Round(ParseDouble(shadowTune[2], 250));
+        if (shadowTune.Length >= 2) s.ShadowTuneUnused[0] = shadowTune[1];
+        if (shadowTune.Length >= 4) s.ShadowTuneUnused[1] = shadowTune[3];
 
         s.CabShadowsRange = (int)Math.Round(c.GetDouble("gfx.shadows.cab.range", 0));
         s.ShadowRankCutoff = c.GetInt("gfx.shadow.rank.cutoff", 3);
         s.ReflectionsFidelity = Clamp(c.GetInt("gfx.reflections.fidelity", 0), 0, 2);
-        s.FieldOfView = Clamp((int)Math.Round(c.GetDouble("fieldofview", 45)), 15, 75);
+        s.FieldOfView = Clamp((int)Math.Round(c.GetDouble("fieldofview", 45)), 10, 75);
         s.PythonScreens = c.GetBool("python.enabled", true);
         s.PythonThreadedUpload = c.GetBool("python.threadedupload", true);
-        s.FpsLimitEnabled = c.Has("fpslimit");
-        s.FpsLimit = Clamp(c.GetInt("fpslimit", 30), 1, 100);
+        // The simulator takes any rate above zero; at or below it, no limit.
+        double fpsLimit = c.GetDouble("fpslimit", 0);
+        s.FpsLimitEnabled = fpsLimit > 0;
+        if (s.FpsLimitEnabled) s.FpsLimit = fpsLimit;
         s.ShadowAngleLimit = c.GetDouble("gfx.shadow.angle.min", 0.2);
         s.FullscreenWindowed = c.GetBool("fullscreenwindowed", false);
         s.RenderAngleVulkan = string.Equals(c.GetString("gfx.angleplatform", ""), "vulkan", StringComparison.OrdinalIgnoreCase);
@@ -113,11 +127,11 @@ public sealed class SettingsSerializer
         s.BrakeSpeed = c.GetDouble("brakespeed", 3.0);
 
         s.SoundEnabled = c.GetBool("soundenabled", true);
-        s.Volume = Clamp((int)Math.Round(c.GetDouble("sound.volume", 1.0) * 50), 1, 100);
-        s.RadioVolume = Clamp((int)Math.Round(c.GetDouble("sound.volume.radio", 0.75) * 100), 1, 100);
-        s.VehiclesVolume = Clamp((int)Math.Round(c.GetDouble("sound.volume.vehicle", 1.0) * 100), 1, 100);
-        s.PositionalVolume = Clamp((int)Math.Round(c.GetDouble("sound.volume.positional", 1.0) * 100), 1, 100);
-        s.AmbientVolume = Clamp((int)Math.Round(c.GetDouble("sound.volume.ambient", 1.0) * 100), 1, 100);
+        s.Volume = Clamp((int)Math.Round(c.GetDouble("sound.volume", 1.0) * 50), 0, 100);
+        s.RadioVolume = Clamp((int)Math.Round(c.GetDouble("sound.volume.radio", 0.75) * 100), 0, 100);
+        s.VehiclesVolume = Clamp((int)Math.Round(c.GetDouble("sound.volume.vehicle", 1.0) * 100), 0, 100);
+        s.PositionalVolume = Clamp((int)Math.Round(c.GetDouble("sound.volume.positional", 1.0) * 100), 0, 100);
+        s.AmbientVolume = Clamp((int)Math.Round(c.GetDouble("sound.volume.ambient", 1.0) * 100), 0, 100);
         s.SkipPipeline = c.GetBool("gfx.skippipeline", false);
         s.PythonScreenUpdateRate = c.Has("python.updatetime")
             ? Clamp(c.GetInt("python.updatetime", 200), 0, 10000)
@@ -137,6 +151,10 @@ public sealed class SettingsSerializer
         s.AutoCloseStarter = c.GetBool("starter.autoclose", false);
         s.LargeThumbnails = c.GetBool("starter.largethumbnails", false);
         s.AutoExpandSceneryTree = c.GetBool("starter.expandtree", false);
+        s.CpuNotice = c.GetBool("starter.cpunotice", true);
+        s.Gpu = string.Equals(c.GetString("starter.gpu", "discrete"), "system", StringComparison.OrdinalIgnoreCase)
+            ? GpuPreference.System
+            : GpuPreference.Discrete;
         // An unrecognised value means "do not interfere" rather than the nearest
         // state: clamping upwards would silently force every consist ready.
         s.ReadyOverride = c.GetInt("starter.batterydefault", 0) switch
@@ -151,18 +169,32 @@ public sealed class SettingsSerializer
         s.HideArchivalVehicles = c.GetBool("starter.hide.archivalvehicles", true);
         s.LastScenery = c.GetString("starter.last.scenery", "");
         s.WindowMaximized = c.GetBool("starter.window.maximized", false);
+
+        s.Extra.Clear();
+        foreach (var key in SimulatorKeys.All)
+            if (c.Has(key.Key))
+                s.Extra[key.Key] = c.GetRaw(key.Key) ?? string.Empty;
     }
 
-    private static readonly string[] ObsoleteKeys =
+    /// <summary>
+    /// Keys the simulator reads a set number of words after, whatever stands there:
+    /// one the file holds short takes the next keys in, so a save puts it right
+    /// even where nobody changed it.
+    /// </summary>
+    public static readonly string[] FixedLengthKeys = { "uart", "uarttune", "uartfeature" };
+
+    /// <summary>Keys written only when they say something, besides those of <see cref="SimulatorKeys"/>.</summary>
+    public static readonly string[] OptionalKeys = { "fpslimit", "gfx.angleplatform" };
+
+    /// <summary>Keys no simulator reads any more, taken out of the file on a save.</summary>
+    public static readonly string[] ObsoleteKeys =
     {
         "gfx.postfx.tonemapping",
+        "starter.developertools",
     };
 
     public void Write(SimulatorSettings s, ConfigFile c)
     {
-        foreach (string key in ObsoleteKeys)
-            c.Remove(key);
-
         c.Set("lang", string.IsNullOrWhiteSpace(s.LanguageCode)
             ? "en"
             : s.LanguageCode.Trim().ToLowerInvariant());
@@ -170,17 +202,25 @@ public sealed class SettingsSerializer
         c.SetBool("inactivepause", s.PauseWhenInactive);
         c.SetBool("pause", s.PauseOnStart);
 
-        double mx = s.CursorSensitivity * (s.InvertMouseHorizontal ? -1 : 1);
+        double magnitude = SensitivityStep(s.MouseScaleXMagnitude) == s.CursorSensitivity
+            ? s.MouseScaleXMagnitude
+            : s.CursorSensitivity;
+        double mx = magnitude * (s.InvertMouseHorizontal ? -1 : 1);
         double my = s.MouseScaleYMagnitude * (s.InvertMouseVertical ? -1 : 1);
         c.Set("mousescale",
-            $"{mx.ToString("0.###", CultureInfo.InvariantCulture)} " +
-            $"{my.ToString("0.###", CultureInfo.InvariantCulture)}");
+            $"{mx.ToString("R", CultureInfo.InvariantCulture)} " +
+            $"{my.ToString("R", CultureInfo.InvariantCulture)}");
 
         c.SetBool("input.gamepad", !s.IgnoreGamepad);
         c.SetInt("feedbackmode", s.FeedbackMode);
         c.SetInt("feedbackport", s.FeedbackPort);
-        if (s.UartEnabled && !string.IsNullOrWhiteSpace(s.UartPort)) c.Set("uart", s.UartPort); else c.Remove("uart");
-        c.Set("uarttune", s.UartTune);
+        // The simulator reads three words after uart and eighteen numbers after
+        // uarttune, whatever stands there - with fewer, the next keys of the file
+        // go in their place.
+        if (s.UartEnabled && Uart.IsPortName(s.UartPort) && s.UartBaud > 0 && s.UartUpdateTime >= 0)
+            c.Set("uart", $"{s.UartPort.Trim()} {s.UartBaud.ToString(CultureInfo.InvariantCulture)} " +
+                          s.UartUpdateTime.ToString("0.###", CultureInfo.InvariantCulture));
+        if (Uart.NormalizeTune(s.UartTune) is { } tune) c.Set("uarttune", tune);
         c.SetBool("uartdebug", s.UartDebug);
         var sb = new StringBuilder();
         if (s.UartMain) sb.Append("main|");
@@ -189,14 +229,16 @@ public sealed class SettingsSerializer
         if (s.UartLocal) sb.Append("local|");
         if (s.UartRadioVolume) sb.Append("radiovolume|");
         if (s.UartRadioChannel) sb.Append("radiochannel|");
-        c.Set("uartfeature", sb.ToString());
+        if (s.UartDynamicBrake) sb.Append("dynamicbrake|");
+        // Left bare, the key would have the simulator take the next four words for
+        // its old yes/no form.
+        c.Set("uartfeature", sb.Length > 0 ? sb.ToString() : Uart.NoFeatures);
 
         c.SetBool("starter.exe.auto", s.SelectExeAutomatically);
         c.Set("starter.exe.path", s.ExecutablePath);
         c.SetBool("debugmode", s.DebugMode);
         c.SetBool("ai.trainman", s.VirtualShunting);
         c.SetBool("starter.logmissingvehicles", s.LogMissingVehicleFiles);
-        c.SetBool("starter.developertools", s.DeveloperTools);
 
         c.Set("gfxrenderer", SimulatorSettings.RenderEngines[Clamp(s.RenderEngine, 0, SimulatorSettings.RenderEngines.Length - 1)]);
         c.SetInt("width", s.Width);
@@ -208,7 +250,7 @@ public sealed class SettingsSerializer
         c.SetInt("gfx.framebuffer.height", fbh);
         c.SetInt("maxtexturesize", s.MaxTextureSize);
         c.SetInt("maxcabtexturesize", s.MaxCabTextureSize);
-        c.SetInt("anisotropicfiltering", s.TextureFiltering);
+        c.SetDouble("anisotropicfiltering", s.TextureFiltering);
         c.SetInt("multisampling", s.Multisampling);
         c.SetInt("dynamiclights", s.DynamicLights);
         c.SetDouble("gfx.drawrange.factor.max", s.DrawRangeFactor);
@@ -222,20 +264,20 @@ public sealed class SettingsSerializer
         c.SetBool("usevbo", s.UseVbo);
         c.SetBool("shadows", s.RenderShadows);
         c.SetBool("gfx.shadowmap.enabled", s.RenderShadows);
-        c.SetInt("gfx.reflections.framerate", s.ReflectionsFramerate);
+        c.Set("gfx.reflections.framerate", s.ReflectionsFramerate.ToString("0.######", CultureInfo.InvariantCulture));
         c.Set("shadowtune",
-            $"{s.ShadowMapResolution} {s.ShadowProjectionRange} " +
-            $"{s.ShadowTuneExtra[0]} {s.ShadowTuneExtra[1]}");
+            $"{s.ShadowMapResolution} {s.ShadowTuneUnused[0]} " +
+            $"{s.ShadowProjectionRange} {s.ShadowTuneUnused[1]}");
         c.SetInt("gfx.shadows.cab.range", s.CabShadowsRange);
         c.SetInt("gfx.shadow.rank.cutoff", s.ShadowRankCutoff);
         c.SetInt("gfx.reflections.fidelity", s.ReflectionsFidelity);
         c.SetInt("fieldofview", s.FieldOfView);
         c.SetBool("python.enabled", s.PythonScreens);
         c.SetBool("python.threadedupload", s.PythonThreadedUpload);
-        if (s.FpsLimitEnabled) c.SetInt("fpslimit", s.FpsLimit); else c.Remove("fpslimit");
+        if (s.FpsLimitEnabled) c.SetDouble("fpslimit", s.FpsLimit);
         c.SetDouble("gfx.shadow.angle.min", s.ShadowAngleLimit);
         c.SetBool("fullscreenwindowed", s.FullscreenWindowed);
-        if (s.RenderAngleVulkan) c.Set("gfx.angleplatform", "vulkan"); else c.Remove("gfx.angleplatform");
+        if (s.RenderAngleVulkan) c.Set("gfx.angleplatform", "vulkan");
 
         c.SetInt("splinefidelity", s.SplineFidelity);
         c.SetBool("fullphysics", s.FullPhysics);
@@ -274,6 +316,8 @@ public sealed class SettingsSerializer
         c.SetBool("starter.autoclose", s.AutoCloseStarter);
         c.SetBool("starter.largethumbnails", s.LargeThumbnails);
         c.SetBool("starter.expandtree", s.AutoExpandSceneryTree);
+        c.SetBool("starter.cpunotice", s.CpuNotice);
+        c.Set("starter.gpu", s.Gpu == GpuPreference.System ? "system" : "discrete");
         c.SetInt("starter.batterydefault", (int)s.ReadyOverride);
         c.SetBool("starter.show.ai", s.ShowAiVehicles);
         c.SetBool("starter.drivableonly", s.DrivableOnly);
@@ -281,23 +325,26 @@ public sealed class SettingsSerializer
         c.SetBool("starter.hide.archivalvehicles", s.HideArchivalVehicles);
         if (!string.IsNullOrWhiteSpace(s.LastScenery))
             c.Set("starter.last.scenery", s.LastScenery);
-        else
-            c.Remove("starter.last.scenery");
         c.SetBool("starter.window.maximized", s.WindowMaximized);
+
+        // A key left bare would take the next line's key for its value, so an
+        // emptied one goes.
+        foreach (var key in SimulatorKeys.All)
+            if (s.Extra.TryGetValue(key.Key, out string? value) && !string.IsNullOrWhiteSpace(value))
+                c.Set(key.Key, value.Trim());
     }
 
     private static int Clamp(int v, int lo, int hi) => v < lo ? lo : (v > hi ? hi : v);
 
+    private static int SensitivityStep(double mouseScale) =>
+        (int)Math.Clamp(Math.Round(Math.Abs(mouseScale)), 1, 5);
+
+    private static double ParseDouble(string s, double fallback) =>
+        double.TryParse(s, NumberStyles.Float, CultureInfo.InvariantCulture, out double d) ? d : fallback;
+
     private static int ParseInt(string s, int fallback) =>
         int.TryParse(s, NumberStyles.Integer, CultureInfo.InvariantCulture, out int n) ? n : fallback;
 
-    private static int IndexOf(string[] values, string token, int fallback)
-    {
-        for (int i = 0; i < values.Length; i++)
-            if (string.Equals(values[i], token, StringComparison.OrdinalIgnoreCase))
-                return i;
-        return fallback;
-    }
 
     private static int MapOldPyScreenPriority(string priority) =>
         priority.ToLowerInvariant() switch

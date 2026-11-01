@@ -172,6 +172,65 @@ public class ExecutableLocatorTests
     }
 
     [Fact]
+    public void What_is_inside_says_what_the_file_is_not_its_name()
+    {
+        string windowsBuild = TestInstallation.At("eu07-win");
+        string nativeBuild = TestInstallation.At("eu07.exe");
+        var installation = WithWine(new InMemoryFileSystem()
+            .WithFile(windowsBuild, PortableExecutable)
+            .WithExecutable(nativeBuild, Elf));
+        var executables = installation.Executables;
+
+        Assert.True(executables.IsWindowsBuild("eu07-win"));
+        Assert.Equal(Wine, executables.LaunchCommand(windowsBuild, Array.Empty<string>()).FileName);
+        Assert.False(executables.IsWindowsBuild("eu07.exe"));
+        Assert.Equal(nativeBuild, executables.LaunchCommand(nativeBuild, Array.Empty<string>()).FileName);
+    }
+
+    [Fact]
+    public void A_script_on_linux_starts_itself()
+    {
+        string script = TestInstallation.At("eu07-start");
+        var installation = WithWine(new InMemoryFileSystem().WithExecutable(script, "#!/bin/sh\nwine eu07.exe\n"));
+
+        string resolved = installation.Executables.Resolve(new SimulatorSettings(), out var problem);
+
+        Assert.EndsWith("eu07-start", resolved);
+        Assert.Equal(ExeProblem.None, problem);
+        Assert.Equal(script, installation.Executables.LaunchCommand(script, Array.Empty<string>()).FileName);
+    }
+
+    [Theory]
+    [InlineData("notatki do eu07\n")]
+    [InlineData("")]
+    public void On_linux_the_execute_bit_alone_does_not_make_a_program(string inside)
+    {
+        // On a Windows partition every file has the bit.
+        string note = TestInstallation.At("eu07_opis");
+        var installation = WithWine(new InMemoryFileSystem()
+            .WithExecutable(note, inside)
+            .WithFile(TestInstallation.At("eu07.exe"), PortableExecutable));
+
+        string resolved = installation.Executables.Resolve(new SimulatorSettings(), out var problem);
+
+        Assert.EndsWith("eu07.exe", resolved);
+        Assert.Equal(ExeProblem.WrongPlatform, problem);
+        Assert.Equal(new[] { "eu07.exe" }, installation.Executables.ListCandidates());
+        Assert.Equal(ExeProblem.NotAProgram, installation.Executables.Validate(note));
+    }
+
+    [Fact]
+    public void A_mac_binary_is_not_taken_for_a_note()
+    {
+        string build = TestInstallation.At("eu07");
+        var installation = new TestInstallation(new InMemoryFileSystem().WithExecutable(build, "Ïúíþ"));
+        installation.Environment.IsLinux = false;
+        installation.Environment.IsMacOS = true;
+
+        Assert.Equal(ExeProblem.None, installation.Executables.Validate(build));
+    }
+
+    [Fact]
     public void Wine_is_never_looked_for_on_windows()
     {
         var installation = WithWine(new InMemoryFileSystem());
