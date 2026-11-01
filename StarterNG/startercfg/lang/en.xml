@@ -1146,9 +1146,8 @@
     <String key="Effects">Effects</String>
     <String key="GfxColImage">Resolution and anti-aliasing</String>
     <String key="GfxColLights">Lighting</String>
-    <String key="GfxColAtmosphere">Atmosphere and weather</String>
     <String key="GfxColPostFx">Post-processing</String>
-    <String key="GfxColNature">Vegetation and particles</String>
+    <String key="GfxColNature">Smoke</String>
     <String key="AntiAliasing">Anti-aliasing</String>
     <String key="AntiAliasingDesc">MSAA smooths the edges of objects, TAA the whole image at the cost of a slight blur. DLSS and DLAA need Vulkan and an NVIDIA RTX card, otherwise the simulator uses TAA.</String>
     <String key="VolumetricFog">Volumetric fog</String>
@@ -1195,4 +1194,6 @@
     <String key="UseGLESDesc">OpenGL ES instead of OpenGL. Does not work with the legacy renderer.</String>
     <String key="GpuCard">{0}, {1} GB</String>
     <String key="GpuCardShared">{0}, shared memory</String>
+    <String key="GfxColNewRenderer">New in OpenGL 4.6 / Vulkan</String>
+    <String key="GfxNewRendererNote">These work only with the new exe. An older exe skips them.</String>
 </Language>

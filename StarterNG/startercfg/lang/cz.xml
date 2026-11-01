@@ -900,9 +900,8 @@
     <String key="Effects">Efekty</String>
     <String key="GfxColImage">Rozlišení a vyhlazování</String>
     <String key="GfxColLights">Osvětlení</String>
-    <String key="GfxColAtmosphere">Atmosféra a počasí</String>
     <String key="GfxColPostFx">Postprocessing</String>
-    <String key="GfxColNature">Vegetace a částice</String>
+    <String key="GfxColNature">Kouř</String>
     <String key="AntiAliasing">Vyhlazování hran</String>
     <String key="VolumetricFog">Objemová mlha</String>
     <String key="REOpenGLNote">DLSS, generování snímků, Reflex a ray tracing jen s Vulkanem.</String>
@@ -943,4 +942,6 @@
     <String key="UseGLESDesc">OpenGL ES místo OpenGL. Nefunguje s rendererem legacy.</String>
     <String key="GpuCard">{0}, {1} GB</String>
     <String key="GpuCardShared">{0}, sdílená paměť</String>
+    <String key="GfxColNewRenderer">Novinky OpenGL 4.6 / Vulkan</String>
+    <String key="GfxNewRendererNote">Funguje jen s novým exe. Starší exe tato nastavení přeskočí.</String>
 </Language>

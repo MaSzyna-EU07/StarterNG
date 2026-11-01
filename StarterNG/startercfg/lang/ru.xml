@@ -900,9 +900,8 @@
     <String key="Effects">Эффекты</String>
     <String key="GfxColImage">Разрешение и сглаживание</String>
     <String key="GfxColLights">Освещение</String>
-    <String key="GfxColAtmosphere">Атмосфера и погода</String>
     <String key="GfxColPostFx">Постобработка</String>
-    <String key="GfxColNature">Растительность и частицы</String>
+    <String key="GfxColNature">Дым</String>
     <String key="AntiAliasing">Сглаживание</String>
     <String key="VolumetricFog">Объёмный туман</String>
     <String key="REOpenGLNote">DLSS, генерация кадров, Reflex и трассировка лучей только с Vulkan.</String>
@@ -943,4 +942,6 @@
     <String key="UseGLESDesc">OpenGL ES вместо OpenGL. Не работает с рендерером legacy.</String>
     <String key="GpuCard">{0}, {1} ГБ</String>
     <String key="GpuCardShared">{0}, общая память</String>
+    <String key="GfxColNewRenderer">Новое в OpenGL 4.6 / Vulkan</String>
+    <String key="GfxNewRendererNote">Работает только с новым exe. Старый exe пропускает эти настройки.</String>
 </Language>

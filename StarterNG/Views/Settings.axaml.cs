@@ -517,8 +517,7 @@ public partial class Settings : UserControl, ISettingsCapture
                  {
                      (DrawRangeSection, GraphicsGroup.DrawRange), (TexturesSection, GraphicsGroup.Textures),
                      (ShadowsSection, GraphicsGroup.Shadows), (LightsSection, GraphicsGroup.Lights),
-                     (ReflectionsSection, GraphicsGroup.Reflections), (AtmosphereSection, GraphicsGroup.Atmosphere),
-                     (NatureSection, GraphicsGroup.Nature)
+                     (ReflectionsSection, GraphicsGroup.Reflections), (NatureSection, GraphicsGroup.Nature)
                  })
         {
             var levels = new ComboBox();

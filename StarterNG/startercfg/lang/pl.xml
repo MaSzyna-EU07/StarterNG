@@ -968,9 +968,8 @@
     <String key="Effects">Efekty</String>
     <String key="GfxColImage">Rozdzielczość i wygładzanie</String>
     <String key="GfxColLights">Oświetlenie</String>
-    <String key="GfxColAtmosphere">Atmosfera i pogoda</String>
     <String key="GfxColPostFx">Postprocessing</String>
-    <String key="GfxColNature">Roślinność i cząsteczki</String>
+    <String key="GfxColNature">Dym</String>
     <String key="AntiAliasing">Wygładzanie krawędzi</String>
     <String key="AntiAliasingDesc">MSAA wygładza krawędzie obiektów, TAA cały obraz kosztem lekkiego rozmycia. DLSS i DLAA tylko z Vulkanem na kartach NVIDIA RTX, inaczej symulator użyje TAA.</String>
     <String key="VolumetricFog">Mgła wolumetryczna</String>
@@ -1017,4 +1016,6 @@
     <String key="UseGLESDesc">OpenGL ES zamiast OpenGL. Nie działa z rendererem legacy.</String>
     <String key="GpuCard">{0}, {1} GB</String>
     <String key="GpuCardShared">{0}, pamięć wspólna</String>
+    <String key="GfxColNewRenderer">Nowości OpenGL 4.6 / Vulkan</String>
+    <String key="GfxNewRendererNote">Działa tylko z nowym exe. Starsze exe pomija te ustawienia.</String>
 </Language>
