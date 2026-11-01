@@ -68,6 +68,7 @@ public sealed class AppServices
         Tapes = new HaslerTapes(files, paths, log, clock, Timetables,
                                 () => Processes.IsRunning(Path.GetFileNameWithoutExtension(SettingsStore.ResolveExecutable())));
         Gpus = new LinuxGpus(files, environment);
+        GraphicsCards = new GraphicsCards(files, environment, Gpus);
         Displays = new Displays(files, environment);
         StartSimulation = new StartSimulation(State, SettingsStore, Library.Vehicles, Executables,
                                               files, paths, Processes, random, log, Gpus, environment,
@@ -132,6 +133,8 @@ public sealed class AppServices
     public ExecutableLocator Executables { get; }
 
     public LinuxGpus Gpus { get; }
+
+    public GraphicsCards GraphicsCards { get; }
 
     public Displays Displays { get; }
 

@@ -61,7 +61,12 @@ public sealed class LinuxGpus
 
                 string bootVga = Path.Combine(device, "boot_vga");
                 bool boot = _files.FileExists(bootVga) && _files.ReadAllText(bootVga).Trim() == "1";
-                gpus.Add(new GpuDevice(slot, id, fields.GetValueOrDefault("DRIVER", ""), boot, withPanel.Contains(name)));
+                string vram = Path.Combine(device, "mem_info_vram_total");
+                long memory = _files.FileExists(vram) && long.TryParse(_files.ReadAllText(vram).Trim(), out long bytes)
+                    ? bytes
+                    : 0;
+                gpus.Add(new GpuDevice(slot, id, fields.GetValueOrDefault("DRIVER", ""), boot, withPanel.Contains(name),
+                                       memory));
             }
 
             return gpus.OrderBy(g => g.Slot, StringComparer.Ordinal).ToList();

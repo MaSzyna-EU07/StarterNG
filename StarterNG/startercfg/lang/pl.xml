@@ -1015,4 +1015,6 @@
     <String key="CabShadowsRangeDesc">Odległość, z jakiej źródła światła nadal rzucają cień w kabinie. Zero wyłącza cienie w kabinie.</String>
     <String key="UseGLES">Używaj OpenGL ES</String>
     <String key="UseGLESDesc">OpenGL ES zamiast OpenGL. Nie działa z rendererem legacy.</String>
+    <String key="GpuCard">{0}, {1} GB</String>
+    <String key="GpuCardShared">{0}, pamięć wspólna</String>
 </Language>

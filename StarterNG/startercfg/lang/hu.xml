@@ -941,4 +941,6 @@
     <String key="CabShadowsRange">Vezetőállás árnyékforrásainak hatótávolsága</String>
     <String key="UseGLES">OpenGL ES használata</String>
     <String key="UseGLESDesc">OpenGL ES az OpenGL helyett. A legacy megjelenítővel nem működik.</String>
+    <String key="GpuCard">{0}, {1} GB</String>
+    <String key="GpuCardShared">{0}, megosztott memória</String>
 </Language>

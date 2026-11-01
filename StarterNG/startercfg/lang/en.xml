@@ -1193,4 +1193,6 @@
     <String key="CabShadowsRangeDesc">Distance at which light sources still cast shadows inside the cab. Zero turns cab shadows off.</String>
     <String key="UseGLES">Use OpenGL ES</String>
     <String key="UseGLESDesc">OpenGL ES instead of OpenGL. Does not work with the legacy renderer.</String>
+    <String key="GpuCard">{0}, {1} GB</String>
+    <String key="GpuCardShared">{0}, shared memory</String>
 </Language>

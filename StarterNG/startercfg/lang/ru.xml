@@ -941,4 +941,6 @@
     <String key="CabShadowsRange">Дальность источников теней в кабине</String>
     <String key="UseGLES">Использовать OpenGL ES</String>
     <String key="UseGLESDesc">OpenGL ES вместо OpenGL. Не работает с рендерером legacy.</String>
+    <String key="GpuCard">{0}, {1} ГБ</String>
+    <String key="GpuCardShared">{0}, общая память</String>
 </Language>

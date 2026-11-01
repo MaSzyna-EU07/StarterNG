@@ -36,7 +36,9 @@ public enum GpuNote
 /// <param name="Driver">The kernel driver: nvidia, amdgpu, i915...</param>
 /// <param name="BootVga">The card the firmware started the display on.</param>
 /// <param name="InternalPanel">The card has a laptop's built-in screen among its outputs (eDP, LVDS, DSI).</param>
-public sealed record GpuDevice(string Slot, string PciId, string Driver, bool BootVga, bool InternalPanel = false)
+/// <param name="MemoryBytes">Its memory, where the driver tells: amdgpu does.</param>
+public sealed record GpuDevice(string Slot, string PciId, string Driver, bool BootVga, bool InternalPanel = false,
+                               long MemoryBytes = 0)
 {
     public string Vendor => PciId.Split(':')[0].ToUpperInvariant() switch
     {

@@ -99,6 +99,8 @@ public partial class Settings : UserControl, ISettingsCapture
         _keyRows.Changed += QueuePresetMarks;
         BuildPresetButtons();
         BuildMonitorRates();
+        ReadGraphicsCards();
+        App.Loc.LanguageChanged += UpdateCardText;
         App.Loc.LanguageChanged += _keyRows.UpdateTexts;
 
         FeedbackCb.SelectionChanged += FeedbackCb_OnSelectionChanged;
@@ -623,6 +625,32 @@ public partial class Settings : UserControl, ISettingsCapture
             levels.SelectedItem = levels.Items.OfType<ComboBoxItem>()
                 .FirstOrDefault(item => ReferenceEquals(item.Tag, groupLevels[group]));
         _markingLevels = false;
+    }
+
+    // ── The player's graphics card, beside the levels ────────────────────────
+
+    private IReadOnlyList<GraphicsCard> _cards = Array.Empty<GraphicsCard>();
+
+    private async void ReadGraphicsCards()
+    {
+        var reader = AppServices.Current.GraphicsCards;
+        _cards = await Task.Run(() => reader.List());
+        UpdateCardText();
+    }
+
+    private static string CardLine(GraphicsCard card) =>
+        card.SharedMemory ? string.Format(App.Loc["GpuCardShared"], card.Name)
+        : card.MemoryBytes > 0 ? string.Format(App.Loc["GpuCard"], card.Name, card.MemoryGb)
+        : card.Name;
+
+    private void UpdateCardText()
+    {
+        CardText.IsVisible = _cards.Count > 0;
+        if (_cards.Count == 0)
+            return;
+
+        CardText.Text = CardLine(_cards[0]);
+        ToolTip.SetTip(CardText, string.Join(Environment.NewLine, _cards.Select(CardLine)));
     }
 
     // ── The screens' refresh rates, for the frame rate limit ─────────────────

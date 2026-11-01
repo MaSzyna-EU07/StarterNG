@@ -96,8 +96,14 @@
                             <TextBlock x:Name="PresetStateText" Grid.Column="2" VerticalAlignment="Center" FontSize="12"
                                        Foreground="{StaticResource CarbonFgDim}" />
                         </Grid>
-                        <TextBlock FontSize="12" TextWrapping="Wrap" Foreground="{StaticResource CarbonFgDim}"
-                                   Text="{Binding [GfxPresetDesc], Source={x:Static starterNg:App.Loc}}" />
+                        <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
+                            <TextBlock x:Name="CardText" IsVisible="False" MaxWidth="320" VerticalAlignment="Center"
+                                       FontSize="12" TextTrimming="CharacterEllipsis"
+                                       Foreground="{StaticResource CarbonFg}" />
+                            <TextBlock Grid.Column="1" VerticalAlignment="Center" FontSize="12" TextWrapping="Wrap"
+                                       TextAlignment="Right" Foreground="{StaticResource CarbonFgDim}"
+                                       Text="{Binding [GfxPresetDesc], Source={x:Static starterNg:App.Loc}}" />
+                        </Grid>
                     </StackPanel>
                 </Border>
 

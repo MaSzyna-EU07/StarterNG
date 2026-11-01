@@ -941,4 +941,6 @@
     <String key="CabShadowsRange">Dosah zdrojů stínů v kabině</String>
     <String key="UseGLES">Použít OpenGL ES</String>
     <String key="UseGLESDesc">OpenGL ES místo OpenGL. Nefunguje s rendererem legacy.</String>
+    <String key="GpuCard">{0}, {1} GB</String>
+    <String key="GpuCardShared">{0}, sdílená paměť</String>
 </Language>
