@@ -32,6 +32,28 @@ public sealed class ConfigFile
 
     public bool Has(string key) => _index.ContainsKey(key);
 
+    /// <summary>The line the key is on, or -1. The simulator reads the file top down, so a later line wins.</summary>
+    public int LineOf(string key) => _index.TryGetValue(key, out int i) ? i : -1;
+
+    /// <summary>
+    /// Moves the line of <paramref name="key"/> right below that of <paramref name="anchor"/>
+    /// when it is above it, for keys the simulator lets override one another.
+    /// </summary>
+    public void MoveAfter(string key, string anchor)
+    {
+        if (!_index.TryGetValue(key, out int from) || !_index.TryGetValue(anchor, out int to) || from > to)
+            return;
+
+        string line = _lines[from];
+        _lines.RemoveAt(from);
+        _lines.Insert(to, line);
+
+        _index.Clear();
+        for (int i = 0; i < _lines.Count; i++)
+            if (TryParseKey(_lines[i], out string k))
+                _index[k] = i;
+    }
+
     public string? GetRaw(string key)
     {
         if (!_index.TryGetValue(key, out int i))

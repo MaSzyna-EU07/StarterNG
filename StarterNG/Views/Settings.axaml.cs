@@ -71,6 +71,7 @@ public partial class Settings : UserControl, ISettingsCapture
         FpsLimitEnableCb.IsCheckedChanged += (_, _) => FpsLimitSlider.IsEnabled = IsChecked(FpsLimitEnableCb);
 
         AppServices.Current.SettingsStore.RegisterCapture(this);
+        InitGraphics();
 
         PopulateProfileCombo();
         ApplyToUi();
@@ -261,41 +262,10 @@ public partial class Settings : UserControl, ISettingsCapture
             LogMissingVehicleFilesCb.IsChecked = s.LogMissingVehicleFiles;
             DeveloperToolsCb.IsChecked = s.DeveloperTools;
 
-            RenderEngineCb.SelectedIndex = s.RenderEngine;
-            SelectResolution(s.Width, s.Height);
-            bufferScale.Value = s.BufferScalePercent;
-            textureResolutionSlider.Value = Log2(s.MaxTextureSize, 12);
-            cabTextureResolutionSlider.Value = Log2(s.MaxCabTextureSize, 12);
-            TexFilteringSlider.Value = AnisotropyToSlider(s.TextureFiltering);
-            MultisamplingSlider.Value = s.Multisampling + 1;
-            DynamicLightsSlider.Value = s.DynamicLights;
-            RenderRangeSlider.Value = (int)Math.Round(s.DrawRangeFactor);
-            VSyncCb.IsChecked = s.VSync;
-            SmokeDisplayCb.IsChecked = s.Smoke;
-            SmokeParticlesSlider.Value = s.SmokeFidelity;
-            ChromaticAberrationCb.IsChecked = s.ChromaticAberration;
-            MotionBlurCb.IsChecked = s.MotionBlur;
-            AdditionalShadersCb.IsChecked = s.ExtraEffects;
-            ReflectionsCubeMapCb.IsChecked = s.EnvMap;
-            RenderVBOCb.IsChecked = s.UseVbo;
-            RenderShadowsCb.IsChecked = s.RenderShadows;
-            reflectionsFramerate.Value = s.ReflectionsFramerate;
-            shaderResolutionSlider.Value = Log2(s.ShadowMapResolution, 12);
-            shaderRange.Value = s.ShadowProjectionRange;
-            cabShaderSourceRange.Value = s.CabShadowsRange;
-            ShadowDisplayCb.SelectedIndex = Clamp(s.ShadowRankCutoff - 1, 0, 2);
-            ReflectionsDetailsCb.SelectedIndex = s.ReflectionsFidelity;
-            fovSlider.Value = s.FieldOfView;
+            ApplyGraphicsToUi(s);
             RenderScreensCb.IsChecked = s.PythonScreens;
             RenderScreensThreadCb.IsChecked = s.PythonThreadedUpload;
-            FpsLimitEnableCb.IsChecked = s.FpsLimitEnabled;
-            FpsLimitSlider.Value = s.FpsLimit;
-            FpsLimitSlider.IsEnabled = s.FpsLimitEnabled;
-            ShadowAngleLimitSlider.Value = s.ShadowAngleLimit;
-            FullscreenWindowedCb.IsChecked = s.FullscreenWindowed;
-            RenderAngleVulkanCb.IsChecked = s.RenderAngleVulkan;
 
-            TrackCurvesSlider.Value = s.SplineFidelity;
             PhysicsAccuracyCb.IsChecked = s.FullPhysics;
             PantographBreakCb.IsChecked = s.EnableTraction;
             OverheadOnlyCb.IsChecked = s.LiveTraction;
@@ -314,7 +284,6 @@ public partial class Settings : UserControl, ISettingsCapture
             VehiclesVolumeSlider.Value = s.VehiclesVolume;
             PositionalVolumeSlider.Value = s.PositionalVolume;
             AmbientVolumeSlider.Value = s.AmbientVolume;
-            SkipPipelineCb.IsChecked = s.SkipPipeline;
             DebugLogVisibleCb.IsChecked = s.DebugLogVisible;
             PyScreenPriorityCb.SelectedIndex = Math.Max(0, IndexOfTag(PyScreenPriorityCb, s.PythonScreenUpdateRate.ToString(CultureInfo.InvariantCulture)));
 
@@ -329,6 +298,7 @@ public partial class Settings : UserControl, ISettingsCapture
         }
 
         UpdateQualityCaptions();
+        UpdateGraphicsState();
     }
 
     /// <summary>
@@ -360,41 +330,10 @@ public partial class Settings : UserControl, ISettingsCapture
         s.LogMissingVehicleFiles = IsChecked(LogMissingVehicleFilesCb);
         s.DeveloperTools = IsChecked(DeveloperToolsCb);
 
-        s.RenderEngine = Math.Max(0, RenderEngineCb.SelectedIndex);
-        ReadResolution(s);
-        s.BufferScalePercent = (int)bufferScale.Value;
-        s.MaxTextureSize = 1 << (int)textureResolutionSlider.Value;
-        s.MaxCabTextureSize = 1 << (int)cabTextureResolutionSlider.Value;
-        s.TextureFiltering = SimulatorSettings.AnisotropySteps[
-            Clamp((int)TexFilteringSlider.Value - 1, 0, SimulatorSettings.AnisotropySteps.Length - 1)];
-        s.Multisampling = Clamp((int)MultisamplingSlider.Value - 1, 0, 3);
-        s.DynamicLights = (int)DynamicLightsSlider.Value;
-        s.DrawRangeFactor = RenderRangeSlider.Value;
-        s.VSync = IsChecked(VSyncCb);
-        s.Smoke = IsChecked(SmokeDisplayCb);
-        s.SmokeFidelity = (int)SmokeParticlesSlider.Value;
-        s.ChromaticAberration = IsChecked(ChromaticAberrationCb);
-        s.MotionBlur = IsChecked(MotionBlurCb);
-        s.ExtraEffects = IsChecked(AdditionalShadersCb);
-        s.EnvMap = IsChecked(ReflectionsCubeMapCb);
-        s.UseVbo = IsChecked(RenderVBOCb);
-        s.RenderShadows = IsChecked(RenderShadowsCb);
-        s.ReflectionsFramerate = (int)reflectionsFramerate.Value;
-        s.ShadowMapResolution = 1 << (int)shaderResolutionSlider.Value;
-        s.ShadowProjectionRange = (int)shaderRange.Value;
-        s.CabShadowsRange = (int)cabShaderSourceRange.Value;
-        s.ShadowRankCutoff = Math.Max(0, ShadowDisplayCb.SelectedIndex) + 1;
-        s.ReflectionsFidelity = Math.Max(0, ReflectionsDetailsCb.SelectedIndex);
-        s.FieldOfView = Clamp((int)fovSlider.Value, 15, 75);
+        CaptureGraphicsInto(s);
         s.PythonScreens = IsChecked(RenderScreensCb);
         s.PythonThreadedUpload = IsChecked(RenderScreensThreadCb);
-        s.FpsLimitEnabled = IsChecked(FpsLimitEnableCb);
-        s.FpsLimit = (int)FpsLimitSlider.Value;
-        s.ShadowAngleLimit = ShadowAngleLimitSlider.Value;
-        s.FullscreenWindowed = IsChecked(FullscreenWindowedCb);
-        s.RenderAngleVulkan = IsChecked(RenderAngleVulkanCb);
 
-        s.SplineFidelity = (int)TrackCurvesSlider.Value;
         s.FullPhysics = IsChecked(PhysicsAccuracyCb);
         s.EnableTraction = IsChecked(PantographBreakCb);
         s.LiveTraction = IsChecked(OverheadOnlyCb);
@@ -413,7 +352,6 @@ public partial class Settings : UserControl, ISettingsCapture
         s.VehiclesVolume = (int)VehiclesVolumeSlider.Value;
         s.PositionalVolume = (int)PositionalVolumeSlider.Value;
         s.AmbientVolume = (int)AmbientVolumeSlider.Value;
-        s.SkipPipeline = IsChecked(SkipPipelineCb);
         s.DebugLogVisible = IsChecked(DebugLogVisibleCb);
         s.PythonScreenUpdateRate = ParsePriorityTag((PyScreenPriorityCb.SelectedItem as ComboBoxItem)?.Tag);
 
@@ -442,13 +380,6 @@ public partial class Settings : UserControl, ISettingsCapture
         UpdateSaveState();
         if (SaveStatus is not null)
             SaveStatus.Text = App.Loc["SettingsSaved"];
-    }
-
-    private void RenderEngineCb_OnSelectionChanged(object? sender, SelectionChangedEventArgs e)
-    {
-        if (RenderEngineWarning is not null)
-            RenderEngineWarning.IsVisible =
-                SimulatorSettings.RenderEngines.ElementAtOrDefault(RenderEngineCb.SelectedIndex) == "experimental";
     }
 
     private void RedrawNavIfNeeded()
@@ -714,27 +645,37 @@ public partial class Settings : UserControl, ISettingsCapture
         {
             switch (control)
             {
-                // Choosing a profile changes nothing until Apply is pressed.
-                case ComboBox combo when ReferenceEquals(combo, ProfileCb):
+                // Choosing a profile changes nothing until Apply is pressed, and the
+                // preset marks the page itself once it has set the controls.
+                case ComboBox combo when ReferenceEquals(combo, ProfileCb) || ReferenceEquals(combo, QualityPresetCb):
                     break;
                 case CheckBox cb:
-                    cb.IsCheckedChanged += (_, _) => MarkDirty();
+                    cb.IsCheckedChanged += (_, _) => OnEdited();
                     break;
                 case Slider slider:
-                    slider.ValueChanged += (_, _) => MarkDirty();
+                    slider.ValueChanged += (_, _) => OnEdited();
                     break;
                 case ComboBox combo:
-                    combo.SelectionChanged += (_, _) => MarkDirty();
+                    combo.SelectionChanged += (_, _) => OnEdited();
                     break;
                 case NumericUpDown nud:
-                    nud.ValueChanged += (_, _) => MarkDirty();
+                    nud.ValueChanged += (_, _) => OnEdited();
+                    break;
+                case TextBox tb when ReferenceEquals(tb, VulkanDeviceTb):
+                    tb.TextChanged += (_, _) => OnEdited();
                     break;
             }
         }
 
         foreach (var section in this.GetLogicalDescendants().OfType<SettingsSection>())
             if (section.Toggle is CheckBox toggle)
-                toggle.IsCheckedChanged += (_, _) => MarkDirty();
+                toggle.IsCheckedChanged += (_, _) => OnEdited();
+    }
+
+    private void OnEdited()
+    {
+        MarkDirty();
+        UpdateGraphicsState();
     }
 
     private void MarkDirty()
@@ -1411,10 +1352,6 @@ public partial class Settings : UserControl, ISettingsCapture
         if (SmokeParticlesRow != null)
             SmokeParticlesRow.ValueText = four[Clamp((int)SmokeParticlesSlider.Value, 1, 4) - 1];
 
-        string[] msaa = { App.Loc["MsaaNone"], "x2", "x4", "x8" };
-        if (MultisamplingRow != null)
-            MultisamplingRow.ValueText = msaa[Clamp((int)MultisamplingSlider.Value, 1, 4) - 1];
-
         string[] range = { App.Loc["RangeNormal"], App.Loc["RangeHigh"], App.Loc["RangeVeryHigh"] };
         if (RenderRangeRow != null)
             RenderRangeRow.ValueText = range[Clamp((int)RenderRangeSlider.Value, 1, 3) - 1];
@@ -1433,13 +1370,6 @@ public partial class Settings : UserControl, ISettingsCapture
             int metres = (int)shaderRange.Value;
             ShadowRangeRow.ValueText = $"{metres} m";
             ToolTip.SetTip(shaderRange, ShadowRangeWord(metres));
-        }
-
-        if (CabShadowRangeRow != null)
-        {
-            int metres = (int)cabShaderSourceRange.Value;
-            CabShadowRangeRow.ValueText = metres <= 0 ? App.Loc["RangeDisabled"] : $"{metres} m";
-            ToolTip.SetTip(cabShaderSourceRange, CabShadowRangeWord(metres));
         }
 
         if (ReflectionsFramerateRow != null)
@@ -1466,15 +1396,6 @@ public partial class Settings : UserControl, ISettingsCapture
         <= 50 => App.Loc["RangeLow"],
         <= 150 => App.Loc["RangeModerate"],
         <= 250 => App.Loc["RangeHigh"],
-        _ => App.Loc["RangeVeryHigh"]
-    };
-
-    private static string CabShadowRangeWord(int metres) => metres switch
-    {
-        <= 10 => App.Loc["RangeVeryLow"],
-        <= 20 => App.Loc["RangeLow"],
-        <= 30 => App.Loc["RangeStandard"],
-        <= 50 => App.Loc["RangeHigh"],
         _ => App.Loc["RangeVeryHigh"]
     };
 

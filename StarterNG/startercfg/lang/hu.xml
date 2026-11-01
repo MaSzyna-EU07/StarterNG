@@ -364,20 +364,12 @@
 
     <String key="Graphic">Grafika</String>
     <String key="RenderEngine">Megjelenítő motor</String>
-    <String key="REFull">Teljes</String>
-    <String key="REOld">Régi</String>
-    <String key="RESimpShader">Egyszerűsített shader</String>
-    <String key="RESimp">Egyszerűsített</String>
-    <String key="REOff">Vizuális réteg kikapcsolása</String>
-    <String key="REExperimental">Kísérleti</String>
-    <String key="REExperimentalWarning">Figyelem: a kísérleti renderelő még fejlesztés alatt áll. Instabil lehet, a jelenet egyes részei hiányozhatnak, vagy egyes videokártyákon el sem indul. Ha a szimulátor nem indul el vagy hibásan jelenik meg, válts vissza a „Teljes” renderelőre.</String>
 
     <String key="Resolution">Felbontás</String>
     <String key="BufforResolution">Puffer felbontása</String>
     <String key="MaxTexResolution">Textúrák legnagyobb felbontása</String>
     <String key="MaxTexCabResolution">Vezetőállás-textúrák legnagyobb felbontása</String>
     <String key="TexFilteringQuality">Textúraszűrés minősége</String>
-    <String key="Multisampling">Multisampling</String>
     <String key="QualityVeryLow">Nagyon alacsony</String>
     <String key="QualityLow">Alacsony</String>
     <String key="QualityNormal">Normál</String>
@@ -401,7 +393,6 @@
     <String key="ShadowLimitNone">Nincs korlát</String>
     <String key="ShadowLimitShort">Rövidített</String>
     <String key="FullscreenWindowed">Automatikus felbontás (keret nélküli teljes képernyő)</String>
-    <String key="RenderAngleVulkan">ANGLE Vulkan megjelenítő használata</String>
     <String key="VSync">VSync</String>
     <String key="SmokeDisplay">Füst megjelenítése</String>
     <String key="SmokeParticlesMultiplier">Füstrészecskék szorzója</String>
@@ -411,12 +402,10 @@
     <String key="AdditionalShadersEffects">További shader-effektek</String>
     <String key="ReflectionsCubeMap">Tükröződések cubemapként</String>
     <String key="SkipPipeline">SkipPipeline</String>
-    <String key="RenderVBO">VBO megjelenítés</String>
     <String key="RenderShadows">Árnyékok megjelenítése</String>
     <String key="ReflectionsFramerate">Tükröződések frissítési gyakorisága</String>
     <String key="ShadowsResolution">Árnyékok felbontása</String>
     <String key="ShaderRange">Árnyékok hatótávolsága</String>
-    <String key="CabShadowsRange">Vezetőállás árnyékforrásainak hatótávolsága</String>
 
     <String key="ShadowDisplay">Árnyékok megjelenítése</String>
     <String key="CSROnlyImportant">Csak a fontosak</String>
@@ -458,7 +447,6 @@
     <String key="Advanced">Speciális</String>
     <String key="CompressTextures">TGA textúrák tömörítése</String>
     <String key="ScaleSpeculars">Csillanások skálázása (régi modellek kompatibilitása)</String>
-    <String key="UseGLES">OpenGL ES használata</String>
     <String key="ShaderGamma">Gammakorrekció a shaderekben</String>
     <String key="ScreenMipmaps">Mipmapok készítése a vezetőállás (Python) kijelzőtextúráihoz</String>
     <String key="ExtendedModelConversion">Kiterjesztett E3D modellkonverzió (kísérleti)</String>
@@ -590,7 +578,6 @@
     <String key="RuleNew">— új szabály —</String>
     <String key="RuleRemove">Eltávolítás a szabályból</String>
     <String key="CatAll">Összes</String>
-    <String key="GfxColResolution">Felbontás és textúrák</String>
     <String key="GfxColRendering">Megjelenítés</String>
     <String key="GfxColShadows">Árnyékok</String>
     <String key="GfxColReflections">Tükröződés és nézet</String>

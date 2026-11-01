@@ -140,6 +140,35 @@ public class LocalizationService : INotifyPropertyChanged, ILocalizedStrings
     {
         var dict = new Dictionary<string, string>(StringComparer.Ordinal);
 
+        // A translation which has not caught up with new settings shows them in English
+        // rather than as their raw keys. Descriptions stay out: a missing one collapses.
+        string english = Path.Combine(Path.GetDirectoryName(path) ?? LangDirectory, "en.xml");
+        if (!string.Equals(code, "en", StringComparison.OrdinalIgnoreCase) && File.Exists(english))
+        {
+            try
+            {
+                ReadStrings(english, dict);
+                foreach (var key in new List<string>(dict.Keys))
+                    if (key.EndsWith(OptionalSuffix, StringComparison.Ordinal))
+                        dict.Remove(key);
+            }
+            catch (Exception ex)
+            {
+                _log.Log($"lang/{Path.GetFileName(english)}", ex);
+            }
+        }
+
+        ReadStrings(path, dict);
+
+        _strings = dict;
+        lock (_reportedMisses)
+            _reportedMisses.Clear();
+        CurrentLangCode = code;
+        CurrentLanguage = name;
+    }
+
+    private static void ReadStrings(string path, Dictionary<string, string> dict)
+    {
         var settings = new XmlReaderSettings { IgnoreComments = true, IgnoreWhitespace = true };
         using var reader = XmlReader.Create(path, settings);
 
@@ -157,12 +186,6 @@ public class LocalizationService : INotifyPropertyChanged, ILocalizedStrings
                 reader.Read();
             }
         }
-
-        _strings = dict;
-        lock (_reportedMisses)
-            _reportedMisses.Clear();
-        CurrentLangCode = code;
-        CurrentLanguage = name;
     }
 
     private static (string code, string name) ReadHeader(string path)
