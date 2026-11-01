@@ -43,21 +43,10 @@ public sealed class VehicleCacheRepository : IVehicleRepository
         _directory = directory;
     }
 
-    /// <summary>What the last load did, for the developer tab to report.</summary>
-    public VehicleCacheStatus Status { get; private set; } = VehicleCacheStatus.None;
-
-    public int Load(VehicleCatalog catalog) => Load(catalog, useCopy: true);
-
-    /// <summary>Throws the copy away and reads the installation again.</summary>
-    public int Rebuild(VehicleCatalog catalog) => Load(catalog, useCopy: false);
-
-    private int Load(VehicleCatalog catalog, bool useCopy)
+    public int Load(VehicleCatalog catalog)
     {
-        var (stamp, sources) = Stamp();
-        var cached = useCopy ? Cached(stamp) : null;
-        var entries = cached ?? Migrate(stamp);
-
-        Status = new VehicleCacheStatus(cached is not null, sources, WrittenAt(), _directory);
+        string stamp = Stamp();
+        var entries = Cached(stamp) ?? Migrate(stamp);
 
         catalog.BeginLoad();
 
@@ -77,15 +66,13 @@ public sealed class VehicleCacheRepository : IVehicleRepository
     /// installation can move on - a file edited, added, removed, or the whole
     /// installation swapped for another one - shows up as a different text.
     /// </summary>
-    private (string Text, int Sources) Stamp()
+    private string Stamp()
     {
         var stamp = new StringBuilder().Append("root|").Append(Path.GetFullPath(_paths.Root)).Append('\n')
                                        .Append("parser|").Append(TexturesTxtParser.Version).Append('\n');
-        int sources = 0;
 
         foreach (string path in _legacy.Sources())
         {
-            sources++;
             long ticks = 0;
             long size = 0;
             try
@@ -102,20 +89,7 @@ public sealed class VehicleCacheRepository : IVehicleRepository
                  .Append(path.Replace('\\', '/')).Append('\n');
         }
 
-        return (stamp.ToString(), sources);
-    }
-
-    private DateTime? WrittenAt()
-    {
-        try
-        {
-            return _files.FileExists(DatabasePath) ? _files.GetLastWriteTimeUtc(DatabasePath) : null;
-        }
-        catch (Exception ex)
-        {
-            _log.Log($"{DatabaseFileName}: nie znam daty kopii", ex);
-            return null;
-        }
+        return stamp.ToString();
     }
 
     private List<VehicleEntry>? Cached(string stamp)
@@ -178,13 +152,4 @@ public sealed class VehicleCacheRepository : IVehicleRepository
     private string DatabasePath => Path.Combine(_directory, DatabaseFileName);
 
     private string SourcesPath => Path.Combine(_directory, SourcesFileName);
-}
-
-/// <summary>
-/// How the catalogue was last filled: from the starter's copy or by reading the
-/// installation, over how many textures.txt, and when the copy was last written.
-/// </summary>
-public sealed record VehicleCacheStatus(bool ServedFromCopy, int Sources, DateTime? Written, string Directory)
-{
-    public static readonly VehicleCacheStatus None = new(false, 0, null, "");
 }

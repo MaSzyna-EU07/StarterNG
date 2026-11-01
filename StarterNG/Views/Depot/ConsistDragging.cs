@@ -39,7 +39,6 @@ public sealed class ConsistDragging
     private PointerPressedEventArgs? _pendingDragPress;
     private Point _pendingDragOrigin;
     private VehicleTexture? _pendingDragTexture;
-    private int _pendingDragConsistIndex = -1;
     private ConsistItem? _pendingBrowserSync;
     private bool _dragSessionActive;
 
@@ -124,14 +123,12 @@ public sealed class ConsistDragging
         _pendingDragPress = e;
         _pendingDragOrigin = e.GetPosition(relativeTo);
         _pendingDragTexture = texture;
-        _pendingDragConsistIndex = -1;
     }
 
     private void ClearPendingDrag()
     {
         _pendingDragPress = null;
         _pendingDragTexture = null;
-        _pendingDragConsistIndex = -1;
         _pendingBrowserSync = null;
         _dragSessionActive = false;
     }
@@ -152,7 +149,6 @@ public sealed class ConsistDragging
 
         var press = _pendingDragPress;
         var texture = _pendingDragTexture;
-        int consistIndex = _pendingDragConsistIndex;
 
         _pendingBrowserSync = null;
         _pendingDragPress = null;

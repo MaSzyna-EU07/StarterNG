@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Text;
 using StarterNG.Application.Abstractions;
 using StarterNG.Domain.Vehicles;
 using StarterNG.Infrastructure.Adapters;
@@ -53,8 +52,8 @@ public sealed class TexturesTxtVehicleRepository : IVehicleRepository
     /// </summary>
     public IEnumerable<string> Sources()
     {
-        foreach (string maker in Sorted(_files.GetDirectories(_paths.Dynamic)))
-        foreach (string vehicle in Sorted(_files.GetDirectories(maker)))
+        foreach (string maker in Subfolders(_paths.Dynamic))
+        foreach (string vehicle in Subfolders(maker))
         {
             string path = Path.Combine(vehicle, TexturesFileName);
             if (_files.FileExists(path))
@@ -62,8 +61,19 @@ public sealed class TexturesTxtVehicleRepository : IVehicleRepository
         }
     }
 
-    private static IEnumerable<string> Sorted(IEnumerable<string> directories) =>
-        directories.OrderBy(Path.GetFileName, StringComparer.OrdinalIgnoreCase);
+    // A folder that cannot be listed costs what is in it, not all that comes after it.
+    private IReadOnlyList<string> Subfolders(string path)
+    {
+        try
+        {
+            return _files.GetDirectories(path).OrderBy(Path.GetFileName, StringComparer.OrdinalIgnoreCase).ToList();
+        }
+        catch (Exception ex)
+        {
+            _log.Log($"dynamic: skipping {path}", ex);
+            return Array.Empty<string>();
+        }
+    }
 
     /// <summary>Reads one textures.txt; a file that will not parse is logged and skipped.</summary>
     public VehicleEntry? Read(string path)

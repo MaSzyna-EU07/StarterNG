@@ -99,16 +99,47 @@ public sealed class TexRandomizer
 
             var set = _db.ResolveSet(pick);
             var unit = set ?? new List<VehicleTexture> { pick };
-            consist[i] = new ConsistItem
+            var replacement = new ConsistItem
             {
                 Cars = unit.Select(makeCar).ToList(),
                 Grouped = unit.Count > 1,
-                Driver = item.Driver,
                 Flipped = item.Flipped
             };
+            CarryOver(item, replacement);
+            consist[i] = replacement;
+            if (ReferenceEquals(consist.Selected, item))
+                consist.Selected = replacement;
             changed++;
         }
         return changed;
+    }
+
+    // Only the livery changes, but a new car has no crew, faces forward and is empty.
+    // The cars are what the export writes, so they are what is taken from; not through
+    // Consist.Replace, which would hand a driver to a locomotive left without one.
+    private static void CarryOver(ConsistItem from, ConsistItem to)
+    {
+        for (int k = 0; k < to.Cars.Count; k++)
+        {
+            var before = from.Cars[Math.Min(k, from.Cars.Count - 1)];
+            var car = to.Cars[k];
+            car.Offset = before.Offset;
+            car.LoadType = before.LoadType;
+            car.LoadCount = before.LoadCount;
+            car.MaxLoad = before.MaxLoad;
+        }
+
+        var crew = Consist.UnitDriver(from.Cars);
+        if (to.Cars.Count == from.Cars.Count)
+        {
+            for (int k = 0; k < to.Cars.Count; k++)
+                to.Cars[k].DriverType = from.Cars[k].DriverType;
+        }
+        else if (crew != eDriverType.Nobody)
+        {
+            Consist.CrewCar(to, crew).DriverType = crew;
+        }
+        to.Driver = crew;
     }
 
     private string? ResolveFilterMini(ConsistItem item, int index, Consist consist, VehicleTexture? current)

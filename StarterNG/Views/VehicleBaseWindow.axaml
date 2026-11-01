@@ -1,0 +1,160 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:starterNg="clr-namespace:StarterNG"
+        xmlns:views="clr-namespace:StarterNG.Views"
+        x:Class="StarterNG.Views.VehicleBaseWindow"
+        x:CompileBindings="True"
+        Title="{Binding [TextureBaseTitle], Source={x:Static starterNg:App.Loc}}"
+        Width="980" Height="600"
+        WindowStartupLocation="CenterOwner"
+        MinWidth="820" MinHeight="420"
+        KeyDown="Window_OnKeyDown">
+    <Window.Styles>
+        <Style Selector="Border.Panel">
+            <Setter Property="Background" Value="{StaticResource CarbonPanelBg}" />
+            <Setter Property="BorderBrush" Value="{StaticResource CarbonBorderLight}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="2" />
+            <Setter Property="Padding" Value="6" />
+        </Style>
+        <Style Selector="TextBlock.FilterLabel">
+            <Setter Property="Foreground" Value="{StaticResource CarbonFgDim}" />
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+        </Style>
+        <Style Selector="TextBlock.Heading">
+            <Setter Property="Foreground" Value="{StaticResource CarbonFgDim}" />
+            <Setter Property="FontSize" Value="11" />
+            <Setter Property="Margin" Value="4,0,0,3" />
+        </Style>
+        <Style Selector="TextBlock.SortHead">
+            <Setter Property="Foreground" Value="{StaticResource CarbonFgDim}" />
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="FontSize" Value="11" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="TextTrimming" Value="CharacterEllipsis" />
+        </Style>
+        <Style Selector="TextBlock.SortHead:pointerover">
+            <Setter Property="Foreground" Value="{StaticResource CarbonFg}" />
+        </Style>
+    </Window.Styles>
+
+    <Grid RowDefinitions="Auto,*,Auto" RowSpacing="3" Margin="3">
+        <!-- Whatever is typed filters straight away. -->
+        <Border Grid.Row="0" Classes="Panel">
+            <Grid ColumnDefinitions="Auto,*,Auto,*,Auto,*,Auto,*,Auto,*" RowDefinitions="Auto,Auto"
+                  ColumnSpacing="6" RowSpacing="4">
+                <TextBlock Grid.Row="0" Grid.Column="0" Classes="FilterLabel" Text="{Binding [TextureInfo], Source={x:Static starterNg:App.Loc}}" />
+                <TextBox Name="fName" Grid.Row="0" Grid.Column="1" />
+                <TextBlock Grid.Row="0" Grid.Column="2" Classes="FilterLabel" Text="{Binding [Class], Source={x:Static starterNg:App.Loc}}" />
+                <TextBox Name="fClass" Grid.Row="0" Grid.Column="3" />
+                <TextBlock Grid.Row="0" Grid.Column="4" Classes="FilterLabel" Text="{Binding [TexOperator], Source={x:Static starterNg:App.Loc}}" />
+                <TextBox Name="fOperator" Grid.Row="0" Grid.Column="5" />
+                <TextBlock Grid.Row="0" Grid.Column="6" Classes="FilterLabel" Text="{Binding [TexAuthor], Source={x:Static starterNg:App.Loc}}" />
+                <TextBox Name="fAuthor" Grid.Row="0" Grid.Column="7" />
+                <TextBlock Grid.Row="0" Grid.Column="8" Classes="FilterLabel" Text="{Binding [Model], Source={x:Static starterNg:App.Loc}}" />
+                <TextBox Name="fModel" Grid.Row="0" Grid.Column="9" />
+
+                <TextBlock Grid.Row="1" Grid.Column="0" Classes="FilterLabel" Text="{Binding [TexStation], Source={x:Static starterNg:App.Loc}}" />
+                <TextBox Name="fStation" Grid.Row="1" Grid.Column="1" />
+                <TextBlock Grid.Row="1" Grid.Column="2" Classes="FilterLabel" Text="{Binding [TexPhoto], Source={x:Static starterNg:App.Loc}}" />
+                <TextBox Name="fPhoto" Grid.Row="1" Grid.Column="3" />
+                <TextBlock Name="revFromLabel" Grid.Row="1" Grid.Column="4" Classes="FilterLabel" />
+                <TextBox Name="fRevFrom" Grid.Row="1" Grid.Column="5"
+                             PlaceholderText="{Binding [TextureBaseDateHint], Source={x:Static starterNg:App.Loc}}" />
+                <TextBlock Name="revToLabel" Grid.Row="1" Grid.Column="6" Classes="FilterLabel" />
+                <TextBox Name="fRevTo" Grid.Row="1" Grid.Column="7"
+                             PlaceholderText="{Binding [TextureBaseDateHint], Source={x:Static starterNg:App.Loc}}" />
+                <Button Name="clearButton" Grid.Row="1" Grid.Column="8" Grid.ColumnSpan="2" Classes="Flat"
+                        HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
+                        Cursor="Hand" Click="ClearButton_OnClick"
+                        Content="{Binding [ClearFilters], Source={x:Static starterNg:App.Loc}}" />
+            </Grid>
+        </Border>
+
+        <Grid Grid.Row="1" ColumnDefinitions="230,3,*">
+            <Border Grid.Column="0" Classes="Panel">
+                <Grid RowDefinitions="Auto,*,4,Auto,*,Auto,Auto">
+                    <TextBlock Grid.Row="0" Classes="Heading" Text="{Binding [Category], Source={x:Static starterNg:App.Loc}}" />
+                    <ListBox Name="categoryList" Grid.Row="1" Classes="Compact" />
+                    <GridSplitter Grid.Row="2" Height="4" HorizontalAlignment="Stretch"
+                                  Background="Transparent" ResizeDirection="Rows" />
+                    <TextBlock Grid.Row="3" Classes="Heading" Text="{Binding [Class], Source={x:Static starterNg:App.Loc}}" />
+                    <ListBox Name="classList" Grid.Row="4" Classes="Compact">
+                        <ListBox.ItemTemplate>
+                            <DataTemplate x:DataType="views:VehicleClassRow">
+                                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="6" Margin="0,0,10,0">
+                                    <TextBlock Text="{Binding Name}" TextTrimming="CharacterEllipsis" />
+                                    <TextBlock Grid.Column="1" Text="{Binding Count}" Opacity="0.55" />
+                                </Grid>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+                    <CheckBox Name="hideArchivalCheck" Grid.Row="5" Margin="0,6,0,0" FontSize="12"
+                              Content="{Binding [HideArchivalVehicles], Source={x:Static starterNg:App.Loc}}" />
+                    <TextBlock Name="statusText" Grid.Row="6" Margin="4,4,0,0" FontSize="11"
+                               Foreground="{StaticResource CarbonFgDim}" />
+                </Grid>
+            </Border>
+
+            <GridSplitter Grid.Column="1" Width="3" Background="Transparent" ResizeDirection="Columns" />
+
+            <Border Grid.Column="2" Classes="Panel">
+                <Grid RowDefinitions="Auto,*">
+                    <!-- The columns of the rows below; 14 is the rows' padding and their margin
+                         clear of the scroll bar. -->
+                    <Grid ColumnDefinitions="1.4*,0.9*,0.9*,82,1.2*" ColumnSpacing="8" Margin="4,0,14,3">
+                        <TextBlock Name="headSkin" Grid.Column="0" Classes="SortHead" Tapped="Head_OnTapped" />
+                        <TextBlock Name="headClass" Grid.Column="1" Classes="SortHead" Tapped="Head_OnTapped" />
+                        <TextBlock Name="headOperator" Grid.Column="2" Classes="SortHead" Tapped="Head_OnTapped" />
+                        <TextBlock Name="headRevision" Grid.Column="3" Classes="SortHead" Tapped="Head_OnTapped" />
+                        <TextBlock Name="headAuthor" Grid.Column="4" Classes="SortHead" Tapped="Head_OnTapped" />
+                    </Grid>
+                    <ListBox Name="vehicleList" Grid.Row="1" Classes="Compact"
+                             SelectionChanged="VehicleList_OnSelectionChanged"
+                             DoubleTapped="VehicleList_OnDoubleTapped"
+                             KeyDown="VehicleList_OnKeyDown">
+                        <ListBox.ItemTemplate>
+                            <DataTemplate x:DataType="views:VehicleBaseRow">
+                                <Grid ColumnDefinitions="1.4*,0.9*,0.9*,82,1.2*" ColumnSpacing="8" Margin="0,0,10,0">
+                                    <TextBlock Grid.Column="0" Text="{Binding Skin}" TextTrimming="CharacterEllipsis" />
+                                    <TextBlock Grid.Column="1" Text="{Binding Class}" Opacity="0.85" TextTrimming="CharacterEllipsis" />
+                                    <TextBlock Grid.Column="2" Text="{Binding Operator}" Opacity="0.85" TextTrimming="CharacterEllipsis" />
+                                    <TextBlock Grid.Column="3" Text="{Binding Revision}" Opacity="0.85" TextTrimming="CharacterEllipsis" />
+                                    <TextBlock Grid.Column="4" Text="{Binding Author}" Opacity="0.75" TextTrimming="CharacterEllipsis" />
+                                </Grid>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+                    <TextBlock Name="emptyText" Grid.Row="1" IsVisible="False" Margin="4,6,4,0"
+                               TextWrapping="Wrap" Foreground="{StaticResource CarbonFgDim}"
+                               Text="{Binding [TextureBaseNoMatch], Source={x:Static starterNg:App.Loc}}" />
+                </Grid>
+            </Border>
+        </Grid>
+
+        <!-- The vehicle picked: what the list has no column for, and what can be done with it. -->
+        <Border Grid.Row="2" Classes="Panel">
+            <Grid ColumnDefinitions="Auto,*,Auto,Auto" ColumnSpacing="8" Height="46">
+                <Border Width="170" Background="{StaticResource CarbonInputBg}"
+                        BorderBrush="{StaticResource CarbonBorderLight}" BorderThickness="1" CornerRadius="2">
+                    <Image Name="preview" Stretch="Uniform" Margin="2" />
+                </Border>
+                <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
+                    <TextBlock Name="detailTitle" FontWeight="Bold" TextTrimming="CharacterEllipsis" />
+                    <TextBlock Name="detailText" FontSize="12" Foreground="{StaticResource CarbonFgDim}"
+                               TextTrimming="CharacterEllipsis" />
+                </StackPanel>
+                <Button Name="replaceButton" Grid.Column="2" Classes="Flat" MinWidth="80" Cursor="Hand"
+                        IsEnabled="False" VerticalAlignment="Stretch" HorizontalContentAlignment="Center"
+                        VerticalContentAlignment="Center" Click="ReplaceButton_OnClick"
+                        ToolTip.Tip="{Binding [TipReplaceVehicle], Source={x:Static starterNg:App.Loc}}"
+                        Content="{Binding [ReplaceVehicle], Source={x:Static starterNg:App.Loc}}" />
+                <Button Name="addButton" Grid.Column="3" Classes="Flat Accent" MinWidth="80" Cursor="Hand"
+                        IsEnabled="False" VerticalAlignment="Stretch" HorizontalContentAlignment="Center"
+                        VerticalContentAlignment="Center" Click="AddButton_OnClick"
+                        Content="{Binding [AddVehicle], Source={x:Static starterNg:App.Loc}}" />
+            </Grid>
+        </Border>
+    </Grid>
+</Window>
