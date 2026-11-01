@@ -72,4 +72,45 @@ public class GameLibraryTests
 
         Assert.Contains("textures.txt", installation.Log.Text);
     }
+
+    [Fact]
+    public void A_folder_of_the_rolling_stock_that_cannot_be_listed_costs_only_itself()
+    {
+        var files = new InMemoryFileSystem()
+            .WithFile(TestInstallation.At("dynamic", "aaa", "ep09", "textures.txt"), "ep09-1.mat=ep09.e3d,ep09")
+            .WithFile(TestInstallation.At("dynamic", "aaa", "ep09", "ep09.fiz"), "Param: M=2")
+            .WithFile(TestInstallation.At("dynamic", "pkp", "ep07", "textures.txt"), "ep07-135.mat=ep07.e3d,ep07")
+            .WithFile(TestInstallation.At("dynamic", "pkp", "ep07", "ep07.fiz"), "Param: M=1")
+            .WithFile(TestInstallation.At("scenery", "kato.scn"), "//$n Katowice")
+            .DenyListing(TestInstallation.At("dynamic", "aaa"));
+        var installation = new TestInstallation(files);
+
+        installation.Library.Load();
+
+        Assert.True(installation.Library.Loaded);
+        Assert.Equal("ep07-135", Assert.Single(installation.Library.Vehicles.Textures).Skinfile);
+        Assert.Equal("Katowice", Assert.Single(installation.Library.Sceneries).Name);
+        Assert.Contains("aaa", installation.Log.Text);
+        Assert.Equal(1, installation.Physics.For("pkp/ep07/", "ep07")!.Mass);
+    }
+
+    [Fact]
+    public void The_whole_rolling_stock_failing_still_leaves_the_sceneries()
+    {
+        var installation = Complete();
+        var library = new GameLibrary(new FailingVehicles(), installation.Sceneries, installation.MiniTextures,
+                                      installation.Physics, installation.Log);
+
+        library.Load();
+
+        Assert.True(library.Loaded);
+        Assert.Equal("Katowice", Assert.Single(library.Sceneries).Name);
+        Assert.Contains("no disk today", installation.Log.Text);
+    }
+
+    private sealed class FailingVehicles : StarterNG.Application.Abstractions.IVehicleRepository
+    {
+        public int Load(StarterNG.Domain.Vehicles.VehicleCatalog catalog) =>
+            throw new IOException("no disk today");
+    }
 }

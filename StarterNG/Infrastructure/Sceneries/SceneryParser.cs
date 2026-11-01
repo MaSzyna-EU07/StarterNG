@@ -5,7 +5,6 @@ using System.Linq;
 using System.Text.RegularExpressions;
 using StarterNG.Application.Abstractions;
 using StarterNG.Classes;
-using StarterNG.Domain;
 using StarterNG.Domain.Sceneries;
 
 namespace StarterNG.Infrastructure.Sceneries;
@@ -21,56 +20,95 @@ public sealed class SceneryParser
         _random = random;
     }
 
-    public Scenery Parse(string path, string content)
+    /// <param name="findInclude">
+    /// What the simulator makes of an include, as the include names it; null leaves
+    /// includes unchecked.
+    /// </param>
+    public Scenery Parse(string path, string content, Func<string, IncludeLookup>? findInclude = null)
     {
         string original = content;
 
-        var faults = new List<string>();
-        var attachments = ParseAttachments(original);
+        // A file put in place of its include has directives of its own, for itself.
+        string own = SceneryIncludes.WithoutInlined(original);
+
+        var attachments = ParseAttachments(own);
 
         var includes = new List<SceneryInclude>();
         content = StripOptionalIncludes(content, includes);
 
-        var trainsetEntries = new List<string>();
-        content = Regex.Replace(content, @"trainset\b[\s\S]*?\bendtrainset\b",
-            match =>
-            {
-                trainsetEntries.Add(match.Value);
-                return $"{{{{{trainsetEntries.Count - 1}}}}}";
-            },
-            RegexOptions.IgnoreCase);
+        // Read from the text with its optional includes blanked, which keeps every
+        // place where it was, so a fault's line is the line in the file.
+        var syntax = ScenerySyntax.Scan(content, System.IO.Path.GetFileName(path), findInclude);
+        var faults = syntax.Faults.ToList();
+        var inlined = SceneryIncludes.Ranges(content);
 
+        var trainsets = new List<Trainset>();
         var looseVehicles = new List<Dynamic>();
         var looseNames = new List<string>();
-        content = ExtractLooseVehicles(content, looseVehicles, looseNames, faults);
+        var cuts = new List<(int Start, int End, string With)>();
 
-        var scenery = new Scenery(path, content)
+        foreach (var (start, end) in syntax.Trainsets)
         {
-            Group = MatchDirective(original, "l"),
-            Name = MatchDirective(original, "n"),
-            Description = MatchAllDirectives(original, "d"),
-            ImageName = MatchDirective(original, "i"),
-            Archival = MatchDirective(original, "a") != null
+            var trainset = new Trainset(content[start..end]) { SourceFile = SceneryIncludes.FileAt(inlined, start) };
+            if (!trainset.Parsed && !faults.Any(f => f.Offset >= start && f.Offset < end))
+                faults.Add(syntax.Lines.Fault(SceneryFaultKind.TrainsetUnreadable, start, trainset.Name));
+            cuts.Add((start, end, $"{{{{{trainsets.Count}}}}}"));
+            trainsets.Add(trainset);
+        }
+
+        foreach (var (start, end) in syntax.LooseVehicles)
+        {
+            // Included files' loose vehicles - road traffic, mostly - stay where they
+            // are as written, only their names are noted.
+            var vehicle = ReadLooseVehicle(content[start..end]);
+            looseNames.Add(vehicle?.Name ?? LooseName(content[start..end]));
+            if (SceneryIncludes.FileAt(inlined, start) != null)
+                continue;
+
+            if (vehicle is null)
+            {
+                if (!faults.Any(f => f.Offset >= start && f.Offset < end))
+                    faults.Add(syntax.Lines.Fault(SceneryFaultKind.VehicleUnreadable, start, LooseName(content[start..end])));
+                continue;
+            }
+
+            looseVehicles.Add(vehicle);
+            cuts.Add((start, end, "\n"));
+        }
+
+        var scenery = new Scenery(path, Cut(content, cuts))
+        {
+            Group = MatchDirective(own, "l"),
+            Name = MatchDirective(own, "n"),
+            Description = MatchAllDirectives(own, "d"),
+            ImageName = MatchDirective(own, "i"),
+            Archival = MatchDirective(own, "a") != null
         };
 
         scenery.Attachments.AddRange(attachments);
         scenery.Includes.AddRange(includes);
+        scenery.Trainsets.AddRange(trainsets);
         scenery.LooseVehicles.AddRange(looseVehicles);
         scenery.LooseVehicleNames.AddRange(looseNames);
-        scenery.Faults.AddRange(faults);
+        scenery.Faults.AddRange(faults.OrderBy(f => f.Offset));
 
-        ParseWeather(original, scenery.Weather);
+        // Without its comments: what is read here is what the writer later puts down as active.
+        ParseWeather(SceneryCode.Mask(original, out _), scenery.Weather);
         scenery.Weather.AcceptAsAuthored();
 
-        foreach (string entry in trainsetEntries)
-        {
-            var trainset = new Trainset(entry);
-            scenery.Trainsets.Add(trainset);
-            if (!trainset.Parsed)
-                scenery.Faults.Add($"# trainset parse fault: {trainset.Name} ({trainset.Track})");
-        }
-
         return scenery;
+    }
+
+    private static string Cut(string text, List<(int Start, int End, string With)> cuts)
+    {
+        var sb = new System.Text.StringBuilder(text.Length);
+        int at = 0;
+        foreach (var (start, end, with) in cuts.OrderBy(c => c.Start))
+        {
+            sb.Append(text, at, start - at).Append(with);
+            at = end;
+        }
+        return sb.Append(text, at, text.Length - at).ToString();
     }
 
     private static List<SceneryAttachment> ParseAttachments(string content)
@@ -115,7 +153,7 @@ public sealed class SceneryParser
 
         return Regex.Replace(
             content,
-            @"include\s+(\S+(?:\s+\S+)*?)\s+end\s*//[^\r\n]*\$optional([^\r\n]*)\r?\n([\s\S]*?)endoptional\b",
+            @"include[ \t]+(\S+(?:[ \t]+\S+)*?)[ \t]+end[ \t]*//[^\r\n]*\$optional([^\r\n]*)\r?\n([\s\S]*?)endoptional\b",
             m =>
             {
                 string includePath = Regex.Replace(m.Groups[1].Value.Trim(), @"\s+", " ");
@@ -137,65 +175,55 @@ public sealed class SceneryParser
                     Kind = kind,
                     Selected = kind == 1
                 });
-                return " ";
+                return Regex.Replace(m.Value, @"[^\r\n]", " ");
             },
             RegexOptions.IgnoreCase);
     }
 
-    private static string ExtractLooseVehicles(string content, List<Dynamic> vehicles, List<string> names,
-                                               List<string> faults)
+    private static readonly Regex LooseNode = new(
+        @"(?is)^node\s+(\S+)\s+(\S+)\s+(\S+)\s+dynamic\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)((?:\s+(?!enddynamic\b)\S+)*)\s*enddynamic$");
+
+    private static string LooseName(string node) =>
+        SceneryCode.Tokens(SceneryCode.Mask(node, out _)).ElementAtOrDefault(3).Text ?? "";
+
+    /// <summary>A vehicle standing on its own, or null when its node cannot be read.</summary>
+    private static Dynamic? ReadLooseVehicle(string node)
     {
         var inv = CultureInfo.InvariantCulture;
+        var m = LooseNode.Match(SceneryCode.Mask(node, out _));
+        if (!m.Success)
+            return null;
 
-        return Regex.Replace(
-            content,
-            @"(?is)\bnode\s+(\S+)\s+(\S+)\s+(\S+)\s+dynamic\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)((?:\s+(?!enddynamic)\S+)*)\s*enddynamic\b",
-            m =>
+        try
+        {
+            var vehicle = new Dynamic
             {
-                string name = m.Groups[3].Value;
+                RangeMax = float.Parse(m.Groups[1].Value, inv),
+                RangeMin = float.Parse(m.Groups[2].Value, inv),
+                Name = m.Groups[3].Value,
+                DataFolder = m.Groups[4].Value,
+                SkinFile = Dynamic.StripSkinExtension(m.Groups[5].Value),
+                MmdFile = m.Groups[6].Value,
+                PathName = m.Groups[7].Value,
+                Offset = float.Parse(m.Groups[8].Value, inv),
+                DriverType = Dynamic.ParseDriver(m.Groups[9].Value),
+                HasVelocity = true,
+                Velocity = float.Parse(m.Groups[10].Value, inv)
+            };
 
-                if (name.StartsWith("{{", StringComparison.Ordinal))
-                    return m.Value;
-
-                try
-                {
-                    var vehicle = new Dynamic
-                    {
-                        RangeMax = float.Parse(m.Groups[1].Value, inv),
-                        RangeMin = float.Parse(m.Groups[2].Value, inv),
-                        Name = name,
-                        DataFolder = m.Groups[4].Value,
-                        SkinFile = Dynamic.StripSkinExtension(m.Groups[5].Value),
-                        MmdFile = m.Groups[6].Value,
-                        PathName = m.Groups[7].Value,
-                        Offset = float.Parse(m.Groups[8].Value, inv),
-                        DriverType = m.Groups[9].Value.ToLowerInvariant() switch
-                        {
-                            "headdriver" => eDriverType.Headdriver,
-                            "reardriver" => eDriverType.Reardriver,
-                            "passenger" => eDriverType.Passenger,
-                            _ => eDriverType.Nobody
-                        },
-                        HasVelocity = true,
-                        Velocity = float.Parse(m.Groups[10].Value, inv)
-                    };
-
-                    var trailing = m.Groups[11].Value
-                        .Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries)
-                        .ToList();
-                    vehicle.ReadTrailing(trailing);
-
-                    vehicles.Add(vehicle);
-                    names.Add(vehicle.Name);
-                    return "\n";
-                }
-                catch
-                {
-                    faults.Add($"# loose dynamic parse fault: {name}");
-                    names.Add(name);
-                    return m.Value;
-                }
-            });
+            vehicle.ReadTrailing(m.Groups[11].Value
+                .Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries)
+                .ToList());
+            return vehicle;
+        }
+        catch (FormatException)
+        {
+            return null;
+        }
+        catch (OverflowException)
+        {
+            return null;
+        }
     }
 
     private void ParseWeather(string content, SceneryWeather weather)

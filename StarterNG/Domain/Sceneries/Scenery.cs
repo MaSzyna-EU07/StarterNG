@@ -1,11 +1,9 @@
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 using StarterNG.Application.Abstractions;
 using StarterNG.Classes;
-using StarterNG.Domain;
 
 namespace StarterNG.Domain.Sceneries;
 
@@ -59,9 +57,15 @@ public sealed class Scenery
 
     public List<string> LooseVehicleNames { get; } = new();
 
-    public List<string> Faults { get; } = new();
+    public List<SceneryFault> Faults { get; } = new();
 
     public SceneryWeather Weather { get; } = new();
+
+    /// <summary>
+    /// The files it was read from, as each stood then: its own and those put in place
+    /// of their includes. Replaced whole, as it is looked at off the UI thread too.
+    /// </summary>
+    public IReadOnlyDictionary<string, FileStamp?> Sources { get; set; } = new Dictionary<string, FileStamp?>();
 
     public string DisplayName => System.IO.Path.GetFileNameWithoutExtension(Path);
 
@@ -81,7 +85,9 @@ public sealed class Scenery
 
         for (int i = 0; i < Trainsets.Count; i++)
         {
-            string entry = skipDecorTrainsets && Trainsets[i].Decor
+            // The simulator logs an empty trainset as a bad one and does nothing else with it.
+            bool empty = Trainsets[i].Parsed && Trainsets[i].Vehicles.Count == 0;
+            string entry = empty || (skipDecorTrainsets && Trainsets[i].Decor)
                 ? string.Empty
                 : Trainsets[i].ToSceneryEntry();
             result = result.Replace("{{" + i + "}}", entry);

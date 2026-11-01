@@ -353,7 +353,7 @@ public partial class Scenarios : UserControl
     private void PopulateFaults(Scenery scenery)
     {
         var lines = new List<string>();
-        lines.AddRange(scenery.Faults);
+        lines.Add(StarterNG.Domain.Sceneries.SceneryFaultText.Format(scenery.Faults, 500, key => App.Loc[key]));
 
         var db = AppServices.Current.Library.Vehicles;
         foreach (var ts in scenery.Trainsets)
