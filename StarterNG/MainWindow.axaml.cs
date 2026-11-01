@@ -744,25 +744,36 @@ public partial class MainWindow : Window
             AppServices.Current.Processes.OpenInShell(folder);
     }
 
+    // The window is activated again as the question closes, before the answer is in.
+    private bool _askingAboutSettings;
+
     private async void CheckExternalSettings()
     {
-        if ((DateTime.UtcNow - _openedUtc).TotalSeconds < 3)
+        if (_askingAboutSettings || (DateTime.UtcNow - _openedUtc).TotalSeconds < 3)
             return;
         if (!AppServices.Current.SettingsStore.IsConfigNewerOnDisk())
             return;
 
-        var result = await MessageBox.Show(
-            this,
-            App.Loc["SettingsFileChanged"],
-            App.Loc["SettingsFileChangedTitle"],
-            MessageBoxButtons.YesNo);
-        if (result)
+        _askingAboutSettings = true;
+        try
         {
-            AppServices.Current.SettingsStore.Load();
-            SettingsView?.ReloadFromSettings();
+            var result = await MessageBox.Show(
+                this,
+                App.Loc["SettingsFileChanged"],
+                App.Loc["SettingsFileChangedTitle"],
+                MessageBoxButtons.YesNo);
+            if (result)
+            {
+                AppServices.Current.SettingsStore.Load();
+                SettingsView?.ReloadFromSettings();
+            }
+            else
+                AppServices.Current.SettingsStore.TouchConfigAge();
         }
-        else
-            AppServices.Current.SettingsStore.TouchConfigAge();
+        finally
+        {
+            _askingAboutSettings = false;
+        }
     }
 
     private void RestoreFromSimulator()
