@@ -62,7 +62,7 @@ public sealed class AppServices
         SceneryFiles = new SceneryFileWatch(files, Sceneries, Library, State);
 
         Executables = new ExecutableLocator(files, paths, environment, log);
-        SettingsStore = new SettingsStore(files, clock, log, settingsPaths, new SettingsSerializer(), Executables);
+        SettingsStore = new SettingsStore(files, clock, log, settingsPaths, new SettingsSerializer(dlssPlatform: !environment.IsMacOS), Executables);
         MissingVehicleLog = new MissingVehicleLog(SettingsStore.Settings, missingAssets, Library, log);
         Favorites = new FavoriteSceneries(files, log, settingsPaths.FavoritesPath());
         Tapes = new HaslerTapes(files, paths, log, clock, Timetables,

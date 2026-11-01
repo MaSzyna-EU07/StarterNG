@@ -5,7 +5,7 @@ using System.Linq;
 
 namespace StarterNG.Domain.Settings;
 
-public enum SimulatorKeyKind { Toggle, Number, Text, Choice }
+public enum SimulatorKeyKind { Toggle, Number, Text }
 
 /// <summary>
 /// An eu07.ini key the simulator reads that needs no logic of the starter's own:
@@ -24,24 +24,12 @@ public sealed record SimulatorKey(
     double Step = 1,
     string Unit = "",
     bool ZeroIsOff = false,
-    int Repeat = 1,
-    string[]? Words = null)
+    int Repeat = 1)
 {
     /// <summary>The label's translation key; the explanation's adds "Desc".</summary>
     public string LabelKey => "Ini." + Key;
 
     public string DescriptionKey => LabelKey + ".Desc";
-
-    /// <summary>The translation key of a word of a choice; the empty one leaves the key out of the file.</summary>
-    public static string WordKey(string word) =>
-        "IniWord." + (word.Length == 0 ? "same" : word.Replace(' ', '_'));
-
-    /// <summary>The word of <paramref name="raw"/> among those offered, or else the default: the row then shows that and leaves the file alone.</summary>
-    public string ParseChoice(string raw)
-    {
-        string word = string.Join(' ', raw.ToLowerInvariant().Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries));
-        return Words is not null && Words.Contains(word) ? word : Default;
-    }
 
     public static bool ParseToggle(string raw) =>
         FirstToken(raw).ToLowerInvariant() is "yes" or "true" or "1" or "tak";
@@ -81,8 +69,6 @@ public static class SimulatorKeys
     public const string Physics = "physics";
     public const string Advanced = "advanced";
 
-    private const string NewRenderer = "GfxColNewRenderer";
-
     private static SimulatorKey Toggle(string key, bool value, string category, string section) =>
         new(key, SimulatorKeyKind.Toggle, SimulatorKey.FormatToggle(value), category, section);
 
@@ -94,9 +80,6 @@ public static class SimulatorKeys
 
     private static SimulatorKey Text(string key, string category, string section) =>
         new(key, SimulatorKeyKind.Text, string.Empty, category, section);
-
-    private static SimulatorKey Choice(string key, string value, string category, string section, params string[] words) =>
-        new(key, SimulatorKeyKind.Choice, value, category, section, Words: words);
 
     public static SimulatorKey Named(string key) => All.First(k => k.Key == key);
 
@@ -130,38 +113,6 @@ public static class SimulatorKeys
         Toggle("python.displaywindows", false, Graphics, "IniSectionRanges"),
         Toggle("newaircouplers", true, Graphics, "IniSectionRanges"),
         Toggle("smoothtraction", true, Graphics, "IniSectionRanges"),
-
-        // Read by the OpenGL 4.6 and Vulkan 1.4 simulators; the older ones pass them over.
-        Choice("gfx.antialiasing", "", Graphics, NewRenderer, "", "taa", "dlss", "dlaa"),
-        Choice("gfx.dlss.preset", "default", Graphics, NewRenderer, "default", "k", "j", "m", "l"),
-        Choice("gfx.framegeneration", "off", Graphics, NewRenderer, "off", "x2", "x3", "x4"),
-        Choice("gfx.reflex", "off", Graphics, NewRenderer, "off", "on", "boost"),
-        Toggle("gfx.raytracing", false, Graphics, NewRenderer),
-        Number("gfx.raytracing.range", 500, Graphics, NewRenderer, 10, 5000, 10, " m"),
-        Text("gfx.vulkan.device", Graphics, NewRenderer),
-        Toggle("gfx.lights.clustered", true, Graphics, NewRenderer),
-        Choice("gfx.lights.shadows", "medium", Graphics, NewRenderer, "no", "low", "medium", "high"),
-        Choice("gfx.contactshadows", "no", Graphics, NewRenderer, "no", "low", "medium", "high"),
-        Toggle("gfx.shadow.sdsm", false, Graphics, NewRenderer),
-        Choice("gfx.postfx.ao", "gtao", Graphics, NewRenderer, "no", "ssao", "gtao"),
-        Choice("gfx.postfx.ao.quality", "3 4", Graphics, NewRenderer, "3 4", "4 6", "6 8"),
-        Toggle("gfx.postfx.ao.lighting", true, Graphics, NewRenderer),
-        Choice("gfx.ssr", "medium", Graphics, NewRenderer, "no", "low", "medium", "high"),
-        Choice("gfx.cabprobe", "medium", Graphics, NewRenderer, "no", "low", "medium", "high"),
-        Number("gfx.cabprobe.interval", 4, Graphics, NewRenderer, 1, 16, 1),
-        Toggle("gfx.cabprobe.reflections", true, Graphics, NewRenderer),
-        Number("gfx.cabprobe.bounce", 1, Graphics, NewRenderer, 0, 4, 0.25),
-        Choice("gfx.fog", "volumetric", Graphics, NewRenderer, "analytic", "volumetric"),
-        Choice("gfx.fog.quality", "medium", Graphics, NewRenderer, "low", "medium", "high", "ultra"),
-        Choice("gfx.clouds", "medium", Graphics, NewRenderer, "no", "low", "medium", "high", "ultra"),
-        Toggle("gfx.clouds.shadows", true, Graphics, NewRenderer),
-        Toggle("gfx.grass", true, Graphics, NewRenderer),
-        Number("gfx.grass.distance", 60, Graphics, NewRenderer, 5, 300, 5, " m"),
-        Number("gfx.grass.fadedistance", 70, Graphics, NewRenderer, 10, 350, 10, " m"),
-        Number("gfx.grass.density", 1, Graphics, NewRenderer, 0, 2, 0.25, "×"),
-        Number("gfx.precipitation.particles", 65536, Graphics, NewRenderer, 0, 131072, 16384),
-        Toggle("gfx.postfx.bloom", true, Graphics, NewRenderer),
-        Toggle("gfx.postfx.autoexposure", true, Graphics, NewRenderer),
 
         Number("sound.maxsources", 30, Sound, "IniSectionAudio", 8, 256, 8),
         Toggle("sound.asyncload", false, Sound, "IniSectionAudio"),

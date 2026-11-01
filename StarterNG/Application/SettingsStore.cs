@@ -157,15 +157,7 @@ public sealed class SettingsStore
             return;
         }
 
-        foreach (var change in Changes(Settings))
-        {
-            if (change.After is null)
-                _config.Remove(change.Key);
-            else
-                _config.Set(change.Key, change.After);
-        }
-        // Each sets the mode as the simulator reads it, so this one has to come later to count.
-        _config.MoveAfter("gfx.antialiasing", "multisampling");
+        ApplyChanges(_config, Changes(Settings));
         _synced = Render(Settings);
 
         try
@@ -181,6 +173,91 @@ public sealed class SettingsStore
         catch (Exception ex)
         {
             _log.Log($"saving {path}", ex);
+        }
+    }
+
+    private static void ApplyChanges(ConfigFile config, IReadOnlyList<IniChange> changes)
+    {
+        foreach (var change in changes)
+        {
+            if (change.After is null)
+                config.Remove(change.Key);
+            else
+                config.Set(change.Key, change.After);
+        }
+
+        // Each sets the mode as the simulator reads it, so the new one has to come later to count.
+        // Untouched, the two keep their order: moving them would change which one decides.
+        if (changes.Any(change => change.Key is "gfx.antialiasing" or "multisampling"))
+            config.MoveAfter("gfx.antialiasing", "multisampling");
+    }
+
+    /// <summary>Whether the simulator can have DLSS on this platform at all.</summary>
+    public bool DlssPlatform => _serializer.DlssPlatform;
+
+    /// <summary>
+    /// Takes the settings of another eu07.ini (a backup, a file from another machine)
+    /// into the current ones, keeping what belongs to this installation: the chosen
+    /// simulator, its card, the last scenery and the window state. The lines of this
+    /// user's file the starter does not manage stay as they are. Nothing is written until Save.
+    /// </summary>
+    public bool ImportFrom(string path)
+    {
+        ConfigFile imported;
+        try
+        {
+            imported = ConfigFile.Parse(_files.ReadAllText(path, _encoding));
+        }
+        catch (Exception ex)
+        {
+            _log.Log($"importing {path}", ex);
+            return false;
+        }
+
+        var s = Settings;
+        bool selectAutomatically = s.SelectExeAutomatically;
+        string executable = s.ExecutablePath;
+        var gpu = s.Gpu;
+        string lastScenery = s.LastScenery;
+        bool maximized = s.WindowMaximized;
+        // Only read for the dependencies and never written, so they stay as this user's file has them.
+        bool cabLampLight = s.CabLampLight;
+        bool depthPrepassScene = s.DepthPrepassScene;
+
+        _serializer.Read(s, imported);
+
+        s.SelectExeAutomatically = selectAutomatically;
+        s.ExecutablePath = executable;
+        s.Gpu = gpu;
+        s.LastScenery = lastScenery;
+        s.WindowMaximized = maximized;
+        s.CabLampLight = cabLampLight;
+        s.DepthPrepassScene = depthPrepassScene;
+        return true;
+    }
+
+    /// <summary>
+    /// Writes the settings as a complete eu07.ini somewhere else - this user's file
+    /// with the settings applied - leaving the file itself and its state alone.
+    /// </summary>
+    public bool ExportTo(string path)
+    {
+        var copy = ConfigFile.Parse(_config.ToText());
+        ApplyChanges(copy, Changes(Settings));
+
+        try
+        {
+            string? directory = Path.GetDirectoryName(path);
+            if (!string.IsNullOrEmpty(directory))
+                _files.CreateDirectory(directory);
+
+            _files.WriteAllBytesAtomic(path, _encoding.GetBytes(copy.ToText()));
+            return true;
+        }
+        catch (Exception ex)
+        {
+            _log.Log($"exporting {path}", ex);
+            return false;
         }
     }
 

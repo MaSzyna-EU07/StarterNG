@@ -268,6 +268,33 @@ public sealed class ExecutableLocator
     }
 
     /// <summary>A path as <see cref="Resolve"/> gives it, which may be relative to the installation.</summary>
+    /// <summary>Whether the DLSS and frame generation libraries lie next to the simulator: without them it cannot use either.</summary>
+    public (bool Dlss, bool FrameGeneration) DlssLibraries(string executable)
+    {
+        try
+        {
+            // Resolve hands back either a path of its own search or the bare name of the pick.
+            string full = _files.FileExists(executable) ? executable : FullPath(executable);
+            string? directory = Path.GetDirectoryName(full);
+            if (string.IsNullOrEmpty(directory) || !_files.DirectoryExists(directory))
+                return (false, false);
+
+            bool windowsBuild = _files.FileExists(full)
+                ? Format(full) == BinaryFormat.PortableExecutable
+                : _environment.IsWindows;
+
+            return windowsBuild
+                ? (Has(directory, "nvngx_dlss.dll"), Has(directory, "nvngx_dlssg.dll"))
+                : (Has(directory, "libnvidia-ngx-dlss.so*"), Has(directory, "libnvidia-ngx-dlssg.so*"));
+        }
+        catch (Exception)
+        {
+            return (false, false);
+        }
+    }
+
+    private bool Has(string directory, string pattern) => _files.GetFiles(directory, pattern).Count > 0;
+
     public string FullPath(string path) =>
         Path.IsPathRooted(path) ? path : Path.Combine(_paths.Root, path);
 

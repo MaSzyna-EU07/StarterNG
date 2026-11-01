@@ -8,6 +8,12 @@ public enum ConsistReadyOverride { Scenery = 0, AlwaysCold = 1, AlwaysReady = 2 
 
 public enum ExeProblem { None, NotFound, NotExecutable, WrongPlatform, NotAProgram }
 
+// gfxrenderer: the OpenGL renderer ("full", read by every build) or the Vulkan 1.4 one.
+public enum GraphicsBackend { OpenGL = 0, Vulkan = 1 }
+
+// gfx.antialiasing. Dlss and Dlaa are the Vulkan renderer's only; the simulator falls back to TAA elsewhere.
+public enum AntiAliasingMode { Off, Msaa2, Msaa4, Msaa8, Taa, Dlss, Dlaa }
+
 public sealed class SimulatorSettings
 {
     public bool LanguageWasSet { get; internal set; }
@@ -49,13 +55,18 @@ public sealed class SimulatorSettings
     public bool LogMissingVehicleFiles;
 
     public int RenderEngine;
+    public GraphicsBackend Backend => RenderEngine == VulkanEngine ? GraphicsBackend.Vulkan : GraphicsBackend.OpenGL;
+    public string VulkanDevice = "";
     public int Width = 1280;
     public int Height = 720;
     public int BufferScalePercent = 100;
     public int MaxTextureSize = 4096;
     public int MaxCabTextureSize = 4096;
     public double TextureFiltering = 8;
-    public int Multisampling = 2;
+    public AntiAliasingMode AntiAliasing = AntiAliasingMode.Msaa4;
+    public string DlssPreset = "default";
+    public int FrameGeneration = 1;
+    public int Reflex;
     public int DynamicLights = 7;
     public double DrawRangeFactor = 3.0;
     public bool VSync;
@@ -65,14 +76,48 @@ public sealed class SimulatorSettings
     public bool MotionBlur = true;
     public bool ExtraEffects = true;
     public bool EnvMap = true;
-    public bool UseVbo = true;
     public bool RenderShadows = true;
+    public bool ShadowSdsm;
+    public int LightShadows = 2;
+    public int ContactShadows;
+    public bool LightsClustered = true;
+    public int AmbientOcclusion = 2;
+    public int AoSlices = 3;
+    public int AoSteps = 4;
+    public bool AoLighting = true;
+    public int CabProbe = 2;
+    public int CabProbeInterval = 4;
+    public double CabProbeBounce = 1.0;
+    public bool CabProbeReflections = true;
+
+    // Read from eu07.ini only, for the dependencies shown: the starter offers no switch for them.
+    public bool CabLampLight { get; internal set; } = true;
+    public bool DepthPrepassScene { get; internal set; }
+    public int Ssr = 2;
+    public bool RayTracing;
+    public int RayTracingRange = 500;
+    public bool VolumetricFog = true;
+    public int FogQuality = 2;
+    public int Clouds = 2;
+    public bool CloudShadows = true;
+    public bool Grass = true;
+    public int GrassDistance = 60;
+    public double GrassDensity = 1.0;
+    public int PrecipitationParticles = 65536;
+    public bool Bloom = true;
+    public bool AutoExposure = true;
+
+    // Only the older simulators read these.
+    public bool UseVbo = true;
+    public bool RenderAngleVulkan;
+    public bool UseGLES;
+    public int CabShadowsRange;
+
     /// <summary>Updates of the reflections a second; the simulator's own is one in five minutes.</summary>
     public double ReflectionsFramerate = 1 / 300.0;
     public int ShadowMapResolution = 2048;
     /// <summary>The third number of shadowtune; the second and fourth go unread.</summary>
     public int ShadowProjectionRange = 250;
-    public int CabShadowsRange;
     public int ShadowRankCutoff = 3;
     public int ReflectionsFidelity;
     public int FieldOfView = 45;
@@ -82,7 +127,6 @@ public sealed class SimulatorSettings
     public double FpsLimit = 30;
     public double ShadowAngleLimit = 0.2;
     public bool FullscreenWindowed;
-    public bool RenderAngleVulkan;
 
     public int SplineFidelity = 1;
     public bool FullPhysics = true;
@@ -110,7 +154,6 @@ public sealed class SimulatorSettings
 
     public bool CompressTextures = true;
     public bool ScaleSpeculars = true;
-    public bool UseGLES;
     public bool ShaderGamma;
     public bool ScreenMipmaps = true;
     public bool ExtendedModelConversion;
@@ -162,6 +205,9 @@ public sealed class SimulatorSettings
     /// it was built without it or the card cannot run it.
     /// </summary>
     public static readonly string[] RenderEngines = { "full", "legacy", "simple", "experimental", "vulkan" };
+
+    /// <summary>Where "vulkan" stands among <see cref="RenderEngines"/>.</summary>
+    public const int VulkanEngine = 4;
 
     /// <summary>Where <paramref name="word"/> stands among <see cref="RenderEngines"/>, as the simulator reads it.</summary>
     public static int RenderEngineOf(string word) => word.Trim().ToLowerInvariant() switch

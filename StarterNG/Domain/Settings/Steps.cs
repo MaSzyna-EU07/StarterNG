@@ -27,13 +27,6 @@ public static class Steps
     public static readonly double[] Anisotropy = { 1, 2, 4, 8, 16 };
 
     /// <summary>
-    /// multisampling, as the power of two of the samples: none to x8. The simulator
-    /// takes 4 (x16) too, which only some cards can do - on one that cannot, the
-    /// frame buffer fails to build - so it stays in the file but off the slider.
-    /// </summary>
-    public static readonly double[] MultisamplingLevels = { 0, 1, 2, 3 };
-
-    /// <summary>
     /// <paramref name="steps"/> with <paramref name="value"/> among them: one
     /// eu07.ini has that is none of the steps stays what it is.
     /// </summary>

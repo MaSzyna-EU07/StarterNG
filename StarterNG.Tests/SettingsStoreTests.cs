@@ -861,6 +861,9 @@ public class SettingsStoreTests
     [InlineData("opengl")]
     [InlineData("gl46")]
     [InlineData("vulkan14")]
+    [InlineData("legacy")]
+    [InlineData("simple")]
+    [InlineData("experimental")]
     public void A_renderer_word_the_simulator_reads_as_another_stays_until_changed(string word)
     {
         var installation = WithHome(new InMemoryFileSystem().WithFile(UserIni, $"gfxrenderer {word}\n"));
@@ -936,46 +939,33 @@ public class SettingsStoreTests
     }
 
     [Fact]
-    public void Anti_aliasing_is_saved_below_multisampling_for_the_later_line_to_count()
+    public void The_two_anti_aliasing_keys_untouched_keep_their_order()
     {
-        var installation = WithHome(new InMemoryFileSystem().WithFile(UserIni, "gfx.antialiasing taa\nwidth 800\nmultisampling 2\n"));
+        // Moving them would change which of the two the simulator goes by.
+        const string ini = "gfx.antialiasing taa\nwidth 800\nmultisampling 2\n";
+        var installation = WithHome(new InMemoryFileSystem().WithFile(UserIni, ini));
         installation.SettingsStore.Load();
 
         installation.SettingsStore.Save();
 
         string saved = SavedLines(installation);
-        Assert.True(saved.IndexOf("multisampling ", StringComparison.Ordinal) < saved.IndexOf("gfx.antialiasing taa", StringComparison.Ordinal), saved);
+        Assert.True(saved.IndexOf("gfx.antialiasing taa", StringComparison.Ordinal) < saved.IndexOf("multisampling 2", StringComparison.Ordinal), saved);
     }
 
     [Fact]
-    public void Anti_aliasing_left_to_multisampling_goes_from_the_file()
+    public void A_chosen_anti_aliasing_is_saved_below_multisampling_for_the_later_line_to_count()
     {
-        var installation = WithHome(new InMemoryFileSystem().WithFile(UserIni, "multisampling 2\ngfx.antialiasing taa\n"));
+        var installation = WithHome(new InMemoryFileSystem().WithFile(UserIni, "gfx.antialiasing msaax4\nwidth 800\nmultisampling 2\n"));
         installation.SettingsStore.Load();
 
-        installation.SettingsStore.Settings.Extra["gfx.antialiasing"] = "";
+        installation.SettingsStore.Settings.AntiAliasing = AntiAliasingMode.Taa;
         installation.SettingsStore.Save();
 
-        Assert.DoesNotContain("\ngfx.antialiasing", SavedLines(installation));
-    }
-
-    [Theory]
-    [InlineData("TAA", "taa")]
-    [InlineData("  dlaa ", "dlaa")]
-    [InlineData("", "")]
-    [InlineData("fxaa", "")]
-    public void A_choice_reads_the_words_it_offers_and_else_the_default(string raw, string word)
-    {
-        Assert.Equal(word, SimulatorKeys.Named("gfx.antialiasing").ParseChoice(raw));
-    }
-
-    [Theory]
-    [InlineData("4 6", "4 6")]
-    [InlineData("4   6", "4 6")]
-    [InlineData("5 5", "3 4")]
-    public void A_choice_of_two_numbers_is_one_word(string raw, string word)
-    {
-        Assert.Equal(word, SimulatorKeys.Named("gfx.postfx.ao.quality").ParseChoice(raw));
+        string saved = SavedLines(installation);
+        Assert.True(saved.IndexOf("multisampling ", StringComparison.Ordinal) < saved.IndexOf("gfx.antialiasing taa", StringComparison.Ordinal), saved);
+        var again = WithHome(installation.Files);
+        again.SettingsStore.Load();
+        Assert.Equal(AntiAliasingMode.Taa, again.SettingsStore.Settings.AntiAliasing);
     }
 
     [Fact]

@@ -24,7 +24,25 @@ internal static class SettingTexts
 
     public static string Anisotropy(double value) => "x" + value.ToString("0.#", CultureInfo.CurrentCulture);
 
-    public static string Multisampling(int level) => level <= 0 ? App.Loc["MsaaNone"] : "x" + (1 << level);
+    public static string AntiAliasing(AntiAliasingMode mode) => mode switch
+    {
+        AntiAliasingMode.Msaa2 => "MSAA x2",
+        AntiAliasingMode.Msaa4 => "MSAA x4",
+        AntiAliasingMode.Msaa8 => "MSAA x8",
+        AntiAliasingMode.Taa => App.Loc["AaTaa"],
+        AntiAliasingMode.Dlss => App.Loc["AaDlss"],
+        AntiAliasingMode.Dlaa => App.Loc["AaDlaa"],
+        _ => App.Loc["MsaaNone"]
+    };
+
+    private static string Level(int level) => App.Loc[level switch
+    {
+        1 => "LevelLow",
+        2 => "LevelMedium",
+        3 => "LevelHigh",
+        4 => "LevelUltra",
+        _ => "LevelOff"
+    }];
 
     public static string TwoDecimals(double value) => value.ToString("0.00", CultureInfo.CurrentCulture);
 
@@ -76,7 +94,7 @@ internal static class SettingTexts
         Add("MaxTexResolution", p.TextureSize + " px");
         Add("MaxTexCabResolution", p.CabTextureSize + " px");
         Add("TexFilteringQuality", Anisotropy(p.Anisotropy));
-        Add("Multisampling", Multisampling(p.Multisampling));
+        Add("AntiAliasing", AntiAliasing(p.AntiAliasing));
         Add("DynamicLights", p.DynamicLights.ToString(CultureInfo.CurrentCulture));
         Add("SmokeParticlesMultiplier", Fidelity(p.SmokeFidelity));
         Add("RenderShadows", YesNo(p.Shadows));
@@ -101,23 +119,18 @@ internal static class SettingTexts
         Add("RenderRange", "×" + Whole(p.DrawRangeFactor));
         Add("Ini." + GraphicsPreset.ReflectedInstancesKey, Whole(p.ReflectedInstances) + " m");
         Add("Ini." + GraphicsPreset.ReflectedVehiclesKey, Whole(p.ReflectedVehicles) + " m");
-        Add("CabShadowsRange", p.CabShadowsRange + " m");
 
         var renderer = p.NewRenderer;
-        string Word(string word) => App.Loc[SimulatorKey.WordKey(word)];
-        lines.Add(App.Loc["GfxColNewRenderer"] + ":");
-        Add("Ini.gfx.lights.shadows", Word(renderer.LampShadows));
-        Add("Ini.gfx.contactshadows", Word(renderer.ContactShadows));
-        Add("Ini.gfx.postfx.ao", Word(renderer.Occlusion));
-        Add("Ini.gfx.postfx.ao.quality", Word(renderer.OcclusionQuality));
-        Add("Ini.gfx.cabprobe", Word(renderer.CabProbe));
-        Add("Ini.gfx.ssr", Word(renderer.ScreenReflections));
-        Add("Ini.gfx.raytracing", YesNo(renderer.RayTracing));
-        Add("Ini.gfx.fog", Word(renderer.Fog));
-        Add("Ini.gfx.fog.quality", Word(renderer.FogQuality));
-        Add("Ini.gfx.clouds", Word(renderer.Clouds));
-        Add("Ini.gfx.grass", renderer.Grass ? Whole(renderer.GrassDistance) + " m" : App.Loc["No"]);
-        Add("Ini.gfx.postfx.bloom", YesNo(renderer.Bloom));
+        Add("LightShadows", Level(renderer.LampShadows));
+        Add("ContactShadows", Level(renderer.ContactShadows));
+        Add("AmbientOcclusion", renderer.Occlusion switch { 1 => "SSAO", 2 => "GTAO", _ => App.Loc["LevelOff"] });
+        Add("CabProbe", Level(renderer.CabProbe));
+        Add("Ssr", Level(renderer.ScreenReflections));
+        Add("RayTracing", YesNo(renderer.RayTracing));
+        Add("VolumetricFog", renderer.VolumetricFog ? Level(renderer.FogQuality) : App.Loc["No"]);
+        Add("Clouds", Level(renderer.Clouds));
+        Add("Grass", renderer.Grass ? renderer.GrassDistance + " m" : App.Loc["No"]);
+        Add("Bloom", YesNo(renderer.Bloom));
 
         if (p.Extras is { } extras)
         {

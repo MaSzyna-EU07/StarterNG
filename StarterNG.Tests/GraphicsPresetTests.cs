@@ -26,6 +26,8 @@ public class GraphicsPresetTests
         var store = new TestInstallation().SettingsStore;
         var low = Defaults().Copy();
         var top = Defaults().Copy();
+        // Ray tracing is one of them, and only Vulkan has it.
+        low.RenderEngine = top.RenderEngine = SimulatorSettings.VulkanEngine;
         (GraphicsPreset.Minimal with { Extras = null }).ApplyTo(low);
         (GraphicsPreset.Ultra with { Extras = null, Top = null }).ApplyTo(top);
 
@@ -33,7 +35,7 @@ public class GraphicsPresetTests
         var topKeys = store.Render(top);
         var differing = lowKeys.Keys.Union(topKeys.Keys)
             .Where(key => lowKeys.GetValueOrDefault(key) != topKeys.GetValueOrDefault(key))
-            .Where(key => !key.StartsWith("gfx.framebuffer", StringComparison.Ordinal) && key != "gfx.buffer.percent");
+            .Where(key => !key.StartsWith("gfx.framebuffer", StringComparison.Ordinal));
 
         Assert.Equal(GraphicsPreset.Keys.OrderBy(k => k), differing.OrderBy(k => k));
     }
@@ -57,7 +59,7 @@ public class GraphicsPresetTests
         Climbs(p => p.Anisotropy, 1);
 
         // Four steps or three for six levels.
-        Climbs(p => p.Multisampling, 2);
+        Climbs(p => (int)p.AntiAliasing, 2);
         Climbs(p => p.SmokeFidelity, 2);
         Climbs(p => p.SplineFidelity, 2);
         Climbs(p => p.ReflectionsFidelity, 3);
@@ -153,13 +155,7 @@ public class GraphicsPresetTests
     [Fact]
     public void The_new_renderers_scales_never_go_down()
     {
-        void WordsClimb(string name, Func<GraphicsNewRenderer, string> word)
-        {
-            var words = SimulatorKeys.Named(name).Words!;
-            var places = GraphicsPreset.All.Select(p => Array.IndexOf(words, word(p.NewRenderer))).ToList();
-            Assert.DoesNotContain(-1, places);
-            Assert.Equal(places.OrderBy(place => place), places);
-        }
+        void NeverDown(Func<GraphicsNewRenderer, double> value) => Climbs(p => value(p.NewRenderer), 5);
 
         void TurnsOn(Func<GraphicsNewRenderer, bool> on)
         {
@@ -167,27 +163,27 @@ public class GraphicsPresetTests
             Assert.Equal(values.OrderBy(value => value), values);
         }
 
-        WordsClimb("gfx.lights.shadows", r => r.LampShadows);
-        WordsClimb("gfx.contactshadows", r => r.ContactShadows);
-        WordsClimb("gfx.postfx.ao", r => r.Occlusion);
-        WordsClimb("gfx.postfx.ao.quality", r => r.OcclusionQuality);
-        WordsClimb("gfx.cabprobe", r => r.CabProbe);
-        WordsClimb("gfx.ssr", r => r.ScreenReflections);
-        WordsClimb("gfx.fog", r => r.Fog);
-        WordsClimb("gfx.fog.quality", r => r.FogQuality);
-        WordsClimb("gfx.clouds", r => r.Clouds);
+        NeverDown(r => r.LampShadows);
+        NeverDown(r => r.ContactShadows);
+        NeverDown(r => r.Occlusion);
+        NeverDown(r => r.OcclusionSlices);
+        NeverDown(r => r.OcclusionSteps);
+        NeverDown(r => r.CabProbe);
+        NeverDown(r => r.ScreenReflections);
+        NeverDown(r => r.FogQuality);
+        NeverDown(r => r.Clouds);
 
         TurnsOn(r => r.OcclusionLighting);
         TurnsOn(r => r.CabProbeReflections);
         TurnsOn(r => r.RayTracing);
+        TurnsOn(r => r.VolumetricFog);
         TurnsOn(r => r.CloudShadows);
         TurnsOn(r => r.Grass);
         TurnsOn(r => r.Bloom);
 
         Climbs(p => p.NewRenderer.GrassDistance, 0);
-        Climbs(p => p.NewRenderer.GrassFade, 0);
         Climbs(p => p.NewRenderer.GrassDensity, 0);
-        Climbs(p => p.NewRenderer.Precipitation, 0);
+        Climbs(p => p.NewRenderer.Precipitation, 1);
         // Frames between refreshes, so the dearer the fewer.
         Climbs(p => -p.NewRenderer.CabProbeInterval, 2);
     }
@@ -196,28 +192,32 @@ public class GraphicsPresetTests
     public void Ultra_is_the_top_of_the_new_renderers_scales()
     {
         var ultra = GraphicsPreset.Ultra.NewRenderer;
-        double Top(string key) => SimulatorKeys.Named(key).Maximum;
-        string TopWord(string key) => SimulatorKeys.Named(key).Words!.Last();
 
-        Assert.Equal(TopWord("gfx.lights.shadows"), ultra.LampShadows);
-        Assert.Equal(TopWord("gfx.contactshadows"), ultra.ContactShadows);
-        Assert.Equal(TopWord("gfx.postfx.ao"), ultra.Occlusion);
-        Assert.Equal(TopWord("gfx.postfx.ao.quality"), ultra.OcclusionQuality);
-        Assert.Equal(TopWord("gfx.cabprobe"), ultra.CabProbe);
-        Assert.Equal(TopWord("gfx.ssr"), ultra.ScreenReflections);
-        Assert.Equal(TopWord("gfx.fog"), ultra.Fog);
-        Assert.Equal(TopWord("gfx.fog.quality"), ultra.FogQuality);
-        Assert.Equal(TopWord("gfx.clouds"), ultra.Clouds);
-        Assert.Equal(Top("gfx.grass.distance"), ultra.GrassDistance);
-        Assert.Equal(Top("gfx.grass.fadedistance"), ultra.GrassFade);
-        Assert.Equal(Top("gfx.grass.density"), ultra.GrassDensity);
-        Assert.Equal(Top("gfx.precipitation.particles"), ultra.Precipitation);
+        Assert.Equal(3, ultra.LampShadows);
+        Assert.Equal(3, ultra.ContactShadows);
+        Assert.Equal(2, ultra.Occlusion);
+        Assert.Equal((6, 8), (ultra.OcclusionSlices, ultra.OcclusionSteps));
+        Assert.Equal(3, ultra.CabProbe);
+        Assert.Equal(3, ultra.ScreenReflections);
+        Assert.True(ultra.RayTracing && ultra.VolumetricFog);
+        Assert.Equal(4, ultra.FogQuality);
+        Assert.Equal(4, ultra.Clouds);
+        Assert.Equal(300, ultra.GrassDistance);
+        Assert.Equal(2.0, ultra.GrassDensity);
+        Assert.Equal(262144, ultra.Precipitation);
     }
 
     [Fact]
     public void Grass_fades_out_beyond_where_it_is_drawn_in_full()
     {
-        Assert.All(GraphicsPreset.All, p => Assert.True(p.NewRenderer.GrassFade > p.NewRenderer.GrassDistance, p.NameKey));
+        var store = new TestInstallation().SettingsStore;
+        foreach (var preset in GraphicsPreset.All)
+        {
+            var settings = Defaults().Copy();
+            preset.ApplyTo(settings);
+
+            Assert.True(int.Parse(store.Render(settings)["gfx.grass.fadedistance"]) > preset.NewRenderer.GrassDistance, preset.NameKey);
+        }
     }
 
     [Fact]
@@ -227,7 +227,7 @@ public class GraphicsPresetTests
         GraphicsPreset.Medium.ApplyTo(settings);
         Assert.Same(GraphicsPreset.Medium, GraphicsPreset.Matching(settings));
 
-        settings.Extra["gfx.fog.quality"] = "ultra";
+        settings.FogQuality = 4;
 
         Assert.Null(GraphicsPreset.Matching(settings));
     }
@@ -236,18 +236,19 @@ public class GraphicsPresetTests
     public void What_is_left_to_the_player_stays_through_a_level()
     {
         var settings = Defaults().Copy();
-        settings.Extra["gfx.antialiasing"] = "taa";
-        settings.Extra["gfx.framegeneration"] = "x2";
-        settings.Extra["gfx.vulkan.device"] = "RTX";
+        settings.RenderEngine = SimulatorSettings.VulkanEngine;
+        settings.AntiAliasing = AntiAliasingMode.Dlss;
+        settings.FrameGeneration = 2;
+        settings.VulkanDevice = "RTX";
 
         foreach (var preset in GraphicsPreset.All)
         {
             preset.ApplyTo(settings);
 
             Assert.Same(preset, GraphicsPreset.Matching(settings));
-            Assert.Equal("taa", settings.Extra["gfx.antialiasing"]);
-            Assert.Equal("x2", settings.Extra["gfx.framegeneration"]);
-            Assert.Equal("RTX", settings.Extra["gfx.vulkan.device"]);
+            Assert.Equal(AntiAliasingMode.Dlss, settings.AntiAliasing);
+            Assert.Equal(2, settings.FrameGeneration);
+            Assert.Equal("RTX", settings.VulkanDevice);
         }
     }
 
@@ -262,7 +263,7 @@ public class GraphicsPresetTests
         Assert.Equal(8192, ultra.ShadowMap);
         Assert.Equal(600, ultra.ShadowRange);
         Assert.Equal(Steps.Anisotropy.Max(), ultra.Anisotropy);
-        Assert.Equal(Steps.MultisamplingLevels.Max(), ultra.Multisampling);
+        Assert.Equal(AntiAliasingMode.Msaa8, ultra.AntiAliasing);
         Assert.Equal(Steps.ReflectionUpdates.Max(), ultra.ReflectionsRate);
         Assert.Equal(4, ultra.SmokeFidelity);
         Assert.Equal(4, ultra.SplineFidelity);
@@ -610,13 +611,12 @@ public class GraphicsPresetTests
             OnSteps(preset.SleeperDistance, GraphicsPreset.SleeperKey);
             OnSteps(preset.ReflectedInstances, GraphicsPreset.ReflectedInstancesKey);
             OnSteps(preset.ReflectedVehicles, GraphicsPreset.ReflectedVehiclesKey);
-            OnSteps(preset.NewRenderer.CabProbeInterval, "gfx.cabprobe.interval");
-            OnSteps(preset.NewRenderer.GrassDistance, "gfx.grass.distance");
-            OnSteps(preset.NewRenderer.GrassFade, "gfx.grass.fadedistance");
-            OnSteps(preset.NewRenderer.GrassDensity, "gfx.grass.density");
-            OnSteps(preset.NewRenderer.Precipitation, "gfx.precipitation.particles");
+            Assert.InRange(preset.NewRenderer.CabProbeInterval, 1, 120);
+            Assert.InRange(preset.NewRenderer.GrassDistance, 20, 300);
+            Assert.Equal(0, preset.NewRenderer.GrassDistance % 10);
+            Assert.Equal(0, preset.NewRenderer.GrassDensity % 0.25);
+            Assert.Contains(preset.NewRenderer.Precipitation, new[] { 16384, 32768, 65536, 131072, 262144 });
             Assert.True(Steps.IndexOf(Steps.Anisotropy, preset.Anisotropy) >= 0, preset.NameKey);
-            Assert.True(Steps.IndexOf(Steps.MultisamplingLevels, preset.Multisampling) >= 0, preset.NameKey);
             Assert.True(Steps.IndexOf(Steps.ReflectionUpdates, preset.ReflectionsRate) >= 0, preset.NameKey);
             Assert.True(Steps.IndexOf(Steps.DrawRangeFactors, preset.DrawRangeFactor) >= 0, preset.NameKey);
             foreach (int size in new[] { preset.TextureSize, preset.CabTextureSize, preset.ShadowMap })
@@ -631,13 +631,14 @@ public class GraphicsPresetTests
     private static GraphicsGroupLevels Groups() => new(new TestInstallation().SettingsStore);
 
     [Fact]
-    public void Every_key_a_level_sets_but_the_buffer_belongs_to_one_part()
+    public void Every_key_a_level_sets_but_those_of_the_whole_belongs_to_one_part()
     {
         var inGroups = GraphicsGroup.All.SelectMany(group => group.Keys).ToList();
 
         Assert.Equal(inGroups.Distinct(), inGroups);
         Assert.Empty(inGroups.Except(GraphicsPreset.Keys).Except(GraphicsExtras.Keys).Except(GraphicsTop.Keys));
-        Assert.Equal(new[] { "starter.bufferscale" }, GraphicsPreset.Keys.Except(inGroups));
+        Assert.Equal(new[] { "gfx.antialiasing", "gfx.buffer.percent", "gfx.extraeffects", "gfx.postfx.bloom", "multisampling", "starter.bufferscale" },
+                     GraphicsPreset.Keys.Except(inGroups).OrderBy(key => key, StringComparer.Ordinal));
     }
 
     [Fact]
@@ -683,7 +684,7 @@ public class GraphicsPresetTests
 
         var levels = Groups().LevelsOf(settings);
 
-        Assert.Null(levels[GraphicsGroup.Effects]);
+        Assert.Null(levels[GraphicsGroup.Lights]);
         Assert.Same(GraphicsPreset.High, levels[GraphicsGroup.Shadows]);
     }
 
@@ -697,6 +698,7 @@ public class GraphicsPresetTests
             foreach (var group in GraphicsGroup.All)
                 settings = groups.Apply(group, level, settings);
             settings.BufferScalePercent = level.BufferScale;
+            settings.AntiAliasing = level.AntiAliasing;
 
             Assert.Same(level, GraphicsPreset.Matching(settings));
         }
@@ -732,9 +734,10 @@ public class GraphicsPresetTests
         var settings = AtHigh();
         settings.MotionBlur = false;
 
-        var moved = Groups().Apply(GraphicsGroup.Effects, GraphicsPreset.VeryHigh, settings);
+        settings.Smoke = false;
 
-        Assert.False(moved.MotionBlur);
-        Assert.Equal(GraphicsPreset.VeryHigh.SmokeFidelity, moved.SmokeFidelity);
+        var nature = Groups().Apply(GraphicsGroup.Nature, GraphicsPreset.VeryHigh, settings);
+        Assert.False(nature.Smoke);
+        Assert.Equal(GraphicsPreset.VeryHigh.SmokeFidelity, nature.SmokeFidelity);
     }
 }

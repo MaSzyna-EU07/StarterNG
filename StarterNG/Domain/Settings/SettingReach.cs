@@ -128,5 +128,5 @@ public static class SettingReach
         _ => RendererKind.Legacy
     };
 
-    private static bool IsVulkan(string renderer) => renderer.ToLowerInvariant() is "vulkan" or "vulkan14";
+    public static bool IsVulkan(string renderer) => renderer.ToLowerInvariant() is "vulkan" or "vulkan14";
 }

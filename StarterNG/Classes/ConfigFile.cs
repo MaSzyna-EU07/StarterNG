@@ -58,6 +58,9 @@ public sealed class ConfigFile
 
     public bool Has(string key) => _index.ContainsKey(key);
 
+    /// <summary>The line the key is on, or -1. The simulator reads the file top down, so a later line wins.</summary>
+    public int LineOf(string key) => _index.TryGetValue(key, out int i) ? i : -1;
+
     /// <summary>Whether the line setting the key is one the simulator never gets to.</summary>
     public bool IsPastEnd(string key) =>
         _end >= 0 && _index.TryGetValue(key, out int line) && line > _end;

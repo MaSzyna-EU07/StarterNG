@@ -253,6 +253,21 @@
         <Setter Property="VerticalAlignment" Value="Top" />
         <Setter Property="Margin" Value="0,21,14,0" />
     </Style>
+    <!-- The same for a dropdown with a note under it (what the simulator will do instead). -->
+    <Style Selector="ctl|SettingRow:not(.Compact) > StackPanel > ComboBox">
+        <Setter Property="HorizontalAlignment" Value="Left" />
+        <Setter Property="Width" Value="360" />
+    </Style>
+    <Style Selector="ctl|SettingRow:not(.Compact) > TextBox">
+        <Setter Property="HorizontalAlignment" Value="Left" />
+        <Setter Property="Width" Value="360" />
+    </Style>
+    <!-- Notes under a setting: amber, since green is the interactive accent. -->
+    <Style Selector="TextBlock.SettingNote">
+        <Setter Property="Foreground" Value="#D9A43A" />
+        <Setter Property="FontSize" Value="12" />
+        <Setter Property="TextWrapping" Value="Wrap" />
+    </Style>
     <Style Selector="ctl|SettingRow:not(.Compact) > NumericUpDown">
         <Setter Property="HorizontalAlignment" Value="Left" />
         <Setter Property="Width" Value="140" />

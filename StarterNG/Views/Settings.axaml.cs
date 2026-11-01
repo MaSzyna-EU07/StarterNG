@@ -38,8 +38,6 @@ public partial class Settings : UserControl, ISettingsCapture
 
     private readonly SliderSteps _anisotropy;
 
-    private readonly SliderSteps _multisampling;
-
     private readonly SliderSteps _drawRangeFactor;
 
     // False while the layout loads: the handlers it names fire as it sets their controls'
@@ -62,7 +60,6 @@ public partial class Settings : UserControl, ISettingsCapture
         _fpsLimit = new SliderSteps(FpsLimitSlider, Steps.FrameRateLimits);
         _reflections = new SliderSteps(reflectionsFramerate, Steps.ReflectionUpdates);
         _anisotropy = new SliderSteps(TexFilteringSlider, Steps.Anisotropy);
-        _multisampling = new SliderSteps(MultisamplingSlider, Steps.MultisamplingLevels);
         _drawRangeFactor = new SliderSteps(RenderRangeSlider, Steps.DrawRangeFactors);
         _built = true;
 
@@ -115,6 +112,7 @@ public partial class Settings : UserControl, ISettingsCapture
             if (string.Equals(key.Key, "targetfps", StringComparison.OrdinalIgnoreCase))
                 UpdateIdleNotes();
         };
+        InitGraphics();
         MotionBlurCb.IsCheckedChanged += (_, _) => UpdateDependentRows();
         ReflectionsCubeMapCb.IsCheckedChanged += (_, _) => UpdateDependentRows();
 
@@ -369,6 +367,7 @@ public partial class Settings : UserControl, ISettingsCapture
         RefreshDerivedRows();
         UpdateGpuNote();
         NoteShownValues();
+        UpdateGraphicsState();
         UpdatePresetMarks();
     }
 
@@ -403,14 +402,13 @@ public partial class Settings : UserControl, ISettingsCapture
         VirtualShuntingCb.IsChecked = s.VirtualShunting;
         LogMissingVehicleFilesCb.IsChecked = s.LogMissingVehicleFiles;
 
-        RenderEngineCb.SelectedIndex = s.RenderEngine;
+        ShowGraphics(s);
         GpuCb.SelectedIndex = s.Gpu == GpuPreference.System ? 1 : 0;
         SelectResolution(s.Width, s.Height);
         bufferScale.Value = s.BufferScalePercent;
         textureResolutionSlider.Value = Log2(s.MaxTextureSize, 12);
         cabTextureResolutionSlider.Value = Log2(s.MaxCabTextureSize, 12);
         _anisotropy.Value = s.TextureFiltering;
-        _multisampling.Value = s.Multisampling;
         DynamicLightsSlider.Value = s.DynamicLights;
         _drawRangeFactor.Value = s.DrawRangeFactor;
         VSyncCb.IsChecked = s.VSync;
@@ -493,6 +491,7 @@ public partial class Settings : UserControl, ISettingsCapture
         UpdateQualityCaptions();
         UpdateIdleNotes();
         UpdateDependentRows();
+        UpdateGraphicsState();
     }
 
     // ── Levels of detail ─────────────────────────────────────────────────────
@@ -515,8 +514,9 @@ public partial class Settings : UserControl, ISettingsCapture
         foreach (var (section, group) in new[]
                  {
                      (DrawRangeSection, GraphicsGroup.DrawRange), (TexturesSection, GraphicsGroup.Textures),
-                     (EffectsSection, GraphicsGroup.Effects), (ShadowsSection, GraphicsGroup.Shadows),
-                     (ReflectionsSection, GraphicsGroup.Reflections), (NewRendererSection, GraphicsGroup.NewRenderer)
+                     (ShadowsSection, GraphicsGroup.Shadows), (LightsSection, GraphicsGroup.Lights),
+                     (ReflectionsSection, GraphicsGroup.Reflections), (AtmosphereSection, GraphicsGroup.Atmosphere),
+                     (NatureSection, GraphicsGroup.Nature)
                  })
         {
             var levels = new ComboBox();
@@ -806,14 +806,13 @@ public partial class Settings : UserControl, ISettingsCapture
         s.VirtualShunting = IsChecked(VirtualShuntingCb);
         s.LogMissingVehicleFiles = IsChecked(LogMissingVehicleFilesCb);
 
-        s.RenderEngine = Math.Max(0, RenderEngineCb.SelectedIndex);
+        CaptureGraphics(s);
         s.Gpu = SelectedGpu();
         ReadResolution(s);
         s.BufferScalePercent = (int)bufferScale.Value;
         s.MaxTextureSize = 1 << (int)textureResolutionSlider.Value;
         s.MaxCabTextureSize = 1 << (int)cabTextureResolutionSlider.Value;
         s.TextureFiltering = _anisotropy.Value;
-        s.Multisampling = (int)_multisampling.Value;
         s.DynamicLights = (int)DynamicLightsSlider.Value;
         s.DrawRangeFactor = _drawRangeFactor.Value;
         s.VSync = IsChecked(VSyncCb);
@@ -1010,6 +1009,7 @@ public partial class Settings : UserControl, ISettingsCapture
         if (!_built)
             return;
 
+        OnBackendChanged();
         RefreshDerivedRows();
     }
 
@@ -1315,7 +1315,7 @@ public partial class Settings : UserControl, ISettingsCapture
         bool bindings = category == "controls";
         ControlsHost.IsVisible = bindings;
         SettingsScroll.IsVisible = !bindings;
-        PresetBar.IsVisible = category == "graphics" && !searching;
+        PresetBar.IsVisible = category is "graphics" or "effects" && !searching;
 
         if (bindings)
         {
@@ -1422,6 +1422,9 @@ public partial class Settings : UserControl, ISettingsCapture
                 case NumericUpDown nud:
                     nud.ValueChanged += (_, _) => OnControlChanged();
                     break;
+                case TextBox box when ReferenceEquals(box, VulkanDeviceTb):
+                    box.TextChanged += (_, _) => OnControlChanged();
+                    break;
             }
         }
 
@@ -1434,6 +1437,7 @@ public partial class Settings : UserControl, ISettingsCapture
     {
         MarkDirty();
         QueuePresetMarks();
+        UpdateGraphicsState();
     }
 
     private void MarkDirty()
@@ -1484,8 +1488,6 @@ public partial class Settings : UserControl, ISettingsCapture
 
         TrackCurvesRow.ValueText = SettingTexts.Fidelity((int)TrackCurvesSlider.Value);
         SmokeParticlesRow.ValueText = SettingTexts.Fidelity((int)SmokeParticlesSlider.Value);
-
-        MultisamplingRow.ValueText = SettingTexts.Multisampling((int)_multisampling.Value);
 
         RenderRangeRow.ValueText = "×" + _drawRangeFactor.Value.ToString("0.0", CultureInfo.CurrentCulture);
 

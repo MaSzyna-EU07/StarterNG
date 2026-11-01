@@ -9,6 +9,16 @@ namespace StarterNG.Infrastructure.Settings;
 
 public sealed class SettingsSerializer
 {
+    private readonly bool _dlssPlatform;
+
+    /// <param name="dlssPlatform">Whether the simulator can have DLSS here at all (not on macOS).</param>
+    public SettingsSerializer(bool dlssPlatform = true)
+    {
+        _dlssPlatform = dlssPlatform;
+    }
+
+    public bool DlssPlatform => _dlssPlatform;
+
     public void Read(SimulatorSettings s, ConfigFile c)
     {
         s.LanguageWasSet = c.Has("lang");
@@ -67,13 +77,17 @@ public sealed class SettingsSerializer
         s.LogMissingVehicleFiles = c.GetBool("starter.logmissingvehicles", false);
 
         s.RenderEngine = SimulatorSettings.RenderEngineOf(c.GetString("gfxrenderer", "full"));
+        s.VulkanDevice = c.GetString("gfx.vulkan.device", "");
         s.Width = c.GetInt("width", 1280);
         s.Height = c.GetInt("height", 720);
         s.BufferScalePercent = ReadBufferScale(c);
         s.MaxTextureSize = c.GetInt("maxtexturesize", 4096);
         s.MaxCabTextureSize = c.GetInt("maxcabtexturesize", 4096);
         s.TextureFiltering = Math.Max(1, c.GetDouble("anisotropicfiltering", 8));
-        s.Multisampling = Clamp(c.GetInt("multisampling", 2), 0, 4);
+        s.AntiAliasing = ReadAntiAliasing(c);
+        s.DlssPreset = c.GetString("gfx.dlss.preset", "default").ToLowerInvariant();
+        s.FrameGeneration = ParseFrameGeneration(FirstToken(c, "gfx.framegeneration"));
+        s.Reflex = ParseReflex(FirstToken(c, "gfx.reflex"));
         s.DynamicLights = Clamp(c.GetInt("dynamiclights", 7), 0, 7);
         s.DrawRangeFactor = c.GetDouble("gfx.drawrange.factor.max", 3.0);
         s.VSync = c.GetBool("vsync", false);
@@ -85,6 +99,34 @@ public sealed class SettingsSerializer
         s.EnvMap = c.GetBool("gfx.envmap.enabled", true);
         s.UseVbo = c.GetBool("usevbo", true);
         s.RenderShadows = c.GetBool("shadows", true);
+        s.ShadowSdsm = c.GetBool("gfx.shadow.sdsm", false);
+        s.LightShadows = ParseLevel(FirstToken(c, "gfx.lights.shadows"), 2, 3);
+        s.ContactShadows = ParseLevel(FirstToken(c, "gfx.contactshadows"), 0, 3);
+        s.LightsClustered = c.GetBool("gfx.lights.clustered", true);
+        s.AmbientOcclusion = ParseAmbientOcclusion(FirstToken(c, "gfx.postfx.ao"));
+        var aoQuality = c.GetTokens("gfx.postfx.ao.quality");
+        s.AoSlices = aoQuality.Length >= 1 ? ParseInt(aoQuality[0], 3) : 3;
+        s.AoSteps = aoQuality.Length >= 2 ? ParseInt(aoQuality[1], 4) : 4;
+        s.AoLighting = c.GetBool("gfx.postfx.ao.lighting", true);
+        s.CabProbe = ParseCabProbe(FirstToken(c, "gfx.cabprobe"));
+        s.CabProbeInterval = c.GetInt("gfx.cabprobe.interval", 4);
+        s.CabProbeBounce = c.GetDouble("gfx.cabprobe.bounce", 1.0);
+        s.CabProbeReflections = c.GetBool("gfx.cabprobe.reflections", true);
+        s.CabLampLight = c.GetBool("gfx.lights.cab", true);
+        s.DepthPrepassScene = c.GetBool("gfx.depthprepass.scene", false);
+        s.Ssr = ParseLevel(FirstToken(c, "gfx.ssr"), 2, 3);
+        s.RayTracing = c.GetBool("gfx.raytracing", false);
+        s.RayTracingRange = (int)Math.Round(c.GetDouble("gfx.raytracing.range", 500));
+        s.VolumetricFog = ParseVolumetricFog(FirstToken(c, "gfx.fog"));
+        s.FogQuality = ParseFogQuality(FirstToken(c, "gfx.fog.quality"));
+        s.Clouds = ParseLevel(FirstToken(c, "gfx.clouds"), 2, 4);
+        s.CloudShadows = c.GetBool("gfx.clouds.shadows", true);
+        s.Grass = c.GetBool("gfx.grass", true);
+        s.GrassDistance = (int)Math.Round(c.GetDouble("gfx.grass.distance", 60));
+        s.GrassDensity = c.GetDouble("gfx.grass.density", 1.0);
+        s.PrecipitationParticles = c.GetInt("gfx.precipitation.particles", 65536);
+        s.Bloom = c.GetBool("gfx.postfx.bloom", true);
+        s.AutoExposure = c.GetBool("gfx.postfx.autoexposure", true);
         // A negative rate counts as its size; none at all, as never.
         double reflections = Math.Abs(c.GetDouble("gfx.reflections.framerate", 1 / 300.0));
         s.ReflectionsFramerate = reflections > 0 ? reflections : 1 / 300.0;
@@ -174,6 +216,8 @@ public sealed class SettingsSerializer
         foreach (var key in SimulatorKeys.All)
             if (c.Has(key.Key))
                 s.Extra[key.Key] = c.GetRaw(key.Key) ?? string.Empty;
+
+        GraphicsRules.Normalize(s, _dlssPlatform);
     }
 
     /// <summary>
@@ -184,7 +228,7 @@ public sealed class SettingsSerializer
     public static readonly string[] FixedLengthKeys = { "uart", "uarttune", "uartfeature" };
 
     /// <summary>Keys written only when they say something, besides those of <see cref="SimulatorKeys"/>.</summary>
-    public static readonly string[] OptionalKeys = { "fpslimit", "gfx.angleplatform" };
+    public static readonly string[] OptionalKeys = { "fpslimit", "gfx.angleplatform", "gfx.vulkan.device" };
 
     /// <summary>Keys no simulator reads any more, taken out of the file on a save.</summary>
     public static readonly string[] ObsoleteKeys =
@@ -195,6 +239,8 @@ public sealed class SettingsSerializer
 
     public void Write(SimulatorSettings s, ConfigFile c)
     {
+        GraphicsRules.Normalize(s, _dlssPlatform);
+
         c.Set("lang", string.IsNullOrWhiteSpace(s.LanguageCode)
             ? "en"
             : s.LanguageCode.Trim().ToLowerInvariant());
@@ -241,6 +287,7 @@ public sealed class SettingsSerializer
         c.SetBool("starter.logmissingvehicles", s.LogMissingVehicleFiles);
 
         c.Set("gfxrenderer", SimulatorSettings.RenderEngines[Clamp(s.RenderEngine, 0, SimulatorSettings.RenderEngines.Length - 1)]);
+        if (!string.IsNullOrWhiteSpace(s.VulkanDevice)) c.Set("gfx.vulkan.device", s.VulkanDevice.Trim());
         c.SetInt("width", s.Width);
         c.SetInt("height", s.Height);
         c.SetInt("starter.bufferscale", s.BufferScalePercent);
@@ -253,7 +300,13 @@ public sealed class SettingsSerializer
         c.SetInt("maxtexturesize", s.MaxTextureSize);
         c.SetInt("maxcabtexturesize", s.MaxCabTextureSize);
         c.SetDouble("anisotropicfiltering", s.TextureFiltering);
-        c.SetInt("multisampling", s.Multisampling);
+        // multisampling is what older simulators read; gfx.antialiasing overrides it in the new ones, but only from
+        // a later line, since each key sets the mode as it is read.
+        c.SetInt("multisampling", MultisamplingLevel(s.AntiAliasing));
+        c.Set("gfx.antialiasing", AntiAliasingToken(s.AntiAliasing));
+        c.Set("gfx.dlss.preset", s.DlssPreset);
+        c.Set("gfx.framegeneration", s.FrameGeneration > 1 ? $"x{s.FrameGeneration}" : "off");
+        c.Set("gfx.reflex", s.Reflex switch { 1 => "on", 2 => "boost", _ => "off" });
         c.SetInt("dynamiclights", s.DynamicLights);
         c.SetDouble("gfx.drawrange.factor.max", s.DrawRangeFactor);
         c.SetBool("vsync", s.VSync);
@@ -266,6 +319,32 @@ public sealed class SettingsSerializer
         c.SetBool("usevbo", s.UseVbo);
         c.SetBool("shadows", s.RenderShadows);
         c.SetBool("gfx.shadowmap.enabled", s.RenderShadows);
+        c.SetBool("gfx.shadow.sdsm", s.ShadowSdsm);
+        c.Set("gfx.lights.shadows", LevelToken(s.LightShadows));
+        c.Set("gfx.contactshadows", LevelToken(s.ContactShadows));
+        c.SetBool("gfx.lights.clustered", s.LightsClustered);
+        c.Set("gfx.postfx.ao", s.AmbientOcclusion switch { 1 => "ssao", 2 => "gtao", _ => "no" });
+        c.Set("gfx.postfx.ao.quality", $"{s.AoSlices} {s.AoSteps}");
+        c.SetBool("gfx.postfx.ao.lighting", s.AoLighting);
+        c.Set("gfx.cabprobe", LevelToken(s.CabProbe));
+        c.SetInt("gfx.cabprobe.interval", s.CabProbeInterval);
+        c.SetDouble("gfx.cabprobe.bounce", s.CabProbeBounce);
+        c.SetBool("gfx.cabprobe.reflections", s.CabProbeReflections);
+        c.Set("gfx.ssr", LevelToken(s.Ssr));
+        c.SetBool("gfx.raytracing", s.RayTracing);
+        c.SetInt("gfx.raytracing.range", s.RayTracingRange);
+        c.Set("gfx.fog", s.VolumetricFog ? "yes" : "analytic");
+        c.Set("gfx.fog.quality", LevelToken(s.FogQuality));
+        c.Set("gfx.clouds", LevelToken(s.Clouds));
+        c.SetBool("gfx.clouds.shadows", s.CloudShadows);
+        c.SetBool("gfx.grass", s.Grass);
+        c.SetInt("gfx.grass.distance", s.GrassDistance);
+        // The grass thins out past its distance; the simulator's own default keeps a sixth of it for that.
+        c.SetInt("gfx.grass.fadedistance", Math.Min(600, s.GrassDistance + Math.Max(10, s.GrassDistance / 6)));
+        c.SetDouble("gfx.grass.density", s.GrassDensity);
+        c.SetInt("gfx.precipitation.particles", s.PrecipitationParticles);
+        c.SetBool("gfx.postfx.bloom", s.Bloom);
+        c.SetBool("gfx.postfx.autoexposure", s.AutoExposure);
         c.Set("gfx.reflections.framerate", s.ReflectionsFramerate.ToString("0.######", CultureInfo.InvariantCulture));
         c.Set("shadowtune",
             $"{s.ShadowMapResolution} {s.ShadowTuneUnused[0]} " +
@@ -345,6 +424,128 @@ public sealed class SettingsSerializer
         double value = c.GetDouble("gfx.buffer.percent", 100);
         return Clamp((int)Math.Round(value > 4 ? value : value * 100), 25, 200);
     }
+
+    private static string FirstToken(ConfigFile c, string key)
+    {
+        var tokens = c.GetTokens(key);
+        return tokens.Length > 0 ? tokens[0].ToLowerInvariant() : string.Empty;
+    }
+
+    // The names the simulator takes for Vulkan; every other word is OpenGL to the screen, and stays in the file until changed.
+    // Whichever of the two keys comes later in the file decides, as each sets the mode when the simulator reads it.
+    private static AntiAliasingMode ReadAntiAliasing(ConfigFile c)
+    {
+        var fromMultisampling = c.GetInt("multisampling", 2) switch
+        {
+            <= 0 => AntiAliasingMode.Off,
+            1 => AntiAliasingMode.Msaa2,
+            2 => AntiAliasingMode.Msaa4,
+            _ => AntiAliasingMode.Msaa8
+        };
+
+        if (!c.Has("gfx.antialiasing") ||
+            (c.Has("multisampling") && c.LineOf("multisampling") > c.LineOf("gfx.antialiasing")))
+            return fromMultisampling;
+
+        return FirstToken(c, "gfx.antialiasing") switch
+        {
+            "off" or "no" or "none" or "0" => AntiAliasingMode.Off,
+            "msaax2" => AntiAliasingMode.Msaa2,
+            "msaax4" => AntiAliasingMode.Msaa4,
+            "msaax8" or "msaax16" => AntiAliasingMode.Msaa8,
+            "taa" => AntiAliasingMode.Taa,
+            "dlss" => AntiAliasingMode.Dlss,
+            "dlaa" => AntiAliasingMode.Dlaa,
+            _ => fromMultisampling
+        };
+    }
+
+    private static string AntiAliasingToken(AntiAliasingMode mode) => mode switch
+    {
+        AntiAliasingMode.Msaa2 => "msaax2",
+        AntiAliasingMode.Msaa4 => "msaax4",
+        AntiAliasingMode.Msaa8 => "msaax8",
+        AntiAliasingMode.Taa => "taa",
+        AntiAliasingMode.Dlss => "dlss",
+        AntiAliasingMode.Dlaa => "dlaa",
+        _ => "off"
+    };
+
+    private static int MultisamplingLevel(AntiAliasingMode mode) => mode switch
+    {
+        AntiAliasingMode.Msaa2 => 1,
+        AntiAliasingMode.Msaa4 => 2,
+        AntiAliasingMode.Msaa8 => 3,
+        _ => 0
+    };
+
+    private static int ParseFrameGeneration(string value) => value switch
+    {
+        "x2" or "on" or "yes" or "2" => 2,
+        "x3" or "3" => 3,
+        "x4" or "4" => 4,
+        _ => 1
+    };
+
+    private static int ParseReflex(string value) => value switch
+    {
+        "on" or "yes" or "1" => 1,
+        "boost" or "2" => 2,
+        _ => 0
+    };
+
+    // no/low/medium/high(/ultra) or the number of the level; an absent key keeps the simulator's default.
+    private static int ParseLevel(string value, int fallback, int max)
+    {
+        if (value.Length == 0)
+            return fallback;
+        int level = value switch
+        {
+            "low" or "1" => 1,
+            "medium" or "yes" or "true" or "2" => 2,
+            "high" or "3" => 3,
+            "ultra" or "4" => 4,
+            _ => 0
+        };
+        return Math.Min(level, max);
+    }
+
+    private static string LevelToken(int level) => level switch
+    {
+        1 => "low",
+        2 => "medium",
+        3 => "high",
+        4 => "ultra",
+        _ => "no"
+    };
+
+    // As the simulator reads it, but a value it does not know keeps its default (medium) rather than turning the probe off.
+    private static int ParseCabProbe(string value) => value switch
+    {
+        "no" or "false" or "off" or "0" => 0,
+        "low" or "1" => 1,
+        "high" or "3" => 3,
+        _ => 2
+    };
+
+    private static int ParseAmbientOcclusion(string value) => value switch
+    {
+        "" => 2,
+        "yes" or "true" or "1" or "gtao" => 2,
+        "ssao" => 1,
+        _ => 0
+    };
+
+    private static bool ParseVolumetricFog(string value) =>
+        value is not ("analytic" or "old" or "no" or "false" or "0");
+
+    private static int ParseFogQuality(string value) => value switch
+    {
+        "low" or "1" => 1,
+        "high" or "3" => 3,
+        "ultra" or "4" => 4,
+        _ => 2
+    };
 
     private static int Clamp(int v, int lo, int hi) => v < lo ? lo : (v > hi ? hi : v);
 

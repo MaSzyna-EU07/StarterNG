@@ -121,102 +121,75 @@ public sealed record GraphicsTop(
 
 /// <summary>
 /// What only the simulators with the OpenGL 4.6 and Vulkan 1.4 renderers read, the others pass it
-/// over. High is what they do with nothing set. Left to the player: anti-aliasing by TAA or DLSS,
-/// frame generation, Reflex, the choice of the card, automatic exposure and the fitted cascades.
+/// over. High is what they do with nothing set. Left to the player: frame generation, Reflex, the
+/// choice of the card, automatic exposure, the fitted cascades and the bounced light of the cab.
 /// </summary>
 /// <param name="CabProbeInterval">gfx.cabprobe.interval, in frames: the lower the dearer.</param>
-/// <param name="RayTracing">gfx.raytracing: the Vulkan renderer's alone, OpenGL passes it over.</param>
+/// <param name="RayTracing">gfx.raytracing: the Vulkan renderer's alone, off on OpenGL.</param>
 public sealed record GraphicsNewRenderer(
-    string LampShadows,
-    string ContactShadows,
-    string Occlusion,
-    string OcclusionQuality,
+    int LampShadows,
+    int ContactShadows,
+    int Occlusion,
+    int OcclusionSlices,
+    int OcclusionSteps,
     bool OcclusionLighting,
-    string CabProbe,
-    double CabProbeInterval,
+    int CabProbe,
+    int CabProbeInterval,
     bool CabProbeReflections,
-    string ScreenReflections,
+    int ScreenReflections,
     bool RayTracing,
-    string Fog,
-    string FogQuality,
-    string Clouds,
+    bool VolumetricFog,
+    int FogQuality,
+    int Clouds,
     bool CloudShadows,
     bool Grass,
-    double GrassDistance,
-    double GrassFade,
+    int GrassDistance,
     double GrassDensity,
-    double Precipitation,
+    int Precipitation,
     bool Bloom)
 {
-    private const string LampShadowsKey = "gfx.lights.shadows";
-    private const string ContactShadowsKey = "gfx.contactshadows";
-    private const string OcclusionKey = "gfx.postfx.ao";
-    private const string OcclusionQualityKey = "gfx.postfx.ao.quality";
-    private const string OcclusionLightingKey = "gfx.postfx.ao.lighting";
-    private const string CabProbeKey = "gfx.cabprobe";
-    private const string CabProbeIntervalKey = "gfx.cabprobe.interval";
-    private const string CabProbeReflectionsKey = "gfx.cabprobe.reflections";
-    private const string ScreenReflectionsKey = "gfx.ssr";
-    private const string RayTracingKey = "gfx.raytracing";
-    private const string FogKey = "gfx.fog";
-    private const string FogQualityKey = "gfx.fog.quality";
-    private const string CloudsKey = "gfx.clouds";
-    private const string CloudShadowsKey = "gfx.clouds.shadows";
-    private const string GrassKey = "gfx.grass";
-    private const string GrassDistanceKey = "gfx.grass.distance";
-    private const string GrassFadeKey = "gfx.grass.fadedistance";
-    private const string GrassDensityKey = "gfx.grass.density";
-    private const string PrecipitationKey = "gfx.precipitation.particles";
-    private const string BloomKey = "gfx.postfx.bloom";
-
-    /// <summary>The eu07.ini keys these values live in, all of them rows of <see cref="SimulatorKeys"/>.</summary>
+    /// <summary>The eu07.ini keys these values live in; the fade of the grass follows its distance.</summary>
     public static readonly IReadOnlyList<string> Keys = new[]
     {
-        LampShadowsKey, ContactShadowsKey, OcclusionKey, OcclusionQualityKey, OcclusionLightingKey,
-        CabProbeKey, CabProbeIntervalKey, CabProbeReflectionsKey, ScreenReflectionsKey, RayTracingKey,
-        FogKey, FogQualityKey, CloudsKey, CloudShadowsKey,
-        GrassKey, GrassDistanceKey, GrassFadeKey, GrassDensityKey, PrecipitationKey, BloomKey
+        "gfx.lights.shadows", "gfx.contactshadows", "gfx.postfx.ao", "gfx.postfx.ao.quality", "gfx.postfx.ao.lighting",
+        "gfx.cabprobe", "gfx.cabprobe.interval", "gfx.cabprobe.reflections", "gfx.ssr", "gfx.raytracing",
+        "gfx.fog", "gfx.fog.quality", "gfx.clouds", "gfx.clouds.shadows",
+        "gfx.grass", "gfx.grass.distance", "gfx.grass.fadedistance", "gfx.grass.density",
+        "gfx.precipitation.particles", "gfx.postfx.bloom"
     };
 
     public static GraphicsNewRenderer Of(SimulatorSettings s) =>
-        new(WordOf(s, LampShadowsKey), WordOf(s, ContactShadowsKey), WordOf(s, OcclusionKey), WordOf(s, OcclusionQualityKey),
-            GraphicsPreset.ToggleOf(s, OcclusionLightingKey), WordOf(s, CabProbeKey), GraphicsPreset.NumberOf(s, CabProbeIntervalKey),
-            GraphicsPreset.ToggleOf(s, CabProbeReflectionsKey), WordOf(s, ScreenReflectionsKey), GraphicsPreset.ToggleOf(s, RayTracingKey),
-            WordOf(s, FogKey), WordOf(s, FogQualityKey), WordOf(s, CloudsKey), GraphicsPreset.ToggleOf(s, CloudShadowsKey),
-            GraphicsPreset.ToggleOf(s, GrassKey), GraphicsPreset.NumberOf(s, GrassDistanceKey), GraphicsPreset.NumberOf(s, GrassFadeKey),
-            GraphicsPreset.NumberOf(s, GrassDensityKey), GraphicsPreset.NumberOf(s, PrecipitationKey), GraphicsPreset.ToggleOf(s, BloomKey));
+        new(s.LightShadows, s.ContactShadows, s.AmbientOcclusion, s.AoSlices, s.AoSteps, s.AoLighting,
+            s.CabProbe, s.CabProbeInterval, s.CabProbeReflections, s.Ssr, s.RayTracing,
+            s.VolumetricFog, s.FogQuality, s.Clouds, s.CloudShadows,
+            s.Grass, s.GrassDistance, s.GrassDensity, s.PrecipitationParticles, s.Bloom);
+
+    /// <summary>This level as it lands on <paramref name="s"/>: ray tracing on Vulkan only.</summary>
+    public GraphicsNewRenderer For(SimulatorSettings s) =>
+        GraphicsRules.RayTracingAllowed(s) ? this : this with { RayTracing = false };
 
     public void ApplyTo(SimulatorSettings s)
     {
-        void Number(string key, double value) => s.Extra[key] = value.ToString(CultureInfo.InvariantCulture);
-        void Toggle(string key, bool value) => s.Extra[key] = SimulatorKey.FormatToggle(value);
-
-        s.Extra[LampShadowsKey] = LampShadows;
-        s.Extra[ContactShadowsKey] = ContactShadows;
-        s.Extra[OcclusionKey] = Occlusion;
-        s.Extra[OcclusionQualityKey] = OcclusionQuality;
-        Toggle(OcclusionLightingKey, OcclusionLighting);
-        s.Extra[CabProbeKey] = CabProbe;
-        Number(CabProbeIntervalKey, CabProbeInterval);
-        Toggle(CabProbeReflectionsKey, CabProbeReflections);
-        s.Extra[ScreenReflectionsKey] = ScreenReflections;
-        Toggle(RayTracingKey, RayTracing);
-        s.Extra[FogKey] = Fog;
-        s.Extra[FogQualityKey] = FogQuality;
-        s.Extra[CloudsKey] = Clouds;
-        Toggle(CloudShadowsKey, CloudShadows);
-        Toggle(GrassKey, Grass);
-        Number(GrassDistanceKey, GrassDistance);
-        Number(GrassFadeKey, GrassFade);
-        Number(GrassDensityKey, GrassDensity);
-        Number(PrecipitationKey, Precipitation);
-        Toggle(BloomKey, Bloom);
-    }
-
-    private static string WordOf(SimulatorSettings s, string name)
-    {
-        var key = SimulatorKeys.Named(name);
-        return key.ParseChoice(key.RawIn(s));
+        s.LightShadows = LampShadows;
+        s.ContactShadows = ContactShadows;
+        s.AmbientOcclusion = Occlusion;
+        s.AoSlices = OcclusionSlices;
+        s.AoSteps = OcclusionSteps;
+        s.AoLighting = OcclusionLighting;
+        s.CabProbe = CabProbe;
+        s.CabProbeInterval = CabProbeInterval;
+        s.CabProbeReflections = CabProbeReflections;
+        s.Ssr = ScreenReflections;
+        s.RayTracing = RayTracing && GraphicsRules.RayTracingAllowed(s);
+        s.VolumetricFog = VolumetricFog;
+        s.FogQuality = FogQuality;
+        s.Clouds = Clouds;
+        s.CloudShadows = CloudShadows;
+        s.Grass = Grass;
+        s.GrassDistance = GrassDistance;
+        s.GrassDensity = GrassDensity;
+        s.PrecipitationParticles = Precipitation;
+        s.Bloom = Bloom;
     }
 }
 
@@ -228,6 +201,8 @@ public sealed record GraphicsNewRenderer(
 /// two ends of the scale, which have <see cref="Extras"/>.
 /// </summary>
 /// <param name="NameKey">Its name's translation key.</param>
+/// <param name="CabShadowsRange">gfx.shadows.cab.range, in metres, read only by the legacy renderer.</param>
+/// <param name="AntiAliasing">Multisampling, as older simulators read it too. DLSS, once on, stays: no level does better.</param>
 /// <param name="ReflectionsRate">gfx.reflections.framerate, in updates a second.</param>
 /// <param name="DrawRange">basedrawrange, in metres. Below 2000 it changes nothing on screen: the renderer
 /// keeps at least that for signals and lights (opengl33renderer.cpp).</param>
@@ -236,13 +211,12 @@ public sealed record GraphicsNewRenderer(
 /// <param name="BufferScale">starter.bufferscale, in percent. Above the screen over High: on a 4K one
 /// Ultra is a picture of 8K, multisampled on top.</param>
 /// <param name="DrawRangeFactor">gfx.drawrange.factor.max: how far the regulator may stretch the draw range.</param>
-/// <param name="CabShadowsRange">gfx.shadows.cab.range, in metres, read only by the legacy renderer.</param>
 public sealed record GraphicsPreset(
     string NameKey,
     int TextureSize,
     int CabTextureSize,
     double Anisotropy,
-    int Multisampling,
+    AntiAliasingMode AntiAliasing,
     int DynamicLights,
     int SmokeFidelity,
     bool Shadows,
@@ -276,52 +250,52 @@ public sealed record GraphicsPreset(
     public static readonly IReadOnlyList<string> RowKeys = new[]
     {
         DrawRangeKey, DistanceFactorKey, SleeperKey, ReflectedInstancesKey, ReflectedVehiclesKey
-    }.Concat(GraphicsNewRenderer.Keys).ToList();
+    };
 
     /// <summary>The eu07.ini keys a level sets.</summary>
     public static readonly IReadOnlyList<string> Keys = new[]
     {
-        "maxtexturesize", "maxcabtexturesize", "anisotropicfiltering", "multisampling", "dynamiclights",
+        "maxtexturesize", "maxcabtexturesize", "anisotropicfiltering", "multisampling", "gfx.antialiasing", "dynamiclights",
         "gfx.smoke.fidelity", "shadows", "gfx.shadowmap.enabled", "shadowtune", "gfx.shadow.rank.cutoff",
         "gfx.envmap.enabled", "gfx.reflections.fidelity", "gfx.reflections.framerate", "gfx.extraeffects",
-        "splinefidelity", DrawRangeKey, DistanceFactorKey, "starter.bufferscale", SleeperKey,
+        "splinefidelity", DrawRangeKey, DistanceFactorKey, "starter.bufferscale", "gfx.buffer.percent", SleeperKey,
         "gfx.drawrange.factor.max", ReflectedInstancesKey, ReflectedVehiclesKey, "gfx.shadows.cab.range"
     }.Concat(GraphicsNewRenderer.Keys).ToList();
 
     /// <summary>The last resort: no shadows, no reflections, no effects, no smoke, a softer picture.</summary>
     public static readonly GraphicsPreset Minimal = new(
-        "PresetMinimal", TextureSize: 512, CabTextureSize: 512, Anisotropy: 1, Multisampling: 0,
+        "PresetMinimal", TextureSize: 512, CabTextureSize: 512, Anisotropy: 1, AntiAliasing: AntiAliasingMode.Off,
         DynamicLights: 1, SmokeFidelity: 1, Shadows: false, ShadowMap: 512, ShadowRange: 75, ShadowRank: 1,
         EnvMap: false, ReflectionsFidelity: 0, ReflectionsRate: 1 / 300.0, ExtraEffects: false,
         SplineFidelity: 1, DrawRange: 2000, DistanceFactor: 0.6, BufferScale: 70,
         SleeperDistance: 100, DrawRangeFactor: 1, ReflectedInstances: 250, ReflectedVehicles: 50, CabShadowsRange: 0,
-        NewRenderer: new GraphicsNewRenderer(LampShadows: "no", ContactShadows: "no", Occlusion: "no", OcclusionQuality: "3 4",
-            OcclusionLighting: false, CabProbe: "no", CabProbeInterval: 8, CabProbeReflections: false, ScreenReflections: "no",
-            RayTracing: false, Fog: "analytic", FogQuality: "low", Clouds: "no", CloudShadows: false, Grass: false,
-            GrassDistance: 30, GrassFade: 40, GrassDensity: 0.25, Precipitation: 16384, Bloom: false),
+        NewRenderer: new GraphicsNewRenderer(LampShadows: 0, ContactShadows: 0, Occlusion: 0, OcclusionSlices: 2, OcclusionSteps: 3,
+            OcclusionLighting: false, CabProbe: 0, CabProbeInterval: 8, CabProbeReflections: false, ScreenReflections: 0,
+            RayTracing: false, VolumetricFog: false, FogQuality: 1, Clouds: 0, CloudShadows: false, Grass: false,
+            GrassDistance: 30, GrassDensity: 0.25, Precipitation: 16384, Bloom: false),
         Extras: new GraphicsExtras(MotionBlur: false, ChromaticAberration: false, Smoke: false, PythonUpdateMs: 800));
 
     public static readonly GraphicsPreset Low = new(
-        "PresetLow", TextureSize: 1024, CabTextureSize: 1024, Anisotropy: 2, Multisampling: 0,
+        "PresetLow", TextureSize: 1024, CabTextureSize: 1024, Anisotropy: 2, AntiAliasing: AntiAliasingMode.Off,
         DynamicLights: 3, SmokeFidelity: 1, Shadows: true, ShadowMap: 1024, ShadowRange: 125, ShadowRank: 2,
         EnvMap: true, ReflectionsFidelity: 0, ReflectionsRate: 1 / 60.0, ExtraEffects: true,
         SplineFidelity: 1, DrawRange: 2000, DistanceFactor: 0.7, BufferScale: 80,
         SleeperDistance: 150, DrawRangeFactor: 1.5, ReflectedInstances: 400, ReflectedVehicles: 100, CabShadowsRange: 0,
-        NewRenderer: new GraphicsNewRenderer(LampShadows: "low", ContactShadows: "no", Occlusion: "ssao", OcclusionQuality: "3 4",
-            OcclusionLighting: false, CabProbe: "no", CabProbeInterval: 8, CabProbeReflections: false, ScreenReflections: "low",
-            RayTracing: false, Fog: "volumetric", FogQuality: "low", Clouds: "low", CloudShadows: false, Grass: true,
-            GrassDistance: 40, GrassFade: 50, GrassDensity: 0.5, Precipitation: 32768, Bloom: true));
+        NewRenderer: new GraphicsNewRenderer(LampShadows: 1, ContactShadows: 0, Occlusion: 1, OcclusionSlices: 2, OcclusionSteps: 3,
+            OcclusionLighting: false, CabProbe: 0, CabProbeInterval: 8, CabProbeReflections: false, ScreenReflections: 1,
+            RayTracing: false, VolumetricFog: true, FogQuality: 1, Clouds: 1, CloudShadows: false, Grass: true,
+            GrassDistance: 40, GrassDensity: 0.5, Precipitation: 32768, Bloom: true));
 
     public static readonly GraphicsPreset Medium = new(
-        "PresetMedium", TextureSize: 2048, CabTextureSize: 2048, Anisotropy: 4, Multisampling: 1,
+        "PresetMedium", TextureSize: 2048, CabTextureSize: 2048, Anisotropy: 4, AntiAliasing: AntiAliasingMode.Msaa2,
         DynamicLights: 5, SmokeFidelity: 2, Shadows: true, ShadowMap: 1024, ShadowRange: 175, ShadowRank: 2,
         EnvMap: true, ReflectionsFidelity: 1, ReflectionsRate: 1 / 30.0, ExtraEffects: true,
         SplineFidelity: 2, DrawRange: 2250, DistanceFactor: 0.85, BufferScale: 90,
         SleeperDistance: 200, DrawRangeFactor: 2, ReflectedInstances: 550, ReflectedVehicles: 150, CabShadowsRange: 20,
-        NewRenderer: new GraphicsNewRenderer(LampShadows: "low", ContactShadows: "no", Occlusion: "ssao", OcclusionQuality: "3 4",
-            OcclusionLighting: false, CabProbe: "low", CabProbeInterval: 8, CabProbeReflections: true, ScreenReflections: "low",
-            RayTracing: false, Fog: "volumetric", FogQuality: "low", Clouds: "low", CloudShadows: true, Grass: true,
-            GrassDistance: 50, GrassFade: 60, GrassDensity: 0.75, Precipitation: 49152, Bloom: true));
+        NewRenderer: new GraphicsNewRenderer(LampShadows: 1, ContactShadows: 0, Occlusion: 1, OcclusionSlices: 3, OcclusionSteps: 4,
+            OcclusionLighting: false, CabProbe: 1, CabProbeInterval: 8, CabProbeReflections: true, ScreenReflections: 1,
+            RayTracing: false, VolumetricFog: true, FogQuality: 1, Clouds: 1, CloudShadows: true, Grass: true,
+            GrassDistance: 50, GrassDensity: 0.75, Precipitation: 32768, Bloom: true));
 
     /// <summary>
     /// Where a player with no settings of their own starts. The simulator's own values (Globals.h),
@@ -329,27 +303,27 @@ public sealed record GraphicsPreset(
     /// with levels to go under this one.
     /// </summary>
     public static readonly GraphicsPreset High = new(
-        "PresetHigh", TextureSize: 4096, CabTextureSize: 4096, Anisotropy: 8, Multisampling: 2,
+        "PresetHigh", TextureSize: 4096, CabTextureSize: 4096, Anisotropy: 8, AntiAliasing: AntiAliasingMode.Msaa4,
         DynamicLights: 7, SmokeFidelity: 2, Shadows: true, ShadowMap: 2048, ShadowRange: 250, ShadowRank: 3,
         EnvMap: true, ReflectionsFidelity: 1, ReflectionsRate: 0.1, ExtraEffects: true,
         SplineFidelity: 2, DrawRange: 2500, DistanceFactor: 1, BufferScale: 100,
         SleeperDistance: 250, DrawRangeFactor: 3, ReflectedInstances: 750, ReflectedVehicles: 250, CabShadowsRange: 40,
-        NewRenderer: new GraphicsNewRenderer(LampShadows: "medium", ContactShadows: "no", Occlusion: "gtao", OcclusionQuality: "3 4",
-            OcclusionLighting: true, CabProbe: "medium", CabProbeInterval: 4, CabProbeReflections: true, ScreenReflections: "medium",
-            RayTracing: false, Fog: "volumetric", FogQuality: "medium", Clouds: "medium", CloudShadows: true, Grass: true,
-            GrassDistance: 60, GrassFade: 70, GrassDensity: 1, Precipitation: 65536, Bloom: true));
+        NewRenderer: new GraphicsNewRenderer(LampShadows: 2, ContactShadows: 0, Occlusion: 2, OcclusionSlices: 3, OcclusionSteps: 4,
+            OcclusionLighting: true, CabProbe: 2, CabProbeInterval: 4, CabProbeReflections: true, ScreenReflections: 2,
+            RayTracing: false, VolumetricFog: true, FogQuality: 2, Clouds: 2, CloudShadows: true, Grass: true,
+            GrassDistance: 60, GrassDensity: 1, Precipitation: 65536, Bloom: true));
 
     /// <summary>For a strong card. A map of 4096 doubles the cascades, so the range here reaches 800 m.</summary>
     public static readonly GraphicsPreset VeryHigh = new(
-        "PresetVeryHigh", TextureSize: 8192, CabTextureSize: 8192, Anisotropy: 16, Multisampling: 3,
+        "PresetVeryHigh", TextureSize: 8192, CabTextureSize: 8192, Anisotropy: 16, AntiAliasing: AntiAliasingMode.Msaa8,
         DynamicLights: 7, SmokeFidelity: 3, Shadows: true, ShadowMap: 4096, ShadowRange: 400, ShadowRank: 3,
         EnvMap: true, ReflectionsFidelity: 2, ReflectionsRate: 2, ExtraEffects: true,
         SplineFidelity: 3, DrawRange: 5000, DistanceFactor: 2, BufferScale: 150,
         SleeperDistance: 2000, DrawRangeFactor: 3, ReflectedInstances: 1500, ReflectedVehicles: 1000, CabShadowsRange: 70,
-        NewRenderer: new GraphicsNewRenderer(LampShadows: "high", ContactShadows: "medium", Occlusion: "gtao", OcclusionQuality: "4 6",
-            OcclusionLighting: true, CabProbe: "high", CabProbeInterval: 3, CabProbeReflections: true, ScreenReflections: "high",
-            RayTracing: false, Fog: "volumetric", FogQuality: "high", Clouds: "high", CloudShadows: true, Grass: true,
-            GrassDistance: 120, GrassFade: 140, GrassDensity: 1.5, Precipitation: 98304, Bloom: true));
+        NewRenderer: new GraphicsNewRenderer(LampShadows: 3, ContactShadows: 2, Occlusion: 2, OcclusionSlices: 4, OcclusionSteps: 6,
+            OcclusionLighting: true, CabProbe: 3, CabProbeInterval: 3, CabProbeReflections: true, ScreenReflections: 3,
+            RayTracing: false, VolumetricFog: true, FogQuality: 3, Clouds: 3, CloudShadows: true, Grass: true,
+            GrassDistance: 120, GrassDensity: 1.5, Precipitation: 131072, Bloom: true));
 
     /// <summary>
     /// Every value at the top of what the screen offers. Not the best picture throughout: a map
@@ -357,15 +331,15 @@ public sealed record GraphicsPreset(
     /// than at <see cref="VeryHigh"/>.
     /// </summary>
     public static readonly GraphicsPreset Ultra = new(
-        "PresetUltra", TextureSize: 8192, CabTextureSize: 8192, Anisotropy: 16, Multisampling: 3,
+        "PresetUltra", TextureSize: 8192, CabTextureSize: 8192, Anisotropy: 16, AntiAliasing: AntiAliasingMode.Msaa8,
         DynamicLights: 7, SmokeFidelity: 4, Shadows: true, ShadowMap: 8192, ShadowRange: 600, ShadowRank: 3,
         EnvMap: true, ReflectionsFidelity: 2, ReflectionsRate: 60, ExtraEffects: true,
         SplineFidelity: 4, DrawRange: 10000, DistanceFactor: 3, BufferScale: 200,
         SleeperDistance: 5000, DrawRangeFactor: 3, ReflectedInstances: 3000, ReflectedVehicles: 2000, CabShadowsRange: 100,
-        NewRenderer: new GraphicsNewRenderer(LampShadows: "high", ContactShadows: "high", Occlusion: "gtao", OcclusionQuality: "6 8",
-            OcclusionLighting: true, CabProbe: "high", CabProbeInterval: 2, CabProbeReflections: true, ScreenReflections: "high",
-            RayTracing: true, Fog: "volumetric", FogQuality: "ultra", Clouds: "ultra", CloudShadows: true, Grass: true,
-            GrassDistance: 300, GrassFade: 350, GrassDensity: 2, Precipitation: 131072, Bloom: true),
+        NewRenderer: new GraphicsNewRenderer(LampShadows: 3, ContactShadows: 3, Occlusion: 2, OcclusionSlices: 6, OcclusionSteps: 8,
+            OcclusionLighting: true, CabProbe: 3, CabProbeInterval: 2, CabProbeReflections: true, ScreenReflections: 3,
+            RayTracing: true, VolumetricFog: true, FogQuality: 4, Clouds: 4, CloudShadows: true, Grass: true,
+            GrassDistance: 300, GrassDensity: 2, Precipitation: 262144, Bloom: true),
         Extras: new GraphicsExtras(MotionBlur: true, ChromaticAberration: true, Smoke: true, PythonUpdateMs: 200),
         Top: new GraphicsTop(ShadowAngleLimit: 0.2, TargetFps: 0, ScreenWindowFps: 200, TextureRelease: 0,
                              Screens: true, ScreenMipmaps: true, CompressTextures: false, SkipDecor: false,
@@ -378,7 +352,9 @@ public sealed record GraphicsPreset(
         s.MaxTextureSize = TextureSize;
         s.MaxCabTextureSize = CabTextureSize;
         s.TextureFiltering = Anisotropy;
-        s.Multisampling = Multisampling;
+        if (!GraphicsRules.IsDlss(s.AntiAliasing))
+            s.AntiAliasing = AntiAliasing;
+        s.CabShadowsRange = CabShadowsRange;
         s.DynamicLights = DynamicLights;
         s.SmokeFidelity = SmokeFidelity;
         s.RenderShadows = Shadows;
@@ -397,7 +373,6 @@ public sealed record GraphicsPreset(
         s.DrawRangeFactor = DrawRangeFactor;
         s.Extra[ReflectedInstancesKey] = ReflectedInstances.ToString(CultureInfo.InvariantCulture);
         s.Extra[ReflectedVehiclesKey] = ReflectedVehicles.ToString(CultureInfo.InvariantCulture);
-        s.CabShadowsRange = CabShadowsRange;
         NewRenderer.ApplyTo(s);
         Extras?.ApplyTo(s);
         Top?.ApplyTo(s);
@@ -406,7 +381,7 @@ public sealed record GraphicsPreset(
     /// <summary>Whether <paramref name="s"/> is at this level throughout.</summary>
     public bool Matches(SimulatorSettings s) =>
         s.MaxTextureSize == TextureSize && s.MaxCabTextureSize == CabTextureSize &&
-        Near(s.TextureFiltering, Anisotropy) && s.Multisampling == Multisampling &&
+        Near(s.TextureFiltering, Anisotropy) && (GraphicsRules.IsDlss(s.AntiAliasing) || s.AntiAliasing == AntiAliasing) &&
         s.DynamicLights == DynamicLights && s.SmokeFidelity == SmokeFidelity &&
         s.RenderShadows == Shadows && s.ShadowMapResolution == ShadowMap &&
         s.ShadowProjectionRange == ShadowRange && s.ShadowRankCutoff == ShadowRank &&
@@ -419,7 +394,7 @@ public sealed record GraphicsPreset(
         Near(NumberOf(s, ReflectedInstancesKey), ReflectedInstances) &&
         Near(NumberOf(s, ReflectedVehiclesKey), ReflectedVehicles) &&
         s.CabShadowsRange == CabShadowsRange &&
-        GraphicsNewRenderer.Of(s) == NewRenderer &&
+        GraphicsNewRenderer.Of(s) == NewRenderer.For(s) &&
         (Extras is null || GraphicsExtras.Of(s) == Extras) &&
         (Top is null || GraphicsTop.Of(s) == Top);
 
@@ -442,7 +417,7 @@ public sealed record GraphicsPreset(
 
 /// <summary>
 /// A part of the picture with a level of its own, as its section on the screen has it. The rest
-/// of a level - the buffer, the frame pacing, the sky and the cab - goes only with the whole.
+/// of a level - the buffer, the anti-aliasing, the post-processing switches, the frame pacing, the sky and the cab - goes only with the whole.
 /// </summary>
 /// <param name="Keys">The eu07.ini keys it sets.</param>
 public sealed record GraphicsGroup(IReadOnlyList<string> Keys)
@@ -455,31 +430,42 @@ public sealed record GraphicsGroup(IReadOnlyList<string> Keys)
 
     public static readonly GraphicsGroup Textures = new(new[]
     {
-        "maxtexturesize", "maxcabtexturesize", "anisotropicfiltering", "multisampling",
+        "maxtexturesize", "maxcabtexturesize", "anisotropicfiltering",
         "compresstex", GraphicsTop.TextureReleaseKey
-    });
-
-    public static readonly GraphicsGroup Effects = new(new[]
-    {
-        "dynamiclights", "gfx.smoke.fidelity", "gfx.extraeffects", "gfx.postfx.motionblur.enabled",
-        "gfx.postfx.chromaticaberration.enabled", "gfx.smoke"
     });
 
     public static readonly GraphicsGroup Shadows = new(new[]
     {
-        "shadows", "gfx.shadowmap.enabled", "shadowtune", "gfx.shadow.rank.cutoff",
-        "gfx.shadow.angle.min", "gfx.shadows.cab.range"
+        "shadows", "gfx.shadowmap.enabled", "shadowtune", "gfx.shadow.rank.cutoff", "gfx.shadow.angle.min", "gfx.shadows.cab.range"
+    });
+
+    public static readonly GraphicsGroup Lights = new(new[]
+    {
+        "dynamiclights", "gfx.lights.shadows", "gfx.contactshadows", "gfx.postfx.ao", "gfx.postfx.ao.quality",
+        "gfx.postfx.ao.lighting", "gfx.cabprobe", "gfx.cabprobe.interval", "gfx.cabprobe.reflections"
     });
 
     public static readonly GraphicsGroup Reflections = new(new[]
     {
         "gfx.envmap.enabled", "gfx.reflections.fidelity", "gfx.reflections.framerate",
-        GraphicsPreset.ReflectedInstancesKey, GraphicsPreset.ReflectedVehiclesKey
+        GraphicsPreset.ReflectedInstancesKey, GraphicsPreset.ReflectedVehiclesKey, "gfx.ssr", "gfx.raytracing"
     });
 
-    public static readonly GraphicsGroup NewRenderer = new(GraphicsNewRenderer.Keys);
+    public static readonly GraphicsGroup Atmosphere = new(new[]
+    {
+        "gfx.fog", "gfx.fog.quality", "gfx.clouds", "gfx.clouds.shadows"
+    });
 
-    public static readonly IReadOnlyList<GraphicsGroup> All = new[] { DrawRange, Textures, Effects, Shadows, Reflections, NewRenderer };
+    public static readonly GraphicsGroup Nature = new(new[]
+    {
+        "gfx.grass", "gfx.grass.distance", "gfx.grass.fadedistance", "gfx.grass.density",
+        "gfx.smoke", "gfx.smoke.fidelity", "gfx.precipitation.particles"
+    });
+
+    public static readonly IReadOnlyList<GraphicsGroup> All = new[]
+    {
+        DrawRange, Textures, Shadows, Lights, Reflections, Atmosphere, Nature
+    };
 }
 
 /// <summary>What applying a level touched.</summary>
