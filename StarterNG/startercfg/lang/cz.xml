@@ -407,7 +407,7 @@
     <String key="Graphic">Grafika</String>
     <String key="RenderEngine">Vykreslovací engine</String>
     <String key="RenderEngineDesc">Plný funguje s každým exe. Starý, Zjednodušený a Experimentální jen se staršími, nový místo nich spustí Plný.</String>
-    <String key="REExperimentalWarning">Upozornění: experimentální renderer je ve vývoji. Může být nestabilní, nezobrazovat části scény nebo se na některých grafických kartách nespustit. Pokud se simulátor nespustí nebo vypadá špatně, vraťte se k rendereru „Plný“.</String>
+    <String key="REExperimentalWarning">Upozornění: experimentální renderer může být nestabilní, nezobrazovat části scény nebo se na některých grafických kartách nespustit. Pokud se simulátor nespustí nebo vypadá špatně, vraťte se k rendereru „Plný“.</String>
     <String key="GpuChoice">Grafická karta (Linux)</String>
     <String key="GpuDiscrete">Výkonnější (dedikovaná)</String>
     <String key="GpuSystem">Podle systému</String>

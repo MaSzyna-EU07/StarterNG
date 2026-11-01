@@ -414,7 +414,7 @@
     <String key="Graphic">Grafika</String>
     <String key="RenderEngine">Silnik renderowania</String>
     <String key="RenderEngineDesc">Pełny działa z każdym exe. Stary, Uproszczony i Eksperymentalny tylko ze starszymi exe, nowy włączy zamiast nich Pełny.</String>
-    <String key="REExperimentalWarning">Uwaga: renderer eksperymentalny jest w trakcie rozwoju. Może działać niestabilnie, nie pokazywać części obiektów albo nie uruchomić się na niektórych kartach graficznych. Gdy symulator nie startuje lub wygląda źle, wróć do renderera „Pełny”.</String>
+    <String key="REExperimentalWarning">Uwaga: renderer eksperymentalny może działać niestabilnie, nie pokazywać części obiektów albo nie uruchomić się na niektórych kartach graficznych. Gdy symulator nie startuje lub wygląda źle, wróć do renderera „Pełny”.</String>
     <String key="GpuChoice">Karta graficzna (Linux)</String>
     <String key="GpuDiscrete">Wydajniejsza (dedykowana)</String>
     <String key="GpuSystem">Jak system</String>

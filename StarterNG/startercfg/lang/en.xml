@@ -414,7 +414,7 @@
     <String key="Graphic">Graphics</String>
     <String key="RenderEngine">Render engine</String>
     <String key="RenderEngineDesc">Full works with every exe. Old, Simplified and Experimental only with older ones; a new exe starts Full instead.</String>
-    <String key="REExperimentalWarning">Note: the experimental renderer is still being developed. It may be unstable, miss parts of the scene or not start on some graphics cards. If the simulator does not start or looks wrong, go back to the “Full” renderer.</String>
+    <String key="REExperimentalWarning">Note: the experimental renderer may be unstable, miss parts of the scene or not start on some graphics cards. If the simulator does not start or looks wrong, go back to the “Full” renderer.</String>
     <String key="GpuChoice">Graphics card (Linux)</String>
     <String key="GpuDiscrete">Faster (discrete)</String>
     <String key="GpuSystem">As the system decides</String>

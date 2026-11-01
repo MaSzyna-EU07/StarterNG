@@ -407,7 +407,7 @@
     <String key="Graphic">Grafika</String>
     <String key="RenderEngine">Megjelenítő motor</String>
     <String key="RenderEngineDesc">A Teljes minden exe-vel működik. A Régi, az Egyszerűsített és a Kísérleti csak a régebbiekkel, az új helyettük a Teljeset indítja.</String>
-    <String key="REExperimentalWarning">Figyelem: a kísérleti renderelő még fejlesztés alatt áll. Instabil lehet, a jelenet egyes részei hiányozhatnak, vagy egyes videokártyákon el sem indul. Ha a szimulátor nem indul el vagy hibásan jelenik meg, válts vissza a „Teljes” renderelőre.</String>
+    <String key="REExperimentalWarning">Figyelem: a kísérleti renderelő instabil lehet, a jelenet egyes részei hiányozhatnak, vagy egyes videokártyákon el sem indul. Ha a szimulátor nem indul el vagy hibásan jelenik meg, válts vissza a „Teljes” renderelőre.</String>
     <String key="GpuChoice">Videokártya (Linux)</String>
     <String key="GpuDiscrete">Erősebb (dedikált)</String>
     <String key="GpuSystem">Ahogy a rendszer dönt</String>
