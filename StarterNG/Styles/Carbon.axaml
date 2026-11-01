@@ -318,6 +318,7 @@
         <Setter Property="MinHeight" Value="25" />
         <Setter Property="FontSize" Value="12" />
         <Setter Property="Padding" Value="10,2" />
+        <Setter Property="VerticalContentAlignment" Value="Center" />
         <Setter Property="CornerRadius" Value="2" />
     </Style>
     <!-- Checklist rows only sit tighter; the size comes from the theme above. -->
