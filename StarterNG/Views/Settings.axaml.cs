@@ -516,7 +516,7 @@ public partial class Settings : UserControl, ISettingsCapture
                  {
                      (DrawRangeSection, GraphicsGroup.DrawRange), (TexturesSection, GraphicsGroup.Textures),
                      (EffectsSection, GraphicsGroup.Effects), (ShadowsSection, GraphicsGroup.Shadows),
-                     (ReflectionsSection, GraphicsGroup.Reflections)
+                     (ReflectionsSection, GraphicsGroup.Reflections), (NewRendererSection, GraphicsGroup.NewRenderer)
                  })
         {
             var levels = new ComboBox();
@@ -1098,6 +1098,7 @@ public partial class Settings : UserControl, ISettingsCapture
         IdleReason.NeedsNetworkServer => App.Loc["IdleNeedsNetworkServer"],
         IdleReason.NeedsFrameRateTarget => App.Loc["IdleNeedsFrameRateTarget"],
         IdleReason.MonitorModeInstead => App.Loc["IdleMonitorMode"],
+        IdleReason.VulkanOnly => App.Loc["IdleVulkanOnly"],
         _ => null
     };
 

@@ -164,6 +164,8 @@ public sealed class SettingsStore
             else
                 _config.Set(change.Key, change.After);
         }
+        // Each sets the mode as the simulator reads it, so this one has to come later to count.
+        _config.MoveAfter("gfx.antialiasing", "multisampling");
         _synced = Render(Settings);
 
         try

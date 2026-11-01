@@ -191,6 +191,7 @@
                                                 <ComboBoxItem Content="{Binding [REOld], Source={x:Static starterNg:App.Loc}}" />
                                                 <ComboBoxItem Content="{Binding [RESimp], Source={x:Static starterNg:App.Loc}}" />
                                                 <ComboBoxItem Content="{Binding [REExperimental], Source={x:Static starterNg:App.Loc}}" />
+                                                <ComboBoxItem Content="{Binding [REVulkan], Source={x:Static starterNg:App.Loc}}" />
                                             </ComboBox>
                                             <TextBlock x:Name="RenderEngineWarning" IsVisible="False" TextWrapping="Wrap"
                                                        Foreground="{StaticResource CarbonAccentBright}"
@@ -228,7 +229,7 @@
                                     <ctl:SettingRow ConfigKey="starter.bufferscale" Label="{Binding [BufforResolution], Source={x:Static starterNg:App.Loc}}"
                                                     Description="{Binding [BufforResolutionDesc], Source={x:Static starterNg:App.Loc}}"
                                                     ValueText="{Binding #bufferScale.Value, StringFormat='{}{0:0}%'}">
-                                        <Slider Name="bufferScale" Minimum="50" Maximum="200" TickFrequency="1"
+                                        <Slider Name="bufferScale" Minimum="25" Maximum="200" TickFrequency="1"
                                                 IsSnapToTickEnabled="True" Value="100" />
                                     </ctl:SettingRow>
                                     <ctl:SettingRow ConfigKey="fieldofview" Label="{Binding [FieldOfView], Source={x:Static starterNg:App.Loc}}"
@@ -423,6 +424,41 @@
                                         <ctl:KeySlot Key="gfx.reflections.range_instances" />
                                         <ctl:KeySlot Key="gfx.reflections.range_vehicles" />
                                     </StackPanel>
+                                </StackPanel>
+                            </ctl:SettingsSection>
+
+                            <ctl:SettingsSection x:Name="NewRendererSection" Header="{Binding [GfxColNewRenderer], Source={x:Static starterNg:App.Loc}}">
+                                <StackPanel>
+                                    <ctl:KeySlot Key="gfx.antialiasing" />
+                                    <ctl:KeySlot Key="gfx.dlss.preset" />
+                                    <ctl:KeySlot Key="gfx.framegeneration" />
+                                    <ctl:KeySlot Key="gfx.reflex" />
+                                    <ctl:KeySlot Key="gfx.lights.clustered" />
+                                    <ctl:KeySlot Key="gfx.lights.shadows" />
+                                    <ctl:KeySlot Key="gfx.contactshadows" />
+                                    <ctl:KeySlot Key="gfx.shadow.sdsm" />
+                                    <ctl:KeySlot Key="gfx.postfx.ao" />
+                                    <ctl:KeySlot Key="gfx.postfx.ao.quality" />
+                                    <ctl:KeySlot Key="gfx.postfx.ao.lighting" />
+                                    <ctl:KeySlot Key="gfx.ssr" />
+                                    <ctl:KeySlot Key="gfx.raytracing" />
+                                    <ctl:KeySlot Key="gfx.raytracing.range" />
+                                    <ctl:KeySlot Key="gfx.cabprobe" />
+                                    <ctl:KeySlot Key="gfx.cabprobe.interval" />
+                                    <ctl:KeySlot Key="gfx.cabprobe.reflections" />
+                                    <ctl:KeySlot Key="gfx.cabprobe.bounce" />
+                                    <ctl:KeySlot Key="gfx.fog" />
+                                    <ctl:KeySlot Key="gfx.fog.quality" />
+                                    <ctl:KeySlot Key="gfx.clouds" />
+                                    <ctl:KeySlot Key="gfx.clouds.shadows" />
+                                    <ctl:KeySlot Key="gfx.precipitation.particles" />
+                                    <ctl:KeySlot Key="gfx.grass" />
+                                    <ctl:KeySlot Key="gfx.grass.distance" />
+                                    <ctl:KeySlot Key="gfx.grass.fadedistance" />
+                                    <ctl:KeySlot Key="gfx.grass.density" />
+                                    <ctl:KeySlot Key="gfx.postfx.bloom" />
+                                    <ctl:KeySlot Key="gfx.postfx.autoexposure" />
+                                    <ctl:KeySlot Key="gfx.vulkan.device" />
                                 </StackPanel>
                             </ctl:SettingsSection>
 

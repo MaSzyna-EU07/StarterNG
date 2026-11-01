@@ -161,6 +161,21 @@ public sealed class ConfigFile
         Reindex();
     }
 
+    /// <summary>
+    /// Puts the line of <paramref name="key"/> right below that of <paramref name="anchor"/> when
+    /// it is above it, for keys of which the simulator, reading top down, heeds the later.
+    /// </summary>
+    public void MoveAfter(string key, string anchor)
+    {
+        if (!_index.TryGetValue(key, out int from) || !_index.TryGetValue(anchor, out int to) || from > to)
+            return;
+
+        string line = _lines[from];
+        _lines.RemoveAt(from);
+        _lines.Insert(to, line);
+        Reindex();
+    }
+
     /// <summary>Comments out every line setting the key: the last one alone would bring the one before it back.</summary>
     public void Remove(string key)
     {

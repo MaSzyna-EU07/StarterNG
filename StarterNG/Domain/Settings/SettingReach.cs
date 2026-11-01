@@ -17,7 +17,8 @@ public enum IdleReason
     /// <summary>The draw range is only stretched by the frame rate regulator, which is off.</summary>
     NeedsFrameRateTarget,
     /// <summary>fullscreenwindowed takes the monitor's own mode instead.</summary>
-    MonitorModeInstead
+    MonitorModeInstead,
+    VulkanOnly
 }
 
 /// <summary>What about the simulator to be started decides which keys it heeds.</summary>
@@ -71,6 +72,11 @@ public static class SettingReach
         "scalespeculars", "gfx.drawrange.factor.max"
     };
 
+    private static readonly HashSet<string> VulkanRendererOnly = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "gfx.dlss.preset", "gfx.framegeneration", "gfx.reflex", "gfx.raytracing", "gfx.raytracing.range", "gfx.vulkan.device"
+    };
+
     // application.cpp: fullscreenwindowed takes its size from the monitor and always
     // goes full screen. "width, height" is how the settings screen names that row.
     private static readonly HashSet<string> OverriddenByMonitorMode = new(StringComparer.OrdinalIgnoreCase)
@@ -95,6 +101,8 @@ public static class SettingReach
             return IdleReason.ModernRendererOnly;
         if (OpenGlRenderersOnly.Contains(key) && renderer == RendererKind.Experimental)
             return IdleReason.OpenGlRenderersOnly;
+        if (VulkanRendererOnly.Contains(key) && !IsVulkan(target.Renderer))
+            return IdleReason.VulkanOnly;
 
         // on_focus_change pauses only a simulator that serves the network.
         if (string.Equals(key, "inactivepause", StringComparison.OrdinalIgnoreCase) && !target.NetworkServer)
@@ -112,11 +120,13 @@ public static class SettingReach
     private static bool DrawRangeRegulated(SimulatorTarget target) =>
         target.FpsAverage != 0 || (target.TargetFps ?? 0) != 0;
 
-    /// <summary>"full" and "default" are the modern renderer, "experimental" its own; every other word the legacy one.</summary>
+    /// <summary>"full", its other names and the Vulkan renderer are the modern kind, "experimental" its own; every other word the legacy one.</summary>
     public static RendererKind KindOf(string renderer) => renderer.ToLowerInvariant() switch
     {
-        "full" or "default" => RendererKind.Modern,
+        "full" or "default" or "opengl" or "gl46" or "vulkan" or "vulkan14" => RendererKind.Modern,
         "experimental" => RendererKind.Experimental,
         _ => RendererKind.Legacy
     };
+
+    private static bool IsVulkan(string renderer) => renderer.ToLowerInvariant() is "vulkan" or "vulkan14";
 }

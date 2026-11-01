@@ -18,6 +18,31 @@ public class ConfigFileTests
     }
 
     [Fact]
+    public void A_line_above_another_moves_right_below_it()
+    {
+        var config = ConfigFile.Parse("gfx.antialiasing taa\nwidth 800\nmultisampling 2\nheight 600\n");
+
+        config.MoveAfter("gfx.antialiasing", "multisampling");
+
+        Assert.Equal(new[] { "width 800", "multisampling 2", "gfx.antialiasing taa", "height 600", "" }, Lines(config));
+        Assert.Equal("taa", config.GetRaw("gfx.antialiasing"));
+        Assert.Equal("600", config.GetRaw("height"));
+    }
+
+    [Theory]
+    [InlineData("multisampling 2\nwidth 800\ngfx.antialiasing taa\n")]
+    [InlineData("multisampling 2\n")]
+    [InlineData("gfx.antialiasing taa\n")]
+    public void A_line_below_or_alone_stays_where_it_is(string text)
+    {
+        var config = ConfigFile.Parse(text);
+
+        config.MoveAfter("gfx.antialiasing", "multisampling");
+
+        Assert.Equal(ConfigFile.Parse(text).ToText(), config.ToText());
+    }
+
+    [Fact]
     public void Removing_a_key_comments_every_line_that_sets_it()
     {
         var config = ConfigFile.Parse("width 800\nheight 600\nwidth 1024\nWIDTH 1920\n");

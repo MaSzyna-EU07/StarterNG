@@ -157,16 +157,19 @@ public sealed class SimulatorSettings
     /// <summary>
     /// The gfxrenderer words the simulator tells apart (application.cpp): every
     /// other word - the "simpleshader" and "off" older starters offered among them -
-    /// gets the legacy renderer.
+    /// gets the legacy renderer. A simulator with the OpenGL 4.6 and Vulkan 1.4
+    /// renderers runs everything but "vulkan" as the first, and "vulkan" too when
+    /// it was built without it or the card cannot run it.
     /// </summary>
-    public static readonly string[] RenderEngines = { "full", "legacy", "simple", "experimental" };
+    public static readonly string[] RenderEngines = { "full", "legacy", "simple", "experimental", "vulkan" };
 
     /// <summary>Where <paramref name="word"/> stands among <see cref="RenderEngines"/>, as the simulator reads it.</summary>
     public static int RenderEngineOf(string word) => word.Trim().ToLowerInvariant() switch
     {
-        "full" or "default" => 0,
+        "full" or "default" or "opengl" or "gl46" => 0,
         "simple" => 2,
         "experimental" => 3,
+        "vulkan" or "vulkan14" => 4,
         _ => 1
     };
 

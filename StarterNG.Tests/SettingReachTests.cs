@@ -73,6 +73,32 @@ public class SettingReachTests
     }
 
     [Theory]
+    [InlineData("vulkan", IdleReason.None)]
+    [InlineData("vulkan14", IdleReason.None)]
+    [InlineData("full", IdleReason.VulkanOnly)]
+    [InlineData("gl46", IdleReason.VulkanOnly)]
+    [InlineData("legacy", IdleReason.VulkanOnly)]
+    public void What_only_vulkan_reads_follows_the_renderer(string renderer, IdleReason expected)
+    {
+        Assert.Equal(expected, SettingReach.Why("gfx.dlss.preset", Linux(renderer)));
+        Assert.Equal(expected, SettingReach.Why("gfx.framegeneration", Linux(renderer)));
+        Assert.Equal(expected, SettingReach.Why("gfx.raytracing", Linux(renderer)));
+        // Both renderers of the new simulator read this one.
+        Assert.Equal(IdleReason.None, SettingReach.Why("gfx.postfx.ao", Linux(renderer)));
+    }
+
+    [Theory]
+    [InlineData("vulkan")]
+    [InlineData("vulkan14")]
+    [InlineData("opengl")]
+    [InlineData("gl46")]
+    public void The_new_simulators_renderers_read_what_the_full_one_does(string renderer)
+    {
+        Assert.Equal(IdleReason.None, SettingReach.Why("gfx.envmap.enabled", Linux(renderer)));
+        Assert.Equal(IdleReason.None, SettingReach.Why("multisampling", Linux(renderer)));
+    }
+
+    [Theory]
     [InlineData("full", IdleReason.None)]
     [InlineData("legacy", IdleReason.None)]
     [InlineData("experimental", IdleReason.OpenGlRenderersOnly)]

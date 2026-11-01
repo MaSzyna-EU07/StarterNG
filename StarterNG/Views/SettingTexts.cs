@@ -103,6 +103,22 @@ internal static class SettingTexts
         Add("Ini." + GraphicsPreset.ReflectedVehiclesKey, Whole(p.ReflectedVehicles) + " m");
         Add("CabShadowsRange", p.CabShadowsRange + " m");
 
+        var renderer = p.NewRenderer;
+        string Word(string word) => App.Loc[SimulatorKey.WordKey(word)];
+        lines.Add(App.Loc["GfxColNewRenderer"] + ":");
+        Add("Ini.gfx.lights.shadows", Word(renderer.LampShadows));
+        Add("Ini.gfx.contactshadows", Word(renderer.ContactShadows));
+        Add("Ini.gfx.postfx.ao", Word(renderer.Occlusion));
+        Add("Ini.gfx.postfx.ao.quality", Word(renderer.OcclusionQuality));
+        Add("Ini.gfx.cabprobe", Word(renderer.CabProbe));
+        Add("Ini.gfx.ssr", Word(renderer.ScreenReflections));
+        Add("Ini.gfx.raytracing", YesNo(renderer.RayTracing));
+        Add("Ini.gfx.fog", Word(renderer.Fog));
+        Add("Ini.gfx.fog.quality", Word(renderer.FogQuality));
+        Add("Ini.gfx.clouds", Word(renderer.Clouds));
+        Add("Ini.gfx.grass", renderer.Grass ? Whole(renderer.GrassDistance) + " m" : App.Loc["No"]);
+        Add("Ini.gfx.postfx.bloom", YesNo(renderer.Bloom));
+
         if (p.Extras is { } extras)
         {
             Add("MotionBlur", YesNo(extras.MotionBlur));

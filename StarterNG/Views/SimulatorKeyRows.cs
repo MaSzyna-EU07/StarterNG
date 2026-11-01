@@ -77,6 +77,7 @@ internal sealed class SimulatorKeyRows
                 TickFrequency = key.Step,
                 IsSnapToTickEnabled = true
             },
+            SimulatorKeyKind.Choice => ChoiceBox(key),
             _ => new TextBox { MinWidth = 200 }
         };
 
@@ -102,9 +103,21 @@ internal sealed class SimulatorKeyRows
             case TextBox text:
                 text.TextChanged += (_, _) => OnEdited(row);
                 break;
+            case ComboBox box:
+                box.SelectionChanged += (_, _) => OnEdited(row);
+                break;
         }
 
         return setting;
+    }
+
+    private static ComboBox ChoiceBox(SimulatorKey key)
+    {
+        var box = new ComboBox();
+        box.Classes.Add("Localized");
+        foreach (string word in key.Words ?? Array.Empty<string>())
+            box.Items.Add(new ComboBoxItem { Tag = word });
+        return box;
     }
 
     /// <summary>
@@ -158,6 +171,11 @@ internal sealed class SimulatorKeyRows
                 case TextBox text:
                     row.Setting.Label = label;
                     text.PlaceholderText = App.Loc["IniDefault"];
+                    break;
+                case ComboBox choice:
+                    row.Setting.Label = label;
+                    foreach (var item in choice.Items.OfType<ComboBoxItem>())
+                        item.Content = App.Loc[SimulatorKey.WordKey(item.Tag as string ?? string.Empty)];
                     break;
                 default:
                     row.Setting.Label = label;
@@ -224,6 +242,10 @@ internal sealed class SimulatorKeyRows
             case TextBox text:
                 text.Text = raw.Trim();
                 break;
+            case ComboBox choice:
+                string word = row.Key.ParseChoice(raw);
+                choice.SelectedItem = choice.Items.OfType<ComboBoxItem>().FirstOrDefault(item => item.Tag as string == word);
+                break;
         }
     }
 
@@ -232,6 +254,7 @@ internal sealed class SimulatorKeyRows
         CheckBox box => SimulatorKey.FormatToggle(box.IsChecked == true),
         Slider slider => row.Key.FormatNumber(slider.Value),
         TextBox text => (text.Text ?? string.Empty).Trim(),
+        ComboBox choice => (choice.SelectedItem as ComboBoxItem)?.Tag as string ?? row.Key.Default,
         _ => string.Empty
     };
 

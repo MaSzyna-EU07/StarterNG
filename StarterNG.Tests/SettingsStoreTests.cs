@@ -858,6 +858,9 @@ public class SettingsStoreTests
     [InlineData("default")]
     [InlineData("simpleshader")]
     [InlineData("off")]
+    [InlineData("opengl")]
+    [InlineData("gl46")]
+    [InlineData("vulkan14")]
     public void A_renderer_word_the_simulator_reads_as_another_stays_until_changed(string word)
     {
         var installation = WithHome(new InMemoryFileSystem().WithFile(UserIni, $"gfxrenderer {word}\n"));
@@ -873,6 +876,7 @@ public class SettingsStoreTests
     [InlineData(1, "legacy")]
     [InlineData(2, "simple")]
     [InlineData(3, "experimental")]
+    [InlineData(4, "vulkan")]
     public void A_chosen_renderer_is_saved_as_the_simulator_reads_it(int engine, string saved)
     {
         // application.cpp knows full (or default), experimental and simple; every
@@ -886,6 +890,92 @@ public class SettingsStoreTests
         installation.SettingsStore.Save();
 
         Assert.Contains($"gfxrenderer {saved}\n", SavedLines(installation));
+    }
+
+    [Theory]
+    [InlineData("full", 0)]
+    [InlineData("gl46", 0)]
+    [InlineData("opengl", 0)]
+    [InlineData("vulkan", 4)]
+    [InlineData("VULKAN14", 4)]
+    [InlineData("simpleshader", 1)]
+    public void A_renderer_word_stands_where_the_simulator_reads_it(string word, int engine)
+    {
+        Assert.Equal(engine, SimulatorSettings.RenderEngineOf(word));
+    }
+
+    [Fact]
+    public void The_buffer_is_written_for_old_and_new_simulators()
+    {
+        var installation = WithHome(new InMemoryFileSystem().WithFile(UserIni, "width 1000\nheight 500\n"));
+        installation.SettingsStore.Load();
+        installation.SettingsStore.Settings.BufferScalePercent = 50;
+
+        installation.SettingsStore.Save();
+
+        string saved = SavedLines(installation);
+        Assert.Contains("gfx.buffer.percent 50\n", saved);
+        Assert.Contains("gfx.framebuffer.width 500\n", saved);
+        Assert.Contains("gfx.framebuffer.height 250\n", saved);
+    }
+
+    [Theory]
+    [InlineData("gfx.buffer.percent 0.5\n", 50)]
+    [InlineData("gfx.buffer.percent 75\n", 75)]
+    [InlineData("gfx.buffer.percent 10\n", 25)]
+    [InlineData("gfx.buffer.percent 300\n", 200)]
+    [InlineData("starter.bufferscale 60\n", 60)]
+    [InlineData("starter.bufferscale 60\ngfx.buffer.percent 80\n", 80)]
+    public void The_buffer_is_read_from_the_key_the_new_simulator_goes_by(string ini, int percent)
+    {
+        var installation = WithHome(new InMemoryFileSystem().WithFile(UserIni, ini));
+
+        installation.SettingsStore.Load();
+
+        Assert.Equal(percent, installation.SettingsStore.Settings.BufferScalePercent);
+    }
+
+    [Fact]
+    public void Anti_aliasing_is_saved_below_multisampling_for_the_later_line_to_count()
+    {
+        var installation = WithHome(new InMemoryFileSystem().WithFile(UserIni, "gfx.antialiasing taa\nwidth 800\nmultisampling 2\n"));
+        installation.SettingsStore.Load();
+
+        installation.SettingsStore.Save();
+
+        string saved = SavedLines(installation);
+        Assert.True(saved.IndexOf("multisampling ", StringComparison.Ordinal) < saved.IndexOf("gfx.antialiasing taa", StringComparison.Ordinal), saved);
+    }
+
+    [Fact]
+    public void Anti_aliasing_left_to_multisampling_goes_from_the_file()
+    {
+        var installation = WithHome(new InMemoryFileSystem().WithFile(UserIni, "multisampling 2\ngfx.antialiasing taa\n"));
+        installation.SettingsStore.Load();
+
+        installation.SettingsStore.Settings.Extra["gfx.antialiasing"] = "";
+        installation.SettingsStore.Save();
+
+        Assert.DoesNotContain("\ngfx.antialiasing", SavedLines(installation));
+    }
+
+    [Theory]
+    [InlineData("TAA", "taa")]
+    [InlineData("  dlaa ", "dlaa")]
+    [InlineData("", "")]
+    [InlineData("fxaa", "")]
+    public void A_choice_reads_the_words_it_offers_and_else_the_default(string raw, string word)
+    {
+        Assert.Equal(word, SimulatorKeys.Named("gfx.antialiasing").ParseChoice(raw));
+    }
+
+    [Theory]
+    [InlineData("4 6", "4 6")]
+    [InlineData("4   6", "4 6")]
+    [InlineData("5 5", "3 4")]
+    public void A_choice_of_two_numbers_is_one_word(string raw, string word)
+    {
+        Assert.Equal(word, SimulatorKeys.Named("gfx.postfx.ao.quality").ParseChoice(raw));
     }
 
     [Fact]

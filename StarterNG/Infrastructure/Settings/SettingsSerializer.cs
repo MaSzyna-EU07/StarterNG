@@ -69,7 +69,7 @@ public sealed class SettingsSerializer
         s.RenderEngine = SimulatorSettings.RenderEngineOf(c.GetString("gfxrenderer", "full"));
         s.Width = c.GetInt("width", 1280);
         s.Height = c.GetInt("height", 720);
-        s.BufferScalePercent = Clamp(c.GetInt("starter.bufferscale", 100), 50, 200);
+        s.BufferScalePercent = ReadBufferScale(c);
         s.MaxTextureSize = c.GetInt("maxtexturesize", 4096);
         s.MaxCabTextureSize = c.GetInt("maxcabtexturesize", 4096);
         s.TextureFiltering = Math.Max(1, c.GetDouble("anisotropicfiltering", 8));
@@ -246,8 +246,10 @@ public sealed class SettingsSerializer
         c.SetInt("starter.bufferscale", s.BufferScalePercent);
         int fbw = (int)Math.Round(s.Width * s.BufferScalePercent / 100.0);
         int fbh = (int)Math.Round(s.Height * s.BufferScalePercent / 100.0);
+        // The size for the simulators before gfx.buffer.percent, which pass that one over and the other way round.
         c.SetInt("gfx.framebuffer.width", fbw);
         c.SetInt("gfx.framebuffer.height", fbh);
+        c.SetInt("gfx.buffer.percent", s.BufferScalePercent);
         c.SetInt("maxtexturesize", s.MaxTextureSize);
         c.SetInt("maxcabtexturesize", s.MaxCabTextureSize);
         c.SetDouble("anisotropicfiltering", s.TextureFiltering);
@@ -332,6 +334,16 @@ public sealed class SettingsSerializer
         foreach (var key in SimulatorKeys.All)
             if (s.Extra.TryGetValue(key.Key, out string? value) && !string.IsNullOrWhiteSpace(value))
                 c.Set(key.Key, value.Trim());
+    }
+
+    // What the simulator goes by: up to 4 a part of the window, above it percents.
+    private static int ReadBufferScale(ConfigFile c)
+    {
+        if (!c.Has("gfx.buffer.percent"))
+            return Clamp(c.GetInt("starter.bufferscale", 100), 25, 200);
+
+        double value = c.GetDouble("gfx.buffer.percent", 100);
+        return Clamp((int)Math.Round(value > 4 ? value : value * 100), 25, 200);
     }
 
     private static int Clamp(int v, int lo, int hi) => v < lo ? lo : (v > hi ? hi : v);
