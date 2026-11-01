@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.Linq;
 using System.Text;
 
 namespace StarterNG.Classes;
@@ -11,6 +12,12 @@ public sealed class ConfigFile
 
     private readonly Dictionary<string, int> _index =
         new(StringComparer.OrdinalIgnoreCase);
+
+    // The simulator stops reading at this word (Globals.cpp), whatever its case.
+    private const string EndKey = "endconfig";
+
+    // Its first line, or -1 when the file runs to its end.
+    private int _end = -1;
 
     public static ConfigFile Parse(string text)
     {
@@ -24,13 +31,43 @@ public sealed class ConfigFile
 
     private void AddLine(string raw)
     {
-        int idx = _lines.Count;
         _lines.Add(raw);
-        if (TryParseKey(raw, out string key))
-            _index[key] = idx;
+        IndexLine(_lines.Count - 1);
+    }
+
+    private void IndexLine(int line)
+    {
+        if (!TryParseKey(_lines[line], out string key))
+            return;
+
+        if (_end < 0 && key.Equals(EndKey, StringComparison.OrdinalIgnoreCase))
+            _end = line;
+
+        // Of a key on both sides of the end, the line the simulator reads counts.
+        if (_end < 0 || line == _end || !_index.TryGetValue(key, out int seen) || seen > _end)
+            _index[key] = line;
+    }
+
+    private void Reindex()
+    {
+        _index.Clear();
+        _end = -1;
+        for (int line = 0; line < _lines.Count; line++)
+            IndexLine(line);
     }
 
     public bool Has(string key) => _index.ContainsKey(key);
+
+    /// <summary>Whether the line setting the key is one the simulator never gets to.</summary>
+    public bool IsPastEnd(string key) =>
+        _end >= 0 && _index.TryGetValue(key, out int line) && line > _end;
+
+    /// <summary>Every key the file sets, in the order of its lines, with its value.</summary>
+    public IEnumerable<KeyValuePair<string, string>> Entries()
+    {
+        foreach (var (key, _) in _index.OrderBy(pair => pair.Value))
+            yield return new KeyValuePair<string, string>(key, GetRaw(key) ?? string.Empty);
+    }
 
     public string? GetRaw(string key)
     {
@@ -83,35 +120,61 @@ public sealed class ConfigFile
         if (_index.TryGetValue(key, out int i))
         {
             SplitLine(_lines[i], out string indent, out _, out _, out string comment);
-            var sb = new StringBuilder();
-            sb.Append(indent).Append(key);
-            if (value.Length > 0)
-                sb.Append(' ').Append(value);
-            if (comment.Length > 0)
-                sb.Append('\t').Append(comment);
-            _lines[i] = sb.ToString();
+            string line = Line(indent, key, value, comment);
+
+            if (i > _end && _end >= 0)
+            {
+                _lines.RemoveAt(i);
+                InsertBeforeEnd(line);
+            }
+            else
+            {
+                _lines[i] = line;
+            }
+        }
+        else if (_end >= 0)
+        {
+            InsertBeforeEnd(Line("", key, value, ""));
         }
         else
         {
             int idx = _lines.Count;
-            _lines.Add(value.Length > 0 ? $"{key} {value}" : key);
+            _lines.Add(Line("", key, value, ""));
             _index[key] = idx;
         }
     }
 
-    public void Remove(string key)
+    private static string Line(string indent, string key, string value, string comment)
     {
-        if (!_index.TryGetValue(key, out int i))
-            return;
-
-        SplitLine(_lines[i], out string indent, out _, out string value, out string comment);
         var sb = new StringBuilder();
-        sb.Append(indent).Append("// ").Append(key);
+        sb.Append(indent).Append(key);
         if (value.Length > 0)
             sb.Append(' ').Append(value);
         if (comment.Length > 0)
             sb.Append('\t').Append(comment);
-        _lines[i] = sb.ToString();
+        return sb.ToString();
+    }
+
+    private void InsertBeforeEnd(string line)
+    {
+        _lines.Insert(_end, line);
+        Reindex();
+    }
+
+    /// <summary>Comments out every line setting the key: the last one alone would bring the one before it back.</summary>
+    public void Remove(string key)
+    {
+        if (!_index.ContainsKey(key))
+            return;
+
+        for (int i = 0; i < _lines.Count; i++)
+        {
+            SplitLine(_lines[i], out string indent, out string found, out string value, out string comment);
+            if (!found.Equals(key, StringComparison.OrdinalIgnoreCase))
+                continue;
+
+            _lines[i] = Line(indent + "// ", found, value, comment);
+        }
 
         _index.Remove(key);
     }
@@ -133,7 +196,7 @@ public sealed class ConfigFile
     private static void SplitLine(string raw, out string indent, out string key,
         out string value, out string comment)
     {
-        indent = key = value = comment = string.Empty;
+        key = value = comment = string.Empty;
 
         int start = 0;
         while (start < raw.Length && char.IsWhiteSpace(raw[start]))
