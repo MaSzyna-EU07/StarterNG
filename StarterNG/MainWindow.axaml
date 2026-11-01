@@ -101,20 +101,20 @@
                     TabIndex="9"
                     Click="StartButton_OnClick"
                     Content="{Binding [Start], Source={x:Static starterNg:App.Loc}}" />
-            <Button Name="startMoreButton" Grid.Column="1" Classes="Start" Width="42" Height="42"
+            <Button Name="startMoreButton" Grid.Column="1" Classes="Start" Width="36" Height="42"
                     TabIndex="10" Cursor="Hand"
                     Click="StartMoreButton_OnClick"
                     ToolTip.Tip="{Binding [StartMore], Source={x:Static starterNg:App.Loc}}">
-                <materialIcons:MaterialIcon Kind="ChevronUp" Width="22" Height="22" />
+                <materialIcons:MaterialIcon Kind="ChevronUp" Width="20" Height="20" />
             </Button>
-            <Button Name="startEditorButton" Grid.Column="2" Classes="Flat" Height="42" Padding="14,0" Margin="4,0,0,0"
+            <Button Name="startEditorButton" Grid.Column="2" Classes="Flat" Height="42" Padding="14,0" Margin="12,0,0,0"
                     TabIndex="11" Cursor="Hand" VerticalContentAlignment="Center"
                     Click="StartEditorButton_OnClick" />
-            <Button Name="startEditorMoreButton" Grid.Column="3" Classes="Flat" Width="30" Height="42" Padding="0"
+            <Button Name="startEditorMoreButton" Grid.Column="3" Classes="Flat" Width="36" Height="42" Padding="0"
                     TabIndex="12" Cursor="Hand" HorizontalContentAlignment="Center" VerticalContentAlignment="Center"
                     Click="StartEditorMoreButton_OnClick"
                     ToolTip.Tip="{Binding [StartEditorWizard], Source={x:Static starterNg:App.Loc}}">
-                <materialIcons:MaterialIcon Kind="ChevronUp" Width="18" Height="18" />
+                <materialIcons:MaterialIcon Kind="ChevronUp" Width="20" Height="20" />
             </Button>
         </Grid>
 
