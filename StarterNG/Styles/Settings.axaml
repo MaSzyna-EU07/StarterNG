@@ -11,7 +11,7 @@
             <Setter Property="HorizontalAlignment" Value="Stretch" />
             <Setter Property="Template">
                 <ControlTemplate>
-                    <Grid RowDefinitions="Auto,Auto">
+                    <Grid RowDefinitions="Auto,Auto,Auto">
                         <Grid.ColumnDefinitions>
                             <!-- Every row is its own Grid, so the label column only
                                  lines up across rows when a shared-size scope makes
@@ -79,6 +79,18 @@
                                    TextWrapping="Wrap"
                                    Margin="0,3,0,0" />
 
+                        <!-- Why the chosen simulator would ignore the setting. Under
+                             the explanation, at full strength while the rest dims. -->
+                        <TextBlock Name="PART_IdleNote"
+                                   Grid.Row="2" Grid.Column="1" Grid.ColumnSpan="2"
+                                   Text="{TemplateBinding IdleNote}"
+                                   IsVisible="False"
+                                   FontSize="12"
+                                   FontStyle="Italic"
+                                   Foreground="{StaticResource CarbonFg}"
+                                   TextWrapping="Wrap"
+                                   Margin="0,3,0,0" />
+
                     </Grid>
                 </ControlTemplate>
             </Setter>
@@ -99,6 +111,24 @@
                 <Setter Property="Grid.Column" Value="1" />
                 <Setter Property="Grid.ColumnSpan" Value="2" />
             </Style>
+            <Style Selector="^:idle /template/ TextBlock#PART_IdleNote">
+                <Setter Property="IsVisible" Value="True" />
+            </Style>
+            <Style Selector="^:idle /template/ TextBlock#PART_Label">
+                <Setter Property="Opacity" Value="0.45" />
+            </Style>
+            <Style Selector="^:idle /template/ ContentPresenter#PART_Content">
+                <Setter Property="Opacity" Value="0.45" />
+            </Style>
+            <Style Selector="^:idle /template/ TextBlock#PART_Value">
+                <Setter Property="Opacity" Value="0.45" />
+            </Style>
+            <Style Selector="^:idle /template/ TextBlock#PART_Description">
+                <Setter Property="Opacity" Value="0.45" />
+            </Style>
+            <Style Selector="^:idle /template/ SelectableTextBlock#PART_ConfigKey">
+                <Setter Property="Opacity" Value="0.45" />
+            </Style>
             <!-- A checkbox is its own label, so let it take the label column too.
                  Alignment stays Stretch: a bare slider in a labelless row still
                  wants the full width. -->
@@ -117,6 +147,13 @@
                         <DockPanel LastChildFill="True">
                             <ContentPresenter DockPanel.Dock="Right"
                                               Content="{TemplateBinding Toggle}"
+                                              VerticalAlignment="Center" />
+                            <Button Name="PART_Reset" DockPanel.Dock="Right" Classes="Outline SectionReset"
+                                    Content="{TemplateBinding ResetLabel}"
+                                    IsVisible="{Binding $parent[ctl:SettingsSection].ResetLabel, Converter={x:Static ObjectConverters.IsNotNull}}"
+                                    VerticalAlignment="Center" Margin="0,0,12,0" />
+                            <ContentPresenter DockPanel.Dock="Right"
+                                              Content="{TemplateBinding Level}"
                                               VerticalAlignment="Center" />
                             <TextBlock Text="{TemplateBinding Header}"
                                        FontSize="12"
@@ -194,8 +231,27 @@
     <!-- Controls inside a row: keep them from stretching to absurd widths in the
          single-column layout, and give the row a predictable height. -->
     <Style Selector="ctl|SettingRow:not(.Compact) > ComboBox">
-        <Setter Property="HorizontalAlignment" Value="Stretch" />
-        <Setter Property="MaxWidth" Value="360" />
+        <Setter Property="HorizontalAlignment" Value="Left" />
+        <Setter Property="Width" Value="360" />
+    </Style>
+    <!-- The same width for a list that has a warning under it. -->
+    <Style Selector="ctl|SettingRow:not(.Compact) > StackPanel.Field">
+        <Setter Property="HorizontalAlignment" Value="Left" />
+        <Setter Property="Width" Value="360" />
+    </Style>
+    <!-- The key of the row above holds for this one too. -->
+    <Style Selector="ctl|SettingRow.KeyAbove /template/ SelectableTextBlock#PART_ConfigKey">
+        <Setter Property="IsVisible" Value="False" />
+    </Style>
+    <!-- Content of several rows: the label and its key stay together at the first. -->
+    <Style Selector="ctl|SettingRow.TopLabel /template/ TextBlock#PART_Label">
+        <Setter Property="VerticalAlignment" Value="Top" />
+        <Setter Property="Margin" Value="0,2,14,0" />
+    </Style>
+    <Style Selector="ctl|SettingRow.TopLabel /template/ SelectableTextBlock#PART_ConfigKey">
+        <Setter Property="Grid.Row" Value="0" />
+        <Setter Property="VerticalAlignment" Value="Top" />
+        <Setter Property="Margin" Value="0,21,14,0" />
     </Style>
     <Style Selector="ctl|SettingRow:not(.Compact) > NumericUpDown">
         <Setter Property="HorizontalAlignment" Value="Left" />
@@ -274,6 +330,23 @@
     </Style>
     <Style Selector="ctl|SettingRow.Compact > Grid">
         <Setter Property="HorizontalAlignment" Value="Stretch" />
+    </Style>
+
+    <!-- The header's "back to defaults": quiet until pointed at. -->
+    <!-- An Outline button, only smaller: without the frame it read as a caption. -->
+    <Style Selector="Button.SectionReset">
+        <Setter Property="Padding" Value="8,2" />
+        <Setter Property="MinHeight" Value="0" />
+        <Setter Property="FontSize" Value="11" />
+        <Setter Property="Cursor" Value="Hand" />
+    </Style>
+
+    <Style Selector="ComboBox.SectionLevel">
+        <Setter Property="MinHeight" Value="0" />
+        <Setter Property="MinWidth" Value="118" />
+        <Setter Property="Padding" Value="8,1" />
+        <Setter Property="FontSize" Value="11" />
+        <Setter Property="Margin" Value="0,0,8,0" />
     </Style>
 
     <Style Selector="ctl|SettingsSection.Compact">

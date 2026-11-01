@@ -8,6 +8,7 @@ public static class ExeProblemText
     public static string Key(ExeProblem problem) => problem switch
     {
         ExeProblem.NotExecutable => "ExeNotExecutable",
+        ExeProblem.NotAProgram => "ExeNotAProgram",
         ExeProblem.WrongPlatform => "ExeWrongPlatform",
         _ => "ExeNotFound"
     };
