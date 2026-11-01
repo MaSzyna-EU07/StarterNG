@@ -314,8 +314,7 @@
                                TextWrapping="Wrap" MaxWidth="520" Opacity="0.6" TextAlignment="Center"
                                Text="{Binding [ConsistEmpty], Source={x:Static starterNg:App.Loc}}" />
                     <ScrollViewer Name="consistScroll"
-                                  HorizontalScrollBarVisibility="Visible" VerticalScrollBarVisibility="Disabled"
-                                  Padding="0,0,0,4">
+                                  HorizontalScrollBarVisibility="Visible" VerticalScrollBarVisibility="Disabled">
                         <Panel>
                             <!-- Tab reaches the strip once and lands on the selected
                                  card; the arrow keys walk it from there. -->

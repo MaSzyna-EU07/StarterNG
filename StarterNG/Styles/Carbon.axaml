@@ -499,6 +499,9 @@
     <Style Selector="TextBox:not(:disabled) /template/ TextBlock#PART_Placeholder">
         <Setter Property="Opacity" Value="1" />
     </Style>
+    <Style Selector="ComboBox:not(:disabled) /template/ TextBlock#PlaceholderTextBlock">
+        <Setter Property="Opacity" Value="1" />
+    </Style>
 
     <Style Selector="TextBox:focus /template/ Border#PART_BorderElement">
         <Setter Property="BorderBrush" Value="{StaticResource CarbonAccentBright}" />

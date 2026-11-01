@@ -14,6 +14,7 @@ using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Layout;
 using Avalonia.Media.Imaging;
+using Avalonia.Threading;
 using Avalonia.VisualTree;
 using StarterNG.Classes;
 using StarterNG.Domain;
@@ -377,6 +378,9 @@ public partial class Scenarios : UserControl
             return;
         }
         Scenery selectedScn = Sceneries[tag];
+
+        // A scenery picked from code stays out of sight otherwise; after layout, as its group may have just opened.
+        Dispatcher.UIThread.Post(item.BringIntoView, DispatcherPriority.Loaded);
 
         // The scenery is the one started from now on, whether or not it lists a
         // consist: left as it was, a scenery with none - or none the filters show -
