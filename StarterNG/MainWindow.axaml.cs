@@ -3,22 +3,20 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
-using System.Threading;
 using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Controls.Primitives;
 using Avalonia.Input;
 using Avalonia.Interactivity;
+using Avalonia.Layout;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
 using StarterNG.Classes;
-using StarterNG.Domain;
 using StarterNG.Infrastructure;
-using StarterNG.Services;
 using StarterNG.Views;
 using StarterNG.Application;
 using StarterNG.Application.Abstractions;
-using StarterNG.Domain.Sceneries;
 using StarterNG.Domain.Settings;
 
 namespace StarterNG;
@@ -28,7 +26,22 @@ public partial class MainWindow : Window
 
     private const int TitleBarHeight = 32;
 
+    // The smallest window the pages are laid out for, as MainWindow.axaml sets it.
+    private const double DesignMinWidth = 1010;
+    private const double DesignMinHeight = 666;
+
+    // The system frame, which a window's size does not count: at most 15 by 8 on Windows.
+    private const double FrameAllowance = 16;
+
+    // A start is over at once: a double click or a held key arrives after it.
+    private static readonly TimeSpan StartCooldown = TimeSpan.FromSeconds(3);
+
     private DateTime _openedUtc = DateTime.UtcNow;
+    private DateTime _startedUtc = DateTime.MinValue;
+    private bool _starting;
+    private bool _simulatorRunning;
+    private bool _lookingAtSceneryFiles;
+    private readonly DispatcherTimer _sceneryFilesTimer = new() { Interval = TimeSpan.FromSeconds(2) };
 
     public MainWindow()
     {
@@ -37,6 +50,12 @@ public partial class MainWindow : Window
 
         ExtendClientAreaToDecorationsHint = true;
         ExtendClientAreaTitleBarHeightHint = TitleBarHeight;
+
+        FitToScreen();
+        // Ahead of the layout a new size starts: changed during it, the bar keeps the old width.
+        Resized += (_, e) => FitTopBar(e.ClientSize.Width);
+        Opened += (_, _) => FitTopBar(ClientSize.Width);
+        PageScroll.SizeChanged += (_, _) => KeepPagesUsable();
 
         if (AppServices.Current.Settings.WindowMaximized || wantsMaximized())
             WindowState = WindowState.Maximized;
@@ -56,7 +75,6 @@ public partial class MainWindow : Window
         startButton.AddHandler(PointerReleasedEvent, StartButton_OnRightClick,
                                RoutingStrategies.Tunnel);
 
-        SettingsView.DeveloperToolsChanged += ApplyDeveloperTab;
 
         SettingsView.ThumbnailSizeChanged += () =>
         {
@@ -85,12 +103,108 @@ public partial class MainWindow : Window
 
             _openedUtc = DateTime.UtcNow;
             UpdateStartButton();
+            _sceneryFilesTimer.Start();
         };
         Activated += (_, _) => CheckExternalSettings();
+        _sceneryFilesTimer.Tick += async (_, _) => await LookAtSceneryFilesAsync();
+        Closed += (_, _) => _sceneryFilesTimer.Stop();
     }
+
+    /// <summary>
+    /// Scenery files changed outside the starter are picked up without a reload. Not
+    /// with the simulator running: it is left in peace, and what it changes comes in after it.
+    /// </summary>
+    private async Task LookAtSceneryFilesAsync()
+    {
+        if (_lookingAtSceneryFiles || _simulatorRunning || !IsVisible || WindowState == WindowState.Minimized)
+            return;
+
+        _lookingAtSceneryFiles = true;
+        try
+        {
+            var services = AppServices.Current;
+            var held = services.Library.Sceneries.ToList();
+            var changes = await Task.Run(() => services.SceneryFiles.Look(held));
+            if (changes.Count == 0)
+                return;
+
+            await ScenariosView.FollowSceneryFilesAsync(changes, mayAsk: IsActive);
+            DepotView.FollowSceneryFiles();
+        }
+        catch (Exception ex)
+        {
+            Diagnostics.Log("Following the scenery files", ex);
+        }
+        finally
+        {
+            _lookingAtSceneryFiles = false;
+        }
+    }
+
+    /// <summary>
+    /// Holds the window to what the screen shows of it, so a small or heavily scaled
+    /// one (1366x768, or 1080p at 150%) keeps Start above the taskbar. The system lets
+    /// a window open larger than its screen, and centring one then puts its top off it.
+    /// </summary>
+    private void FitToScreen()
+    {
+        if ((Screens.ScreenFromPoint(Position) ?? Screens.Primary) is not { } screen)
+            return;
+
+        double width = screen.WorkingArea.Width / screen.Scaling - FrameAllowance;
+        double height = screen.WorkingArea.Height / screen.Scaling - FrameAllowance;
+        MinWidth = Math.Min(MinWidth, width);
+        MinHeight = Math.Min(MinHeight, height);
+        Width = Math.Min(Width, width);
+        Height = Math.Min(Height, height);
+    }
+
+    /// <summary>
+    /// Below the size the pages are laid out for they keep it and scroll, rather than
+    /// squeeze their controls over each other. Start is outside this and stays in view.
+    /// </summary>
+    private void KeepPagesUsable()
+    {
+        double floorWidth = DesignMinWidth - (ClientSize.Width - PageScroll.Bounds.Width);
+        double floorHeight = DesignMinHeight - (ClientSize.Height - PageScroll.Bounds.Height);
+        bool narrow = PageScroll.Bounds.Width < floorWidth;
+        bool low = PageScroll.Bounds.Height < floorHeight;
+
+        PageHost.Width = narrow ? floorWidth : double.NaN;
+        PageHost.Height = low ? floorHeight : double.NaN;
+        PageScroll.HorizontalScrollBarVisibility = narrow ? ScrollBarVisibility.Auto : ScrollBarVisibility.Disabled;
+        PageScroll.VerticalScrollBarVisibility = low ? ScrollBarVisibility.Auto : ScrollBarVisibility.Disabled;
+    }
+
+    // The version is in the About window too, and the logo is one more link. What fits goes
+    // by what is there: the version's length depends on the build, the rest on the language.
+    private void FitTopBar(double width)
+    {
+        static double Needed(Control control)
+        {
+            control.Measure(Size.Infinity);
+            return control.DesiredSize.Width;
+        }
+
+        VersionPanel.IsVisible = true;
+        LogoLink.IsVisible = true;
+        double room = width - Needed(TopBarLeft);
+        if (Needed(TopBarRight) > room)
+            VersionPanel.IsVisible = false;
+        if (Needed(TopBarRight) > room)
+            LogoLink.IsVisible = false;
+    }
+
+    private void FitTopBarAfterLayout() =>
+        Dispatcher.UIThread.Post(() => FitTopBar(ClientSize.Width), DispatcherPriority.Loaded);
 
     private void TitleBar_OnPointerPressed(object? sender, PointerPressedEventArgs e)
     {
+        // A combo box opens on the release and leaves the press to pass on; a window
+        // move started here would swallow that release.
+        if (e.Source is Visual source && source.FindAncestorOfType<ComboBox>(includeSelf: true) is not null)
+            return;
+
         if (e.GetCurrentPoint(this).Properties.IsLeftButtonPressed)
             BeginMoveDrag(e);
     }
@@ -100,18 +214,24 @@ public partial class MainWindow : Window
         if (e.InitialPressMouseButton != MouseButton.Right)
             return;
 
-        var win = new Views.AdvancedSettingsWindow();
-        win.ToolRequested += tool =>
+        OpenLogAndTools();
+        e.Handled = true;
+    }
+
+    public void OpenLogAndTools()
+    {
+        var win = new Views.LogAndToolsWindow();
+        win.ToolRequested += async tool =>
         {
             switch (tool)
             {
                 case "category": DepotView.ToolAddAllCategory(); break;
                 case "mmd": DepotView.ToolAddUniqueMmd(); break;
-                case "removeall": DepotView.ToolRemoveAllTrains(); break;
+                case "removeall": await DepotView.ToolRemoveAllTrainsAsync(); break;
             }
+            ScenariosView.RefreshConsistView();
         };
         win.ShowDialog(this);
-        e.Handled = true;
     }
 
     private void OnShortcutKey(object? sender, KeyEventArgs e)
@@ -124,9 +244,12 @@ public partial class MainWindow : Window
         if (Shortcuts.Match(e.Key, mods) is not { } id)
             return;
 
-        // Bare keys belong to whatever is being typed into; Ctrl/Alt combinations do not
-        // collide with text entry, so those stay live everywhere.
-        if (mods == KeyModifiers.None && IsTextEntryFocused())
+        // Bare keys belong to whatever is being typed into, and so do undo, redo and
+        // Ctrl+Delete, which there takes a word and not the whole consist; other
+        // Ctrl/Alt combinations do not collide with text entry, so those stay live
+        // everywhere.
+        if ((mods == KeyModifiers.None || id is Shortcuts.Undo or Shortcuts.Redo or Shortcuts.ClearConsist) &&
+            IsTextEntryFocused())
             return;
 
         switch (id)
@@ -153,6 +276,9 @@ public partial class MainWindow : Window
                     case Shortcuts.RemoveVehicle: DepotView.KeyRemoveVehicle(); break;
                     case Shortcuts.ClearConsist: DepotView.KeyClearConsist(); break;
                     case Shortcuts.SetNumber: DepotView.KeySetWagonNumber(); break;
+                    case Shortcuts.Undo: DepotView.Undo(); break;
+                    case Shortcuts.Redo: DepotView.Redo(); break;
+                    case Shortcuts.SaveToScenery: DepotView.KeySaveToScenery(); break;
                     default: return;
                 }
                 break;
@@ -174,7 +300,7 @@ public partial class MainWindow : Window
         if (sender is not RadioButton { IsChecked: true } rb)
             return;
 
-        if (ScenariosView is null || DepotView is null || SettingsView is null || DeveloperView is null)
+        if (ScenariosView is null || DepotView is null || SettingsView is null)
             return;
 
         ShowPage(rb.Tag as string);
@@ -186,31 +312,12 @@ public partial class MainWindow : Window
         ScenariosView.IsVisible = page == "scenarios";
         DepotView.IsVisible = page == "depot";
         SettingsView.IsVisible = page == "settings";
-        DeveloperView.IsVisible = page == "developer";
-
-        if (DeveloperView.IsVisible)
-            DeveloperView.Refresh();
-    }
-
-    /// <summary>
-    /// Shows or hides the developer tab. Switching it off while it is the open one
-    /// hands the window back to the scenarios, so the top bar never ends up with
-    /// nothing selected.
-    /// </summary>
-    private void ApplyDeveloperTab()
-    {
-        bool wanted = AppServices.Current.Settings.DeveloperTools;
-        NavDeveloper.IsVisible = wanted;
-
-        if (!wanted && NavDeveloper.IsChecked == true)
-            NavScenarios.IsChecked = true;
+        PageScroll.Offset = default;
     }
 
     private void ApplyInitialNav()
     {
-        ApplyDeveloperTab();
-
-        foreach (var rb in new[] { NavScenarios, NavDepot, NavSettings, NavDeveloper })
+        foreach (var rb in new[] { NavScenarios, NavDepot, NavSettings })
             if (rb.IsChecked == true)
             {
                 ShowPage(rb.Tag as string);
@@ -222,7 +329,7 @@ public partial class MainWindow : Window
     private void PopulateLangCombo()
     {
         LangCombo.Items.Clear();
-        foreach (var lang in LocalizationService.AvailableLanguages())
+        foreach (var lang in App.Loc.Languages())
             LangCombo.Items.Add(new ComboBoxItem { Content = lang.Name, Tag = lang.Code });
         if (LangCombo.ItemCount == 0)
             LangCombo.Items.Add(new ComboBoxItem { Content = "English", Tag = "en" });
@@ -243,13 +350,8 @@ public partial class MainWindow : Window
 
     private void LangCombo_OnSelectionChanged(object? sender, SelectionChangedEventArgs e)
     {
-        if ((LangCombo.SelectedItem as ComboBoxItem)?.Tag is not string code)
-            return;
-
-        if (string.Equals(code, App.Loc.CurrentLangCode, StringComparison.OrdinalIgnoreCase))
-            return;
-
-        App.ApplyLanguage(code);
+        if ((LangCombo.SelectedItem as ComboBoxItem)?.Tag is string code)
+            App.ChangeLanguage(code);
     }
 
     private void OnLanguageChanged()
@@ -258,33 +360,28 @@ public partial class MainWindow : Window
         ScenariosView?.RebuildAfterLanguageChange();
         DepotView?.RebuildAfterLanguageChange();
         UpdateStartButton();
+        FitTopBarAfterLayout();
+
+        // A page not on the screen keeps what it measured: back in view, a tab strip
+        // in a fixed column went on clipping its new headers at the old words' widths.
+        foreach (var control in PageHost.GetVisualDescendants().OfType<Layoutable>())
+            control.InvalidateMeasure();
     }
 
     private void HelpButton_OnClick(object? sender, RoutedEventArgs e)
     {
         var menu = new ContextMenu();
 
-        var keys = new MenuItem
-        {
-            Header = App.Loc["ShortcutsTitle"],
-            InputGesture = new KeyGesture(Key.F1)
-        };
-        keys.Click += (_, _) => Views.ShortcutsWindow.Create().ShowDialog(this);
-        menu.Items.Add(keys);
+        menu.AddItem(App.Loc["ShortcutsTitle"], () => Views.ShortcutsWindow.Create().ShowDialog(this),
+                     gesture: new KeyGesture(Key.F1));
         menu.Items.Add(new Separator());
 
-        var wiki = new MenuItem { Header = App.Loc["HelpWiki"] };
-        wiki.Click += (_, _) => OpenPathOrUrl("https://wiki.eu07.pl/");
-        menu.Items.Add(wiki);
+        menu.AddItem(App.Loc["HelpWiki"], () => OpenPathOrUrl("https://wiki.eu07.pl/"));
 
         string readme = string.Equals(App.Loc.CurrentLangCode, "pl", StringComparison.OrdinalIgnoreCase)
             ? "readme.html" : "en-readme.html";
         if (File.Exists(readme) || File.Exists(Path.Combine(Directory.GetCurrentDirectory(), readme)))
-        {
-            var mi = new MenuItem { Header = App.Loc["HelpReadme"] };
-            mi.Click += (_, _) => OpenPathOrUrl(readme);
-            menu.Items.Add(mi);
-        }
+            menu.AddItem(App.Loc["HelpReadme"], () => OpenPathOrUrl(readme));
 
         string regs = Path.Combine(Directory.GetCurrentDirectory(), "przepisy_kolejowe");
         if (Directory.Exists(regs))
@@ -293,11 +390,12 @@ public partial class MainWindow : Window
             foreach (string pdf in Directory.GetFiles(regs, "*.pdf").OrderBy(Path.GetFileName))
             {
                 string file = pdf;
-                var mi = new MenuItem { Header = Path.GetFileName(file) };
-                mi.Click += (_, _) => OpenPathOrUrl(file);
-                menu.Items.Add(mi);
+                menu.AddItem(Path.GetFileName(file), () => OpenPathOrUrl(file));
             }
         }
+
+        menu.Items.Add(new Separator());
+        menu.AddItem(App.Loc["LogAndTools"], OpenLogAndTools);
 
         // "About" belongs with the other informational entries, not next to the
         // Save/Reset buttons of the settings panel where it used to sit.
@@ -355,23 +453,14 @@ public partial class MainWindow : Window
         }
     }
 
-    private async void openLastLogClick(object? sender, RoutedEventArgs e)
-    {
-        string logPath = Path.GetFullPath("log.txt");
-        if (!File.Exists(logPath))
-        {
-            await Diagnostics.ReportAsync(string.Format(App.Loc["FaultFileNotFound"], logPath));
-            return;
-        }
+    private void openLastLogClick(object? sender, RoutedEventArgs e) =>
+        Diagnostics.OpenOrReport(Path.GetFullPath("log.txt"));
 
-        try
-        {
-            Process.Start(new ProcessStartInfo(logPath) { UseShellExecute = true });
-        }
-        catch (Exception ex)
-        {
-            await Diagnostics.ReportAsync(logPath, ex);
-        }
+    private void openHaslerTapesClick(object? sender, RoutedEventArgs e)
+    {
+        var window = new Views.Tapes.HaslerTapeWindow();
+        window.LogEnabled += SettingsView.SyncLogs;
+        window.Show(this);
     }
 
     private void UpdateStartButton()
@@ -380,6 +469,9 @@ public partial class MainWindow : Window
 
         var scenery = AppServices.Current.State.CurrentScenery;
         var trainset = AppServices.Current.State.CurrentTrainset;
+        startEditorButton.Content = App.Loc[scenery is null ? "StartEditorWizard" : "StartEditorShort"];
+        ToolTip.SetTip(startEditorButton, App.Loc[scenery is null ? "StartEditorWizardTip" : "StartEditor"]);
+        startEditorMoreButton.IsVisible = scenery is not null;
 
         if (scenery is null)
         {
@@ -389,8 +481,11 @@ public partial class MainWindow : Window
         }
         if (trainset is null)
         {
-            startButton.Content = App.Loc["StartNoTrain"];
-            startButton.IsEnabled = false;
+            // Nothing to drive in this scenery - none listed, or none the filters
+            // show: the free camera is what a start gives.
+            startButton.Content = App.Loc["StartFreeFly"];
+            ToolTip.SetTip(startButton, null);
+            startButton.IsEnabled = true;
             return;
         }
 
@@ -400,25 +495,33 @@ public partial class MainWindow : Window
         startButton.IsEnabled = true;
     }
 
-    private static bool HasStartableVehicle(Trainset trainset)
-    {
-        static bool CanStart(Dynamic v) =>
-            v.DriverType is eDriverType.Headdriver or eDriverType.Reardriver or eDriverType.Passenger;
-
-        string? selected = AppServices.Current.State.StartingVehicleName;
-        if (!string.IsNullOrEmpty(selected))
-        {
-            var pick = trainset.Vehicles.FirstOrDefault(v =>
-                string.Equals(v.Name, selected, StringComparison.OrdinalIgnoreCase));
-            if (pick != null)
-                return CanStart(pick);
-        }
-        return trainset.Vehicles.Any(CanStart);
-    }
+    private static bool HasStartableVehicle(Trainset trainset) =>
+        StartSimulation.HasCrewToStart(trainset, AppServices.Current.State.StartingVehicleName);
 
     private Task<bool> ShowExeProblem(ExeProblem problem, string exe) =>
         MessageBox.Show(this, $"{exe}\n\n{App.Loc[ExeProblemText.Key(problem)]}",
             App.Loc["ExeLaunchFailed"], MessageBoxButtons.Ok);
+
+    private const string SimulatorBuildGuide = "https://github.com/MaSzyna-EU07/maszyna#getting-started";
+
+    /// <summary>
+    /// Tells a user whose processor lacks AVX2 that the published simulator will
+    /// not run, and where the instructions for a build of their own are.
+    /// </summary>
+    public async Task ShowCpuNoticeAsync()
+    {
+        var (open, silence) = await MessageBox.ShowNotice(
+            this, string.Format(App.Loc["CpuNoAvx2"], SimulatorBuildGuide), App.Loc["CpuNoAvx2Title"],
+            App.Loc["CpuNoAvx2Open"], App.Loc["DontShowAgain"]);
+
+        if (open)
+            OpenPathOrUrl(SimulatorBuildGuide);
+        if (silence)
+        {
+            AppServices.Current.Settings.CpuNotice = false;
+            AppServices.Current.SettingsStore.Save();
+        }
+    }
 
     /// <summary>
     /// Asks for the simulator when the installation holds none, and keeps the pick
@@ -450,26 +553,33 @@ public partial class MainWindow : Window
         if (e.InitialPressMouseButton != MouseButton.Right)
             return;
 
+        OpenStartMenu(startButton);
+    }
+
+    private void StartMoreButton_OnClick(object? sender, RoutedEventArgs e) => OpenStartMenu(startMoreButton);
+
+    private async void StartEditorButton_OnClick(object? sender, RoutedEventArgs e) => await LaunchEditorAsync();
+
+    private void StartEditorMoreButton_OnClick(object? sender, RoutedEventArgs e)
+    {
+        var create = new MenuItem { Header = App.Loc["StartEditorWizard"] };
+        create.Click += async (_, _) => await FollowStartAsync(AppServices.Current.StartSimulation.ExecuteNewSceneryEditor);
+        var menu = new ContextMenu();
+        menu.Items.Add(create);
+        menu.Open(startEditorMoreButton);
+    }
+
+    private void OpenStartMenu(Control anchor)
+    {
         var menu = new ContextMenu();
 
-        var noSave = new MenuItem { Header = App.Loc["StartWithoutSaving"] };
-        noSave.Click += async (_, _) => await LaunchAsync(saveSettings: false, freeFly: false);
-        menu.Items.Add(noSave);
+        // Both need a consist to start in, as the start button itself does.
+        menu.AddItem(App.Loc["StartWithoutSaving"], async () => await LaunchAsync(saveSettings: false, freeFly: false),
+                     startButton.IsEnabled);
+        menu.AddItem(App.Loc["StartFreeFly"], async () => await LaunchAsync(saveSettings: true, freeFly: true),
+                     startButton.IsEnabled);
 
-        var freeFly = new MenuItem { Header = App.Loc["StartFreeFly"] };
-        freeFly.Click += async (_, _) => await LaunchAsync(saveSettings: true, freeFly: true);
-        menu.Items.Add(freeFly);
-
-        menu.Items.Add(new Separator());
-        var editor = new MenuItem
-        {
-            Header = App.Loc["StartEditor"],
-            IsEnabled = AppServices.Current.State.CurrentScenery is not null
-        };
-        editor.Click += async (_, _) => await LaunchEditorAsync();
-        menu.Items.Add(editor);
-
-        menu.Open(startButton);
+        menu.Open(anchor);
     }
 
     /// <summary>
@@ -478,40 +588,56 @@ public partial class MainWindow : Window
     /// </summary>
     private async Task LaunchAsync(bool saveSettings, bool freeFly)
     {
-        var scenery = AppServices.Current.State.CurrentScenery;
-        var trainset = AppServices.Current.State.CurrentTrainset;
-        if (scenery is null || trainset is null)
+        // A second press while the first is still on its way, or right after it,
+        // would start a second simulator.
+        if (_starting || DateTime.UtcNow - _startedUtc < StartCooldown)
             return;
 
-        if (!freeFly && !HasStartableVehicle(trainset) &&
-            !await MessageBox.Show(this, App.Loc["StartNoStaffConfirm"],
-                                   App.Loc["StartNoStaffTitle"], MessageBoxButtons.YesNo))
-            return;
+        _starting = true;
+        try
+        {
+            var scenery = AppServices.Current.State.CurrentScenery;
+            var trainset = AppServices.Current.State.CurrentTrainset;
+            if (scenery is null)
+                return;
+            freeFly |= trainset is null;
 
-        LoadingScreen.Prepare(trainset.Logo, Path.GetFileNameWithoutExtension(scenery.Path));
+            if (!freeFly && trainset != null && !HasStartableVehicle(trainset) &&
+                !await MessageBox.Show(this, App.Loc["StartNoStaffConfirm"],
+                                       App.Loc["StartNoStaffTitle"], MessageBoxButtons.YesNo))
+                return;
 
-        await FollowStartAsync(AppServices.Current.StartSimulation.Execute(freeFly, saveSettings));
+            LoadingScreen.Prepare(trainset?.Logo, Path.GetFileNameWithoutExtension(scenery.Path));
+
+            await FollowStartAsync(() => AppServices.Current.StartSimulation.Execute(freeFly, saveSettings));
+        }
+        finally
+        {
+            _starting = false;
+        }
     }
 
     /// <summary>
     /// The scenery editor, which only some simulator builds have - said up front,
-    /// since one without it simply does not open it.
+    /// since one without it simply does not open it, and it writes to the scenery
+    /// itself. With none selected there is nothing to write to: the simulator's
+    /// wizard makes a new one.
     /// </summary>
     private async Task LaunchEditorAsync()
     {
-        if (AppServices.Current.State.CurrentScenery is not { } scenery)
-            return;
-
-        if (!await MessageBox.Show(this, string.Format(App.Loc["StartEditorWarning"], Path.GetFileName(scenery.Path)),
+        if (AppServices.Current.State.CurrentScenery is { } scenery &&
+            !await MessageBox.Show(this, string.Format(App.Loc["StartEditorWarning"], Path.GetFileName(scenery.Path)),
                                    App.Loc["StartEditor"], MessageBoxButtons.YesNo))
             return;
 
-        await FollowStartAsync(AppServices.Current.StartSimulation.ExecuteEditor());
+        await FollowStartAsync(AppServices.Current.StartSimulation.ExecuteEditor);
     }
 
     /// <summary>Reports a start that failed, or steps aside for the simulator that started.</summary>
-    private async Task FollowStartAsync(SimulationStartResult result)
+    /// <param name="start">The start, run again once what stopped it is put right.</param>
+    private async Task FollowStartAsync(Func<SimulationStartResult> start)
     {
+        var result = start();
         switch (result.Outcome)
         {
             case SimulationStartOutcome.NothingSelected:
@@ -532,6 +658,8 @@ public partial class MainWindow : Window
                                       App.Loc["ExeLaunchFailed"], MessageBoxButtons.Ok);
                 return;
         }
+
+        _startedUtc = DateTime.UtcNow;
 
         if (AppServices.Current.Settings.AutoCloseStarter)
         {
@@ -562,8 +690,10 @@ public partial class MainWindow : Window
             return;
         }
 
+        _simulatorRunning = true;
         _ = simulator.WaitForExitAsync().ContinueWith(_ => Dispatcher.UIThread.Post(() =>
         {
+            _simulatorRunning = false;
             RestoreFromSimulator();
             ReportIfCrashed(simulator, executable, started);
         }), TaskScheduler.Default);
@@ -588,7 +718,7 @@ public partial class MainWindow : Window
 
         var words = exit.CleanErrors.Count > 0
             ? exit.CleanErrors
-            : AppServices.Current.Aftermath.SimulatorLogTail(12);
+            : AppServices.Current.Aftermath.SimulatorLogTail(12, startedUtc);
 
         var message = new StringBuilder();
         message.AppendLine(string.Format(App.Loc["SimExitCode"], exit.DescribeCode()));
