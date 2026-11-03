@@ -102,8 +102,8 @@ public sealed class HaslerTapes
             noted.Add(launch);
 
             _files.CreateDirectory(Folder);
-            _files.WriteAllText(LaunchFile, string.Concat(noted.TakeLast(RememberedLaunches).Select(l => l.Format())),
-                                Encoding.UTF8);
+            _files.WriteAllTextAtomic(LaunchFile,
+                                      string.Concat(noted.TakeLast(RememberedLaunches).Select(l => l.Format())));
             lock (_playerLock)
                 _launches = null;
         }
