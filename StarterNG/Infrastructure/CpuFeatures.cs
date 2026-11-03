@@ -11,7 +11,7 @@ public static class CpuFeatures
     /// the published builds stop at the first AVX2 instruction on an older x86
     /// processor. Other architectures cannot run them at all, which is not this.
     /// </summary>
-    public static bool LacksAvx2 =>
+    public static bool LacksAvx2 { get; } =
         RuntimeInformation.ProcessArchitecture is Architecture.X64 or Architecture.X86 && !HasAvx2();
 
     /// <summary>
@@ -23,10 +23,11 @@ public static class CpuFeatures
     {
         if (!X86Base.IsSupported || X86Base.CpuId(0, 0).Eax < 7)
             return false;
-        // Leaf 1 ECX: bit 27 the system saves the extended registers (OSXSAVE), bit 28 AVX.
-        // Leaf 7 EBX: bit 5 AVX2.
-        const int osxsaveAndAvx = (1 << 27) | (1 << 28);
-        return (X86Base.CpuId(1, 0).Ecx & osxsaveAndAvx) == osxsaveAndAvx &&
+        // Leaf 1 ECX: bit 12 FMA, which /arch:AVX2 lets the compiler use too; bit 27 the
+        // system has turned XSAVE on (whether it saves the AVX registers is in XCR0,
+        // which .NET cannot read); bit 28 AVX. Leaf 7 EBX: bit 5 AVX2.
+        const int leaf1 = (1 << 12) | (1 << 27) | (1 << 28);
+        return (X86Base.CpuId(1, 0).Ecx & leaf1) == leaf1 &&
                (X86Base.CpuId(7, 0).Ebx & (1 << 5)) != 0;
     }
 }
