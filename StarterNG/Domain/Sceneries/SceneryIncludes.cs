@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using System.Text;
 using System.Text.RegularExpressions;
 
 namespace StarterNG.Domain.Sceneries;
@@ -75,4 +77,27 @@ public static class SceneryIncludes
 
     public static string? FileAt(IReadOnlyList<(int Start, int End, string File)> ranges, int index) =>
         ranges.FirstOrDefault(r => index >= r.Start && index < r.End).File;
+
+    /// <summary>
+    /// The text as bytes: each inlined file in the encoding it was read in, the rest in
+    /// <paramref name="own"/>. A name both a file put in place and one left to its include
+    /// spell alike then has the same bytes in both, as when the simulator reads them apart.
+    /// </summary>
+    /// <param name="inlined">By the name the marker carries; one not listed goes in <paramref name="own"/>.</param>
+    public static byte[] Encode(string text, Encoding own, IReadOnlyDictionary<string, Encoding> inlined)
+    {
+        using var bytes = new MemoryStream();
+        void Put(Encoding encoding, int start, int end) =>
+            bytes.Write(encoding.GetBytes(text, start, end - start));
+
+        int at = 0;
+        foreach (var (start, end, file) in Ranges(text))
+        {
+            Put(own, at, start);
+            Put(inlined.GetValueOrDefault(file, own), start, end);
+            at = end;
+        }
+        Put(own, at, text.Length);
+        return bytes.ToArray();
+    }
 }

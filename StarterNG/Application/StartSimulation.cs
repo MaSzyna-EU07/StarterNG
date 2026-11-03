@@ -8,7 +8,6 @@ using StarterNG.Domain;
 using StarterNG.Domain.Settings;
 using StarterNG.Domain.Vehicles;
 using StarterNG.Infrastructure;
-using StarterNG.Infrastructure.Adapters;
 using StarterNG.Infrastructure.Settings;
 
 namespace StarterNG.Application;
@@ -132,9 +131,8 @@ public sealed class StartSimulation
         string exportPath = Path.Combine(Path.GetDirectoryName(scenery.Path) ?? "scenery", exportName);
         try
         {
-            _files.WriteAllText(exportPath,
-                                scenery.BuildExportContent(_settings.Settings.IgnoreIrrelevantTrains, _random),
-                                LegacyText.CodePage1250);
+            _files.WriteAllBytes(exportPath,
+                                 scenery.BuildExportBytes(_settings.Settings.IgnoreIrrelevantTrains, _random));
         }
         catch (Exception ex)
         {

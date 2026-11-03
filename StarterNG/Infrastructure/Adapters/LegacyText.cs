@@ -30,9 +30,12 @@ public static class LegacyText
     /// most files are 1250, and that was an exception per file on every load.
     /// A byte order mark is dropped, or it would stick to the first token.
     /// </summary>
-    public static string Decode(byte[] bytes)
+    public static string Decode(byte[] bytes) => Decode(bytes, out _);
+
+    /// <param name="encoding">What the file is written in, for what is made of it to go back in the same.</param>
+    public static string Decode(byte[] bytes, out Encoding encoding)
     {
-        var (encoding, bom) = Detect(bytes);
+        (encoding, var bom) = Detect(bytes);
         return encoding.GetString(bytes, bom.Length, bytes.Length - bom.Length);
     }
 

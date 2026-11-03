@@ -4,6 +4,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using StarterNG.Application.Abstractions;
 using StarterNG.Classes;
+using StarterNG.Infrastructure.Adapters;
 
 namespace StarterNG.Domain.Sceneries;
 
@@ -67,6 +68,12 @@ public sealed class Scenery
     /// </summary>
     public IReadOnlyDictionary<string, FileStamp?> Sources { get; set; } = new Dictionary<string, FileStamp?>();
 
+    /// <summary>What its own file is written in, for the copy written for a start to be in the same.</summary>
+    public Encoding TextEncoding { get; set; } = LegacyText.CodePage1250;
+
+    /// <summary>What each file put in place of its include is written in, by the name its marker carries.</summary>
+    public IReadOnlyDictionary<string, Encoding> IncludeEncodings { get; set; } = new Dictionary<string, Encoding>();
+
     public string DisplayName => System.IO.Path.GetFileNameWithoutExtension(Path);
 
     public string LocalizedDescription(ISceneryTranslations translations) =>
@@ -98,6 +105,13 @@ public sealed class Scenery
 
         return result;
     }
+
+    /// <summary>
+    /// <see cref="BuildExportContent"/> as the file to write: each part in the encoding of
+    /// the file it came from, so the simulator gets every word as that file has it.
+    /// </summary>
+    public byte[] BuildExportBytes(bool skipDecorTrainsets, IRandomSource random) =>
+        SceneryIncludes.Encode(BuildExportContent(skipDecorTrainsets, random), TextEncoding, IncludeEncodings);
 
     private string AppendLooseVehicles(string text)
     {

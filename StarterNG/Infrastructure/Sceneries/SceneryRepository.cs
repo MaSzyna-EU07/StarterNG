@@ -3,6 +3,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using StarterNG.Application.Abstractions;
@@ -73,6 +74,7 @@ public sealed class SceneryRepository : ISceneryRepository
 
             // Looked at ahead of the reading: changed meanwhile, it counts as changed.
             var sources = new Dictionary<string, FileStamp?> { [path] = FileStamp.Of(_files, path) };
+            var encodings = new Dictionary<string, Encoding>(StringComparer.Ordinal);
 
             // With its own .sbt the scenery's terrain comes from it, and the simulator
             // passes its terrain includes over without opening them.
@@ -87,13 +89,21 @@ public sealed class SceneryRepository : ISceneryRepository
                 string? file = ResolveInclude(name);
                 string full = Path.Combine(_paths.Scenery, file ?? name.Replace('\\', '/'));
                 sources[full] = FileStamp.Of(_files, full);
-                return file is null ? null : (file, LegacyText.Decode(_files.ReadAllBytes(full)));
+                if (file is null)
+                    return null;
+
+                string included = LegacyText.Decode(_files.ReadAllBytes(full), out var encoding);
+                encodings[file] = encoding;
+                return (file, included);
             }
 
-            string text = SceneryIncludes.Inline(LegacyText.Decode(_files.ReadAllBytes(path)), ReadInclude);
+            string own = LegacyText.Decode(_files.ReadAllBytes(path), out var ownEncoding);
+            string text = SceneryIncludes.Inline(own, ReadInclude);
             var scenery = _parser.Parse(path, text, FindInclude);
             scenery.HasCompanionTimetable = binaryTerrain;
             scenery.Sources = sources;
+            scenery.TextEncoding = ownEncoding;
+            scenery.IncludeEncodings = encodings;
             return scenery;
         }
         catch (Exception ex)
