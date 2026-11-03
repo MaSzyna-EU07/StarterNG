@@ -289,6 +289,7 @@ public sealed class SettingsStore
         var now = Render(settings);
         var shown = _capture?.ShownUnlikeSettings ?? new Dictionary<string, ShownValue>();
         var changes = new List<IniChange>();
+        var listed = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
         foreach (string key in SettingsSerializer.ObsoleteKeys)
             Add(key, null);
@@ -325,7 +326,8 @@ public sealed class SettingsStore
         {
             // To the simulator a key past endconfig is not set yet, whatever it says.
             string? before = value is not null && _config.IsPastEnd(key) ? null : _config.GetRaw(key);
-            if (before != value)
+            // A key gone from the file can be found gone more ways than one.
+            if (before != value && listed.Add(key))
                 changes.Add(new IniChange(key, before, value));
         }
     }

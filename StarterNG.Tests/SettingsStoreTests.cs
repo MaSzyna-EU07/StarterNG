@@ -320,6 +320,18 @@ public class SettingsStoreTests
     }
 
     [Fact]
+    public void A_disabled_uart_is_one_change()
+    {
+        var installation = WithHome(new InMemoryFileSystem().WithFile(UserIni, "uart COM3 57600 0.1\n"));
+        installation.SettingsStore.Load();
+        installation.SettingsStore.Settings.UartEnabled = false;
+
+        var changes = installation.SettingsStore.Changes(installation.SettingsStore.Settings);
+
+        Assert.Equal(new IniChange("uart", "COM3 57600 0.1", null), Assert.Single(changes, c => c.Key == "uart"));
+    }
+
+    [Fact]
     public void The_graphics_card_choice_survives_a_round_trip()
     {
         var installation = WithHome();
