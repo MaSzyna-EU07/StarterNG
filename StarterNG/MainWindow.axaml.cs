@@ -103,6 +103,7 @@ public partial class MainWindow : Window
             _openedUtc = DateTime.UtcNow;
             UpdateStartButton();
             _sceneryFilesTimer.Start();
+            FollowLastRun();
         };
         Activated += (_, _) => CheckExternalSettings();
         _sceneryFilesTimer.Tick += async (_, _) => await LookAtSceneryFilesAsync();
@@ -693,9 +694,20 @@ public partial class MainWindow : Window
         _ = simulator.WaitForExitAsync().ContinueWith(_ => Dispatcher.UIThread.Post(() =>
         {
             AppServices.Current.State.SimulatorRunning = false;
+            FollowLastRun();
             RestoreFromSimulator();
             ReportIfCrashed(simulator, executable, started);
         }), TaskScheduler.Default);
+    }
+
+    /// <summary>
+    /// The player's vehicles in the last run, read from its log off the UI thread
+    /// while nobody waits: the next start has to have them before the log begins anew.
+    /// </summary>
+    private static void FollowLastRun()
+    {
+        if (AppServices.Current.Settings.PhysicsLog)
+            _ = Task.Run(AppServices.Current.Tapes.FollowLastRun);
     }
 
     /// <summary>

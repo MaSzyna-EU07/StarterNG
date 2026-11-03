@@ -114,6 +114,17 @@ public sealed class HaslerTapes
     }
 
     /// <summary>
+    /// Reads what the log of the last launch has gained since the last look. A start
+    /// notes that down before the log begins anew, and after a long run, with nothing
+    /// read of it yet, it would wait on the whole log.
+    /// </summary>
+    public void FollowLastRun()
+    {
+        if (Launches().LastOrDefault() is { } launch)
+            PlayerIn(launch);
+    }
+
+    /// <summary>
     /// The launches noted so far, oldest first. Read again only when the file has
     /// changed: this runs every few seconds next to a running simulator.
     /// </summary>
