@@ -401,8 +401,6 @@ public class StartSimulationTests
         public bool OpenInShell(string pathOrUrl) => false;
 
         public IProcessHandle? FindRunning(string processName) => null;
-
-        public bool IsRunning(string processName) => false;
     }
 
     private sealed class RunningProcess : IProcessHandle

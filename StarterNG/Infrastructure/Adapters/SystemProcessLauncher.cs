@@ -90,22 +90,6 @@ public sealed class SystemProcessLauncher : IProcessLauncher
         }
     }
 
-    public bool IsRunning(string processName)
-    {
-        try
-        {
-            var found = Process.GetProcessesByName(processName);
-            foreach (var process in found)
-                process.Dispose();
-            return found.Length > 0;
-        }
-        catch (Exception ex)
-        {
-            _log.Log($"lookup {processName}", ex);
-            return false;
-        }
-    }
-
     private sealed class ProcessHandle : IProcessHandle
     {
         private const int KeptErrorLines = 20;

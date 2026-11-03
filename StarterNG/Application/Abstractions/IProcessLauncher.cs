@@ -31,6 +31,4 @@ public interface IProcessLauncher
     bool OpenInShell(string pathOrUrl);
 
     IProcessHandle? FindRunning(string processName);
-
-    bool IsRunning(string processName);
 }

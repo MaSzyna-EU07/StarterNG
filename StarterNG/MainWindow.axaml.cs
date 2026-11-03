@@ -39,7 +39,6 @@ public partial class MainWindow : Window
     private DateTime _openedUtc = DateTime.UtcNow;
     private DateTime _startedUtc = DateTime.MinValue;
     private bool _starting;
-    private bool _simulatorRunning;
     private bool _lookingAtSceneryFiles;
     private readonly DispatcherTimer _sceneryFilesTimer = new() { Interval = TimeSpan.FromSeconds(2) };
 
@@ -116,7 +115,7 @@ public partial class MainWindow : Window
     /// </summary>
     private async Task LookAtSceneryFilesAsync()
     {
-        if (_lookingAtSceneryFiles || _simulatorRunning || !IsVisible || WindowState == WindowState.Minimized)
+        if (_lookingAtSceneryFiles || AppServices.Current.State.SimulatorRunning || !IsVisible || WindowState == WindowState.Minimized)
             return;
 
         _lookingAtSceneryFiles = true;
@@ -690,10 +689,10 @@ public partial class MainWindow : Window
             return;
         }
 
-        _simulatorRunning = true;
+        AppServices.Current.State.SimulatorRunning = true;
         _ = simulator.WaitForExitAsync().ContinueWith(_ => Dispatcher.UIThread.Post(() =>
         {
-            _simulatorRunning = false;
+            AppServices.Current.State.SimulatorRunning = false;
             RestoreFromSimulator();
             ReportIfCrashed(simulator, executable, started);
         }), TaskScheduler.Default);

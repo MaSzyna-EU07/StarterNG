@@ -65,8 +65,7 @@ public sealed class AppServices
         SettingsStore = new SettingsStore(files, clock, log, settingsPaths, new SettingsSerializer(dlssPlatform: !environment.IsMacOS), Executables);
         MissingVehicleLog = new MissingVehicleLog(SettingsStore.Settings, missingAssets, Library, log);
         Favorites = new FavoriteSceneries(files, log, settingsPaths.FavoritesPath());
-        Tapes = new HaslerTapes(files, paths, log, clock, Timetables,
-                                () => Processes.IsRunning(Path.GetFileNameWithoutExtension(SettingsStore.ResolveExecutable())));
+        Tapes = new HaslerTapes(files, paths, log, clock, Timetables, () => State.SimulatorRunning);
         Gpus = new LinuxGpus(files, environment);
         GraphicsCards = new GraphicsCards(files, environment, Gpus);
         Displays = new Displays(files, environment);
