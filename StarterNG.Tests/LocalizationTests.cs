@@ -191,6 +191,20 @@ public class LocalizationTests
     }
 
     [Fact]
+    public void An_old_starters_key_descriptions_are_read_in_its_own_code_page()
+    {
+        using var folders = new Folders();
+        File.WriteAllText(Path.Combine(folders.Bundled, "en.xml"), English);
+        File.WriteAllBytes(Path.Combine(folders.OldStarter, "lang-cz.txt"), LegacyText.CodePage1250.GetBytes(
+            "[labels]\r\n<eu07_input-keyboard.ini\r\nhornhighactivate=Houkačka výšková\r\n\r\n"));
+        var loc = folders.Service();
+
+        loc.Load("cz");
+
+        Assert.Equal("Houkačka výšková", loc.Opt("Cmd.hornhighactivate"));
+    }
+
+    [Fact]
     public void Of_the_simulators_files_only_a_language_code_counts()
     {
         using var folders = new Folders();

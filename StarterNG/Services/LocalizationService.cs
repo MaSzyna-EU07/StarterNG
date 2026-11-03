@@ -3,10 +3,10 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.IO;
 using System.Linq;
-using System.Text;
 using System.Text.RegularExpressions;
 using System.Xml;
 using StarterNG.Application.Abstractions;
+using StarterNG.Infrastructure.Adapters;
 
 namespace StarterNG.Services;
 
@@ -286,8 +286,9 @@ public class LocalizationService : INotifyPropertyChanged, ILocalizedStrings
             if (path is null)
                 return;
 
+            // The old starter's own files are code page 1250 as often as UTF-8.
             bool inDescriptions = false;
-            foreach (string line in File.ReadLines(path, Encoding.UTF8))
+            foreach (string line in LegacyText.Decode(File.ReadAllBytes(path)).ReplaceLineEndings("\n").Split('\n'))
             {
                 if (line.Contains("<eu07_input-keyboard.ini", StringComparison.Ordinal))
                 {
