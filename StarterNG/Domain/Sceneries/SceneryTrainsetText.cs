@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.RegularExpressions;
 using StarterNG.Classes;
@@ -163,17 +164,14 @@ public static class SceneryTrainsetText
     public static bool IsModified(Trainset trainset) =>
         trainset.Parsed && Signature(trainset) != SavedSignature(trainset.RawEntry);
 
-    private static readonly Dictionary<string, string> SavedSignatures = new();
+    /// <summary>
+    /// By the text a trainset holds, for as long as one holds it: a scenery read again
+    /// brings texts of its own, and those of the one it replaces go with it.
+    /// </summary>
+    private static readonly ConditionalWeakTable<string, string> SavedSignatures = new();
 
-    private static string SavedSignature(string raw)
-    {
-        lock (SavedSignatures)
-        {
-            if (!SavedSignatures.TryGetValue(raw, out string? signature))
-                SavedSignatures[raw] = signature = Signature(new Trainset(raw));
-            return signature;
-        }
-    }
+    private static string SavedSignature(string raw) =>
+        SavedSignatures.GetValue(raw, text => Signature(new Trainset(text)));
 
     private static string Signature(Trainset trainset) =>
         trainset.Velocity.ToString(CultureInfo.InvariantCulture) + "\n" +
