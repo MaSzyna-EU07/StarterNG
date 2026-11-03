@@ -110,6 +110,12 @@ public sealed class PhysicalFileSystem : IFileSystem
 
     public long GetFileSize(string path) => new FileInfo(path).Length;
 
+    public (DateTime LastWriteUtc, long Size)? LastWriteAndSize(string path)
+    {
+        var info = new FileInfo(path);
+        return info.Exists ? (info.LastWriteTimeUtc, info.Length) : null;
+    }
+
     public bool IsExecutable(string path)
     {
         if (OperatingSystem.IsWindows())

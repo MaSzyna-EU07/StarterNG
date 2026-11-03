@@ -55,6 +55,9 @@ public interface IFileSystem
 
     long GetFileSize(string path);
 
+    /// <summary>A file's time and size in one look; null when there is no file.</summary>
+    (DateTime LastWriteUtc, long Size)? LastWriteAndSize(string path);
+
     bool IsExecutable(string path);
 
     /// <summary>Where the symbolic link at <paramref name="path"/> points, or null for anything else.</summary>

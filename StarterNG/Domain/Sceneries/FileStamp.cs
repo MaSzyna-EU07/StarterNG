@@ -11,9 +11,7 @@ public readonly record struct FileStamp(DateTime LastWriteUtc, long Size)
     {
         try
         {
-            return files.FileExists(path)
-                ? new FileStamp(files.GetLastWriteTimeUtc(path), files.GetFileSize(path))
-                : null;
+            return files.LastWriteAndSize(path) is { } stat ? new FileStamp(stat.LastWriteUtc, stat.Size) : null;
         }
         catch (Exception)
         {

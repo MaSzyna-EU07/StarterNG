@@ -200,6 +200,9 @@ public sealed class InMemoryFileSystem : IFileSystem
     /// <summary>Files added through <see cref="WithExecutable"/> carry the execute bit.</summary>
     public long GetFileSize(string path) => Bytes(path).LongLength;
 
+    public (DateTime LastWriteUtc, long Size)? LastWriteAndSize(string path) =>
+        FileExists(path) ? (GetLastWriteTimeUtc(path), GetFileSize(path)) : null;
+
     public bool IsExecutable(string path) => _executable.Contains(Normalize(path));
 
     public InMemoryFileSystem WithExecutable(string path, string contents = "\u007fELF")
