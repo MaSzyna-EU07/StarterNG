@@ -237,8 +237,13 @@ public sealed class SettingsSerializer
         "starter.developertools",
     };
 
-    public void Write(SimulatorSettings s, ConfigFile c)
+    /// <summary>
+    /// The settings into <paramref name="c"/> as the simulator would run with them,
+    /// which leaves <paramref name="settings"/> as they are: a preview writes them too.
+    /// </summary>
+    public void Write(SimulatorSettings settings, ConfigFile c)
     {
+        var s = settings.Copy();
         GraphicsRules.Normalize(s, _dlssPlatform);
 
         c.Set("lang", string.IsNullOrWhiteSpace(s.LanguageCode)
