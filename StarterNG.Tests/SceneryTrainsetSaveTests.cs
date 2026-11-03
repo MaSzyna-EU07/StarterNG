@@ -23,7 +23,9 @@ public class SceneryTrainsetSaveTests
         "endtrainset\r\n" +
         "// koniec pliku z polską literą: żółw\r\n";
 
-    private static Encoding Cp1250 => Encoding.GetEncoding(1250);
+    // The application's own, which registers the code pages first; this class may be
+    // the first to need them, before any InMemoryFileSystem exists.
+    private static Encoding Cp1250 => LegacyText.CodePage1250;
 
     private static (InMemoryFileSystem Files, Scenery Scenery, SaveSceneryTrainset Save) Setup(string scn) =>
         Setup(Cp1250.GetBytes(scn));
