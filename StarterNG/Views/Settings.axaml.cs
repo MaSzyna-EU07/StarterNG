@@ -235,13 +235,13 @@ public partial class Settings : UserControl, ISettingsCapture
                                    App.Loc["ProfileSaveAs"], MessageBoxButtons.YesNo))
             return;
 
-        var store = AppServices.Current.SettingsStore;
+        // Written beside the user's own eu07.ini, which stays as it is.
         CaptureInto(AppServices.Current.Settings);
-        store.SaveTo(path);
+        bool saved = AppServices.Current.SettingsStore.ExportTo(path);
         PopulateProfileCombo();
         int idx = FindComboIndexByContent(ProfileCb, Path.GetFileNameWithoutExtension(path));
         if (idx >= 0) ProfileCb.SelectedIndex = idx;
-        SaveStatus.Text = string.Format(App.Loc[store.LastSaveFailed ? "ProfileNotSaved" : "ProfileSaved"], name);
+        SaveStatus.Text = string.Format(App.Loc[saved ? "ProfileSaved" : "ProfileNotSaved"], name);
     }
 
     private void PopulateExeCombo()

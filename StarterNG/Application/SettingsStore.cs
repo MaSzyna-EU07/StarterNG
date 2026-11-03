@@ -148,7 +148,7 @@ public sealed class SettingsStore
         SaveTo(_savePath);
     }
 
-    public void SaveTo(string path)
+    private void SaveTo(string path)
     {
         LastSaveFailed = true;
         if (LoadFailed)
@@ -242,6 +242,12 @@ public sealed class SettingsStore
     /// </summary>
     public bool ExportTo(string path)
     {
+        if (LoadFailed)
+        {
+            _log.Log($"{path} not written: the settings could not be read, what is held is defaults");
+            return false;
+        }
+
         var copy = ConfigFile.Parse(_config.ToText());
         ApplyChanges(copy, Changes(Settings));
 

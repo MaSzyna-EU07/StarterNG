@@ -1,3 +1,4 @@
+using StarterNG.Application;
 using StarterNG.Domain.Settings;
 using StarterNG.Tests.Fakes;
 
@@ -564,9 +565,23 @@ public class SettingsStoreTests
         var installation = WithHome(files);
         installation.SettingsStore.Load();
 
-        installation.SettingsStore.SaveTo(profile);
+        Assert.False(installation.SettingsStore.ExportTo(profile));
 
         Assert.False(files.FileExists(profile));
+    }
+
+    [Fact]
+    public void A_profile_written_leaves_what_the_users_file_still_lacks_to_be_saved()
+    {
+        var installation = WithHome(new InMemoryFileSystem().WithFile(UserIni, "uart COM3 57600 0.1\n"));
+        installation.SettingsStore.Load();
+        installation.SettingsStore.Settings.UartPort = "COM4";
+
+        Assert.True(installation.SettingsStore.ExportTo("/home/kolejarz/profile.ini"));
+
+        Assert.Contains(new IniChange("uart", "COM3 57600 0.1", "COM4 57600 0.1"),
+                        installation.SettingsStore.Changes(installation.SettingsStore.Settings));
+        Assert.Contains("uart COM3 57600 0.1", installation.Files.ReadAllText(UserIni));
     }
 
     [Fact]
