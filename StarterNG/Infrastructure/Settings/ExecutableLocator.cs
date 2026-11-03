@@ -267,7 +267,6 @@ public sealed class ExecutableLocator
         return extension.Length == 0 || extension is ".exe" or ".x86_64" or ".run" or ".appimage";
     }
 
-    /// <summary>A path as <see cref="Resolve"/> gives it, which may be relative to the installation.</summary>
     /// <summary>Whether the DLSS and frame generation libraries lie next to the simulator: without them it cannot use either.</summary>
     public (bool Dlss, bool FrameGeneration) DlssLibraries(string executable)
     {
@@ -295,6 +294,7 @@ public sealed class ExecutableLocator
 
     private bool Has(string directory, string pattern) => _files.GetFiles(directory, pattern).Count > 0;
 
+    /// <summary>A path as <see cref="Resolve"/> gives it, which may be relative to the installation, made whole.</summary>
     public string FullPath(string path) =>
         Path.IsPathRooted(path) ? path : Path.Combine(_paths.Root, path);
 
