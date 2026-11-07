@@ -9,6 +9,7 @@ public class ConsistCrewTests
 {
     private readonly Consist _consist;
     private readonly VehicleCatalog _catalog;
+    private readonly VehicleInfo _info;
 
     public ConsistCrewTests()
     {
@@ -20,7 +21,129 @@ public class ConsistCrewTests
         installation.Vehicles.Load(installation.Library.Vehicles);
 
         _catalog = installation.Library.Vehicles;
-        _consist = new Consist(_catalog, new VehicleInfo(_catalog, installation.Physics));
+        _info = new VehicleInfo(_catalog, installation.Physics);
+        _consist = new Consist(_catalog, _info);
+    }
+
+    private List<Dynamic> Cars(params string[] skins) =>
+        skins.Select(skin => _consist.MakeDynamic(_catalog.TextureForSkin(skin)!, null)).ToList();
+
+    [Theory]
+    [InlineData(eDriverType.Reardriver)]
+    [InlineData(eDriverType.Passenger)]
+    public void A_loaded_consist_keeps_the_kind_of_crew(eDriverType crew)
+    {
+        var before = Cars("ep07-001", "b111-01");
+        before[0].DriverType = crew;
+        var loaded = Cars("ep07-002", "b111-01");
+        loaded[0].DriverType = eDriverType.Headdriver;
+
+        var cars = Consist.LoadedOver(before, loaded, _catalog, _info);
+
+        Assert.Equal(crew, cars[0].DriverType);
+        Assert.Equal(eDriverType.Nobody, cars[1].DriverType);
+    }
+
+    [Fact]
+    public void A_consist_with_nobody_in_it_stays_so_after_loading()
+    {
+        var loaded = Cars("ep07-002");
+        loaded[0].DriverType = eDriverType.Headdriver;
+
+        var cars = Consist.LoadedOver(Cars("ep07-001"), loaded, _catalog, _info);
+
+        Assert.Equal(eDriverType.Nobody, cars[0].DriverType);
+    }
+
+    [Fact]
+    public void A_driver_does_not_go_into_loaded_wagons()
+    {
+        var before = Cars("ep07-001");
+        before[0].DriverType = eDriverType.Headdriver;
+
+        var cars = Consist.LoadedOver(before, Cars("b111-01"), _catalog, _info);
+
+        Assert.Equal(eDriverType.Nobody, cars[0].DriverType);
+    }
+
+    [Fact]
+    public void Loaded_over_an_empty_consist_the_vehicles_keep_their_own_crew()
+    {
+        var loaded = Cars("ep07-002");
+        loaded[0].DriverType = eDriverType.Reardriver;
+
+        Assert.Equal(eDriverType.Reardriver,
+                     Consist.LoadedOver(new List<Dynamic>(), loaded, _catalog, _info)[0].DriverType);
+    }
+
+    [Fact]
+    public void Vehicles_joining_a_consist_come_without_their_own_crew()
+    {
+        var before = Cars("ep07-001");
+        before[0].DriverType = eDriverType.Headdriver;
+        var added = Cars("ep07-002");
+        added[0].DriverType = eDriverType.Headdriver;
+
+        var cars = Consist.Joined(before, added);
+
+        Assert.Equal(eDriverType.Headdriver, cars[0].DriverType);
+        Assert.Equal(eDriverType.Nobody, cars[1].DriverType);
+    }
+
+    [Fact]
+    public void A_locomotive_moved_to_the_head_takes_the_driver_in_the_same_cab()
+    {
+        var first = Add("ep07-001", 0);
+        var second = Add("ep07-002", 1);
+        first.Driver = eDriverType.Reardriver;
+        first.Cars[0].DriverType = eDriverType.Reardriver;
+
+        _consist.Move(1, 0);
+
+        Assert.Equal(eDriverType.Reardriver, second.Cars[0].DriverType);
+        Assert.Equal(eDriverType.Nobody, first.Cars[0].DriverType);
+    }
+
+    [Fact]
+    public void Vehicles_joining_an_empty_consist_keep_their_crew()
+    {
+        var added = Cars("ep07-002");
+        added[0].DriverType = eDriverType.Headdriver;
+
+        Assert.Equal(eDriverType.Headdriver, Consist.Joined(new List<Dynamic>(), added)[0].DriverType);
+    }
+
+    [Fact]
+    public void Selecting_a_wagon_keeps_the_locomotive_as_the_starting_vehicle()
+    {
+        var loco = Add("ep07-001", 0);
+        var wagon = Add("b111-01", 1);
+        loco.Cars[0].Name = "loco";
+        wagon.Cars[0].Name = "wagon";
+
+        Assert.Equal("loco", Consist.StartingVehicle(_consist, wagon, "loco"));
+    }
+
+    [Fact]
+    public void A_wagon_selected_after_a_stale_pick_falls_back_to_the_driver()
+    {
+        var loco = Add("ep07-001", 0);
+        var wagon = Add("b111-01", 1);
+        loco.Cars[0].Name = "loco";
+
+        Assert.Equal("loco", Consist.StartingVehicle(_consist, wagon, "gone"));
+    }
+
+    [Fact]
+    public void Selecting_a_crewed_unit_makes_it_the_starting_vehicle()
+    {
+        var first = Add("ep07-001", 0);
+        var wagon = Add("b111-01", 1);
+        first.Cars[0].Name = "loco";
+        wagon.Cars[0].Name = "wagon";
+        wagon.Cars[0].DriverType = eDriverType.Passenger;
+
+        Assert.Equal("wagon", Consist.StartingVehicle(_consist, wagon, "loco"));
     }
 
     [Fact]

@@ -98,4 +98,25 @@ public class SceneryRepositoryTests
 
         Assert.Null(new SceneryImageLocator(files).Resolve(scenery));
     }
+
+    [Fact]
+    public void The_copy_written_for_a_start_keeps_each_file_in_its_own_encoding()
+    {
+        const string cars =
+            "trainset none droga 0 0\r\n" +
+            "node -1 0 żuk dynamic road\\zuk zuk zuk 0 headdriver 0 0 enddynamic\r\n" +
+            "endtrainset\r\n";
+        var files = new InMemoryFileSystem()
+            .WithLegacyFile(Path.Combine("game", "scenery", "kato.scn"),
+                            "//$n Łódź\r\nFirstInit\r\ninclude auta.scm end\r\n")
+            .WithFile(Path.Combine("game", "scenery", "auta.scm"), cars);
+        var scenery = Assert.Single(Build(files, out _).LoadAll());
+
+        byte[] exported = scenery.BuildExportBytes(skipDecorTrainsets: false, new StubRandom());
+
+        static bool Has(byte[] text, byte[] part) => text.AsSpan().IndexOf(part) >= 0;
+        Assert.True(Has(exported, LegacyText.CodePage1250.GetBytes("//$n Łódź\r\n")));
+        Assert.True(Has(exported, Encoding.UTF8.GetBytes("żuk dynamic")));
+        Assert.False(Has(exported, Encoding.UTF8.GetBytes("Łódź")));
+    }
 }

@@ -29,8 +29,11 @@ public sealed class FizPhysicsRepository : IPhysicsRepository
     private readonly ConcurrentDictionary<string, VehiclePhysics?> _cache =
         new(StringComparer.OrdinalIgnoreCase);
 
+    // Names repeat between folders: 214m.fiz is one vehicle in 21xm_v1, another in sa134_v1.
+    private sealed record FizIndex(Dictionary<string, string> ByFolderAndName, Dictionary<string, string> ByName);
+
     private readonly object _indexGate = new();
-    private Dictionary<string, string>? _index;
+    private FizIndex? _index;
 
     public FizPhysicsRepository(IFileSystem files, IGamePaths paths, IDiagnosticsLog log)
     {
@@ -41,7 +44,7 @@ public sealed class FizPhysicsRepository : IPhysicsRepository
 
     public void Preload() => Index();
 
-    public int IndexedCount => _index?.Count ?? 0;
+    public int IndexedCount => _index?.ByName.Count ?? 0;
 
     public VehiclePhysics? For(string? dataFolder, string? model)
     {
@@ -52,20 +55,34 @@ public sealed class FizPhysicsRepository : IPhysicsRepository
         if (name.Length == 0)
             return null;
 
-        if (_cache.TryGetValue(name, out var cached))
+        string folder = FolderKey(dataFolder);
+        string key = FizKey(folder, name);
+        if (_cache.TryGetValue(key, out var cached))
             return cached;
 
-        var physics = Read(name);
-        _cache[name] = physics;
+        var physics = Read(folder, name);
+        _cache[key] = physics;
         return physics;
     }
 
-    private VehiclePhysics? Read(string name)
+    private static string FizKey(string folder, string name) => $"{folder}/{name}";
+
+    /// <summary>A vehicle's folder under dynamic, however the caller spells it.</summary>
+    private static string FolderKey(string? folder)
+    {
+        const string dynamicPrefix = "dynamic/";
+        string key = (folder ?? "").Replace('\\', '/').Trim('/');
+        return key.StartsWith(dynamicPrefix, StringComparison.OrdinalIgnoreCase) ? key[dynamicPrefix.Length..] : key;
+    }
+
+    private VehiclePhysics? Read(string folder, string name)
     {
         var index = Index();
 
-        if (!index.TryGetValue(name, out string? path) &&
-            !index.TryGetValue(name + "dumb", out path))
+        if (!index.ByFolderAndName.TryGetValue(FizKey(folder, name), out string? path) &&
+            !index.ByFolderAndName.TryGetValue(FizKey(folder, name + "dumb"), out path) &&
+            !index.ByName.TryGetValue(name, out path) &&
+            !index.ByName.TryGetValue(name + "dumb", out path))
             return null;
 
         var physics = new VehiclePhysics { AllowedFlagB = UndeclaredCoupler };
@@ -88,26 +105,33 @@ public sealed class FizPhysicsRepository : IPhysicsRepository
         return physics;
     }
 
-    private Dictionary<string, string> Index()
+    private FizIndex Index()
     {
         lock (_indexGate)
         {
             if (_index is not null)
                 return _index;
 
-            var index = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            var byFolder = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            var byName = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
             try
             {
-                foreach (string file in _files.GetFilesRecursive(_paths.Dynamic, "*.fiz"))
-                    index[Path.GetFileNameWithoutExtension(file)] = file;
+                // Sorted, so which of two namesakes a name alone finds is the same on every machine.
+                foreach (string file in _files.GetFilesRecursive(_paths.Dynamic, "*.fiz").Order(StringComparer.OrdinalIgnoreCase))
+                {
+                    string name = Path.GetFileNameWithoutExtension(file);
+                    string folder = FolderKey(Path.GetDirectoryName(Path.GetRelativePath(_paths.Dynamic, file)));
+                    byFolder[FizKey(folder, name)] = file;
+                    byName.TryAdd(name, file);
+                }
             }
             catch (Exception ex)
             {
                 _log.Log($"indexing {_paths.Dynamic}", ex);
             }
 
-            _index = index;
-            return index;
+            _index = new FizIndex(byFolder, byName);
+            return _index;
         }
     }
 

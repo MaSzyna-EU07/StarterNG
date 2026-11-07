@@ -106,13 +106,7 @@ public static class UDepot
         d.SkinFile = Dynamic.StripSkinExtension(t[p++]);
         d.MmdFile = t[p++];
         d.Offset = float.Parse(t[p++], inv);
-        d.DriverType = t[p++].ToLowerInvariant() switch
-        {
-            "headdriver" => eDriverType.Headdriver,
-            "reardriver" => eDriverType.Reardriver,
-            "passenger" => eDriverType.Passenger,
-            _ => eDriverType.Nobody
-        };
+        d.DriverType = Dynamic.ParseDriver(t[p++]);
         d.Coupling = Coupling.Parse(t[p++]);
 
         var trailing = new List<string>();

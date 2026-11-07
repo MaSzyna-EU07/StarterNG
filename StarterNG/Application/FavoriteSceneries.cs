@@ -18,6 +18,9 @@ public sealed class FavoriteSceneries
     private readonly string _path;
     private readonly HashSet<string> _names = new(StringComparer.OrdinalIgnoreCase);
 
+    // The file holds more than _names does: it goes aside before anything replaces it.
+    private bool _unread;
+
     public FavoriteSceneries(IFileSystem files, IDiagnosticsLog log, string path)
     {
         _files = files;
@@ -52,6 +55,7 @@ public sealed class FavoriteSceneries
         catch (Exception ex)
         {
             _log.Log($"reading {_path}", ex);
+            _unread = true;
         }
     }
 
@@ -62,7 +66,12 @@ public sealed class FavoriteSceneries
             if (Path.GetDirectoryName(_path) is { Length: > 0 } directory)
                 _files.CreateDirectory(directory);
 
-            _files.WriteAllText(_path, string.Join('\n', _names.Order(StringComparer.OrdinalIgnoreCase)));
+            if (_unread)
+            {
+                _files.KeepAside(_path, _log);
+                _unread = false;
+            }
+            _files.WriteAllTextAtomic(_path, string.Join('\n', _names.Order(StringComparer.OrdinalIgnoreCase)));
         }
         catch (Exception ex)
         {

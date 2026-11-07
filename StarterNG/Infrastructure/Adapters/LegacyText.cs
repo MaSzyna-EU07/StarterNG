@@ -30,16 +30,31 @@ public static class LegacyText
     /// most files are 1250, and that was an exception per file on every load.
     /// A byte order mark is dropped, or it would stick to the first token.
     /// </summary>
-    public static string Decode(byte[] bytes)
-    {
-        ReadOnlySpan<byte> text = bytes;
-        if (text.StartsWith(Utf8Bom))
-            text = text[Utf8Bom.Length..];
+    public static string Decode(byte[] bytes) => Decode(bytes, out _);
 
-        return Utf8.IsValid(text) ? Encoding.UTF8.GetString(text) : CodePage1250.GetString(text);
+    /// <param name="encoding">What the file is written in, for what is made of it to go back in the same.</param>
+    public static string Decode(byte[] bytes, out Encoding encoding)
+    {
+        (encoding, var bom) = Detect(bytes);
+        return encoding.GetString(bytes, bom.Length, bytes.Length - bom.Length);
     }
 
-    private static ReadOnlySpan<byte> Utf8Bom => [0xEF, 0xBB, 0xBF];
+    /// <summary>
+    /// What a game file is written in, so it is written back the way it was read:
+    /// UTF-8 only for a file that is UTF-8 and says so with its mark or a letter
+    /// outside ASCII, code page 1250 - the game's own - else. That one gives every
+    /// byte back as it was, also behind a mark that lied; UTF-8 would turn what is
+    /// not UTF-8 into replacement characters.
+    /// </summary>
+    public static (Encoding Encoding, byte[] Bom) Detect(byte[] bytes)
+    {
+        byte[] bom = bytes.AsSpan().StartsWith(Utf8Bom) ? Utf8Bom : Array.Empty<byte>();
+        var body = bytes.AsSpan(bom.Length);
+        bool utf8 = Utf8.IsValid(body) && (bom.Length > 0 || body.ContainsAnyInRange((byte)0x80, (byte)0xFF));
+        return (utf8 ? new UTF8Encoding(false) : CodePage1250, bom);
+    }
+
+    private static readonly byte[] Utf8Bom = { 0xEF, 0xBB, 0xBF };
 
     private static Encoding Resolve()
     {

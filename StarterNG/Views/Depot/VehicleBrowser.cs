@@ -1,21 +1,17 @@
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Templates;
 using Avalonia.Input;
-using Avalonia.Input.Platform;
 using Avalonia.Layout;
 using Avalonia.Media;
-using Avalonia.Media.Imaging;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
 
 using StarterNG.Classes;
 using StarterNG.Domain;
-using StarterNG.Domain.Sceneries;
 using StarterNG.Domain.Vehicles;
 using StarterNG.Application;
 using StarterNG.Controls;
@@ -45,7 +41,7 @@ public sealed class VehicleBrowser
         _suppress = true;
         hideArchivalCheck.IsChecked = hideArchival;
         _suppress = false;
-        Rebuild();
+        PopulateCategoryCombo();
     }
 
     public VehicleTexture? Selected { get; private set; }
@@ -54,6 +50,9 @@ public sealed class VehicleBrowser
 
     /// <summary>Adds the vehicle to the consist the given number of times.</summary>
     public Action<VehicleTexture, int>? AddMany { get; set; }
+
+    /// <summary>Puts the vehicle in place of the one selected in the consist.</summary>
+    public Action<VehicleTexture>? Replace { get; set; }
 
     private bool _suppress;
     private bool _syncingCombos;
@@ -96,7 +95,7 @@ public sealed class VehicleBrowser
 
 
     // In the old starter's order: traction first, then the wagons, then the rest.
-    private static readonly (string LocKey, Func<string?, bool> Match)[] CategoryDefs =
+    internal static readonly (string LocKey, Func<string?, bool> Match)[] CategoryDefs =
     {
         ("CatElectricLoco", c => c == "e"),
         ("CatDieselLoco",   c => c == "s"),
@@ -202,10 +201,10 @@ public sealed class VehicleBrowser
         !(AppServices.Current.Settings.HideArchivalVehicles && texture.ResolvedArchived);
 
     /// <summary>
-    /// The classes with their thumbnail above the name: in the open list at the size
-    /// the consist cards use, called again when that size changes; in the closed box
-    /// at a fixed modest one, so the class picked is seen, as in the old starter,
-    /// without taking the height the vehicle list needs.
+    /// The classes with their thumbnail: above the name in the open list, at the size
+    /// the consist cards use, called again when that size changes; beside it in the
+    /// closed box at a fixed modest one, so the class picked is seen, as in the old
+    /// starter, without taking the height the vehicle list needs.
     /// </summary>
     public void InitClassComboTemplates()
     {
@@ -213,7 +212,7 @@ public sealed class VehicleBrowser
         classCombo.ItemTemplate = new FuncDataTemplate<string>(
             (cls, _) => ClassComboContent(cls, height, stacked: true), false);
         classCombo.SelectionBoxItemTemplate = new FuncDataTemplate<string>(
-            (cls, _) => ClassComboContent(cls, PickedClassThumbHeight, stacked: true), false);
+            (cls, _) => ClassComboContent(cls, PickedClassThumbHeight, stacked: false), false);
     }
 
     private const int PickedClassThumbHeight = 30;
@@ -363,6 +362,7 @@ public sealed class VehicleBrowser
             var row = new ListBoxItem
             {
                 Content = BrowserLabel(texture, _db.ResolveSet(texture)),
+                HorizontalContentAlignment = HorizontalAlignment.Stretch,
                 Tag = texture
             };
             vehicleListBox.Items.Add(row);
@@ -415,60 +415,26 @@ public sealed class VehicleBrowser
     {
         var menu = new ContextMenu();
 
-        var addMany = new MenuItem { Header = App.Loc["AddMany"], IsEnabled = AddMany is not null };
-        addMany.Click += (_, _) =>
-            AddManyFlyout.Show(anchor, PlacementMode.Right, count => AddMany?.Invoke(texture, count));
-        menu.Items.Add(addMany);
+        // What the buttons under the list do, for the vehicle the menu was opened on.
+        menu.AddItem(App.Loc["AddVehicle"], () => AddMany?.Invoke(texture, 1), AddMany is not null,
+                     new KeyGesture(Key.Insert));
+        menu.AddItem(App.Loc["ReplaceVehicle"], () => Replace?.Invoke(texture), Replace is not null);
+        menu.AddItem(App.Loc["AddMany"],
+                     () => AddManyFlyout.Show(anchor, PlacementMode.Right, count => AddMany?.Invoke(texture, count)),
+                     AddMany is not null);
         menu.Items.Add(new Separator());
 
-        var copy = new MenuItem { Header = App.Loc["CopyTextureName"] };
-        copy.Click += async (_, _) =>
-        {
-            var top = TopLevel.GetTopLevel(vehicleListBox);
-            if (top?.Clipboard != null)
-                await top.Clipboard.SetTextAsync(BrowserName(texture));
-        };
-        menu.Items.Add(copy);
-
-        var open = new MenuItem { Header = App.Loc["OpenTextureFolder"] };
-        open.Click += (_, _) =>
-        {
-            string dir = Path.Combine(Directory.GetCurrentDirectory(), "dynamic",
-                texture.Directory.Replace('/', Path.DirectorySeparatorChar).TrimEnd('\\', '/'));
-            if (!Directory.Exists(dir))
-                dir = Path.Combine(Directory.GetCurrentDirectory(), texture.Directory);
-            if (!Directory.Exists(dir))
-            {
-                StarterNG.Infrastructure.Diagnostics.ReportOnUiThread(
-                    string.Format(App.Loc["FaultFileNotFound"], dir));
-                return;
-            }
-            try
-            {
-                System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(dir)
-                {
-                    UseShellExecute = true
-                });
-            }
-            catch (Exception ex)
-            {
-                StarterNG.Infrastructure.Diagnostics.ReportOnUiThread(
-                    $"{dir}{Environment.NewLine}{Environment.NewLine}{App.Loc["FaultDetail"]} {ex.Message}");
-            }
-        };
-        menu.Items.Add(open);
+        TextureMenuItems.Add(menu, vehicleListBox, texture);
 
         menu.Items.Add(new Separator());
-        var baseItem = new MenuItem { Header = App.Loc["OpenTextureBase"] };
-        baseItem.Click += (_, _) => _openTextureBase();
-        menu.Items.Add(baseItem);
+        menu.AddItem(App.Loc["OpenTextureBase"], _openTextureBase);
 
         return menu;
     }
 
     /// <summary>
-    /// Fills a detail panel with what is known about a livery: the skin itself,
-    /// then whatever its credit line carries.
+    /// Fills a detail panel with what is known about a livery: the model it
+    /// dresses, then whatever its credit line carries.
     /// </summary>
     /// <remarks>
     /// Built from the same <see cref="DetailRows"/> as the general tab, so the
@@ -491,7 +457,7 @@ public sealed class VehicleBrowser
             tooltip.Add($"{label}: {value}");
         }
 
-        Reading(App.Loc["TextureInfo"], Consist.Base(texture.Skinfile));
+        // No line for the skin's name: the general tab and the list both carry it.
         Reading(App.Loc["Model"], texture.Directory + texture.Model);
 
         if (texture.Meta is { } meta)
@@ -557,20 +523,35 @@ public sealed class VehicleBrowser
     // called a vehicle something none of the other panels did.
     private static string BrowserName(VehicleTexture texture) => Consist.Base(texture.Skinfile);
 
-    // The file name alone, as the old starter listed it - the operator is in the
-    // texture panel - with a faint count for a set of cars.
+    // The file name, as the old starter listed it, with a faint count for a set
+    // of cars and the operator at the far end - liveries of one vehicle differ
+    // mostly by who runs them.
     private static Control BrowserLabel(VehicleTexture texture, IReadOnlyList<VehicleTexture>? set)
     {
-        var name = new TextBlock { Text = BrowserName(texture) };
-        if (set is not { Count: > 1 })
-            return name;
+        // Clear of the scroll bar, which lies over the right edge of the list.
+        var row = new DockPanel { Margin = new Thickness(0, 0, 10, 0) };
 
-        return new StackPanel
+        string? op = texture.Meta?.Operator;
+        if (!string.IsNullOrWhiteSpace(op) && op != "?")
         {
-            Orientation = Orientation.Horizontal,
-            Spacing = 6,
-            Children = { name, new TextBlock { Text = $"×{set.Count}", Opacity = 0.55 } }
-        };
+            var operatorText = new TextBlock
+            {
+                Text = op,
+                Opacity = 0.55,
+                Margin = new Thickness(8, 0, 0, 0),
+                TextTrimming = TextTrimming.CharacterEllipsis
+            };
+            DockPanel.SetDock(operatorText, Dock.Right);
+            row.Children.Add(operatorText);
+        }
+
+        var name = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 6 };
+        name.Children.Add(new TextBlock { Text = BrowserName(texture) });
+        if (set is { Count: > 1 })
+            name.Children.Add(new TextBlock { Text = $"×{set.Count}", Opacity = 0.55 });
+        row.Children.Add(name);
+
+        return row;
     }
 
     public void SearchBox_OnTextChanged(object? sender, TextChangedEventArgs e)

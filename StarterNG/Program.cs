@@ -1,4 +1,5 @@
 using Avalonia;
+using Avalonia.Threading;
 using System;
 using System.Threading.Tasks;
 using StarterNG.Application;
@@ -50,9 +51,22 @@ static class Program
         return builder;
     }
 
+    // After setup: the dispatcher takes its platform's implementation when first asked
+    // for. Not marked handled: a handler that failed half way leaves the state unknown,
+    // and the exception goes on to end the program as before, only no longer unexplained.
+    private static void LogUiExceptions()
+    {
+        Dispatcher.UIThread.UnhandledException += (_, e) =>
+        {
+            Diagnostics.Log("Unhandled UI exception", e.Exception);
+            Diagnostics.Flush();
+        };
+    }
+
     public static AppBuilder BuildAvaloniaApp()
         => AppBuilder.Configure<App>()
             .UsePlatformDetect()
             .WithInterFont()
-            .WithDiagnosticsLogging();
+            .WithDiagnosticsLogging()
+            .AfterSetup(_ => LogUiExceptions());
 }

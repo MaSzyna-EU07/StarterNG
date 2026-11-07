@@ -55,11 +55,28 @@ public class SimulatorExitTests
             ? ("cmd", new[] { "/c", "echo boom 1>&2 & exit 3" })
             : ("/bin/sh", new[] { "-c", "echo boom >&2; exit 3" });
 
-        var process = launcher.Start(shell, script, null, captureErrors: true, out string? error);
+        var process = launcher.Start(shell, script, null, new Dictionary<string, string>(), captureErrors: true,
+                                     out string? error);
         Assert.Null(error);
         await process!.WaitForExitAsync();
 
         Assert.Equal(3, process.ExitCode);
         Assert.Equal("boom", Assert.Single(process.ErrorTail).Trim());
+    }
+
+    [Fact]
+    public async Task A_real_process_gets_the_environment_it_was_given()
+    {
+        var launcher = new SystemProcessLauncher(new TestInstallation().Log);
+        var (shell, script) = OperatingSystem.IsWindows()
+            ? ("cmd", new[] { "/c", "echo %__NV_PRIME_RENDER_OFFLOAD% 1>&2" })
+            : ("/bin/sh", new[] { "-c", "echo $__NV_PRIME_RENDER_OFFLOAD >&2" });
+
+        var process = launcher.Start(shell, script, null,
+                                     new Dictionary<string, string> { ["__NV_PRIME_RENDER_OFFLOAD"] = "1" },
+                                     captureErrors: true, out _);
+        await process!.WaitForExitAsync();
+
+        Assert.Equal("1", Assert.Single(process.ErrorTail).Trim());
     }
 }

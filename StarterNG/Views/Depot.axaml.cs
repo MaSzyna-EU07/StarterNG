@@ -1,19 +1,12 @@
 using System;
 using System.Collections.Generic;
-using System.Globalization;
 using System.IO;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Controls;
-using Avalonia.Controls.Primitives;
-using Avalonia.Controls.Templates;
 using Avalonia.Input;
-using Avalonia.Input.Platform;
-using Avalonia.Layout;
 using Avalonia.Media;
-using Avalonia.Media.Imaging;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
 using StarterNG.Classes;
@@ -54,6 +47,16 @@ public partial class Depot : UserControl
 
     private Scenery? _listScenery;
 
+    private readonly ConsistHistory _history = new();
+
+    /// <summary>Set while an undo or redo puts a state back, which is not a change of its own.</summary>
+    private bool _restoring;
+
+    private readonly WarehouseEdit _warehouseEdit = new();
+
+    private bool EditingWarehouse =>
+        _warehouseEdit.Trainset is not null && ReferenceEquals(_consist.EditingTrainset, _warehouseEdit.Trainset);
+
     public Depot()
     {
         _info = new VehicleInfo(_db, AppServices.Current.Physics);
@@ -67,13 +70,19 @@ public partial class Depot : UserControl
             return;
 
         _warehouse = new Warehouse(warehouseList, removeFromWarehouseButton, _hand,
-            () => _consist.EditingTrainset, ApplyConsist);
+            () => AppServices.Current.State.CurrentTrainset, ApplyFromWarehouse);
+        _warehouse.SelectionChanged += () =>
+        {
+            if (WarehouseTabOpen)
+                EditWarehouseSelection();
+        };
+        _warehouse.Renamed += _warehouseEdit.Renamed;
 
         _browser = new VehicleBrowser(categoryCombo, classCombo, vehicleListBox, searchBox,
-            hideArchivalCheck, miniPreview, addVehicleButton, _db, _minis,
-            () => TextureBaseButton_OnClick(null, null!))
+            hideArchivalCheck, miniPreview, addVehicleButton, _db, _minis, OpenVehicleBase)
         {
-            AddMany = (texture, count) => AddTexture(texture, count)
+            AddMany = (texture, count) => AddTexture(texture, count),
+            Replace = ReplaceSelected
         };
 
         _drag = new ConsistDragging(consistStack, consistScroll, consistOverlay,
@@ -83,7 +92,13 @@ public partial class Depot : UserControl
         _cards = new VehicleCards(consistStack, _db, _consist, _cargo, _minis, _hand,
             RebuildConsist, () => _details.Refresh(), _browser.SelectInBrowser, _drag.ArmCardDrag)
         {
-            AddCopies = AddCopiesAfter
+            AddCopies = AddCopiesAfter,
+            BrowserSelection = () => _browser.Selected,
+            ReplaceWith = (item, texture) =>
+            {
+                _consist.Selected = item;
+                ReplaceSelected(texture);
+            }
         };
 
         // Hidden still scrolls - it only drops the bar itself.
@@ -92,8 +107,16 @@ public partial class Depot : UserControl
         _details = new VehicleDetails(
             generalPanel, consistTexturePanel, couplerPanel, couplerActions,
             brakesPanel, loadsPanel, damagePanel, removeVehicleButton,
-            _db, _info, _consist, _cargo, _hand,
-            RebuildConsist, _cards.RefreshMemberChrome, _browser.ShowTextureInfo);
+            _info, _consist, _cargo, _hand,
+            RebuildConsist, _cards.RefreshMemberChrome, _browser.ShowTextureInfo)
+        {
+            // A warehouse consist is kept in its file; a scenery one is the list itself.
+            Edited = () =>
+            {
+                if (EditingWarehouse)
+                    _warehouseEdit.Save();
+            }
+        };
 
         _browser.TextureSelected = _details.ShowTexture;
 
@@ -112,22 +135,101 @@ public partial class Depot : UserControl
         AttachedToVisualTree += (_, _) => SyncFromSelection();
         PropertyChanged += (_, e) =>
         {
-            if (e.Property == IsVisibleProperty && IsVisible)
+            if (e.Property != IsVisibleProperty)
+                return;
+            if (!IsVisible)
             {
-                SyncFromSelection();
-                _warehouse.Refresh();
+                RememberConsistOnLeaving();
+                return;
             }
+            if (ConsistMovedSinceLeaving())
+                ShowSceneryTab();
+            SyncFromSelection();
+            _warehouse.Refresh();
         };
     }
 
+    private Trainset? _leftTrainset;
+
+    private List<Dynamic> _leftVehicles = new();
+
+    private void RememberConsistOnLeaving()
+    {
+        _leftTrainset = AppServices.Current.State.CurrentTrainset;
+        _leftVehicles = _leftTrainset?.Vehicles.ToList() ?? new List<Dynamic>();
+    }
+
+    /// <summary>Another consist was picked or this one changed on another page: the warehouse tab left open would hide it.</summary>
+    private bool ConsistMovedSinceLeaving() =>
+        AppServices.Current.State.CurrentTrainset is { } trainset &&
+        (!ReferenceEquals(trainset, _leftTrainset) || !trainset.Vehicles.SequenceEqual(_leftVehicles));
+
     private void AddToWarehouseButton_OnClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e) =>
-        _ = _warehouse.SaveCurrentAsync();
+        _warehouse.SaveCurrent((Control)sender!);
 
     private void RemoveFromWarehouseButton_OnClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e) =>
         _ = _warehouse.RemoveSelectedAsync();
 
-    private void WarehouseList_OnDoubleTapped(object? sender, Avalonia.Input.TappedEventArgs e) =>
-        _warehouse.ApplySelected();
+    private bool WarehouseTabOpen => ReferenceEquals(consistSourceTabs.SelectedItem, warehouseTab);
+
+    private void ConsistSourceTabs_OnSelectionChanged(object? sender, SelectionChangedEventArgs e)
+    {
+        // The lists inside the tabs raise the same event, and it bubbles up here.
+        if (!ReferenceEquals(e.Source, consistSourceTabs) || Design.IsDesignMode)
+            return;
+
+        if (WarehouseTabOpen)
+        {
+            // A consist saved from a menu elsewhere went in while this list was not shown.
+            _warehouse.Refresh();
+            EditWarehouseSelection();
+        }
+        else
+            EditSceneryConsist();
+    }
+
+    /// <summary>The strip takes the warehouse consist selected, or goes empty without one.</summary>
+    private void EditWarehouseSelection()
+    {
+        if (_warehouse.SelectedPreset() is not { } preset)
+        {
+            _warehouseEdit.Close();
+            _consist.Unload();
+            return;
+        }
+
+        var trainset = _warehouseEdit.Open(preset);
+        if (ReferenceEquals(_consist.EditingTrainset, trainset))
+            RebuildConsist();
+        else
+            _consist.LoadFrom(trainset);
+    }
+
+    /// <summary>Back on the scenery tab, the strip edits the consist that will be started.</summary>
+    private void EditSceneryConsist()
+    {
+        _warehouseEdit.Close();
+        if (AppServices.Current.State.CurrentTrainset is { } trainset)
+            _consist.LoadFrom(trainset);
+        else
+            _consist.Unload();
+    }
+
+    private void ShowSceneryTab()
+    {
+        if (WarehouseTabOpen)
+            consistSourceTabs.SelectedItem = sceneryConsistsTab;
+    }
+
+    /// <summary>From the warehouse's menu: shown where it went, on the scenery tab.</summary>
+    private void ApplyFromWarehouse(Trainset target, List<Dynamic> vehicles)
+    {
+        ShowSceneryTab();
+        ApplyConsist(target, vehicles);
+    }
+
+    private bool IsSceneryTrainset(Trainset trainset) =>
+        _listScenery?.Trainsets.Contains(trainset) == true;
 
     private void CategoryCombo_OnSelectionChanged(object? sender, SelectionChangedEventArgs e) =>
         _browser.CategoryCombo_OnSelectionChanged(sender, e);
@@ -169,6 +271,13 @@ public partial class Depot : UserControl
     private Dynamic NewVehicle(VehicleTexture texture) =>
         _consist.MakeDynamic(texture, _listScenery ?? AppServices.Current.State.CurrentScenery);
 
+    /// <summary>The scenery files changed under the page in view; out of view it catches up on its way back.</summary>
+    public void FollowSceneryFiles()
+    {
+        if (IsVisible)
+            SyncFromSelection();
+    }
+
     private void SyncFromSelection()
     {
 
@@ -177,25 +286,48 @@ public partial class Depot : UserControl
         PopulateSceneryConsists();
 
         var trainset = AppServices.Current.State.CurrentTrainset;
-        if (trainset != null && !ReferenceEquals(trainset, _consist.EditingTrainset))
-            _consist.LoadFrom(trainset);
-        else if (_consist.EditingTrainset != null)
+        if (WarehouseTabOpen)
             RebuildConsist();
+        else if (trainset is null)
+        {
+            // Another scenery, with no consist picked: the old one's is not edited on.
+            if (_consist.EditingTrainset != null)
+                _consist.Unload();
+        }
+        else if (!ReferenceEquals(trainset, _consist.EditingTrainset))
+            _consist.LoadFrom(trainset);
+        else
+        {
+            ReloadIfEditedElsewhere();
+            RebuildConsist();
+        }
+    }
+
+    /// <summary>
+    /// The strip holds the vehicles written back last. A list that no longer holds
+    /// them was changed on the scenarios page or by a tool, and the next write-back
+    /// would put the strip's old vehicles over that change.
+    /// </summary>
+    private void ReloadIfEditedElsewhere()
+    {
+        if (_consist.EditingTrainset is { } trainset && !_consist.Flatten().SequenceEqual(trainset.Vehicles))
+            _consist.LoadFrom(trainset, _consist.Selected is { } selected ? Math.Max(_consist.IndexOf(selected), 0) : 0);
     }
 
     public void RebuildAfterLanguageChange()
     {
         _browser.PopulateCategoryCombo();
         PopulateSceneryConsists();
+        ReloadIfEditedElsewhere();
         RebuildConsist();
         _details.Refresh();
     }
 
-    /// <summary>Redraws the consist cards, e.g. after the thumbnail size changed.</summary>
     /// <summary>Redraws what depends on the thumbnail size: the consist and the class list.</summary>
     public void RefreshConsistView()
     {
         _browser.InitClassComboTemplates();
+        ReloadIfEditedElsewhere();
         RebuildConsist();
     }
 
@@ -217,6 +349,9 @@ public partial class Depot : UserControl
         }
 
         emptyHint.IsVisible = _consist.Count == 0;
+        emptyHint.Text = _consist.EditingTrainset is not null
+            ? App.Loc["ConsistEmpty"]
+            : App.Loc[WarehouseTabOpen ? "WarehousePickHint" : "ConsistPickHint"];
 
         // A selection the consist moved on its own - after a removal, say - is only
         // highlighted; activating it runs what a click would have run.
@@ -226,8 +361,10 @@ public partial class Depot : UserControl
 
         // The stats are read off the trainset, so it is written back first.
         WriteBackToScenery();
+        RecordHistory();
         _details.Refresh();
         UpdateTrainStats();
+        UpdateConsistChrome();
 
         // The cards are thrown away and rebuilt on every change, so a keyboard-driven
         // edit has to be handed its card back or focus escapes the strip.
@@ -240,7 +377,154 @@ public partial class Depot : UserControl
             return;
 
         _consist.EditingTrainset.Vehicles = _consist.Flatten();
+        if (EditingWarehouse)
+        {
+            _warehouseEdit.Save();
+            return;
+        }
+
         RefreshConsistListLabels();
+
+        // The start button reads the crew off the trainset, which was not written
+        // back yet when the selection named the vehicle to start in - without this
+        // it went on saying "no crew" until a vehicle was clicked on the scenarios tab.
+        if (ReferenceEquals(_consist.EditingTrainset, AppServices.Current.State.CurrentTrainset))
+            AppServices.Current.State.NotifyChanged();
+    }
+
+    /// <summary>
+    /// The title says which consist the strip edits; the scenery file's tools and
+    /// "add to warehouse" are for a scenery consist only.
+    /// </summary>
+    private void UpdateConsistChrome()
+    {
+        bool warehouse = EditingWarehouse;
+        consistGroup.Header = warehouse
+            ? string.Format(App.Loc["ConsistFromWarehouse"], _warehouseEdit.Name)
+            : App.Loc["Consist"];
+
+        var trainset = _consist.EditingTrainset;
+        bool scenery = trainset is not null && !warehouse && IsSceneryTrainset(trainset);
+        bool modified = scenery && SceneryTrainsetText.IsModified(trainset!);
+        bool sceneryTab = !WarehouseTabOpen;
+        saveToSceneryButton.IsVisible = sceneryTab;
+        revertSceneryButton.IsVisible = sceneryTab;
+        addToWarehouseToolButton.IsVisible = sceneryTab;
+        saveToSceneryButton.IsEnabled = modified;
+        revertSceneryButton.IsEnabled = modified;
+
+        reversedBadge.IsVisible = trainset?.Reversed == true;
+    }
+
+    private void SaveToSceneryButton_OnClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e) =>
+        _ = SaveToSceneryAsync(_consist.EditingTrainset);
+
+    private void RevertSceneryButton_OnClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e) =>
+        RevertFromScenery(_consist.EditingTrainset);
+
+    public void KeySaveToScenery()
+    {
+        if (!EditingWarehouse)
+            _ = SaveToSceneryAsync(_consist.EditingTrainset);
+    }
+
+    /// <summary>
+    /// Writes the consist into the scenery file for good. Asked first only while
+    /// the file has no backup yet - the first time it is about to change.
+    /// </summary>
+    private async Task SaveToSceneryAsync(Trainset? trainset)
+    {
+        if (trainset is null || _listScenery is not { } scenery || !IsSceneryTrainset(trainset) ||
+            !SceneryTrainsetText.IsModified(trainset) || TopLevel.GetTopLevel(this) is not Window owner)
+            return;
+
+        // A consist from an included file is saved there - shared, maybe, by other scenarios.
+        string path = SaveSceneryTrainset.FileOf(scenery, trainset);
+        string file = trainset.SourceFile ?? Path.GetFileName(scenery.Path);
+        if (!AppServices.Current.Files.FileExists(path + SaveSceneryTrainset.BackupSuffix) &&
+            !await MessageBox.Show(owner,
+                string.Format(App.Loc["SaveToSceneryConfirm"], file, file + SaveSceneryTrainset.BackupSuffix),
+                App.Loc["SaveToScenery"], MessageBoxButtons.YesNo))
+            return;
+
+        var (outcome, detail) = AppServices.Current.SaveTrainset.Execute(scenery, trainset);
+        switch (outcome)
+        {
+            case SceneryTrainsetSaveOutcome.NotFound:
+                await StarterNG.Infrastructure.Diagnostics.ReportAsync(
+                    string.Format(App.Loc["SaveToSceneryNotFound"], file));
+                break;
+            case SceneryTrainsetSaveOutcome.Failed:
+                await StarterNG.Infrastructure.Diagnostics.ReportAsync(
+                    $"{path}{Environment.NewLine}{Environment.NewLine}{App.Loc["FaultDetail"]} {detail}");
+                break;
+        }
+
+        RefreshConsistListLabels();
+        UpdateConsistChrome();
+    }
+
+    /// <summary>The consist as its scenery file has it - one more step to undo.</summary>
+    private void RevertFromScenery(Trainset? trainset)
+    {
+        if (trainset is null || !IsSceneryTrainset(trainset) || !SceneryTrainsetText.IsModified(trainset))
+            return;
+
+        var saved = new Trainset(trainset.RawEntry);
+        trainset.Vehicles = saved.Vehicles;
+        trainset.Velocity = saved.Velocity;
+        if (ReferenceEquals(_consist.EditingTrainset, trainset))
+            _consist.LoadFrom(trainset);
+        else
+            RefreshConsistListLabels();
+    }
+
+    private int SelectedIndex() =>
+        _consist.Selected is { } item ? _consist.IndexOf(item) : 0;
+
+    private void RecordHistory()
+    {
+        if (_consist.EditingTrainset is { } trainset)
+            _history.Record(trainset, SelectedIndex(), rebase: _restoring);
+
+        var editing = _consist.EditingTrainset;
+        undoButton.IsEnabled = editing is not null && _history.CanUndo(editing);
+        redoButton.IsEnabled = editing is not null && _history.CanRedo(editing);
+    }
+
+    public void Undo() => Restore(_history.Undo);
+
+    public void Redo() => Restore(_history.Redo);
+
+    private void Restore(Func<Trainset, int, ConsistHistory.State?> step)
+    {
+        if (_consist.EditingTrainset is not { } trainset ||
+            step(trainset, SelectedIndex()) is not { } state)
+            return;
+
+        trainset.Vehicles = state.Vehicles.ToList();
+        _restoring = true;
+        try
+        {
+            _consist.LoadFrom(trainset, state.Selected);
+        }
+        finally
+        {
+            _restoring = false;
+        }
+    }
+
+    private void UndoButton_OnClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e) => Undo();
+
+    private void RedoButton_OnClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e) => Redo();
+
+    private void ClearConsistButton_OnClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e) =>
+        KeyClearConsist();
+
+    private void ReplaceVehicleButton_OnClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    {
+        if (_browser.Selected != null)
+            ReplaceSelected(_browser.Selected);
     }
 
     private void UpdateTrainStats()
@@ -254,15 +538,12 @@ public partial class Depot : UserControl
         StarterNG.Infrastructure.StatsBar.Fill(trainStats, TrainsetDisplay.StatsFields(
             _consist.EditingTrainset,
             _info.PhysicsFor,
-            car => _db.TextureFor(car.DataFolder, car.SkinFile, car.MmdFile) is { } t ? VehicleInfo.CategoryOf(t) : null,
+            _info.CategoryOf,
             AppServices.Current.LoadWeights.Table.WeightOf));
     }
 
-    private void RemoveVehicleButton_OnClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
-    {
-        if (_consist.Selected is { } item)
-            _consist.Remove(item);
-    }
+    private void RemoveVehicleButton_OnClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e) =>
+        KeyRemoveVehicle();
 
     private void ConsistFilter_OnChanged(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
     {
@@ -292,8 +573,8 @@ public partial class Depot : UserControl
 
             foreach (var trainset in _listScenery.Trainsets)
             {
-                if (IsAiTrainset(trainset) && !showAi) continue;
-                if (drivableOnly && !UData.StaffedTrain(trainset)) continue;
+                if (!TrainsetDisplay.ListedIn(trainset, showAi, drivableOnly, AppServices.Current.State.CurrentTrainset))
+                    continue;
 
                 var entry = new ListBoxItem
                 {
@@ -302,13 +583,29 @@ public partial class Depot : UserControl
                 };
 
                 var ts = trainset;
+
+                // The random tools work on the consist being edited, which is not
+                // necessarily the entry the menu was opened on.
+                void Edit(Action run)
+                {
+                    if (!ReferenceEquals(_consist.EditingTrainset, ts))
+                        sceneryConsistList.SelectedItem = entry;
+                    run();
+                }
+
                 entry.ContextMenu = ConsistContextMenu.Build(
                     entry,
                     () => ts,
                     vehicles => ApplyConsist(ts, vehicles),
                     () => RemoveAllVehicles(ts),
-                    randomOrder: ToolRandomOrder,
-                    randomTurn: ToolRandomOrientation);
+                    randomOrder: () => Edit(() => _consist.RandomizeOrder(_rng)),
+                    randomTurn: () => Edit(() => _consist.RandomizeOrientation(_rng)),
+                    randomTextures: () => Edit(() => _ = RunTextureRandomizer()),
+                    removeAllGesture: new KeyGesture(Key.Delete, KeyModifiers.Control),
+                    sceneryFile: new ConsistContextMenu.SceneryFileActions(
+                        () => SceneryTrainsetText.IsModified(ts),
+                        () => _ = SaveToSceneryAsync(ts),
+                        () => RevertFromScenery(ts)));
                 sceneryConsistList.Items.Add(entry);
 
                 if (ReferenceEquals(trainset, AppServices.Current.State.CurrentTrainset))
@@ -330,10 +627,6 @@ public partial class Depot : UserControl
         _consist.LoadFrom(trainset);
     }
 
-    private static bool IsAiTrainset(Trainset trainset) =>
-        !string.IsNullOrEmpty(trainset.Description) &&
-        trainset.Description.TrimStart().StartsWith("-", StringComparison.Ordinal);
-
     private void SceneryConsistList_OnKeyDown(object? sender, KeyEventArgs e)
     {
         if (e.Key == Key.Delete && e.KeyModifiers.HasFlag(KeyModifiers.Shift) &&
@@ -348,35 +641,52 @@ public partial class Depot : UserControl
     private void ApplyConsist(Trainset target, List<Dynamic> vehicles)
     {
         target.Vehicles = vehicles;
-        AppServices.Current.State.CurrentScenery = _listScenery;
-        AppServices.Current.State.CurrentTrainset = target;
-        _consist.LoadFrom(target);
-        PopulateSceneryConsists();
+        EditTrainset(target);
     }
 
     private void RemoveAllVehicles(Trainset target)
     {
         target.Vehicles = new List<Dynamic>();
+        EditTrainset(target);
+    }
+
+    /// <summary>
+    /// A scenery consist becomes the one started as well; a warehouse consist is
+    /// only edited.
+    /// </summary>
+    private void EditTrainset(Trainset target)
+    {
+        if (!IsSceneryTrainset(target))
+        {
+            _consist.LoadFrom(target);
+            return;
+        }
+
         AppServices.Current.State.CurrentScenery = _listScenery;
         AppServices.Current.State.CurrentTrainset = target;
         _consist.LoadFrom(target);
         PopulateSceneryConsists();
     }
 
-    private static Control ConsistListContent(Trainset trainset) =>
-        new TextBlock
-        {
-            Text = ConsistLabel(trainset),
-            TextTrimming = TextTrimming.CharacterEllipsis,
-            TextWrapping = TextWrapping.NoWrap
-        };
-
-    private static string ConsistLabel(Trainset trainset)
+    /// <summary>The composition, after a dot for a consist the scenery file does not have yet.</summary>
+    private static Control ConsistListContent(Trainset trainset)
     {
-        string? text = TrainsetDisplay.CompositionText(trainset);
-        if (text != null)
-            return text;
-        return string.Format(App.Loc["EmptyTrainset"], trainset.Track ?? "");
+        var label = Scenarios.TrainsetListContent(trainset);
+        if (!SceneryTrainsetText.IsModified(trainset))
+            return label;
+
+        var dot = new TextBlock
+        {
+            Text = "●",
+            Margin = new Thickness(0, 0, 6, 0),
+            Foreground = new SolidColorBrush(Color.Parse("#E0A030"))
+        };
+        ToolTip.SetTip(dot, App.Loc["ConsistUnsaved"]);
+        var row = new DockPanel();
+        DockPanel.SetDock(dot, Dock.Left);
+        row.Children.Add(dot);
+        row.Children.Add(label);
+        return row;
     }
 
     private void RefreshConsistListLabels()
@@ -387,22 +697,6 @@ public partial class Depot : UserControl
                 item.Content = ConsistListContent(ts);
         }
     }
-
-    public async Task RandomizeCurrentTrainsetAsync()
-    {
-        if (AppServices.Current.State.CurrentTrainset is not { } trainset)
-            return;
-
-        if (!ReferenceEquals(trainset, _consist.EditingTrainset))
-        {
-            PopulateSceneryConsists();
-            _consist.LoadFrom(trainset);
-        }
-        await RunTextureRandomizer();
-    }
-
-    public void ToolRandomOrder() => RandomOrderButton_OnClick(null, null!);
-    public void ToolRandomOrientation() => RandomOrientButton_OnClick(null, null!);
 
     private async void RandomTexturesButton_OnClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e) =>
         await RunTextureRandomizer();
@@ -464,20 +758,27 @@ public partial class Depot : UserControl
 
     private void VehicleListBox_OnDoubleTapped(object? sender, Avalonia.Input.TappedEventArgs e)
     {
-        if (_browser.Selected != null)
+        // On a row only: the list's scrollbar takes double clicks too.
+        if (_browser.Selected != null &&
+            (e.Source as Visual)?.FindAncestorOfType<ListBoxItem>(includeSelf: true) != null)
             ReplaceSelected(_browser.Selected);
     }
 
-    private void AddVehicleButton_OnClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    private void AddVehicleButton_OnClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e) =>
+        KeyAddVehicle();
+
+    /// <summary>Keyboard shortcut entry points. See <see cref="Infrastructure.Shortcuts"/>.</summary>
+    public void KeyAddVehicle()
     {
         if (_browser.Selected != null)
             AddTexture(_browser.Selected);
     }
 
-    /// <summary>Keyboard shortcut entry points. See <see cref="Infrastructure.Shortcuts"/>.</summary>
-    public void KeyAddVehicle() => AddVehicleButton_OnClick(null, null!);
-
-    public void KeyRemoveVehicle() => RemoveVehicleButton_OnClick(null, null!);
+    public void KeyRemoveVehicle()
+    {
+        if (_consist.Selected is { } item)
+            _consist.Remove(item);
+    }
 
     public void KeyClearConsist()
     {
@@ -493,36 +794,36 @@ public partial class Depot : UserControl
         searchBox.SelectAll();
     }
 
-    public void ToolAddAllCategory() => AddAllCategoryButton_OnClick(null, null!);
+    // The tools are reached from any page, and this view catches up with the
+    // selection only when shown - so they do that first, or they would work on the
+    // scenery it showed last. They are about the scenery, so never on the warehouse's.
+    private void PrepareForTool()
+    {
+        ShowSceneryTab();
+        SyncFromSelection();
+    }
 
-    public void ToolAddUniqueMmd() => AddUniqueMmdButton_OnClick(null, null!);
-
-    public void ToolRemoveAllTrains() => RemoveAllTrainsButton_OnClick(null, null!);
-
-    private async void AddAllCategoryButton_OnClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    /// <summary>What the browser lists, for a tool to add; with nothing listed it says what to pick.</summary>
+    private List<VehicleTexture> TexturesForTool()
     {
         var all = _browser.CurrentTextures();
         if (all.Count == 0)
-        {
-            await StarterNG.Infrastructure.Diagnostics.ReportAsync(App.Loc["PickCategoryFirst"]);
-            return;
-        }
+            _ = StarterNG.Infrastructure.Diagnostics.ReportAsync(App.Loc["PickCategoryFirst"]);
+        return all;
+    }
 
-        foreach (var t in all)
+    public void ToolAddAllCategory()
+    {
+        PrepareForTool();
+        foreach (var t in TexturesForTool())
             InsertTextureAt(t, _consist.Count);
     }
 
-    private async void AddUniqueMmdButton_OnClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    public void ToolAddUniqueMmd()
     {
-        var all = _browser.CurrentTextures();
-        if (all.Count == 0)
-        {
-            await StarterNG.Infrastructure.Diagnostics.ReportAsync(App.Loc["PickCategoryFirst"]);
-            return;
-        }
-
+        PrepareForTool();
         var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        foreach (var t in all)
+        foreach (var t in TexturesForTool())
         {
             foreach (string model in ModelsOf(t))
             {
@@ -547,22 +848,34 @@ public partial class Depot : UserControl
                 yield return alias.Model!;
     }
 
-    private async void RemoveAllTrainsButton_OnClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    public async Task ToolRemoveAllTrainsAsync()
     {
-        if (_listScenery is null || TopLevel.GetTopLevel(this) is not Window owner)
+        PrepareForTool();
+        if (TopLevel.GetTopLevel(this) is not Window owner)
             return;
+
+        // Not the first one on the list: a scenery nobody picked is not emptied.
+        var state = AppServices.Current.State;
+        if (state.CurrentScenery is not { } scenery)
+        {
+            await StarterNG.Infrastructure.Diagnostics.ReportAsync(App.Loc["NoSceneryConsists"]);
+            return;
+        }
 
         if (!await MessageBox.Show(owner, App.Loc["RemoveAllTrainsConfirm"],
                                    App.Loc["RemoveAllTrains"], MessageBoxButtons.YesNo))
             return;
 
-        foreach (var ts in _listScenery.Trainsets)
-            ts.Vehicles = new List<Dynamic>();
+        foreach (var ts in scenery.Trainsets)
+            ts.RemoveVehicles();
 
-        if (_consist.EditingTrainset != null)
-            _consist.LoadFrom(_consist.EditingTrainset);
+        // As in the old starter nothing stays picked, so a start is the free camera.
+        state.StartingVehicleName = null;
+        state.CurrentTrainset = null;
+        _consist.Unload();
         PopulateSceneryConsists();
         RebuildConsist();
+        state.NotifyChanged();
     }
 
     private void ReplaceSelected(VehicleTexture texture)
@@ -607,7 +920,7 @@ public partial class Depot : UserControl
     private void AddCopiesAfter(ConsistItem item, int count)
     {
         int index = _consist.IndexOf(item);
-        if (index < 0 || item.Cars.Count == 0 || _db.TextureFor(item.Cars[0].DataFolder, item.Cars[0].SkinFile, item.Cars[0].MmdFile) is not { } texture)
+        if (index < 0 || item.Cars.Count == 0 || _info.TextureFor(item.Cars[0]) is not { } texture)
             return;
 
         InsertTexturesAt(texture, index + 1, count);
@@ -618,6 +931,11 @@ public partial class Depot : UserControl
     /// <summary>The vehicle count times in a row from at - each staffed as added - and one redraw.</summary>
     private void InsertTexturesAt(VehicleTexture texture, int at, int count)
     {
+        // With no consist picked the vehicles would be nowhere but on the strip, and
+        // gone with its next load. The strip's hint says what to pick.
+        if (_consist.EditingTrainset is null)
+            return;
+
         var set = _db.ResolveSet(texture);
         var unit = set ?? new List<VehicleTexture> { texture };
 
@@ -641,12 +959,21 @@ public partial class Depot : UserControl
         RebuildConsist();
     }
 
-    private async void TextureBaseButton_OnClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    private void TextureBaseButton_OnClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e) =>
+        OpenVehicleBase();
+
+    private async void OpenVehicleBase()
     {
         if (TopLevel.GetTopLevel(this) is not Window owner) return;
-        var win = new TextureBaseWindow();
+        var win = new VehicleBaseWindow();
         await win.ShowDialog(owner);
-        if (win.Picked != null)
+        _browser.SyncHideArchival();
+        if (win.Picked is null)
+            return;
+
+        if (win.PickedToAdd)
+            AddTexture(win.Picked);
+        else
             ReplaceSelected(win.Picked);
     }
 }

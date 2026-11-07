@@ -61,13 +61,17 @@ public sealed class Cargo
 
     public void FillToMax(Dynamic car)
     {
-        int max = MaxFor(car);
+        string? type = TypeToLoad(car);
+        if (string.IsNullOrEmpty(type)) return;
+        int max = MaxFor(car, type);
         if (max <= 0) return;
-        if (string.IsNullOrEmpty(car.LoadType))
-            car.LoadType = AcceptedTypes(car).FirstOrDefault();
-        if (string.IsNullOrEmpty(car.LoadType)) return;
+        car.LoadType = type;
         car.LoadCount = max;
     }
+
+    // The type first: what it may hold depends on it, pantographs above all.
+    private string? TypeToLoad(Dynamic car) =>
+        string.IsNullOrEmpty(car.LoadType) ? AcceptedTypes(car).FirstOrDefault() : car.LoadType;
 
     public void CopyFromPrevious(IReadOnlyList<ConsistItem> consist, ConsistItem item)
     {
@@ -103,7 +107,7 @@ public sealed class Cargo
             if (!AcceptedTypes(c).Contains(type!, StringComparer.OrdinalIgnoreCase))
                 continue;
             c.LoadType = type;
-            c.LoadCount = Math.Min(lead.LoadCount, MaxFor(c));
+            c.LoadCount = Math.Min(lead.LoadCount, LimitFor(c));
         }
     }
 
@@ -113,7 +117,9 @@ public sealed class Cargo
         {
             var types = AcceptedTypes(c);
             if (types.Count == 0) continue;
-            c.LoadType = types[_rng.Next(types.Count)];
+            string type = types[_rng.Next(types.Count)];
+            c.LoadType = type;
+            c.LoadCount = Math.Min(c.LoadCount, LimitFor(c, type));
         }
     }
 
@@ -127,11 +133,11 @@ public sealed class Cargo
     {
         foreach (var c in consist.SelectMany(u => u.Cars))
         {
-            int max = MaxFor(c);
+            string? type = TypeToLoad(c);
+            if (string.IsNullOrEmpty(type)) continue;
+            int max = MaxFor(c, type);
             if (max <= 0) continue;
-            if (string.IsNullOrEmpty(c.LoadType))
-                c.LoadType = AcceptedTypes(c).FirstOrDefault();
-            if (string.IsNullOrEmpty(c.LoadType)) continue;
+            c.LoadType = type;
             int min = Math.Max(1, max / 10);
             c.LoadCount = _rng.Next(min, max + 1);
         }

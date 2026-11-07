@@ -17,6 +17,7 @@ public sealed class FileDiagnosticsLog : IDiagnosticsLog
 
     private StreamWriter? _writer;
     private bool _writerFailed;
+    private bool _previousKept;
 
     public FileDiagnosticsLog(IFileSystem files, IClock clock, IGamePaths paths)
     {
@@ -91,11 +92,32 @@ public sealed class FileDiagnosticsLog : IDiagnosticsLog
             try
             {
                 _files.CreateDirectory(Path.GetDirectoryName(_logPath)!);
-                _files.WriteAllLines(_logPath, _lines);
+                if (KeepPreviousSession())
+                    _files.WriteAllLines(_logPath, _lines);
             }
             catch
             {
             }
+        }
+    }
+
+    // What the last session left, a crash's traces above all, is what this log is
+    // read for: one copy of it goes aside before the first entry of this one. False
+    // when it could not, and the log is then added to instead of started over.
+    private bool KeepPreviousSession()
+    {
+        if (_previousKept)
+            return true;
+
+        try
+        {
+            if (_files.FileExists(_logPath))
+                _files.CopyFile(_logPath, _logPath + ".1", overwrite: true);
+            return _previousKept = true;
+        }
+        catch
+        {
+            return false;
         }
     }
 
@@ -109,7 +131,7 @@ public sealed class FileDiagnosticsLog : IDiagnosticsLog
             if (_writer is null)
             {
                 _files.CreateDirectory(Path.GetDirectoryName(_logPath)!);
-                _writer = new StreamWriter(_logPath, append: false) { AutoFlush = true };
+                _writer = new StreamWriter(_logPath, append: !KeepPreviousSession()) { AutoFlush = true };
             }
             _writer.WriteLine(line);
         }

@@ -36,6 +36,11 @@ public sealed class VehicleCards
     /// <summary>Puts copies of the vehicle on a card right after it, the given number of times.</summary>
     public Action<ConsistItem, int>? AddCopies { get; set; }
 
+    /// <summary>The livery picked in the vehicle browser, offered as the card's replacement.</summary>
+    public Func<VehicleTexture?>? BrowserSelection { get; set; }
+
+    public Action<ConsistItem, VehicleTexture>? ReplaceWith { get; set; }
+
     private readonly List<(Button Badge, ConsistItem Item)> _driverChrome = new();
 
     public Dynamic? PressedCar { get; set; }
@@ -113,9 +118,7 @@ public sealed class VehicleCards
 
         if (item.Grouped && item.Cars.Count > 1)
             controls.Children.Add(SmallButton(MaterialIconKind.CallSplit, App.Loc["TipSplit"], () => _consist.Split(item)));
-        else if ((index + 1 < _consist.Count &&
-                  (Consist.HoldsTail(item) || _consist.CanFormUnit(item, _consist[index + 1]))) ||
-                 (index > 0 && Consist.HoldsTail(_consist[index - 1])))
+        else if (_consist.CanJoin(item, index))
             controls.Children.Add(SmallButton(MaterialIconKind.Link, App.Loc["TipJoin"], () => _consist.Join(item)));
 
         var remove = SmallButton(MaterialIconKind.Close, App.Loc["RemoveSelectedVehicle"], () => _consist.Remove(item));
@@ -147,6 +150,14 @@ public sealed class VehicleCards
         card.KeyDown += (_, e) => OnCardKey(card, item, e);
         card.PointerPressed += (_, e) =>
         {
+            // The menu is about the card it opened on, so that card is selected -
+            // without moving the browser, whose pick the menu offers as a replacement.
+            if (e.GetCurrentPoint(card).Properties.IsRightButtonPressed)
+            {
+                Select(item, PressedCar, syncBrowser: false);
+                PressedCar = null;
+                return;
+            }
 
             if (!e.GetCurrentPoint(card).Properties.IsLeftButtonPressed)
                 return;
@@ -244,7 +255,7 @@ public sealed class VehicleCards
     /// </summary>
     public void Activate(ConsistItem item) => Select(item, null);
 
-    private void Select(ConsistItem item, Dynamic? car)
+    private void Select(ConsistItem item, Dynamic? car, bool syncBrowser = true)
     {
         var target = car ?? (ReferenceEquals(_consist.Selected, item)
             ? _consist.ActiveCar(item)
@@ -258,7 +269,8 @@ public sealed class VehicleCards
         _consist.SyncStartingVehicle();
         RefreshCardSelectionChrome();
         _refreshDetails();
-        _selectInBrowser(target);
+        if (syncBrowser)
+            _selectInBrowser(target);
     }
 
     private Border? CardFor(ConsistItem item) =>
@@ -335,8 +347,9 @@ public sealed class VehicleCards
                 Redraw(keepFocus: true);
                 break;
 
+            // The way a right click does it: the menu fills itself up as it is requested.
             case Key.Enter:
-                card.ContextMenu?.Open(card);
+                card.RaiseEvent(new ContextRequestedEventArgs());
                 break;
 
             default:
@@ -612,48 +625,65 @@ public sealed class VehicleCards
         btn.Foreground = new SolidColorBrush(Color.Parse(color));
     }
 
+    /// <summary>
+    /// Everything that can be done to one card, the keys that do it alongside: the
+    /// card's own buttons and keys were the only way to most of it before.
+    /// </summary>
     private ContextMenu BuildCardMenu(Control anchor, ConsistItem item)
     {
         var menu = new ContextMenu();
         menu.Opening += (_, _) =>
         {
             menu.Items.Clear();
+            int index = _consist.IndexOf(item);
 
-            var addMany = new MenuItem { Header = App.Loc["AddMany"], IsEnabled = AddCopies is not null };
-            addMany.Click += (_, _) =>
-                AddManyFlyout.Show(anchor, PlacementMode.Top, count => AddCopies?.Invoke(item, count));
-            menu.Items.Add(addMany);
+            // Clicking a card shows its own livery in the browser; offering that
+            // as the replacement would replace the vehicle with itself.
+            var picked = BrowserSelection?.Invoke();
+            var active = _consist.ActiveCar(item);
+            if (picked is not null &&
+                ReferenceEquals(picked, _db.TextureFor(active.DataFolder, active.SkinFile, active.MmdFile)))
+                picked = null;
+            menu.AddItem(picked is null
+                    ? App.Loc["ReplaceWithBrowser"]
+                    : $"{App.Loc["ReplaceWithBrowser"]}: {Consist.Base(picked.Skinfile)}",
+                () => { if (picked is not null) ReplaceWith?.Invoke(item, picked); },
+                picked is not null && ReplaceWith is not null);
+            menu.AddItem(App.Loc["AddMany"],
+                () => AddManyFlyout.Show(anchor, PlacementMode.Top, count => AddCopies?.Invoke(item, count)),
+                AddCopies is not null);
+
             menu.Items.Add(new Separator());
+            menu.AddItem(App.Loc["TipFlip"], () => { _consist.Flip(item); Redraw(keepFocus: true); },
+                gesture: new KeyGesture(Key.Space));
+            menu.AddItem(App.Loc["TipMoveLeft"], () => { _consist.MoveLeft(item); Redraw(keepFocus: true); },
+                index > 0, new KeyGesture(Key.Left, KeyModifiers.Control));
+            menu.AddItem(App.Loc["TipMoveRight"], () => { _consist.MoveRight(item); Redraw(keepFocus: true); },
+                index >= 0 && index < _consist.Count - 1, new KeyGesture(Key.Right, KeyModifiers.Control));
 
-            var num = new MenuItem { Header = App.Loc["WagonNumber"] };
-            num.Click += (_, _) => ShowWagonNumberFlyout(anchor, item.Cars[0]);
-            menu.Items.Add(num);
+            if (item.Grouped && item.Cars.Count > 1)
+                menu.AddItem(App.Loc["TipSplit"], () => _consist.Split(item));
+            else if (_consist.CanJoin(item, index))
+                menu.AddItem(App.Loc["TipJoin"], () => _consist.Join(item));
+
+            var crew = new MenuItem { Header = App.Loc["CrewLabel"] };
+            foreach (var (type, key) in CrewChoices.All)
+                crew.AddItem((item.Driver == type ? "● " : "○ ") + App.Loc[key], () => _consist.SetCrew(item, type));
+            menu.Items.Add(crew);
+
+            // The member the panels show, not always the first car of a unit.
+            menu.AddItem(App.Loc["WagonNumber"] + "…",
+                () => ShowWagonNumberFlyout(anchor, _consist.ActiveCar(item)),
+                gesture: new KeyGesture(Key.N, KeyModifiers.Control));
 
             menu.Items.Add(new Separator());
+            menu.AddItem(App.Loc["LoadCopyPrev"], () => { _cargo.CopyFromPrevious(_consist, item); _redraw(); }, index > 0);
+            menu.AddItem(App.Loc["LoadCopyToAll"], () => { _cargo.CopyToFollowing(_consist, item); _redraw(); },
+                _cargo.IsLoadable(item));
+            menu.AddItem(App.Loc["LoadMax"], () => { _cargo.FillUnit(item); _redraw(); }, _cargo.IsLoadable(item));
 
-            var copyPrev = new MenuItem
-            {
-                Header = App.Loc["LoadCopyPrev"],
-                IsEnabled = _consist.IndexOf(item) > 0
-            };
-            copyPrev.Click += (_, _) => { _cargo.CopyFromPrevious(_consist, item); _redraw(); };
-            menu.Items.Add(copyPrev);
-
-            var copyToAll = new MenuItem
-            {
-                Header = App.Loc["LoadCopyToAll"],
-                IsEnabled = _cargo.IsLoadable(item)
-            };
-            copyToAll.Click += (_, _) => { _cargo.CopyToFollowing(_consist, item); _redraw(); };
-            menu.Items.Add(copyToAll);
-
-            var max = new MenuItem
-            {
-                Header = App.Loc["LoadMax"],
-                IsEnabled = _cargo.IsLoadable(item)
-            };
-            max.Click += (_, _) => { _cargo.FillUnit(item); _redraw(); };
-            menu.Items.Add(max);
+            menu.Items.Add(new Separator());
+            menu.AddItem(App.Loc["RemoveSelectedVehicle"], () => _consist.Remove(item), gesture: new KeyGesture(Key.Delete));
         };
         return menu;
     }

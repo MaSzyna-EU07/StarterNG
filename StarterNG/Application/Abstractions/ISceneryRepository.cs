@@ -11,4 +11,7 @@ public interface ISceneryRepository
     IReadOnlyList<Scenery> LoadAll(IProgress<SceneryLoadProgress>? progress = null);
 
     Scenery? Load(string path);
+
+    /// <summary>The scenery files there are now; null while their folder is away.</summary>
+    IReadOnlyList<string>? ListFiles();
 }

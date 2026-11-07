@@ -1,10 +1,8 @@
 using System;
-using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using Avalonia;
 using Avalonia.Controls;
-using Avalonia.Controls.Primitives;
 using Avalonia.Input;
 using Avalonia.Layout;
 using Avalonia.Media;
@@ -29,7 +27,6 @@ public sealed class VehicleDetails
     private readonly StackPanel damagePanel;
     private readonly Button removeVehicleButton;
 
-    private readonly VehicleCatalog _db;
     private readonly VehicleInfo _info;
     private readonly Consist _consist;
     private readonly Cargo _cargo;
@@ -39,12 +36,15 @@ public sealed class VehicleDetails
     private readonly Action _refreshChrome;
     private readonly Action<VehicleTexture, StackPanel> _showTextureInfo;
 
+    /// <summary>A setting changed on the cars themselves, which redraws nothing.</summary>
+    public Action? Edited { get; init; }
+
     public VehicleDetails(
         StackPanel generalPanel, StackPanel consistTexturePanel, StackPanel couplerPanel,
         Panel couplerActions,
         StackPanel brakesPanel, StackPanel loadsPanel, StackPanel damagePanel,
         Button removeVehicleButton,
-        VehicleCatalog db, VehicleInfo info, Consist consist, Cargo cargo, Cursor hand,
+        VehicleInfo info, Consist consist, Cargo cargo, Cursor hand,
         Action redraw, Action refreshChrome, Action<VehicleTexture, StackPanel> showTextureInfo)
     {
         this.generalPanel = generalPanel;
@@ -56,7 +56,6 @@ public sealed class VehicleDetails
         this.damagePanel = damagePanel;
         this.removeVehicleButton = removeVehicleButton;
 
-        _db = db;
         _info = info;
         _consist = consist;
         _cargo = cargo;
@@ -97,7 +96,7 @@ public sealed class VehicleDetails
 
         BuildGeneralInfo(_consist.Selected);
 
-        if (_db.TextureFor(_consist.ActiveCar(_consist.Selected).DataFolder, _consist.ActiveCar(_consist.Selected).SkinFile, _consist.ActiveCar(_consist.Selected).MmdFile) is { } tex)
+        if (_info.TextureFor(_consist.ActiveCar(_consist.Selected)) is { } tex)
             _showTextureInfo(tex, consistTexturePanel);
         else
             consistTexturePanel.Children.Add(PanelNote(App.Loc["NoTextureInfo"]));
@@ -269,24 +268,12 @@ public sealed class VehicleDetails
     private Control BuildVehicleSection(ConsistItem item)
     {
         var driver = new ComboBox { FontSize = 12, MinWidth = 0 };
-        foreach (string key in new[] { "DriverHead", "DriverRear", "DriverPassenger", "DriverNobody" })
+        foreach (var (_, key) in CrewChoices.All)
             driver.Items.Add(new ComboBoxItem { Content = App.Loc[key] });
-        driver.SelectedIndex = item.Driver switch
-        {
-            eDriverType.Headdriver => 0,
-            eDriverType.Reardriver => 1,
-            eDriverType.Passenger  => 2,
-            _                      => 3
-        };
+        driver.SelectedIndex = CrewChoices.IndexOf(item.Driver);
         driver.SelectionChanged += (_, _) =>
         {
-            var picked = driver.SelectedIndex switch
-            {
-                0 => eDriverType.Headdriver,
-                1 => eDriverType.Reardriver,
-                2 => eDriverType.Passenger,
-                _ => eDriverType.Nobody
-            };
+            var picked = CrewChoices.At(driver.SelectedIndex);
             if (picked == item.Driver) return;
 
             _consist.SetCrew(item, picked);
@@ -338,7 +325,11 @@ public sealed class VehicleDetails
                 IsChecked = d.Coupling.ThermoDynamic,
                 FontSize = 12
             };
-            thermo.IsCheckedChanged += (_, _) => d.Coupling.ThermoDynamic = thermo.IsChecked == true;
+            thermo.IsCheckedChanged += (_, _) =>
+            {
+                d.Coupling.ThermoDynamic = thermo.IsChecked == true;
+                Edited?.Invoke();
+            };
 
             // Label-less row, so the box indents to the control column with everything
             // else instead of starting at the panel's left edge on its own.
@@ -436,6 +427,7 @@ public sealed class VehicleDetails
                 Load = (loadCombo.SelectedItem as ComboBoxItem)?.Tag as string
             };
             foreach (var c in Consist.UnitTargets(item)) c.Coupling.SetBrake(b);
+            Edited?.Invoke();
         }
 
         modeCombo.SelectionChanged += (_, _) => Apply();
@@ -501,6 +493,7 @@ public sealed class VehicleDetails
             };
             foreach (var c in _consist.MemberTargets(item))
                 c.Coupling.SetWheels(ws);
+            Edited?.Invoke();
         }
 
         sway.ValueChanged += (_, _) => Apply();
@@ -739,6 +732,7 @@ public sealed class VehicleDetails
                 c.LoadType = string.IsNullOrEmpty(type) ? null : type;
                 c.LoadCount = string.IsNullOrEmpty(type) ? 0 : Math.Min(count, _cargo.LimitFor(c, type));
             }
+            Edited?.Invoke();
         }
 
         // Seed the pantograph combo from the model before any handler is listening.

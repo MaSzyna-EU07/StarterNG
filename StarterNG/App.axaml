@@ -12,6 +12,17 @@
                  <StyleInclude Source="avares://Starter/Styles/Carbon.axaml" />
                  <StyleInclude Source="avares://Starter/Styles/Settings.axaml" />
 
+                 <!-- A dropdown whose options are bound to the translation table. The closed
+                      box keeps a copy of the text picked, so it would stay in the old
+                      language; this shows the option itself, which follows the change. -->
+                 <Style Selector="ComboBox.Localized">
+                     <Setter Property="SelectionBoxItemTemplate">
+                         <DataTemplate>
+                             <TextBlock Text="{Binding $parent[ComboBox].((ComboBoxItem)SelectedItem).Content}" />
+                         </DataTemplate>
+                     </Setter>
+                 </Style>
+
                  <Style Selector="Button[(chrome|WindowDecorationProperties.ElementRole)=FullScreenButton]">
                      <Setter Property="IsVisible" Value="False" />
                  </Style>

@@ -69,6 +69,23 @@ public sealed class SceneryWeather
         Dirty = true;
     }
 
+    /// <summary>What was set by hand stays over a file read anew; untouched, the file's own stands.</summary>
+    public void KeepChoicesOf(SceneryWeather earlier)
+    {
+        if (!earlier.Changed)
+            return;
+
+        Time = earlier.Time;
+        ScenarioTimeOverride = earlier.ScenarioTimeOverride;
+        Day = earlier.Day;
+        Temperature = earlier.Temperature;
+        FogStart = earlier.FogStart;
+        FogEnd = earlier.FogEnd;
+        Overcast = earlier.Overcast;
+        OvercastRandom = earlier.OvercastRandom;
+        Dirty = earlier.Dirty;
+    }
+
     public void SetFogRange(int start, int end, IRandomSource random)
     {
         FogStart = Math.Clamp(start, FogMin, FogMax);

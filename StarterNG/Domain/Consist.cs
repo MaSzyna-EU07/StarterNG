@@ -52,12 +52,21 @@ public sealed class Consist : IReadOnlyList<ConsistItem>
 
     public void Raise() => Changed?.Invoke();
 
-    public void LoadFrom(Trainset trainset)
+    /// <param name="select">The unit to select, by position; the first one otherwise.</param>
+    public void LoadFrom(Trainset trainset, int select = 0)
     {
         EditingTrainset = trainset;
+        GroupIntoUnits(trainset.Vehicles);
+        Selected = _items.Count == 0 ? null : _items[Math.Clamp(select, 0, _items.Count - 1)];
+        SyncStartingVehicle();
+        Raise();
+    }
+
+    private void GroupIntoUnits(IEnumerable<Dynamic> vehicles)
+    {
         _items.Clear();
 
-        var cars = trainset.Vehicles.Select(v =>
+        var cars = vehicles.Select(v =>
         {
             var c = v.Clone();
             c.MiniName = _db.MiniFor(c.DataFolder, c.SkinFile, c.MmdFile) ?? c.MiniName;
@@ -74,13 +83,7 @@ public sealed class Consist : IReadOnlyList<ConsistItem>
                 while (j < cars.Count - 1 && HoldsNext(cars[j]))
                     locked.Add(cars[++j]);
 
-                _items.Add(new ConsistItem
-                {
-                    Cars = locked,
-                    Grouped = true,
-                    Flipped = locked[0].Offset < 0,
-                    Driver = UnitDriver(locked)
-                });
+                _items.Add(Unit(locked));
                 i = j + 1;
                 continue;
             }
@@ -106,13 +109,7 @@ public sealed class Consist : IReadOnlyList<ConsistItem>
 
                 if (group.Count >= 2)
                 {
-                    _items.Add(new ConsistItem
-                    {
-                        Cars = group,
-                        Grouped = true,
-                        Flipped = group[0].Offset < 0,
-                        Driver = UnitDriver(group)
-                    });
+                    _items.Add(Unit(group));
                     i = j;
                     continue;
                 }
@@ -128,13 +125,7 @@ public sealed class Consist : IReadOnlyList<ConsistItem>
 
                 if (group.Count >= 2)
                 {
-                    _items.Add(new ConsistItem
-                    {
-                        Cars = group,
-                        Grouped = true,
-                        Flipped = group[0].Offset < 0,
-                        Driver = UnitDriver(group)
-                    });
+                    _items.Add(Unit(group));
                     i = j;
                     continue;
                 }
@@ -149,9 +140,34 @@ public sealed class Consist : IReadOnlyList<ConsistItem>
             });
             i++;
         }
+    }
 
-        Selected = _items.FirstOrDefault();
-        SyncStartingVehicle();
+    /// <summary>
+    /// A unit from cars in the order they run. A turned unit keeps its own order
+    /// reversed, which <see cref="RunningOrder"/> undoes - kept as it runs, its cars
+    /// would swap ends with every load.
+    /// </summary>
+    private static ConsistItem Unit(List<Dynamic> running)
+    {
+        bool flipped = running[0].Offset < 0;
+        if (flipped)
+            running.Reverse();
+        return new ConsistItem
+        {
+            Cars = running,
+            Grouped = true,
+            Flipped = flipped,
+            Driver = UnitDriver(running)
+        };
+    }
+
+    /// <summary>Nothing to edit: the strip goes empty until a consist is loaded again.</summary>
+    public void Unload()
+    {
+        EditingTrainset = null;
+        _items.Clear();
+        Selected = null;
+        SelectedCar = null;
         Raise();
     }
 
@@ -161,15 +177,48 @@ public sealed class Consist : IReadOnlyList<ConsistItem>
     public static IEnumerable<Dynamic> RunningOrder(ConsistItem item) =>
         item.Flipped ? Enumerable.Reverse(item.Cars) : item.Cars;
 
+    /// <summary>
+    /// The vehicle the simulator puts the player into follows the selection - but
+    /// only onto a unit someone sits in. Selecting a wagon to edit it, or adding
+    /// one, which selects it, keeps the pick made before; otherwise Start would
+    /// read "no crew" and the simulator would open in an empty wagon.
+    /// </summary>
     public void SyncStartingVehicle()
     {
-        if (Selected is not { Cars.Count: > 0 } item)
+        // A consist from the warehouse, say, is edited here but not the one started.
+        var state = AppServices.Current.State;
+        if (EditingTrainset is null || !ReferenceEquals(EditingTrainset, state.CurrentTrainset))
             return;
 
-        var driven = item.Cars.FirstOrDefault(c =>
-            c.DriverType is eDriverType.Headdriver or eDriverType.Reardriver);
-        AppServices.Current.State.StartingVehicleName = (driven ?? item.Cars[0]).Name;
+        if (StartingVehicle(_items, Selected, state.StartingVehicleName) is { } pick)
+            state.StartingVehicleName = pick;
     }
+
+    /// <summary>
+    /// The selected unit's driver, or its passenger; with no one in it, the pick
+    /// made before while it still can be started from, else the first crew there is.
+    /// </summary>
+    public static string? StartingVehicle(IEnumerable<ConsistItem> items, ConsistItem? selected, string? current)
+    {
+        var cars = items.SelectMany(i => i.Cars).ToList();
+        string? pick =
+            selected?.Cars.FirstOrDefault(c => c.DriverType is eDriverType.Headdriver or eDriverType.Reardriver)?.Name
+            ?? selected?.Cars.FirstOrDefault(c => c.DriverType is eDriverType.Passenger)?.Name;
+        if (pick != null)
+            return pick;
+
+        if (cars.Any(c => IsNamed(c, current) && Crewed(c)))
+            return current;
+
+        return cars.FirstOrDefault(c => c.DriverType is eDriverType.Headdriver or eDriverType.Reardriver)?.Name
+               ?? cars.FirstOrDefault(Crewed)?.Name;
+    }
+
+    private static bool Crewed(Dynamic car) =>
+        car.DriverType is eDriverType.Headdriver or eDriverType.Reardriver or eDriverType.Passenger;
+
+    private static bool IsNamed(Dynamic car, string? name) =>
+        !string.IsNullOrEmpty(name) && string.Equals(car.Name, name, StringComparison.OrdinalIgnoreCase);
 
     public Dynamic MakeDynamic(VehicleTexture texture, Scenery? scenery)
     {
@@ -340,8 +389,7 @@ public sealed class Consist : IReadOnlyList<ConsistItem>
 
     /// <summary>
     /// A locomotive that comes to the head of the train takes over the driver of
-    /// the one it put behind, which is left unstaffed: the train is driven from its
-    /// front, from cab A.
+    /// the one it put behind, in the same cab, and that one is left unstaffed.
     /// </summary>
     private void HandOverLead(ConsistItem previousHead)
     {
@@ -350,11 +398,55 @@ public sealed class Consist : IReadOnlyList<ConsistItem>
             previousHead.Driver is not (eDriverType.Headdriver or eDriverType.Reardriver))
             return;
 
+        var crew = previousHead.Driver;
         previousHead.Driver = eDriverType.Nobody;
         foreach (var car in previousHead.Cars)
             car.DriverType = eDriverType.Nobody;
 
-        Crew(head, eDriverType.Headdriver);
+        Crew(head, crew);
+    }
+
+    /// <summary>
+    /// Vehicles loaded in place of a consist keep its kind of crew: in the unit the
+    /// loaded ones have crew in, else in the first powered one. A driver goes only
+    /// into something powered, and with nobody in the old consist nobody is in the new.
+    /// </summary>
+    public static List<Dynamic> LoadedOver(IReadOnlyList<Dynamic> before, List<Dynamic> loaded,
+                                           VehicleCatalog db, VehicleInfo info)
+    {
+        if (before.Count == 0 || loaded.Count == 0)
+            return loaded;
+
+        var consist = new Consist(db, info);
+        consist.GroupIntoUnits(loaded);
+
+        var crew = UnitDriver(before);
+        if (crew == eDriverType.Nobody)
+        {
+            foreach (var item in consist._items)
+                Crew(item, eDriverType.Nobody);
+            return consist.Flatten();
+        }
+
+        var seat = consist._items.FirstOrDefault(item => item.Driver != eDriverType.Nobody)
+                   ?? consist._items.FirstOrDefault(consist.IsPowered);
+        if (seat is not null && (crew == eDriverType.Passenger || consist.IsPowered(seat)))
+            Crew(seat, crew);
+        return consist.Flatten();
+    }
+
+    /// <summary>Vehicles joining a consist that has its crew come without their own.</summary>
+    public static List<Dynamic> Joined(IEnumerable<Dynamic> before, IEnumerable<Dynamic> added)
+    {
+        var joined = before.ToList();
+        bool crewed = joined.Count > 0;
+        foreach (var car in added)
+        {
+            if (crewed)
+                car.DriverType = eDriverType.Nobody;
+            joined.Add(car);
+        }
+        return joined;
     }
 
     public void Remove(ConsistItem item)
@@ -672,6 +764,11 @@ public sealed class Consist : IReadOnlyList<ConsistItem>
 
     public static bool HoldsTail(ConsistItem item) =>
         item.Cars.Count > 0 && HoldsNext(TailCar(item));
+
+    /// <summary>Whether the unit at that place can join a neighbour: one it holds or may form a unit with, or one holding it.</summary>
+    public bool CanJoin(ConsistItem item, int index) =>
+        (index + 1 < Count && (HoldsTail(item) || CanFormUnit(item, this[index + 1]))) ||
+        (index > 0 && HoldsTail(this[index - 1]));
 
     public static bool HoldsNext(Dynamic car) =>
         car.Coupling.Has(Coupling.WorkshopLock) || car.Coupling.Locked;

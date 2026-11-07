@@ -37,6 +37,7 @@ public sealed class TestInstallation
 
         Executables = new ExecutableLocator(Files, Paths, Environment, Log);
         SettingsStore = new SettingsStore(Files, Clock, Log, SettingsPaths, new SettingsSerializer(), Executables);
+        Tapes = new HaslerTapes(Files, Paths, Log, Clock, new TimetableLocator(Files), () => SimulatorRunning);
     }
 
     public InMemoryFileSystem Files { get; }
@@ -57,6 +58,8 @@ public sealed class TestInstallation
     public SettingsPaths SettingsPaths { get; }
     public ExecutableLocator Executables { get; }
     public SettingsStore SettingsStore { get; }
+    public HaslerTapes Tapes { get; }
+    public bool SimulatorRunning { get; set; }
 
     /// <summary>Path of a file inside the fake installation.</summary>
     public static string At(params string[] segments) => Path.Combine(new[] { Root }.Concat(segments).ToArray());

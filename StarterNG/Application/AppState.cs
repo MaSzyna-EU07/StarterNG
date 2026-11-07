@@ -46,5 +46,17 @@ public sealed class AppState
         }
     }
 
+    private volatile bool _simulatorRunning;
+
+    /// <summary>
+    /// The simulator the starter watches is still running: the one it started, not
+    /// any of the same name. Read off the UI thread too.
+    /// </summary>
+    public bool SimulatorRunning
+    {
+        get => _simulatorRunning;
+        set => _simulatorRunning = value;
+    }
+
     public void NotifyChanged() => Changed?.Invoke();
 }

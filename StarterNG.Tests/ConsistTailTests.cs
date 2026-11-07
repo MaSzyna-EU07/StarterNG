@@ -22,6 +22,21 @@ public class ConsistTailTests
     }
 
     [Fact]
+    public void A_unit_can_join_the_one_it_is_held_to_from_either_side()
+    {
+        var first = Append("b111-01");
+        var second = Append("b111-02");
+
+        Assert.False(_consist.CanJoin(first, 0));
+        Assert.False(_consist.CanJoin(second, 1));
+
+        first.Cars[0].Coupling.Set(Coupling.WorkshopLock, true);
+
+        Assert.True(_consist.CanJoin(first, 0));
+        Assert.True(_consist.CanJoin(second, 1));
+    }
+
+    [Fact]
     public void The_vehicle_count_counts_cars_not_units()
     {
         Append("b111-01");

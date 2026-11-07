@@ -80,28 +80,23 @@ public sealed class TextureRandomizerDialog
         revDiff.IsCheckedChanged += (_, _) => age.IsEnabled = revDiff.IsChecked == true;
         vsYear.IsCheckedChanged += (_, _) => year.IsEnabled = vsYear.IsChecked == true;
 
-        var win = new Window
-        {
-            Title = App.Loc["RandomizeTexturesTitle"],
-            Width = 420,
-            SizeToContent = SizeToContent.Height,
-            CanResize = false,
-            WindowStartupLocation = WindowStartupLocation.CenterOwner
-        };
+        var win = MessageBox.FixedDialog(App.Loc["RandomizeTexturesTitle"], 420);
 
         var rulesBtn = new Button
         {
             Content = App.Loc["RandomizeTexturesRules"],
             HorizontalAlignment = HorizontalAlignment.Stretch,
+            HorizontalContentAlignment = HorizontalAlignment.Center,
             Cursor = _hand
         };
-        rulesBtn.Classes.Add("Basic");
+        rulesBtn.Classes.Add("Flat");
         rulesBtn.Click += async (_, _) => await new RulesWindow().ShowDialog(win);
 
         var ok = new Button
         {
             Content = App.Loc["RandomizeTexturesApply"],
             MinWidth = 90,
+            HorizontalContentAlignment = HorizontalAlignment.Center,
             Cursor = _hand
         };
         ok.Classes.Add("Accent");
@@ -114,7 +109,13 @@ public sealed class TextureRandomizerDialog
             win.Close(true);
         };
 
-        var cancel = new Button { Content = App.Loc["Cancel"], MinWidth = 90, Cursor = _hand };
+        var cancel = new Button
+        {
+            Content = App.Loc["Cancel"],
+            MinWidth = 90,
+            HorizontalContentAlignment = HorizontalAlignment.Center,
+            Cursor = _hand
+        };
         cancel.Classes.Add("Flat");
         cancel.Click += (_, _) => win.Close(false);
 
@@ -152,13 +153,7 @@ public sealed class TextureRandomizerDialog
                 },
                 noArch,
                 rulesBtn,
-                new StackPanel
-                {
-                    Orientation = Orientation.Horizontal,
-                    HorizontalAlignment = HorizontalAlignment.Right,
-                    Spacing = 8,
-                    Children = { ok, cancel }
-                }
+                MessageBox.ButtonRow(ok, cancel)
             }
         };
         return win;

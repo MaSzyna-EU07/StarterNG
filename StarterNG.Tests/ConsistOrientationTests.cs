@@ -1,3 +1,4 @@
+using StarterNG.Application;
 using StarterNG.Classes;
 using StarterNG.Domain;
 using StarterNG.Domain.Vehicles;
@@ -85,6 +86,25 @@ public class ConsistOrientationTests
 
         Assert.Equal(before, Describe(consist));
         Assert.All(consist, card => Assert.Equal(Consist.IsTurned(card.Cars[0]), card.Flipped));
+    }
+
+    [Fact]
+    public void A_turned_unit_comes_back_as_it_was_from_every_load()
+    {
+        AppServices.Initialize(_installation.Paths, _installation.Files, _installation.Clock, _installation.Environment);
+        var consist = NewConsist(out var unit);
+        consist.Flip(unit);
+        string[] turned = Describe(consist);
+        var trainset = new Trainset("trainset a tor 0 0\nendtrainset");
+
+        for (int load = 0; load < 3; load++)
+        {
+            trainset.Vehicles = consist.Flatten();
+            consist.LoadFrom(trainset);
+
+            Assert.True(Assert.Single(consist).Flipped);
+            Assert.Equal(turned, Describe(consist));
+        }
     }
 
     private Consist NewConsist(out ConsistItem unit)

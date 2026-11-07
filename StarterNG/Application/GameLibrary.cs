@@ -47,10 +47,19 @@ public sealed class GameLibrary
             return;
 
         progress?.Report(new LoadStatus(0, LoadPhase.Vehicles, "textures.txt"));
-        if (_vehicles.Load(Vehicles) == 0)
-            _log.Log("dynamic: brak plikow textures.txt");
 
-        Parallel.Invoke(_minis.Preload, _physics.Preload);
+        // Whatever goes wrong with the rolling stock, the sceneries still get their turn.
+        try
+        {
+            if (_vehicles.Load(Vehicles) == 0)
+                _log.Log("dynamic: brak plikow textures.txt");
+
+            Parallel.Invoke(_minis.Preload, _physics.Preload);
+        }
+        catch (Exception ex)
+        {
+            _log.Log("dynamic: loading the rolling stock", ex);
+        }
 
         ReloadSceneries(progress is null
             ? null

@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using Avalonia.Input;
@@ -40,6 +39,9 @@ public static class Shortcuts
     public const string ClearConsist = "consist.clear";
     public const string SetNumber = "vehicle.number";
     public const string FocusSearch = "search";
+    public const string Undo = "consist.undo";
+    public const string Redo = "consist.redo";
+    public const string SaveToScenery = "consist.savescenery";
 
     public static readonly IReadOnlyList<Shortcut> All = new[]
     {
@@ -64,6 +66,12 @@ public static class Shortcuts
             Key.Delete, KeyModifiers.Control),
         new Shortcut(SetNumber, "Ctrl+N", "ShortcutSetNumber", ShortcutScope.Depot,
             Key.N, KeyModifiers.Control),
+        new Shortcut(Undo, "Ctrl+Z", "ShortcutUndo", ShortcutScope.Depot,
+            Key.Z, KeyModifiers.Control),
+        new Shortcut(Redo, "Ctrl+Y", "ShortcutRedo", ShortcutScope.Depot,
+            Key.Y, KeyModifiers.Control),
+        new Shortcut(SaveToScenery, "Ctrl+S", "SaveToScenery", ShortcutScope.Depot,
+            Key.S, KeyModifiers.Control),
 
         new Shortcut("consist.prevnext", "←  →", "ShortcutPrevNext", ShortcutScope.Consist),
         new Shortcut("consist.firstlast", "Home / End", "ShortcutFirstLast", ShortcutScope.Consist),
