@@ -1,0 +1,114 @@
+# .github/workflows/sonar.yml
+# Has SONAR_TOKEN, so it only ever builds code that is already trusted: pushes to
+# main and pull requests opened from a branch of this repository.
+#
+# Unlike the C++ analysis of maszyna, this one cannot be split into an untrusted
+# build and a trusted scan. The C# analyzers run inside the compiler, and the
+# scanner's begin step, which needs the token, has to run before the build on the
+# same machine. A fork's build could leave a process behind to read the token from
+# the end step, so fork pull requests are not analysed here. GitHub withholds the
+# secret from them (and from Dependabot) anyway.
+#
+# The scanner is pinned in .config/dotnet-tools.json, where Dependabot updates it.
+# SonarScanner for .NET takes its settings on the command line only; it refuses
+# to run next to a sonar-project.properties, so there is none.
+
+name: SonarQube Cloud
+
+on:
+  # Main branch only: analysing other branches is a paid feature, pull requests
+  # are not.
+  push:
+    branches:
+      - main
+
+  pull_request:
+    branches:
+      - main
+      - staging
+    types: [ opened, reopened, synchronize ]
+
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: sonar-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+env:
+  DOTNET_CLI_TELEMETRY_OPTOUT: 1
+  DOTNET_NOLOGO: true
+  SOLUTION_PATH: StarterNG.sln
+  TEST_PROJECT_PATH: StarterNG.Tests/StarterNG.Tests.csproj
+
+jobs:
+  sonar:
+    name: Analyze
+    if: >
+      github.event_name != 'pull_request' ||
+      (github.event.pull_request.head.repo.full_name == github.repository &&
+       github.actor != 'dependabot[bot]')
+    runs-on: ubuntu-22.04
+    timeout-minutes: 30
+
+    steps:
+      # Full history, so new code and blame are told apart correctly.
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Setup .NET 9
+        uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          dotnet-version: 9.0.x
+
+      - name: Restore tools
+        run: dotnet tool restore
+
+      # sonar.qualitygate.wait=true blocks the end step until the server has
+      # processed the report, so the job's result is the quality gate's.
+      - name: Begin analysis
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        run: >
+          dotnet tool run dotnet-sonarscanner begin
+          /k:"MaSzyna-EU07_StarterNG"
+          /o:"maszyna-eu07"
+          /n:"StarterNG"
+          /d:sonar.host.url="https://sonarcloud.io"
+          /d:sonar.token="$SONAR_TOKEN"
+          /d:sonar.scm.revision="${{ github.event.pull_request.head.sha || github.sha }}"
+          /d:sonar.cs.opencover.reportsPaths="TestResults/**/coverage.opencover.xml"
+          /d:sonar.cs.vstest.reportsPaths="TestResults/*.trx"
+          /d:sonar.qualitygate.wait=true
+
+      # A full, non-incremental build: the analyzers only see what is compiled.
+      - name: Build
+        run: >
+          dotnet build "${{ env.SOLUTION_PATH }}"
+          -c Release
+          --no-incremental
+
+      # Coverlet is already referenced by the test project; OpenCover is the
+      # format the C# analyzer reads.
+      - name: Test with coverage
+        run: >
+          dotnet test "${{ env.TEST_PROJECT_PATH }}"
+          -c Release
+          --no-build
+          --results-directory TestResults
+          --logger trx
+          --collect "XPlat Code Coverage"
+          --
+          DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.Format=opencover
+
+      - name: End analysis
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        run: >
+          dotnet tool run dotnet-sonarscanner end
+          /d:sonar.token="$SONAR_TOKEN"
