@@ -32,6 +32,22 @@ public class PlatformTests
     }
 
     [Fact]
+    public void A_train_whose_head_stands_past_the_stop_point_is_off_the_platform_by_that_much()
+    {
+        var stop = Stop(-5f, 129.8f, 201);
+        Assert.False(stop.OnPlatform);
+        Assert.Equal(5, stop.OffPlatform, 1);
+    }
+
+    [Fact]
+    public void A_metre_off_still_counts_as_along_the_platform()
+    {
+        var stop = Stop(-1f, 129.8f, 201);
+        Assert.True(stop.OnPlatform);
+        Assert.Equal(1, stop.OffPlatform, 1);
+    }
+
+    [Fact]
     public void A_train_within_the_platform_is_along_it()
     {
         var stop = Stop(63.2f, 129.8f, 201);

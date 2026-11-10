@@ -91,7 +91,27 @@ public sealed class Recording
 
     // ----- filled by the reader -----
 
-    internal void Changed() => ++Revision;
+    internal void Changed()
+    {
+        ++Revision;
+        _memo.Clear();
+        _consists.Clear();
+    }
+
+    // What the questions about the user's train worked out, kept until a read adds something: the views ask them every frame.
+    private readonly Dictionary<object, object> _memo = new();
+    private readonly Dictionary<(int Vehicle, int Coupling), IReadOnlySet<int>> _consists = new();
+    private static readonly object UserStationsKey = new(), UserPassingsKey = new(), UserHornChecksKey = new(), UserCouplingsKey = new();
+
+    /// <summary>What make gives, worked out once until the recording changes.</summary>
+    internal T Memo<T>(object key, Func<T> make) where T : class
+    {
+        if (_memo.TryGetValue(key, out var kept))
+            return (T)kept;
+        var made = make();
+        _memo[key] = made;
+        return made;
+    }
 
     private void Saw(double time) => _lastTime = Math.Max(_lastTime, time);
 
@@ -371,8 +391,8 @@ public sealed class Recording
     public IReadOnlyList<TimeSpanRange> AutopilotSpans() => CabSpans(s => s.Driving == Driver.Ai);
 
     /// <summary>The signals the user's train passed: those passed by the vehicle the samples are of at the time.</summary>
-    public IEnumerable<SignalPassing> UserPassings() =>
-        _passings.Where(p => IsUserTrain(p.Time + 0.5, p.Vehicle, p.Position, Math.Max(0, p.Overrun) + 250));
+    public IReadOnlyList<SignalPassing> UserPassings() =>
+        Memo(UserPassingsKey, () => _passings.Where(p => IsUserTrain(p.Time + 0.5, p.Vehicle, p.Position, Math.Max(0, p.Overrun) + 250)).ToList());
 
     /// <summary>
     /// Whether a vehicle was of the user's train at t. The records of a train give the
@@ -393,12 +413,22 @@ public sealed class Recording
     /// <summary>The vehicles coupled into one train with the one given at t, itself included.</summary>
     public IReadOnlySet<int> ConsistAt(int vehicle, double t)
     {
-        // What each coupler held at t: the couplings in the order written, each telling both ends.
+        // The trains change only at a coupling: the consist is the same until the next one.
+        int last = LastAtOrBefore(_couplings, t, c => c.Time);
+        if (_consists.TryGetValue((vehicle, last), out var kept))
+            return kept;
+        var consist = Consist(vehicle, last);
+        _consists[(vehicle, last)] = consist;
+        return consist;
+    }
+
+    private HashSet<int> Consist(int vehicle, int last)
+    {
+        // What each coupler held after the coupling given: the couplings in the order written, each telling both ends.
         var held = new Dictionary<(int Vehicle, int Side), (int Other, int OtherSide)>();
-        foreach (var change in _couplings)
+        for (int i = 0; i <= last; i++)
         {
-            if (change.Time > t)
-                break;
+            var change = _couplings[i];
             if (held.Remove((change.Vehicle, change.Side), out var before))
                 held.Remove((before.Other, before.OtherSide));
             if (change.Other != 0 && (change.Flags & CouplingFlags.Coupler) != 0)
@@ -432,10 +462,11 @@ public sealed class Recording
         _couplings.Where(c => c.Time > 0.01 && (c.Coupled || c.Uncoupled || c.Flags != c.PreviousFlags));
 
     /// <summary>The couplings the user's train took part in, before or after them.</summary>
-    public IEnumerable<CouplingChange> UserCouplings() =>
-        CouplingEvents().Where(c => CabAt(c.Time) is { } s && c.Time - s.Time <= 1.5 &&
-                                    (ConsistAt(s.Vehicle, c.Time - 0.01).Contains(c.Vehicle) ||
-                                     ConsistAt(s.Vehicle, c.Time + 0.01).Contains(c.Vehicle)));
+    public IReadOnlyList<CouplingChange> UserCouplings() =>
+        Memo(UserCouplingsKey, () => CouplingEvents().Where(c => CabAt(c.Time) is { } s && c.Time - s.Time <= 1.5 &&
+                                                                 (ConsistAt(s.Vehicle, c.Time - 0.01).Contains(c.Vehicle) ||
+                                                                  ConsistAt(s.Vehicle, c.Time + 0.01).Contains(c.Vehicle)))
+                                                     .ToList());
 
     /// <summary>
     /// The timetable of the train the user was in at t: the last one written by then, else the first; none when the
@@ -444,18 +475,21 @@ public sealed class Recording
     public Timetable? TimetableAt(double t)
     {
         var timetable = LastAtOrBefore(_timetables, t, x => x.Time) is var i and >= 0 ? _timetables[i] : _timetables.FirstOrDefault();
-        if (timetable is null || CabAt(t) is not { } sample || sample.Vehicle == timetable.Vehicle)
+        // A recording made before the couplings were written can't tell the trains apart: the timetable stays.
+        if (timetable is null || CabAt(t) is not { } sample || sample.Vehicle == timetable.Vehicle || _couplings.Count == 0)
             return timetable;
         // another vehicle of the same train (the other cab, a car of it) keeps the timetable
         return ConsistAt(sample.Vehicle, t).Contains(timetable.Vehicle) ? timetable : null;
     }
 
     /// <summary>The stations of the timetable of the user's train, as it came to them.</summary>
-    public IEnumerable<StationEvent> UserStations() =>
-        _stations.Where(s => IsUserTrain(s.Time, s.Vehicle, s.Position, Math.Max(s.TrainLength, 50) + 150));
+    public IReadOnlyList<StationEvent> UserStations() =>
+        Memo(UserStationsKey, () => _stations.Where(s => IsUserTrain(s.Time, s.Vehicle, s.Position, Math.Max(s.TrainLength, 50) + 150)).ToList());
 
     /// <summary>The horn points the user's train passed, and whether the horn sounded there.</summary>
-    public IEnumerable<HornCheck> UserHornChecks()
+    public IReadOnlyList<HornCheck> UserHornChecks() => Memo(UserHornChecksKey, () => HornChecks().ToList());
+
+    private IEnumerable<HornCheck> HornChecks()
     {
         foreach (var request in _hornRequests)
         {

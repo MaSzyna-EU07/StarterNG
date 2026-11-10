@@ -68,6 +68,62 @@ public class HeadCodeTests
         Assert.False(fault.TailWrong);
     }
 
+    private static Recording DriveWith(ushort head, ushort tail, ushort equippedHead, ushort equippedTail, byte movement = 1, byte driving = 1)
+    {
+        var f = new BlackBoxFile().Info();
+        for (double t = 0; t < 30; t += 0.5)
+            f.Cab(t, 1, 1000 + t * 10, 40, driving: driving, lightsHead: head, lightsTail: tail, movement: movement,
+                  equippedHead: equippedHead, equippedTail: equippedTail);
+        return BlackBoxReader.Read(f.End(30).Stream());
+    }
+
+    [Fact]
+    public void The_lamps_the_vehicles_have_are_read()
+    {
+        var sample = DriveWith(Pc1, Pc5, 0x1B5, 0x22).Cab[0];
+        Assert.Equal((Lights)0x1B5, sample.EquippedHead);
+        Assert.Equal((Lights)0x22, sample.EquippedTail);
+    }
+
+    [Theory]
+    // without the upper headlight Pc 1 is the two others
+    [InlineData(0x11, 0x11)]
+    // with auxiliary lamps, those and the upper headlight
+    [InlineData(0x184, 0x1B5)]
+    // a vehicle with no lamps for it: the rear-end signals
+    [InlineData(0x40, 0x40)]
+    public void Pc1_is_what_the_vehicle_can_show_of_it(ushort lit, ushort equipped)
+    {
+        var summary = DriveWith(lit, Pc5, equipped, Pc5).Summarize();
+        Assert.True(summary.LightsJudgedSeconds > 25);
+        Assert.Empty(summary.LightsFaults);
+    }
+
+    [Fact]
+    public void A_tail_with_the_rear_end_signals_only_shows_Pc5_with_them()
+    {
+        Assert.Empty(DriveWith(Pc1, 0x40, Pc1, 0x40).Summarize().LightsFaults);
+        var fault = Assert.Single(DriveWith(Pc1, 0x00, Pc1, 0x40).Summarize().LightsFaults);
+        Assert.False(fault.HeadWrong);
+        Assert.True(fault.TailWrong);
+    }
+
+    [Fact]
+    public void A_vehicle_with_all_the_lamps_is_to_light_all_three_for_Pc1()
+    {
+        var fault = Assert.Single(DriveWith(0x11, Pc5, 0x35, Pc5).Summarize().LightsFaults);
+        Assert.True(fault.HeadWrong);
+        Assert.Equal(HeadCode.Pc1, fault.HeadRequired);
+    }
+
+    [Fact]
+    public void The_lights_the_autopilot_sets_are_not_the_users()
+    {
+        var summary = DriveWith(Tb1, Tb1, Pc1, Pc5, driving: 2).Summarize();
+        Assert.Equal(0, summary.LightsJudgedSeconds);
+        Assert.Empty(summary.LightsFaults);
+    }
+
     [Fact]
     public void An_older_recording_tells_nothing_of_the_signals()
     {

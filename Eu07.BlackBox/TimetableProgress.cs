@@ -66,7 +66,10 @@ public sealed record StationProgress(
         recording.TimetableAt(t) is { } timetable ? Of(recording, timetable) : Array.Empty<StationProgress>();
 
     /// <summary>The rows of a timetable of the recording, each with what the train did there.</summary>
-    public static IReadOnlyList<StationProgress> Of(Recording recording, Timetable timetable)
+    public static IReadOnlyList<StationProgress> Of(Recording recording, Timetable timetable) =>
+        recording.Memo((typeof(StationProgress), timetable), () => Work(recording, timetable));
+
+    private static IReadOnlyList<StationProgress> Work(Recording recording, Timetable timetable)
     {
         // The records of this train: from its timetable on, until another one is written. A train given its next
         // timetable may come to the first station of it at once, and a recording made before the simulator wrote the

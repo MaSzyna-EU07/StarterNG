@@ -81,7 +81,8 @@ public sealed class BlackBoxReader
         }
 
         _offset += at;
-        Recording.Changed();
+        if (read > 0)
+            Recording.Changed();
         return read;
     }
 
@@ -161,6 +162,9 @@ public sealed class BlackBoxReader
                 // What the driver went by and the lights asked for came later still.
                 if (r.Remaining >= 5)
                     sample = sample with { Movement = (Movement)r.U8(), LightHintHead = (short)r.U16(), LightHintTail = (short)r.U16() };
+                // The lamps the vehicles at the ends have, which a pattern is checked against, later again.
+                if (r.Remaining >= 4)
+                    sample = sample with { EquippedHead = (Lights)r.U16(), EquippedTail = (Lights)r.U16() };
                 rec.AddCab(sample);
                 break;
             }

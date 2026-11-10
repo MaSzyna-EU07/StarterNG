@@ -16,7 +16,8 @@ internal static class Screenshot
         window.FollowTrain = follow;
         // A few frames for the layout and the first render.
         await Task.Delay(1000);
-        if (window.Content is Control content)
+        // Not laid out (a minimised window): nothing to save, and the viewer still closes.
+        if (window.Content is Control content && content.Bounds.Width >= 1 && content.Bounds.Height >= 1)
         {
             var size = new PixelSize((int)content.Bounds.Width, (int)content.Bounds.Height);
             using var bitmap = new RenderTargetBitmap(size);

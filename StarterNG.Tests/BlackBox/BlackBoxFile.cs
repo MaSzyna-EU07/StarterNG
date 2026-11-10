@@ -108,7 +108,7 @@ internal sealed class BlackBoxFile
                             float target = 40, float nextLimit = -1, float nextDistance = -1, float brakeCylinder = 0,
                             uint devices = 0x0007, bool extended = true, sbyte cabEnd = 1, byte security = 0,
                             float lateral = 0.2f, ushort lightsHead = 0x15, ushort lightsTail = 0x22, byte? movement = null,
-                            short hintHead = -1, short hintTail = -1) =>
+                            short hintHead = -1, short hintTail = -1, ushort? equippedHead = null, ushort? equippedTail = null) =>
         Record(0x20, w =>
         {
             w.Write(time);
@@ -154,6 +154,12 @@ internal sealed class BlackBoxFile
                     w.Write(kind);
                     w.Write(hintHead);
                     w.Write(hintTail);
+                    // the lamps the vehicles at the ends have: a recording made before them ends above
+                    if (equippedHead is { } head)
+                    {
+                        w.Write(head);
+                        w.Write(equippedTail ?? head);
+                    }
                 }
             }
         });

@@ -240,13 +240,16 @@ public sealed record StationEvent(double Time, int Vehicle, StationKind Kind, in
     /// Whether the whole train stood along the platform, when its length is known: as the driver takes it, the length of
     /// the trains a W32 is for is the room it has there too.
     /// </summary>
-    public bool? OnPlatform => Platform != 0 ? Distance >= -2 && Distance + TrainLength <= PlatformLength + 2 : null;
+    public bool? OnPlatform => Platform != 0 ? OffPlatform <= PlatformTolerance : null;
+
+    /// <summary>How far off the platform a train may stand and still count as along it [m].</summary>
+    public const double PlatformTolerance = 2;
 
     /// <summary>The length of the platform [m], without the digit of its side.</summary>
     public double PlatformLength => Platforms.Length(Platform);
 
-    /// <summary>How far the tail stood off the platform [m], 0 along it.</summary>
-    public double OffPlatform => Platform != 0 ? Math.Max(0, Distance + TrainLength - PlatformLength) : 0;
+    /// <summary>How much of the train stood off the platform [m]: the head past the stop point, the tail before the platform's end; 0 along it.</summary>
+    public double OffPlatform => Platform != 0 ? Math.Max(0, -Distance) + Math.Max(0, Distance + TrainLength - PlatformLength) : 0;
 }
 
 public enum CameraMode : byte
@@ -315,7 +318,8 @@ public readonly record struct CabSample(double Time, int Vehicle, Position Posit
                                         float MainReservoir, float Voltage, float EngineRpm,
                                         Lights LightsHead, Lights LightsTail, sbyte CabEnd = 0,
                                         SecurityFlags Security = SecurityFlags.None, float LateralAcceleration = 0,
-                                        Movement Movement = Movement.Unknown, short LightHintHead = -1, short LightHintTail = -1)
+                                        Movement Movement = Movement.Unknown, short LightHintHead = -1, short LightHintTail = -1,
+                                        Lights? EquippedHead = null, Lights? EquippedTail = null)
 {
     public bool Has(CabDevices device) => (Devices & device) == device;
     public bool Has(SecurityFlags flag) => (Security & flag) == flag;

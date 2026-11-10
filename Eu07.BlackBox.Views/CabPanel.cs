@@ -130,19 +130,20 @@ public sealed class CabPanel : Control
         double lightsX = Pad + 3 * third + 4;
         context.DrawText(MapView.Text(Strings["CabLights"], Palette.DimText, 10), new Point(lightsX, top));
         double faceX = lightsX;
-        foreach (var (key, lights, required) in new[]
+        foreach (var (key, lights, required, right) in new[]
                  {
-                     ("CabLightsHead", s.LightsHead, HeadCodes.RequiredHead(s)),
-                     ("CabLightsTail", s.LightsTail, HeadCodes.RequiredTail(s))
+                     ("CabLightsHead", s.LightsHead, HeadCodes.RequiredHead(s), HeadCodes.HeadRight(s)),
+                     ("CabLightsTail", s.LightsTail, HeadCodes.RequiredTail(s), HeadCodes.TailRight(s))
                  })
         {
             DrawFace(context, lights, new Point(faceX + 18, top + 24));
-            // the end, and the signal it shows: green as it is to be, red otherwise with the one it is to show
+            // the end, and the signal it shows: green as it is to be (with the lamps the vehicle has), red otherwise
+            // with the one it is to show
             var shown = HeadCodes.Of(lights);
-            var text = required is { } want && want != shown
+            var text = right == false && required is { } want
                 ? $"{HeadCodes.Name(shown)} ≠ {HeadCodes.Name(want)}"
-                : HeadCodes.Name(shown);
-            var brush = required is null ? Palette.FaintText : required == shown ? Palette.Good : Palette.Bad;
+                : right == true && required is { } met ? HeadCodes.Name(met) : HeadCodes.Name(shown);
+            var brush = right is null ? Palette.FaintText : right.Value ? Palette.Good : Palette.Bad;
             var label = MapView.Text($"{Strings[key]} {text}", brush, 9);
             context.DrawText(label, new Point(faceX + 18 - label.Width / 2, top + 34));
             faceX += 62;

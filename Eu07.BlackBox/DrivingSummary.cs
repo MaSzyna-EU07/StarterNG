@@ -124,15 +124,16 @@ public sealed record DrivingSummary(
             else if (sample.Driving == Driver.Human && sample.AbsSpeedKmh > Rounding)
                 driven += step;
 
-            // the light signals at both ends, while the train moves
-            if (sample.AbsSpeedKmh > 1 && HeadCodes.Right(sample) is { } right)
+            // the light signals at both ends, while the user drives the train and it moves: the autopilot's are its own
+            if (sample.Driving == Driver.Human && sample.AbsSpeedKmh > 1 &&
+                HeadCodes.HeadRight(sample) is { } headRight && HeadCodes.TailRight(sample) is { } tailRight)
             {
                 lightsJudged += step;
-                if (!right)
+                if (!headRight || !tailRight)
                 {
                     lightsWrong += step;
                     var fault = new LightsFault(before.Time, sample.Time, HeadCodes.Of(sample.LightsHead), HeadCodes.RequiredHead(sample)!.Value,
-                                                HeadCodes.Of(sample.LightsTail), HeadCodes.RequiredTail(sample)!.Value);
+                                                !headRight, HeadCodes.Of(sample.LightsTail), HeadCodes.RequiredTail(sample)!.Value, !tailRight);
                     if (faults.Count > 0 && faults[^1].SameAs(fault) && fault.Start - faults[^1].End < 2)
                         faults[^1] = faults[^1] with { End = sample.Time };
                     else
@@ -186,11 +187,10 @@ public sealed record DrivingSummary(
 }
 
 /// <summary>A stretch the user's train moved with other light signals than it was to show, at its head and its tail.</summary>
-public sealed record LightsFault(double Start, double End, HeadCode Head, HeadCode HeadRequired, HeadCode Tail, HeadCode TailRequired)
+public sealed record LightsFault(double Start, double End, HeadCode Head, HeadCode HeadRequired, bool HeadWrong,
+                                 HeadCode Tail, HeadCode TailRequired, bool TailWrong)
 {
-    public bool HeadWrong => Head != HeadRequired;
-    public bool TailWrong => Tail != TailRequired;
-
     public bool SameAs(LightsFault other) =>
-        Head == other.Head && HeadRequired == other.HeadRequired && Tail == other.Tail && TailRequired == other.TailRequired;
+        Head == other.Head && HeadRequired == other.HeadRequired && HeadWrong == other.HeadWrong &&
+        Tail == other.Tail && TailRequired == other.TailRequired && TailWrong == other.TailWrong;
 }

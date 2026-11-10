@@ -456,12 +456,14 @@ public sealed class MapView : Control
         var danger = new Pen(Palette.Over, 2.5);
         foreach (var passing in recording.UserPassings())
         {
+            if (passing.Time > _time)
+                continue;
             var p = ToScreen(passing.Position.X, passing.Position.Z);
             if (!Visible(p))
                 continue;
             if (passing.AtDanger)
                 context.DrawEllipse(null, danger, p, 10, 10);
-            else if (passing.Time <= _time)
+            else
                 context.DrawEllipse(null, passed, p, 7, 7);
         }
     }

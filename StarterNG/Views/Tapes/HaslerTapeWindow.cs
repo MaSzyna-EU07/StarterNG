@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
+using Avalonia.Input;
 using Avalonia.Layout;
 using Avalonia.Media;
 using Avalonia.Media.Imaging;
@@ -105,14 +106,19 @@ public sealed class HaslerTapeWindow : Window
         ToolTip.SetTip(_startClock, App.Loc["HaslerStartClockTip"]);
 
         ScrollViewer.SetHorizontalScrollBarVisibility(_list, ScrollBarVisibility.Disabled);
+        _list.KeyDown += async (_, e) =>
+        {
+            if (e.Key == Key.Enter && _list.SelectedItem is TreeViewItem { Tag: BlackBoxRecording box })
+            {
+                e.Handled = true;
+                await OpenBlackBoxAsync(box);
+            }
+        };
         _list.SelectionChanged += async (_, _) =>
         {
-            // A black box opens in a window of its own; the tape shown stays.
-            if (_list.SelectedItem is TreeViewItem { Tag: BlackBoxRecording box })
-            {
-                await OpenBlackBoxAsync(box);
+            // A black box opens in a window of its own on a click or Enter, not when the arrows go over it; the tape shown stays.
+            if (_list.SelectedItem is TreeViewItem { Tag: BlackBoxRecording })
                 return;
-            }
             // A session stands for its first tape, the player's own if it has one.
             if (_list.SelectedItem is TreeViewItem { Tag: TapeSession } session)
                 session.IsExpanded = true;
