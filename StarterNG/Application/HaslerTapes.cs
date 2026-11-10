@@ -16,15 +16,21 @@ namespace StarterNG.Application;
 public sealed record TapeFile(string Path, string Vehicle, DateTime LastWriteUtc, long Size,
                               TapeRole Role = TapeRole.Other);
 
-/// <summary>One run of the simulator and what is left of its tapes: a later run overwrites those of the vehicles it has too.</summary>
+/// <summary>The black box of a run: the whole session in one file, a new one each run.</summary>
+public sealed record BlackBoxRecording(string Path, DateTime LastWriteUtc, long Size);
+
+/// <summary>
+/// One run of the simulator and what is left of its tapes: a later run overwrites those of the
+/// vehicles it has too. Its black box stays, newest first should there be more.
+/// </summary>
 public sealed record TapeSession(TapeLaunch? Launch, DateTime StartedUtc, DateTime LastWrittenUtc, bool Running,
-                                 IReadOnlyList<TapeFile> Tapes);
+                                 IReadOnlyList<TapeFile> Tapes, IReadOnlyList<BlackBoxRecording> BlackBoxes);
 
 /// <summary>What is known about a tape beyond its samples: the clock it started at, the recorder it is read as, the scenario and the train.</summary>
 public sealed record TapeContext(TimeSpan? StartClock, RecorderKind Recorder,
                                  string? Scenery = null, string? Train = null);
 
-/// <summary>The tapes the simulator left in physicslog/ - one per driven vehicle, overwritten every run.</summary>
+/// <summary>The tapes the simulator left in physicslog/ - one per driven vehicle, overwritten every run - and the black boxes, one a run.</summary>
 public sealed class HaslerTapes
 {
     private const int RememberedLaunches = 30;
@@ -251,32 +257,52 @@ public sealed class HaslerTapes
             var behind = tapes.GroupBy(tape => launches.LastOrDefault(l => l.Covers(tape.LastWriteUtc)))
                               .Where(group => group.Key is not null)
                               .ToDictionary(group => group.Key!, group => group.ToList());
+            var boxes = _files.DirectoryExists(Folder)
+                ? _files.GetFiles(Folder, "*.blackbox").Select(ReadBlackBox).ToList()
+                : new List<BlackBoxRecording>();
+            var boxesBehind = boxes.GroupBy(box => launches.LastOrDefault(l => l.Covers(box.LastWriteUtc)))
+                                   .Where(group => group.Key is not null)
+                                   .ToDictionary(group => group.Key!, group => group.ToList());
 
             var sessions = new List<TapeSession>();
             foreach (var launch in launches)
             {
                 bool last = ReferenceEquals(launch, launches[^1]);
                 bool running = last && _simulatorRunning();
-                if (!running && !behind.ContainsKey(launch))
+                if (!running && !behind.ContainsKey(launch) && !boxesBehind.ContainsKey(launch))
                     continue;
 
                 var player = last ? PlayerIn(launch) : launch.Player ?? PlayerVehicles.Unknown;
                 sessions.Add(Session(launch, running, behind.GetValueOrDefault(launch, new List<TapeFile>())
-                                                            .Select(t => t with { Role = launch.RoleOf(t.Vehicle, player) })));
+                                                            .Select(t => t with { Role = launch.RoleOf(t.Vehicle, player) }),
+                                     boxesBehind.GetValueOrDefault(launch, new List<BlackBoxRecording>())));
             }
 
+            // What no launch covers goes together by when it was written: a run writes it all at its end.
+            var loose = tapes.Where(t => !launches.Any(l => l.Covers(t.LastWriteUtc)))
+                             .Select(t => (Written: t.LastWriteUtc, Tape: (TapeFile?)t, Box: (BlackBoxRecording?)null))
+                             .Concat(boxes.Where(b => !launches.Any(l => l.Covers(b.LastWriteUtc)))
+                                          .Select(b => (Written: b.LastWriteUtc, Tape: (TapeFile?)null, Box: (BlackBoxRecording?)b)))
+                             .OrderBy(file => file.Written);
             var run = new List<TapeFile>();
-            foreach (var tape in tapes.Where(t => !launches.Any(l => l.Covers(t.LastWriteUtc))).OrderBy(t => t.LastWriteUtc))
+            var runBoxes = new List<BlackBoxRecording>();
+            DateTime? lastWritten = null;
+            foreach (var (written, tape, box) in loose)
             {
-                if (run.Count > 0 && tape.LastWriteUtc - run[^1].LastWriteUtc > QuietBetweenRuns)
+                if (lastWritten is { } before && written - before > QuietBetweenRuns)
                 {
-                    sessions.Add(Session(null, running: false, run));
+                    sessions.Add(Session(null, running: false, run, runBoxes));
                     run = new List<TapeFile>();
+                    runBoxes = new List<BlackBoxRecording>();
                 }
-                run.Add(tape);
+                if (tape is not null)
+                    run.Add(tape);
+                if (box is not null)
+                    runBoxes.Add(box);
+                lastWritten = written;
             }
-            if (run.Count > 0)
-                sessions.Add(Session(null, running: false, run));
+            if (lastWritten is not null)
+                sessions.Add(Session(null, running: false, run, runBoxes));
 
             return sessions.OrderByDescending(session => session.Running)
                            .ThenByDescending(session => session.LastWrittenUtc)
@@ -292,13 +318,18 @@ public sealed class HaslerTapes
     private TapeFile ReadTape(string path) =>
         new(path, Path.GetFileNameWithoutExtension(path), _files.GetLastWriteTimeUtc(path), _files.GetFileSize(path));
 
+    private BlackBoxRecording ReadBlackBox(string path) =>
+        new(path, _files.GetLastWriteTimeUtc(path), _files.GetFileSize(path));
+
     /// <summary>The player's own tapes first: every manned vehicle leaves one.</summary>
-    private static TapeSession Session(TapeLaunch? launch, bool running, IEnumerable<TapeFile> tapes)
+    private static TapeSession Session(TapeLaunch? launch, bool running, IEnumerable<TapeFile> tapes,
+                                       IEnumerable<BlackBoxRecording> boxes)
     {
         var listed = tapes.OrderByDescending(tape => tape.Role).ThenByDescending(tape => tape.LastWriteUtc).ToList();
-        var started = launch?.LaunchedUtc ?? listed.Min(tape => tape.LastWriteUtc);
-        return new TapeSession(launch, started, listed.Count > 0 ? listed.Max(tape => tape.LastWriteUtc) : started,
-                               running, listed);
+        var recorded = boxes.OrderByDescending(box => box.LastWriteUtc).ToList();
+        var written = listed.Select(tape => tape.LastWriteUtc).Concat(recorded.Select(box => box.LastWriteUtc)).ToList();
+        var started = launch?.LaunchedUtc ?? written.Min();
+        return new TapeSession(launch, started, written.Count > 0 ? written.Max() : started, running, listed, recorded);
     }
 
     public HaslerTape? Load(TapeFile file)

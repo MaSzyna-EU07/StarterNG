@@ -850,6 +850,8 @@
     <String key="HaslerSession">Munkamenet</String>
     <String key="HaslerSessionTapes">szalag: {0}</String>
     <String key="HaslerSessionRunning">folyamatban</String>
+    <String key="HaslerBlackBox">Fekete doboz</String>
+    <String key="HaslerBlackBoxTip">A teljes menet a térképen: vezetés az AI-hoz képest, parancsok, jelzők, vezetőfülke</String>
     <String key="WarehouseSaved">A raktárban: {0}</String>
     <String key="WarehouseNothingToAdd">Válassz járműveket tartalmazó szerelvényt</String>
     <String key="GfxGroupLevelTip">Csak a grafika ezen részének szintje</String>

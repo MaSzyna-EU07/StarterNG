@@ -20,6 +20,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\StarterNG\StarterNG.csproj" />
+    <ProjectReference Include="..\Eu07.BlackBox\Eu07.BlackBox.csproj" />
   </ItemGroup>
 
 </Project>

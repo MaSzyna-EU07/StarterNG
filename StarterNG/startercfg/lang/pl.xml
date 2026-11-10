@@ -901,6 +901,8 @@
     <String key="HaslerSession">Sesja</String>
     <String key="HaslerSessionTapes">taśm: {0}</String>
     <String key="HaslerSessionRunning">trwa</String>
+    <String key="HaslerBlackBox">Czarna skrzynka</String>
+    <String key="HaslerBlackBoxTip">Cała sesja na mapie: jazda względem AI, komendy, sygnalizatory, kabina</String>
     <String key="WarehouseSaved">W magazynie: {0}</String>
     <String key="WarehouseNothingToAdd">Wybierz skład z pojazdami</String>
     <String key="GfxGroupLevelTip">Poziom tylko tej części grafiki</String>

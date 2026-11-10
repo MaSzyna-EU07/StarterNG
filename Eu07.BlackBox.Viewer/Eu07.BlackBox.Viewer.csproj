@@ -1,0 +1,30 @@
+<Project Sdk="Microsoft.NET.Sdk">
+    <!-- The black box on its own, without the starter: opens the file given on the
+         command line, or one picked. -->
+    <PropertyGroup>
+        <OutputType>WinExe</OutputType>
+        <TargetFramework>net9.0</TargetFramework>
+        <Nullable>enable</Nullable>
+        <PublishAot>true</PublishAot>
+        <PublishTrimmed>true</PublishTrimmed>
+        <IsAotCompatible>true</IsAotCompatible>
+        <BuiltInComInteropSupport>true</BuiltInComInteropSupport>
+        <ApplicationManifest>app.manifest</ApplicationManifest>
+        <ApplicationIcon>..\StarterNG\Assets\starter.ico</ApplicationIcon>
+        <AssemblyName>BlackBoxViewer</AssemblyName>
+        <RootNamespace>Eu07.BlackBox.Viewer</RootNamespace>
+        <VersionPrefix>1.0</VersionPrefix>
+        <Company>eu07.pl</Company>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <PackageReference Include="Avalonia" Version="12.1.4" />
+        <PackageReference Include="Avalonia.Desktop" Version="12.1.4" />
+        <PackageReference Include="Avalonia.Themes.Fluent" Version="12.1.4" />
+        <PackageReference Include="Avalonia.Fonts.Inter" Version="12.1.4" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\Eu07.BlackBox.Views\Eu07.BlackBox.Views.csproj" />
+    </ItemGroup>
+</Project>

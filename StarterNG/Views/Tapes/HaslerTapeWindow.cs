@@ -11,6 +11,7 @@ using Avalonia.Media;
 using Avalonia.Media.Imaging;
 using Avalonia.Platform.Storage;
 using Avalonia.Threading;
+using Eu07.BlackBox.Views;
 using StarterNG.Application;
 using StarterNG.Domain.Settings;
 using StarterNG.Domain.Tapes;
@@ -57,6 +58,8 @@ public sealed class HaslerTapeWindow : Window
     private readonly Control _recordingOff;
     private readonly Control _logOff;
     private readonly Dictionary<DateTime, bool> _expanded = new();
+    private readonly Dictionary<string, BlackBoxWindow> _blackBoxes = new(StringComparer.OrdinalIgnoreCase);
+    private HashSet<string> _liveBlackBoxes = new(StringComparer.OrdinalIgnoreCase);
 
     private TapeFile? _shown;
     private string? _followed;
@@ -104,6 +107,12 @@ public sealed class HaslerTapeWindow : Window
         ScrollViewer.SetHorizontalScrollBarVisibility(_list, ScrollBarVisibility.Disabled);
         _list.SelectionChanged += async (_, _) =>
         {
+            // A black box opens in a window of its own; the tape shown stays.
+            if (_list.SelectedItem is TreeViewItem { Tag: BlackBoxRecording box })
+            {
+                await OpenBlackBoxAsync(box);
+                return;
+            }
             // A session stands for its first tape, the player's own if it has one.
             if (_list.SelectedItem is TreeViewItem { Tag: TapeSession } session)
                 session.IsExpanded = true;
@@ -291,7 +300,8 @@ public sealed class HaslerTapeWindow : Window
     private static string Fingerprint(IEnumerable<TapeSession> sessions) =>
         string.Join('\n', sessions.Select(session =>
             $"{session.StartedUtc:O} {session.LastWrittenUtc:yyyyMMddHHmm} {session.Running} " +
-            string.Join(' ', session.Tapes.Select(tape => $"{tape.Vehicle}:{tape.Role}"))));
+            string.Join(' ', session.Tapes.Select(tape => $"{tape.Vehicle}:{tape.Role}")) + " " +
+            string.Join(' ', session.BlackBoxes.Select(box => box.Path))));
 
     /// <summary>Sessions newest first, the newest one open until the reader has said otherwise.</summary>
     private void ShowSessions(IReadOnlyList<TapeSession> sessions, bool toDriven)
@@ -304,6 +314,7 @@ public sealed class HaslerTapeWindow : Window
         if (toDriven)
             _followed = driven;
         string? selected = toDriven && driven is not null ? driven : _shown?.Path;
+        FollowBlackBoxes(sessions);
 
         foreach (var node in _list.Items.OfType<TreeViewItem>())
             _expanded[((TapeSession)node.Tag!).StartedUtc] = node.IsExpanded;
@@ -314,7 +325,7 @@ public sealed class HaslerTapeWindow : Window
         {
             var node = SessionItem(sessions[i], _expanded.GetValueOrDefault(sessions[i].StartedUtc, i == 0));
             _list.Items.Add(node);
-            foreach (var tape in node.Items.OfType<TreeViewItem>())
+            foreach (var tape in node.Items.OfType<TreeViewItem>().Where(item => item.Tag is TapeFile))
             {
                 first ??= (node, tape);
                 if (((TapeFile)tape.Tag!).Path == selected)
@@ -337,7 +348,7 @@ public sealed class HaslerTapeWindow : Window
         _list.SelectedItem = chosen.Tape;
     }
 
-    private static TreeViewItem SessionItem(TapeSession session, bool open)
+    private TreeViewItem SessionItem(TapeSession session, bool open)
     {
         string title = session.Launch is { } launch
             ? string.Join(" · ", new[] { string.IsNullOrWhiteSpace(launch.SceneryName) ? launch.Scenery : launch.SceneryName, launch.Train }
@@ -372,9 +383,63 @@ public sealed class HaslerTapeWindow : Window
             Tag = session,
             IsExpanded = open
         };
+        foreach (var box in session.BlackBoxes)
+            item.Items.Add(BlackBoxItem(box));
         foreach (var tape in session.Tapes)
             item.Items.Add(TapeItem(tape));
         return item;
+    }
+
+    private TreeViewItem BlackBoxItem(BlackBoxRecording box)
+    {
+        var text = new StackPanel { Spacing = 1 };
+        text.Children.Add(new TextBlock { Text = App.Loc["HaslerBlackBox"], FontWeight = FontWeight.SemiBold });
+        text.Children.Add(new TextBlock
+        {
+            Text = $"{box.LastWriteUtc.ToLocalTime():HH:mm} · {box.Size / (1024.0 * 1024.0):0.0} MB",
+            FontSize = 11,
+            Opacity = 0.7
+        });
+        ToolTip.SetTip(text, App.Loc["HaslerBlackBoxTip"]);
+        var item = new TreeViewItem { Header = text, Tag = box };
+        // Also when it is the one picked already, and its window was closed since.
+        item.Tapped += async (_, _) => await OpenBlackBoxAsync(box);
+        return item;
+    }
+
+    /// <summary>The black box in its window, read on while the session runs; one window a file.</summary>
+    private async Task OpenBlackBoxAsync(BlackBoxRecording box)
+    {
+        if (_blackBoxes.TryGetValue(box.Path, out var open))
+        {
+            open.Activate();
+            return;
+        }
+        var window = new BlackBoxWindow(new StarterBlackBoxStrings())
+        {
+            CanOpenFiles = false,
+            Live = _liveBlackBoxes.Contains(box.Path)
+        };
+        _blackBoxes[box.Path] = window;
+        window.Closed += (_, _) => _blackBoxes.Remove(box.Path);
+        window.Show(this);
+        await window.OpenAsync(box.Path);
+    }
+
+    /// <summary>The newest black box of a running session is still written; once the session ends, its last part is read and that is all.</summary>
+    private void FollowBlackBoxes(IReadOnlyList<TapeSession> sessions)
+    {
+        _liveBlackBoxes = sessions.Where(session => session.Running)
+                                  .SelectMany(session => session.BlackBoxes.Take(1))
+                                  .Select(box => box.Path)
+                                  .ToHashSet(StringComparer.OrdinalIgnoreCase);
+        foreach (var (path, window) in _blackBoxes)
+        {
+            if (!window.Live || _liveBlackBoxes.Contains(path))
+                continue;
+            window.ReadMore();
+            window.Live = false;
+        }
     }
 
     private static TreeViewItem TapeItem(TapeFile file)
