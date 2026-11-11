@@ -1009,12 +1009,14 @@ public partial class Scenarios : UserControl
             int thumbH = AppServices.Current.Settings.LargeThumbnails ? 64 : 32;
 
             var bmp = LoadMini(miniName, thumbH);
+            // Fill, not Uniform: at a scale such as 125 % layout rounds the slot up to whole pixels,
+            // and a mini keeping its own width inside it left a line of the background between two vehicles.
             Control visual = bmp is not null
                 ? MiniTextures.Sharp(new Image
                 {
                     Source = bmp,
                     Height = thumbH,
-                    Stretch = Avalonia.Media.Stretch.Uniform,
+                    Stretch = Avalonia.Media.Stretch.Fill,
                     Margin = new Thickness(0)
                 })
                 : MiniTextures.MissingVisual(train.SkinFile, thumbH);
@@ -1022,6 +1024,22 @@ public partial class Scenarios : UserControl
             bool selected = !string.IsNullOrEmpty(train.Name) &&
                 string.Equals(train.Name, AppServices.Current.State.StartingVehicleName,
                               StringComparison.OrdinalIgnoreCase);
+            // The vehicle started in gets a frame over its picture as well as the lines above and below:
+            // two thin lines alone were hard to see. Drawn over the picture, it moves no vehicle aside.
+            if (selected)
+                visual = new Panel
+                {
+                    Children =
+                    {
+                        visual,
+                        new Border
+                        {
+                            BorderThickness = new Thickness(3),
+                            BorderBrush = SelectedVehicleBrush,
+                            IsHitTestVisible = false
+                        }
+                    }
+                };
 
             var slot = new Border
             {
@@ -1210,7 +1228,9 @@ public partial class Scenarios : UserControl
             var source = consistStack.Children[i];
             // The ghost mirrors what the slot shows, stand-in wagons included, so
             // dragging a vehicle with no thumbnail still carries something visible.
-            Control copy = source is Border { Child: Image image }
+            // The picked vehicle's picture sits under its frame.
+            var shown = source is Border { Child: Panel { Children: [Image framed, ..] } } ? framed : (source as Border)?.Child;
+            Control copy = shown is Image image
                 ? new Image { Source = image.Source, Height = image.Height, Stretch = image.Stretch }
                 : MiniTextures.MissingVisual(null, (int)source.Bounds.Height);
             panel.Children.Add(copy);
