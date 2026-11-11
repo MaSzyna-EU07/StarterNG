@@ -165,6 +165,13 @@ public sealed class BlackBoxReader
                 // The lamps the vehicles at the ends have, which a pattern is checked against, later again.
                 if (r.Remaining >= 4)
                     sample = sample with { EquippedHead = (Lights)r.U16(), EquippedTail = (Lights)r.U16() };
+                // What drives it, the doors' permits and the rest, later again; the arguments are read in their order.
+                if (r.Remaining >= 54)
+                    sample = sample with
+                    {
+                        Extra = new CabExtra((EngineKind)r.U8(), r.U8(), r.U8(), r.F32(), r.F32(), r.F32(), r.F32(), r.F32(),
+                                             r.F32(), r.F32(), r.F32(), r.I8(), r.U8(), r.U8(), r.F32(), r.F32(), r.F32(), r.F32())
+                    };
                 rec.AddCab(sample);
                 break;
             }

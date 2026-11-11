@@ -178,7 +178,7 @@ public sealed class BlackBoxWindow : Window
         cabCard.Margin = new Thickness(0, UiKit.Gap, 0, 0);
         var sideColumn = new DockPanel();
         // On a short window the cab scrolls, so the list above keeps room for a few rows.
-        sideColumn.SizeChanged += (_, e) => cabCard.MaxHeight = Math.Max(160, e.NewSize.Height - 200);
+        sideColumn.SizeChanged += (_, e) => cabCard.MaxHeight = Math.Max(160, e.NewSize.Height - 160);
         DockPanel.SetDock(cabCard, Dock.Bottom);
         sideColumn.Children.Add(cabCard);
         sideColumn.Children.Add(UiKit.Frame(side));

@@ -109,6 +109,34 @@ public class HeadCodeTests
     }
 
     [Fact]
+    public void What_drives_the_train_and_the_rest_are_read_when_written()
+    {
+        var f = new BlackBoxFile().Info();
+        f.Cab(0, 1, 1000, 40, movement: 1, equippedHead: 0x15, equippedTail: 0x22, engine: 4, oilTemperature: 71.5f);
+        f.Cab(0.5, 1, 1000, 40, movement: 1, equippedHead: 0x15, equippedTail: 0x22);
+        var cab = BlackBoxReader.Read(f.End(1).Stream()).Cab;
+        var extra = Assert.NotNull(cab[0].Extra);
+        Assert.Equal(EngineKind.DieselElectric, extra.Engine);
+        Assert.Equal(3, extra.RadioChannel);
+        Assert.Equal(71.5f, extra.OilTemperature);
+        Assert.Equal(1.0f, extra.Clutch);
+        Assert.Equal(2.5f, extra.ConsistBrakeCylinder);
+        // an older sample has none
+        Assert.Null(cab[1].Extra);
+    }
+
+    [Fact]
+    public void A_vehicle_with_no_lamps_is_not_judged()
+    {
+        var recording = DriveWith(0, 0, 0, 0);
+        Assert.Null(HeadCodes.HeadRight(recording.Cab[0]));
+        Assert.Null(HeadCodes.TailRight(recording.Cab[0]));
+        var summary = recording.Summarize();
+        Assert.Equal(0, summary.LightsJudgedSeconds);
+        Assert.Empty(summary.LightsFaults);
+    }
+
+    [Fact]
     public void A_vehicle_with_all_the_lamps_is_to_light_all_three_for_Pc1()
     {
         var fault = Assert.Single(DriveWith(0x11, Pc5, 0x35, Pc5).Summarize().LightsFaults);

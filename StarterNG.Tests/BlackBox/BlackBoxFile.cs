@@ -108,7 +108,8 @@ internal sealed class BlackBoxFile
                             float target = 40, float nextLimit = -1, float nextDistance = -1, float brakeCylinder = 0,
                             uint devices = 0x0007, bool extended = true, sbyte cabEnd = 1, byte security = 0,
                             float lateral = 0.2f, ushort lightsHead = 0x15, ushort lightsTail = 0x22, byte? movement = null,
-                            short hintHead = -1, short hintTail = -1, ushort? equippedHead = null, ushort? equippedTail = null) =>
+                            short hintHead = -1, short hintTail = -1, ushort? equippedHead = null, ushort? equippedTail = null,
+                            byte? engine = null, float oilTemperature = 70) =>
         Record(0x20, w =>
         {
             w.Write(time);
@@ -159,6 +160,28 @@ internal sealed class BlackBoxFile
                     {
                         w.Write(head);
                         w.Write(equippedTail ?? head);
+                        // what drives it and the rest: a recording made before them ends above
+                        if (engine is { } kind2)
+                        {
+                            w.Write(kind2);
+                            w.Write((byte)2);  // brake setting P
+                            w.Write((byte)3);  // radio channel
+                            w.Write(4.8f);  // equalizing reservoir
+                            w.Write(8.0f);  // main reservoir pipe
+                            w.Write(0.45f);  // oil pressure
+                            w.Write(75.0f);  // water
+                            w.Write(oilTemperature);
+                            w.Write(80.0f);  // engine
+                            w.Write(0.0f);  // cruise control
+                            w.Write(900.0f);  // power
+                            w.Write((sbyte)0);  // hand brake
+                            w.Write((byte)1);  // brake mode
+                            w.Write((byte)0);  // horn
+                            w.Write(0.5f);  // integrated controller
+                            w.Write(1.0f);  // clutch
+                            w.Write(0.0f);  // torque converter
+                            w.Write(2.5f);  // the highest brake cylinder of the train
+                        }
                     }
                 }
             }

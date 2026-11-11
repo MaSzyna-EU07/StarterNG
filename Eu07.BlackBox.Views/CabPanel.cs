@@ -9,26 +9,32 @@ using Avalonia.Media;
 namespace Eu07.BlackBox.Views;
 
 /// <summary>
-/// The cab of the user's train at the moment played: the speed against the AI's, the
-/// accelerations, the controllers, the pressures of the brakes as gauges, the traction,
-/// the lights at the head and the tail of the train with what they are to show, and a
-/// lamp for every device in three groups (power, driving, safety), the alerter (CA) and
-/// the cab signalling (SHP) apart.
+/// The cab of the user's train at the moment played, for checking what the driver did: the
+/// speed against the AI's, the accelerations, the controllers, the brakes (the pressures as
+/// gauges, the setting), the traction as fits what drives the vehicle (the voltage and the
+/// current of an electric one, the oil and the temperatures of a diesel), the lights at the
+/// head and the tail of the train with what they are to show, and a lamp for every device in
+/// groups (power, driving, safety, doors), the alerter (CA) and the cab signalling (SHP) apart.
 /// </summary>
 public sealed class CabPanel : Control
 {
     private const double Pad = 14;
-    private const double LampRow = 15;
+    private const double LampRow = 14;
+    private const int DoorColumns = 3;
 
     private Recording? _recording;
     private double _time;
     private int _measured = -1;
     private int _controllerTop = 1;
+    private readonly HashSet<int> _powered = new();
+    private readonly HashSet<int> _feedPipe = new();
+    private readonly HashSet<int> _integrated = new();
+    private readonly HashSet<int> _hydraulic = new();
 
     public CabPanel()
     {
         ClipToBounds = true;
-        Height = 506;
+        Height = 650;
     }
 
     public IBlackBoxStrings Strings { get; set; } = new DefaultBlackBoxStrings();
@@ -67,6 +73,7 @@ public sealed class CabPanel : Control
         }
         Measure(recording);
         var culture = CultureInfo.CurrentCulture;
+        var extra = s.Extra;
 
         // The vehicle at the left; who drives, from which cab, at the right.
         double chipX = right;
@@ -105,37 +112,64 @@ public sealed class CabPanel : Control
         double column = width / 4;
         Value(context, Strings["CabController"], s.MainController.ToString(culture), Pad, top);
         Steps(context, s.MainController, _controllerTop, Pad, top + 34, column - 14);
-        Value(context, Strings["CabShunt"], s.ScndController.ToString(culture), Pad + column, top);
+        if (extra is { } handle && _integrated.Contains(s.Vehicle))
+            Value(context, Strings["CabIntegrated"], (handle.IntegratedController * 100).ToString("+0;−0;0", culture) + " %", Pad + column, top);
+        else
+            Value(context, Strings["CabShunt"], s.ScndController.ToString(culture), Pad + column, top);
         Value(context, Strings["CabReverser"], Strings[s.Reverser > 0 ? "CabForward" : s.Reverser < 0 ? "CabBackward" : "CabNeutral"], Pad + 2 * column, top);
         Value(context, Strings["CabTrainBrake"], s.TrainBrake.ToString("0.0", culture), Pad + 3 * column, top);
 
-        // The brakes, as gauges.
-        top = Section(context, Strings["CabSectionBrakes"], Pad, 180, right);
+        // The brakes, as gauges, the setting (G, P, R) at the right of the title.
+        string? setting = extra is { } e && (e.BrakeDelay | e.BrakeMode) != 0
+            ? string.Format(culture, Strings["CabBrakeSetting"], string.Join(" · ", new[] { BrakeSetting(e.BrakeDelay), BrakeMode(e.BrakeMode) }.Where(t => t.Length > 0)))
+            : null;
+        top = Section(context, Strings["CabSectionBrakes"], Pad, 180, right, setting);
+        const double gauge = 17;
         Gauge(context, Strings["CabPipe"], s.BrakePipe, 6, 5, $"{s.BrakePipe:0.00} bar", Palette.Station, Pad, top, width);
-        Gauge(context, Strings["CabCylinder"], s.BrakeCylinder, 6, null, $"{s.BrakeCylinder:0.0} bar", Palette.Brakes, Pad, top + 18, width);
-        Gauge(context, Strings["CabReservoir"], s.MainReservoir, 10, null, $"{s.MainReservoir:0.0} bar", Palette.Controller, Pad, top + 36, width);
-        Gauge(context, Strings["CabLocalBrake"], s.LocalBrake, 1, null, $"{s.LocalBrake * 100:0} %", Palette.Brakes, Pad, top + 54, width);
+        double y = top + gauge;
+        if (extra is { } x1)
+        {
+            // where the driver's brake valve takes the pipe
+            Gauge(context, Strings["CabEqualizing"], x1.EqualizingReservoir, 6, null, $"{x1.EqualizingReservoir:0.00} bar", Palette.Target, Pad, y, width);
+            y += gauge;
+        }
+        Gauge(context, Strings["CabCylinder"], s.BrakeCylinder, 6, null, $"{s.BrakeCylinder:0.0} bar", Palette.Brakes, Pad, y, width);
+        y += gauge;
+        if (extra is { } x3)
+        {
+            // the most braked vehicle of the train
+            Gauge(context, Strings["CabConsistCylinder"], x3.ConsistBrakeCylinder, 6, null, $"{x3.ConsistBrakeCylinder:0.0} bar", Palette.Brakes, Pad, y, width);
+            y += gauge;
+        }
+        Gauge(context, Strings["CabReservoir"], s.MainReservoir, 10, null, $"{s.MainReservoir:0.0} bar", Palette.Controller, Pad, y, width);
+        y += gauge;
+        if (extra is { } x2)
+        {
+            bool has = _feedPipe.Contains(s.Vehicle);
+            Gauge(context, Strings["CabFeedPipe"], has ? x2.FeedPipe : 0, 10, null, has ? $"{x2.FeedPipe:0.0} bar" : "—", Palette.Controller, Pad, y, width);
+            y += gauge;
+        }
+        Gauge(context, Strings["CabLocalBrake"], s.LocalBrake, 1, null, $"{s.LocalBrake * 100:0} %", Palette.Brakes, Pad, y, width);
 
-        // The traction at the left, the lights of both ends of the train at the right, one under the other.
+        // The traction at the left, as fits what drives the vehicle; the lights of both ends of the train at the right.
         double half = Pad + width / 2;
-        top = Section(context, Strings["CabSectionDrive"], Pad, 272, half - 10);
-        Section(context, Strings["CabLights"], half + 4, 272, right);
-        double third = (half - 10 - Pad) / 3;
-        Value(context, Strings["CabVoltage"], $"{s.Voltage:0} V", Pad, top);
-        Value(context, Strings["CabCurrent"], $"{s.MotorCurrent:0} A", Pad + third, top);
-        Value(context, Strings["CabRpm"], $"{s.EngineRpm:0}", Pad + 2 * third, top);
+        double driveTop = y + gauge + 4;
+        top = Section(context, Strings["CabSectionDrive"], Pad, driveTop, half - 10);
+        Section(context, Strings["CabLights"], half + 4, driveTop, right);
+        DrawDrive(context, s, top, (half - 10 - Pad) / 3, culture);
         double row = top;
-        foreach (var (key, lights, required, isRight) in new[]
+        foreach (var (key, lights, equipped, required, isRight) in new[]
                  {
-                     ("CabLightsHead", s.LightsHead, HeadCodes.RequiredHead(s), HeadCodes.HeadRight(s)),
-                     ("CabLightsTail", s.LightsTail, HeadCodes.RequiredTail(s), HeadCodes.TailRight(s))
+                     ("CabLightsHead", s.LightsHead, s.EquippedHead, HeadCodes.RequiredHead(s), HeadCodes.HeadRight(s)),
+                     ("CabLightsTail", s.LightsTail, s.EquippedTail, HeadCodes.RequiredTail(s), HeadCodes.TailRight(s))
                  })
         {
             DrawFace(context, lights, new Point(half + 4 + 17, row + 15));
             // the end, and under it the signal it shows: green as it is to be (with the lamps the vehicle has),
             // red otherwise with the one it is to show
             var shown = HeadCodes.Of(lights);
-            var text = isRight == false && required is { } want
+            var text = HeadCodes.NoLamps(equipped) ? Strings["CabLightsNone"]
+                : isRight == false && required is { } want
                 ? string.Format(culture, Strings["CabLightsWant"], HeadCodes.Name(shown), HeadCodes.Name(want))
                 : isRight == true && required is { } met ? HeadCodes.Name(met) : HeadCodes.Name(shown);
             var brush = isRight is null ? Palette.DimText : isRight.Value ? Palette.Good : Palette.Bad;
@@ -148,63 +182,187 @@ public sealed class CabPanel : Control
         }
 
         // The devices, in three groups side by side: lit as their lamps are in the cab, the ones off faint.
-        top = Section(context, Strings["CabSectionDevices"], Pad, 350, right);
-        var groups = Devices(s);
+        top = Section(context, Strings["CabSectionDevices"], Pad, top + 76, right);
+        var groups = Devices(s, culture);
         var widths = new double[groups.Length];
         for (int g = 0; g < groups.Length; g++)
         {
             widths[g] = MapView.Text(Strings[groups[g].Title], Palette.DimText, 10, FontWeight.SemiBold).Width;
-            foreach (var (key, _) in groups[g].Lamps)
-                widths[g] = Math.Max(widths[g], 14 + MapView.Text(Strings[key], Palette.Text, 10.5).Width);
+            foreach (var (text, _) in groups[g].Lamps)
+                widths[g] = Math.Max(widths[g], 14 + MapView.Text(text, Palette.Text, 10.5).Width);
         }
         // each group as wide as its longest name, what is left shared between them
         double spare = (width - widths.Sum()) / groups.Length;
-        double x = Pad;
+        double x = Pad, bottom = top;
         for (int g = 0; g < groups.Length; g++)
         {
             double groupWidth = Math.Max(20, widths[g] + spare);
             using (context.PushClip(new Rect(x, top, groupWidth, size.Height - top)))
             {
                 context.DrawText(MapView.Text(Strings[groups[g].Title], Palette.DimText, 10, FontWeight.SemiBold), new Point(x, top));
-                double y = top + 16;
-                foreach (var (key, brush) in groups[g].Lamps)
+                double lampY = top + 16;
+                foreach (var (text, brush) in groups[g].Lamps)
                 {
-                    Led(context, new Point(x + 4, y + 7), brush);
-                    context.DrawText(MapView.Text(Strings[key], brush is null ? Palette.FaintText : Palette.Text, 10.5), new Point(x + 14, y));
-                    y += LampRow;
+                    Lamp(context, text, brush, x, lampY);
+                    lampY += LampRow;
                 }
+                bottom = Math.Max(bottom, lampY);
             }
             x += groupWidth;
         }
+
+        // The doors under them, across: open, permitted, the departure signal, the steps and the lock.
+        top = Math.Max(bottom, top + 16 + 9 * LampRow) + 6;
+        context.DrawText(MapView.Text(Strings["CabGroupDoors"], Palette.DimText, 10, FontWeight.SemiBold), new Point(Pad, top));
+        var doors = Doors(s);
+        double doorColumn = width / DoorColumns;
+        for (int i = 0; i < doors.Length; i++)
+        {
+            double doorX = Pad + i % DoorColumns * doorColumn;
+            using (context.PushClip(new Rect(doorX, top, doorColumn, size.Height - top)))
+                Lamp(context, doors[i].Text, doors[i].Lit, doorX, top + 16 + i / DoorColumns * LampRow);
+        }
     }
 
-    /// <summary>The title of a part of the panel, with a line from it to the right; the top of the part returned.</summary>
-    private static double Section(DrawingContext context, string title, double x, double y, double right)
+    /// <summary>
+    /// The traction, in two rows of three, as fits what drives the vehicle: the voltage, the current and the
+    /// revolutions of an electric one, the power and the cruise control under; the revolutions and the oil
+    /// pressure of a diesel, its temperatures under. A recording made before the engine was written: the first
+    /// row of an electric one, no voltage for a vehicle which never had any.
+    /// </summary>
+    private void DrawDrive(DrawingContext context, CabSample s, double top, double third, CultureInfo culture)
+    {
+        void At(int column, int row, string label, string value, IBrush? brush = null) =>
+            Value(context, label, value, Pad + column * third, top + row * 36, brush);
+
+        string voltage = _powered.Contains(s.Vehicle) ? $"{s.Voltage:0} V" : "—";
+        if (s.Extra is not { } e)
+        {
+            At(0, 0, Strings["CabVoltage"], voltage);
+            At(1, 0, Strings["CabCurrent"], $"{s.MotorCurrent:0} A");
+            At(2, 0, Strings["CabRpm"], $"{s.EngineRpm:0}");
+            return;
+        }
+        string oil = string.Format(culture, "{0:0.00} MPa", e.OilPressure);
+        switch (e.Engine)
+        {
+            case EngineKind.Electric:
+            case EngineKind.ElectricInduction:
+                At(0, 0, Strings["CabVoltage"], voltage);
+                At(1, 0, Strings["CabCurrent"], $"{s.MotorCurrent:0} A");
+                At(2, 0, Strings["CabRpm"], $"{s.EngineRpm:0}");
+                At(0, 1, Strings["CabPower"], $"{e.EnginePower:0} kW");
+                At(1, 1, Strings["CabSpeedControl"], s.Has(CabDevices.SpeedControl) ? $"{e.SpeedControlKmh:0} km/h" : "—");
+                break;
+            case EngineKind.DieselElectric:
+            case EngineKind.Diesel:
+                At(0, 0, Strings["CabRpm"], $"{s.EngineRpm:0}");
+                if (e.Engine == EngineKind.DieselElectric)
+                    At(1, 0, Strings["CabCurrent"], $"{s.MotorCurrent:0} A");
+                else if (_hydraulic.Contains(s.Vehicle))
+                    At(1, 0, Strings["CabConverterFill"], $"{e.ConverterFill * 100:0} %");
+                else
+                    At(1, 0, Strings["CabClutch"], $"{e.Clutch * 100:0} %");
+                At(2, 0, Strings["CabOilPressure"], oil);
+                // the temperatures, warm when the engine is too hot
+                var heat = s.Has(CabDevices.EngineHot) ? Palette.Bad : null;
+                At(0, 1, Strings["CabWater"], $"{e.WaterTemperature:0} °C", heat);
+                At(1, 1, Strings["CabOil"], $"{e.OilTemperature:0} °C", heat);
+                At(2, 1, Strings["CabEngine"], $"{e.EngineTemperature:0} °C", heat);
+                break;
+            case EngineKind.Steam:
+                At(0, 0, Strings["CabRpm"], $"{s.EngineRpm:0}");
+                break;
+            default:
+                context.DrawText(MapView.Text(Strings["CabNoDrive"], Palette.DimText, 11), new Point(Pad, top + 2));
+                break;
+        }
+    }
+
+    /// <summary>The setting of the brakes from its bits: G, P, R, R+Mg.</summary>
+    public static string BrakeSetting(byte bits)
+    {
+        var parts = new List<string>();
+        if ((bits & 1) != 0)
+            parts.Add("G");
+        if ((bits & 2) != 0)
+            parts.Add("P");
+        if ((bits & 4) != 0)
+            parts.Add("R");
+        if ((bits & 8) != 0)
+            parts.Add("Mg");
+        return string.Join("+", parts);
+    }
+
+    /// <summary>The mode of the brakes from its bits: PS, PN, EP, MED.</summary>
+    public static string BrakeMode(byte bits)
+    {
+        var parts = new List<string>();
+        if ((bits & 1) != 0)
+            parts.Add("PS");
+        if ((bits & 2) != 0)
+            parts.Add("PN");
+        if ((bits & 4) != 0)
+            parts.Add("EP");
+        if ((bits & 8) != 0)
+            parts.Add("MED");
+        return string.Join("+", parts);
+    }
+
+    /// <summary>The title of a part of the panel, with a line from it to the right (and a note at its end); the top of the part returned.</summary>
+    private static double Section(DrawingContext context, string title, double x, double y, double right, string? note = null)
     {
         var text = MapView.Text(title.ToUpper(CultureInfo.CurrentCulture), Palette.DimText, 9, FontWeight.SemiBold);
         context.DrawText(text, new Point(x, y));
+        double end = right;
+        if (note is not null)
+        {
+            var noted = MapView.Text(note, Palette.Text, 10, FontWeight.SemiBold);
+            end = right - noted.Width - 8;
+            context.DrawText(noted, new Point(right - noted.Width, y + (text.Height - noted.Height) / 2));
+        }
         double line = Math.Round(y + text.Height / 2) + 0.5;
-        if (x + text.Width + 8 < right)
-            context.DrawLine(new Pen(Palette.Grid, 1), new Point(x + text.Width + 8, line), new Point(right, line));
+        if (x + text.Width + 8 < end)
+            context.DrawLine(new Pen(Palette.Grid, 1), new Point(x + text.Width + 8, line), new Point(end, line));
         return y + 17;
     }
 
-    /// <summary>The highest step of the controller used in the recording, for its bar.</summary>
+    /// <summary>
+    /// What is the same all the recording long for each vehicle: the highest step of the controller used, for
+    /// its bar, and which vehicles ever had a voltage, a main reservoir pipe, an integrated controller moved off
+    /// nought and a torque converter filled, to show the field shunting, the clutch or none for the others.
+    /// </summary>
     private void Measure(Recording recording)
     {
         if (_measured == recording.Revision)
             return;
         int top = 1;
+        _powered.Clear();
+        _feedPipe.Clear();
+        _integrated.Clear();
+        _hydraulic.Clear();
         foreach (var sample in recording.Cab)
+        {
             top = Math.Max(top, sample.MainController);
+            if (sample.Voltage > 1)
+                _powered.Add(sample.Vehicle);
+            if (sample.Extra is not { } e)
+                continue;
+            if (e.FeedPipe > 0.1f)
+                _feedPipe.Add(sample.Vehicle);
+            if (Math.Abs(e.IntegratedController) > 0.01f)
+                _integrated.Add(sample.Vehicle);
+            if (e.ConverterFill > 0.01f)
+                _hydraulic.Add(sample.Vehicle);
+        }
         _controllerTop = top;
         _measured = recording.Revision;
     }
 
-    private static void Value(DrawingContext context, string label, string value, double x, double y)
+    private static void Value(DrawingContext context, string label, string value, double x, double y, IBrush? brush = null)
     {
         context.DrawText(MapView.Text(label, Palette.DimText, 10), new Point(x, y));
-        context.DrawText(MapView.Text(value, Palette.Text, 14, FontWeight.SemiBold), new Point(x, y + 13));
+        context.DrawText(MapView.Text(value, brush ?? Palette.Text, 14, FontWeight.SemiBold), new Point(x, y + 13));
     }
 
     /// <summary>The steps of the controller as a row of cells, lit up to the one it stands at.</summary>
@@ -269,14 +427,14 @@ public sealed class CabPanel : Control
     {
         context.DrawRectangle(null, new Pen(Palette.Grid, 1), new Rect(center.X - 17, center.Y - 15, 34, 22), 5, 5);
         bool rearEnd = lights.HasFlag(Lights.RearEndSignals);
-        Lamp(context, center + new Vector(0, -8), lights.HasFlag(Lights.HeadlightUpper), false, false);
-        Lamp(context, center + new Vector(-10, 1), lights.HasFlag(Lights.HeadlightLeft) || lights.HasFlag(Lights.AuxiliaryLeft),
-             lights.HasFlag(Lights.RedMarkerLeft) || rearEnd, lights.HasFlag(Lights.HighBeamLeft));
-        Lamp(context, center + new Vector(10, 1), lights.HasFlag(Lights.HeadlightRight) || lights.HasFlag(Lights.AuxiliaryRight),
-             lights.HasFlag(Lights.RedMarkerRight) || rearEnd, lights.HasFlag(Lights.HighBeamRight));
+        Light(context, center + new Vector(0, -8), lights.HasFlag(Lights.HeadlightUpper), false, false);
+        Light(context, center + new Vector(-10, 1), lights.HasFlag(Lights.HeadlightLeft) || lights.HasFlag(Lights.AuxiliaryLeft),
+              lights.HasFlag(Lights.RedMarkerLeft) || rearEnd, lights.HasFlag(Lights.HighBeamLeft));
+        Light(context, center + new Vector(10, 1), lights.HasFlag(Lights.HeadlightRight) || lights.HasFlag(Lights.AuxiliaryRight),
+              lights.HasFlag(Lights.RedMarkerRight) || rearEnd, lights.HasFlag(Lights.HighBeamRight));
     }
 
-    private static void Lamp(DrawingContext context, Point center, bool white, bool red, bool high)
+    private static void Light(DrawingContext context, Point center, bool white, bool red, bool high)
     {
         var fill = white ? Palette.LightWhite : red ? Palette.LightRed : Palette.LampOff;
         double radius = high ? 4.5 : 3.5;
@@ -285,55 +443,114 @@ public sealed class CabPanel : Control
         context.DrawEllipse(fill, null, center, radius, radius);
     }
 
-    private static void Led(DrawingContext context, Point center, IBrush? lit)
+    /// <summary>A device's lamp and its name: lit in its colour, the name bright; off, both faint.</summary>
+    private static void Lamp(DrawingContext context, string text, IBrush? lit, double x, double y)
     {
+        var center = new Point(x + 4, y + 7);
         if (lit is not null)
             context.DrawEllipse(Palette.Faded(lit, 0.3), null, center, 6, 6);
         context.DrawEllipse(lit ?? Palette.LampOff, null, center, 3.5, 3.5);
+        context.DrawText(MapView.Text(text, lit is null ? Palette.FaintText : Palette.Text, 10.5), new Point(x + 14, y));
     }
 
-    /// <summary>Every device, with the colour of its lamp if it was on, in the groups the panel shows.</summary>
-    private static (string Title, (string Key, IBrush? Lit)[] Lamps)[] Devices(CabSample s)
+    /// <summary>
+    /// Every device but the doors, with the colour of its lamp if it was on, in the groups the panel shows. A
+    /// diesel has its pumps where an electric vehicle has its pantographs; a recording made before the engine
+    /// was written has the devices it had then.
+    /// </summary>
+    private (string Title, (string Text, IBrush? Lit)[] Lamps)[] Devices(CabSample s, CultureInfo culture)
     {
-        IBrush? On(CabDevices device, IBrush colour) => s.Has(device) ? colour : null;
-        IBrush? Flag(CabFlags flag, IBrush colour) => (s.Flags & flag) != 0 ? colour : null;
+        (string, IBrush?) On(string key, CabDevices device, IBrush colour) => (Strings[key], s.Has(device) ? colour : null);
+        (string, IBrush?) Flag(string key, CabFlags flag, IBrush colour) => (Strings[key], (s.Flags & flag) != 0 ? colour : null);
         IBrush? Security(SecurityFlags flag, IBrush colour) => s.Has(flag) ? colour : null;
+        var extra = s.Extra;
+        bool diesel = extra is { Engine: EngineKind.Diesel or EngineKind.DieselElectric };
+        (string, IBrush?) Horn()
+        {
+            if (!s.Has(CabDevices.Horn))
+                return (Strings["DevHorn"], null);
+            string? tone = extra?.Horn switch
+            {
+                1 => Strings["HornLow"],
+                2 => Strings["HornHigh"],
+                3 => Strings["HornBoth"],
+                _ => null
+            };
+            return (tone is null ? Strings["DevHorn"] : string.Format(culture, Strings["DevHornTone"], tone), Palette.LampWarning);
+        }
+        bool electric = extra is null or { Engine: EngineKind.Electric or EngineKind.ElectricInduction };
 
-        var power = new[]
+        var power = new List<(string, IBrush?)> { On("DevBattery", CabDevices.Battery, Palette.LampOn), On("DevMainBreaker", CabDevices.MainBreaker, Palette.LampOn) };
+        if (electric)
         {
-            ("DevBattery", On(CabDevices.Battery, Palette.LampOn)),
-            ("DevMainBreaker", On(CabDevices.MainBreaker, Palette.LampOn)),
-            ("DevPantographFront", On(CabDevices.PantographFront, Palette.LampOn)),
-            ("DevPantographRear", On(CabDevices.PantographRear, Palette.LampOn)),
-            ("DevConverter", On(CabDevices.Converter, Palette.LampOn)),
-            ("DevCompressor", On(CabDevices.Compressor, Palette.LampOn)),
-            ("DevLineContactors", On(CabDevices.LineContactors, Palette.LampOn)),
-            ("DevHeating", On(CabDevices.Heating, Palette.LampOn))
-        };
-        var driving = new[]
+            power.Add(On("DevPantographFront", CabDevices.PantographFront, Palette.LampOn));
+            power.Add(On("DevPantographRear", CabDevices.PantographRear, Palette.LampOn));
+        }
+        if (diesel)
         {
-            ("DevShuntMode", On(CabDevices.ShuntMode, Palette.LampOn)),
-            ("DevRadio", On(CabDevices.Radio, Palette.LampOn)),
-            ("DevSanding", On(CabDevices.Sanding, Palette.LampWarning)),
-            ("DevHorn", On(CabDevices.Horn, Palette.LampWarning)),
-            ("DevDoorsLeft", On(CabDevices.DoorsLeft, Palette.LampWarning)),
-            ("DevDoorsRight", On(CabDevices.DoorsRight, Palette.LampWarning)),
-            ("DevSpringBrake", On(CabDevices.SpringBrake, Palette.LampWarning))
+            power.Add(On("DevFuelPump", CabDevices.FuelPump, Palette.LampOn));
+            power.Add(On("DevOilPump", CabDevices.OilPump, Palette.LampOn));
+        }
+        power.Add(On("DevConverter", CabDevices.Converter, Palette.LampOn));
+        power.Add(On("DevCompressor", CabDevices.Compressor, Palette.LampOn));
+        power.Add(On("DevLineContactors", CabDevices.LineContactors, Palette.LampOn));
+        if (extra is not null)
+            power.Add(On("DevMotorBlowers", CabDevices.MotorBlowers, Palette.LampOn));
+        power.Add(On("DevHeating", CabDevices.Heating, Palette.LampOn));
+
+        // the radio with its channel
+        var radio = extra is { RadioChannel: > 0 } r
+            ? (string.Format(culture, Strings["DevRadioChannel"], r.RadioChannel), s.Has(CabDevices.Radio) ? Palette.LampOn : null)
+            : On("DevRadio", CabDevices.Radio, Palette.LampOn);
+        var driving = new List<(string, IBrush?)>
+        {
+            On("DevShuntMode", CabDevices.ShuntMode, Palette.LampOn), radio,
+            On("DevSanding", CabDevices.Sanding, Palette.LampWarning), Horn(),
+            On("DevSpringBrake", CabDevices.SpringBrake, Palette.LampWarning)
         };
+        if (extra is not null)
+        {
+            driving.Add((Strings["DevHandBrake"], extra.Value.HandBrake > 0 ? Palette.LampWarning : null));
+            driving.Add(On("DevBrakeReleaser", CabDevices.BrakeReleaser, Palette.LampWarning));
+            driving.Add(On("DevSpeedControl", CabDevices.SpeedControl, Palette.LampOn));
+        }
+
         var safety = new List<(string, IBrush?)>();
         if (s.Security != SecurityFlags.None || s.CabEnd != 0)
         {
             // A recording which tells them apart.
-            safety.Add(("DevVigilance", Security(SecurityFlags.VigilanceBeeping, Palette.LampAlarm) ?? Security(SecurityFlags.Vigilance, Palette.Vigilance)));
-            safety.Add(("DevCabSignal", Security(SecurityFlags.CabSignalBeeping, Palette.LampAlarm) ?? Security(SecurityFlags.CabSignal, Palette.CabSignal)));
-            safety.Add(("DevSecurityBraking", Security(SecurityFlags.Braking, Palette.LampAlarm)));
+            safety.Add((Strings["DevVigilance"], Security(SecurityFlags.VigilanceBeeping, Palette.LampAlarm) ?? Security(SecurityFlags.Vigilance, Palette.Vigilance)));
+            safety.Add((Strings["DevCabSignal"], Security(SecurityFlags.CabSignalBeeping, Palette.LampAlarm) ?? Security(SecurityFlags.CabSignal, Palette.CabSignal)));
+            safety.Add((Strings["DevSecurityBraking"], Security(SecurityFlags.Braking, Palette.LampAlarm)));
         }
         else
-            safety.Add(("DevAlerter", Flag(CabFlags.AlerterBeeping, Palette.LampAlarm) ?? Flag(CabFlags.AlerterBlinking, Palette.LampWarning)));
-        safety.Add(("DevWheelSlip", Flag(CabFlags.WheelSlip, Palette.LampAlarm)));
-        safety.Add(("DevOverloadRelay", On(CabDevices.OverloadRelay, Palette.LampAlarm)));
-        safety.Add(("DevRadioStop", Flag(CabFlags.RadioStop, Palette.LampAlarm)));
-        safety.Add(("DevAlarmChain", Flag(CabFlags.AlarmChain, Palette.LampAlarm)));
-        return [("CabGroupPower", power), ("CabGroupDriving", driving), ("CabGroupSafety", safety.ToArray())];
+            safety.Add((Strings["DevAlerter"], (s.Flags & CabFlags.AlerterBeeping) != 0 ? Palette.LampAlarm
+                                                 : (s.Flags & CabFlags.AlerterBlinking) != 0 ? Palette.LampWarning : null));
+        safety.Add(Flag("DevWheelSlip", CabFlags.WheelSlip, Palette.LampAlarm));
+        safety.Add(On("DevOverloadRelay", CabDevices.OverloadRelay, Palette.LampAlarm));
+        safety.Add(Flag("DevRadioStop", CabFlags.RadioStop, Palette.LampAlarm));
+        safety.Add(Flag("DevAlarmChain", CabFlags.AlarmChain, Palette.LampAlarm));
+        if (diesel)
+            safety.Add(On("DevEngineHot", CabDevices.EngineHot, Palette.LampAlarm));
+        return [("CabGroupPower", power.ToArray()), ("CabGroupDriving", driving.ToArray()), ("CabGroupSafety", safety.ToArray())];
+    }
+
+    /// <summary>The doors of the vehicle the user is in, in rows of three: open, the lock, the permits, the steps, the departure signal.</summary>
+    private (string Text, IBrush? Lit)[] Doors(CabSample s)
+    {
+        (string, IBrush?) On(string key, CabDevices device, IBrush colour) => (Strings[key], s.Has(device) ? colour : null);
+        var doors = new List<(string, IBrush?)>
+        {
+            On("DevDoorsLeft", CabDevices.DoorsLeft, Palette.LampWarning), On("DevDoorsRight", CabDevices.DoorsRight, Palette.LampWarning)
+        };
+        if (s.Extra is null)
+            return doors.ToArray();
+        doors.Add(On("DevDoorLock", CabDevices.DoorLock, Palette.LampOn));
+        doors.Add(On("DevDoorPermitLeft", CabDevices.DoorPermitLeft, Palette.LampOn));
+        doors.Add(On("DevDoorPermitRight", CabDevices.DoorPermitRight, Palette.LampOn));
+        doors.Add(On("DevDoorsLocked", CabDevices.DoorsLocked, Palette.LampOn));
+        doors.Add(On("DevDoorStep", CabDevices.DoorStep, Palette.LampOn));
+        doors.Add(On("DevDepartureSignal", CabDevices.DepartureSignal, Palette.LampWarning));
+        return doors.ToArray();
     }
 }

@@ -186,6 +186,7 @@ public sealed class EventList : ListBox
         }
         AddCameras(recording, strings, events, culture);
         AddCouplings(recording, strings, events, culture);
+        AddCabChanges(recording, strings, events, culture);
         foreach (var t in recording.Timetables)
             events.Add(new BlackBoxEvent(t.Time, string.Format(culture, strings["EventTimetable"], $"{t.Category} {t.Train}".Trim(),
                                                                string.Format(culture, strings["Relation"], t.From, t.To)), Palette.Station, false));
@@ -265,6 +266,85 @@ public sealed class EventList : ListBox
         CameraMode.Debug => "CameraDebug",
         _ => "CameraFree"
     };
+
+    /// <summary>The switches the driver worked, as the cab tells them: what came on and went off.</summary>
+    private static readonly (CabDevices Device, string Key)[] Switched =
+    [
+        (CabDevices.MainBreaker, "DevMainBreaker"), (CabDevices.PantographFront, "DevPantographFront"),
+        (CabDevices.PantographRear, "DevPantographRear"), (CabDevices.FuelPump, "DevFuelPump"), (CabDevices.OilPump, "DevOilPump"),
+        (CabDevices.Converter, "DevConverter"), (CabDevices.Compressor, "DevCompressor"), (CabDevices.MotorBlowers, "DevMotorBlowers"),
+        (CabDevices.Heating, "DevHeating"), (CabDevices.Radio, "DevRadio"), (CabDevices.ShuntMode, "DevShuntMode"),
+        (CabDevices.SpringBrake, "DevSpringBrake"), (CabDevices.BrakeReleaser, "DevBrakeReleaser"),
+        (CabDevices.DoorPermitLeft, "DevDoorPermitLeft"), (CabDevices.DoorPermitRight, "DevDoorPermitRight"),
+        (CabDevices.DoorStep, "DevDoorStep"), (CabDevices.DoorLock, "DevDoorLock"), (CabDevices.SpeedControl, "DevSpeedControl")
+    ];
+
+    /// <summary>
+    /// What the driver did in the cab, from one look to the next in the same vehicle: the switches on and off, the
+    /// doors opened and closed, the departure signal, the hand brake, the brakes' setting, the radio's channel, the
+    /// speed the cruise control is set to; and, as faults, moving with the doors open and the engine overheating.
+    /// </summary>
+    private static void AddCabChanges(Recording recording, IBlackBoxStrings strings, List<BlackBoxEvent> events, CultureInfo culture)
+    {
+        CabSample? last = null;
+        bool movingOpen = false;
+        foreach (var s in recording.Cab)
+        {
+            if (last is not { } b || b.Vehicle != s.Vehicle)
+            {
+                last = s;
+                movingOpen = false;
+                continue;
+            }
+            bool Came(CabDevices device) => !b.Has(device) && s.Has(device);
+            bool Went(CabDevices device) => b.Has(device) && !s.Has(device);
+            foreach (var (device, key) in Switched)
+            {
+                if (Came(device))
+                    events.Add(new BlackBoxEvent(s.Time, string.Format(culture, strings["EventDeviceOn"], strings[key]), Palette.LampOn, false));
+                else if (Went(device))
+                    events.Add(new BlackBoxEvent(s.Time, string.Format(culture, strings["EventDeviceOff"], strings[key]), Palette.FaintText, false));
+            }
+            foreach (var (device, open, closed) in new[] { (CabDevices.DoorsLeft, "DevDoorsLeft", "EventDoorsLeftClosed"), (CabDevices.DoorsRight, "DevDoorsRight", "EventDoorsRightClosed") })
+            {
+                if (Came(device))
+                    events.Add(new BlackBoxEvent(s.Time, strings[open], Palette.LampWarning, false));
+                else if (Went(device))
+                    events.Add(new BlackBoxEvent(s.Time, strings[closed], Palette.FaintText, false));
+            }
+            if (Came(CabDevices.DepartureSignal))
+                events.Add(new BlackBoxEvent(s.Time, strings["DevDepartureSignal"], Palette.LampWarning, false));
+            if (Came(CabDevices.EngineHot))
+                events.Add(new BlackBoxEvent(s.Time, strings["DevEngineHot"], Palette.Bad, true));
+            // moving with the doors open: once, until they are closed or the train stands
+            bool doorsOpen = s.Has(CabDevices.DoorsLeft) || s.Has(CabDevices.DoorsRight);
+            if (doorsOpen && s.AbsSpeedKmh > 2 && !movingOpen)
+            {
+                events.Add(new BlackBoxEvent(s.Time, string.Format(culture, strings["EventMovingDoorsOpen"], s.AbsSpeedKmh), Palette.Bad, true));
+                movingOpen = true;
+            }
+            else if (!doorsOpen || s.AbsSpeedKmh < 0.5)
+                movingOpen = false;
+            if (b.Extra is { } x && s.Extra is { } y)
+            {
+                if (x.HandBrake <= 0 && y.HandBrake > 0)
+                    events.Add(new BlackBoxEvent(s.Time, strings["EventHandBrakeOn"], Palette.LampWarning, false));
+                else if (x.HandBrake > 0 && y.HandBrake <= 0)
+                    events.Add(new BlackBoxEvent(s.Time, strings["EventHandBrakeOff"], Palette.FaintText, false));
+                if (x.BrakeDelay != y.BrakeDelay || x.BrakeMode != y.BrakeMode)
+                {
+                    string setting = string.Join(" · ", new[] { CabPanel.BrakeSetting(y.BrakeDelay), CabPanel.BrakeMode(y.BrakeMode) }.Where(t => t.Length > 0));
+                    events.Add(new BlackBoxEvent(s.Time, string.Format(culture, strings["EventBrakeSetting"], setting), Palette.Brakes, false));
+                }
+                if (x.RadioChannel != y.RadioChannel && y.RadioChannel > 0)
+                    events.Add(new BlackBoxEvent(s.Time, string.Format(culture, strings["EventRadioChannel"], y.RadioChannel), Palette.LampOn, false));
+                // the speed set, while the cruise control holds one
+                if (s.Has(CabDevices.SpeedControl) && (Came(CabDevices.SpeedControl) || Math.Abs(x.SpeedControlKmh - y.SpeedControlKmh) >= 1))
+                    events.Add(new BlackBoxEvent(s.Time, string.Format(culture, strings["EventSpeedControlSet"], y.SpeedControlKmh), Palette.Target, false));
+            }
+            last = s;
+        }
+    }
 
     private static void AddCouplings(Recording recording, IBlackBoxStrings strings, List<BlackBoxEvent> events, CultureInfo culture)
     {

@@ -79,8 +79,55 @@ public enum CabDevices : uint
     Heating = 0x2000,
     /// <summary>Applied.</summary>
     SpringBrake = 0x4000,
-    ShuntMode = 0x8000
+    ShuntMode = 0x8000,
+    /// <summary>Sounding.</summary>
+    DepartureSignal = 0x0001_0000,
+    /// <summary>The doors may be opened.</summary>
+    DoorPermitLeft = 0x0002_0000,
+    DoorPermitRight = 0x0004_0000,
+    /// <summary>The steps come out with the doors.</summary>
+    DoorStep = 0x0008_0000,
+    /// <summary>The doors lock above a speed.</summary>
+    DoorLock = 0x0010_0000,
+    /// <summary>Locked now.</summary>
+    DoorsLocked = 0x0020_0000,
+    /// <summary>Releasing the brakes of the vehicle.</summary>
+    BrakeReleaser = 0x0040_0000,
+    FuelPump = 0x0080_0000,
+    OilPump = 0x0100_0000,
+    /// <summary>The fans of the traction motors.</summary>
+    MotorBlowers = 0x0200_0000,
+    /// <summary>The diesel engine is over its temperature.</summary>
+    EngineHot = 0x0400_0000,
+    /// <summary>The cruise control holds a speed.</summary>
+    SpeedControl = 0x0800_0000
 }
+
+/// <summary>What drives the vehicle whose motors the cab drives.</summary>
+public enum EngineKind : byte
+{
+    /// <summary>Nothing of its own: a draisine, a car.</summary>
+    None = 0,
+    Electric = 1,
+    ElectricInduction = 2,
+    /// <summary>With a mechanical or a hydraulic transmission.</summary>
+    Diesel = 3,
+    DieselElectric = 4,
+    Steam = 5
+}
+
+/// <summary>
+/// The rest of a look at the user's train, written from the same version as the doors' permits: what drives it,
+/// the brakes' setting and mode, the hand brake, the radio, the horn, the pressures of the equalizing reservoir
+/// and the main reservoir pipe, a diesel's oil, temperatures, clutch and torque converter, the cruise control,
+/// the power and the integrated controller of a unit, the highest brake cylinder pressure of the train. The
+/// temperatures and the oil mean something for a diesel only.
+/// </summary>
+public readonly record struct CabExtra(EngineKind Engine, byte BrakeDelay, byte RadioChannel, float EqualizingReservoir,
+                                       float FeedPipe, float OilPressure, float WaterTemperature, float OilTemperature,
+                                       float EngineTemperature, float SpeedControlKmh, float EnginePower, sbyte HandBrake,
+                                       byte BrakeMode, byte Horn, float IntegratedController, float Clutch, float ConverterFill,
+                                       float ConsistBrakeCylinder);
 
 /// <summary>The train protection: the alerter (CA) and the cab signalling (SHP) apart.</summary>
 [Flags]
@@ -319,7 +366,7 @@ public readonly record struct CabSample(double Time, int Vehicle, Position Posit
                                         Lights LightsHead, Lights LightsTail, sbyte CabEnd = 0,
                                         SecurityFlags Security = SecurityFlags.None, float LateralAcceleration = 0,
                                         Movement Movement = Movement.Unknown, short LightHintHead = -1, short LightHintTail = -1,
-                                        Lights? EquippedHead = null, Lights? EquippedTail = null)
+                                        Lights? EquippedHead = null, Lights? EquippedTail = null, CabExtra? Extra = null)
 {
     public bool Has(CabDevices device) => (Devices & device) == device;
     public bool Has(SecurityFlags flag) => (Security & flag) == flag;

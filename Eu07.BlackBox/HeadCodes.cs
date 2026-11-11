@@ -71,7 +71,7 @@ public static class HeadCodes
     };
 
     /// <summary>Whether the head of the train showed what it was to; null when nothing tells it.</summary>
-    public static bool? HeadRight(CabSample sample) => sample.Movement switch
+    public static bool? HeadRight(CabSample sample) => NoLamps(sample.EquippedHead) ? null : sample.Movement switch
     {
         Movement.Train => Meets(sample.LightsHead, sample.EquippedHead, sample.LightHintHead, HeadCode.Pc1),
         Movement.Shunting => Shows(HeadCode.Tb1, sample.LightsHead, sample.EquippedHead),
@@ -79,7 +79,7 @@ public static class HeadCodes
     };
 
     /// <summary>Whether the tail of the train showed what it was to; null when nothing tells it.</summary>
-    public static bool? TailRight(CabSample sample) => sample.Movement switch
+    public static bool? TailRight(CabSample sample) => NoLamps(sample.EquippedTail) ? null : sample.Movement switch
     {
         Movement.Train => Meets(sample.LightsTail, sample.EquippedTail, sample.LightHintTail, HeadCode.Pc5),
         Movement.Shunting => Shows(HeadCode.Tb1, sample.LightsTail, sample.EquippedTail),
@@ -87,6 +87,12 @@ public static class HeadCodes
     };
 
     /// <summary>Whether both ends showed what they were to; null when nothing tells it.</summary>
+    /// <summary>
+    /// An end with no lamp at all, a draisine's: the simulator still asks it for a signal it can't show, so it
+    /// is not judged. A recording made before the lamps were written can't tell.
+    /// </summary>
+    public static bool NoLamps(Lights? equipped) => equipped == Lights.None;
+
     public static bool? Right(CabSample sample) =>
         HeadRight(sample) is { } head && TailRight(sample) is { } tail ? head && tail : null;
 
