@@ -46,6 +46,9 @@ public partial class MainWindow : Window
     {
         Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
         InitializeComponent();
+        // The top bar lets the version go first when it runs short of room, which at the usual widths it does;
+        // the title has room for it at any width.
+        Title = $"{Title} {AppInfo.Version}";
 
         ExtendClientAreaToDecorationsHint = true;
         ExtendClientAreaTitleBarHeightHint = TitleBarHeight;
