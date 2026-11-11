@@ -227,7 +227,7 @@ public sealed class HaslerTapes
 
     public TapeContext ContextOf(TapeFile file)
     {
-        var launch = Launches().LastOrDefault(l => l.Covers(file.LastWriteUtc));
+        var launch = LaunchOf(file, Launches(), ReadBlackBoxes());
         if (launch is null)
             return new TapeContext(null, Recorders.Guess(null, file.Vehicle));
 
@@ -243,8 +243,9 @@ public sealed class HaslerTapes
 
     /// <summary>
     /// The runs the tapes came from, the running or latest one first. A tape belongs
-    /// to the last launch before it was written; one written before any known launch
-    /// goes with those written about the same time, as a run writes them all at its end.
+    /// to the last launch before it was written, unless a run the starter didn't launch
+    /// began between them; one with no launch goes with those written about the same
+    /// time, as a run writes them all at its end.
     /// </summary>
     public IReadOnlyList<TapeSession> Sessions()
     {
@@ -254,12 +255,11 @@ public sealed class HaslerTapes
             var tapes = _files.DirectoryExists(Folder)
                 ? _files.GetFiles(Folder, "*.dat").Select(ReadTape).ToList()
                 : new List<TapeFile>();
-            var behind = tapes.GroupBy(tape => launches.LastOrDefault(l => l.Covers(tape.LastWriteUtc)))
+            var boxes = ReadBlackBoxes();
+            var tapeLaunch = tapes.ToDictionary(tape => tape, tape => LaunchOf(tape, launches, boxes));
+            var behind = tapes.GroupBy(tape => tapeLaunch[tape])
                               .Where(group => group.Key is not null)
                               .ToDictionary(group => group.Key!, group => group.ToList());
-            var boxes = _files.DirectoryExists(Folder)
-                ? _files.GetFiles(Folder, "*.blackbox").Select(ReadBlackBox).ToList()
-                : new List<BlackBoxRecording>();
             var boxesBehind = boxes.GroupBy(box => LaunchOf(box, launches))
                                    .Where(group => group.Key is not null)
                                    .ToDictionary(group => group.Key!, group => group.ToList());
@@ -279,7 +279,7 @@ public sealed class HaslerTapes
             }
 
             // What no launch covers goes together by when it was written: a run writes it all at its end.
-            var loose = tapes.Where(t => !launches.Any(l => l.Covers(t.LastWriteUtc)))
+            var loose = tapes.Where(t => tapeLaunch[t] is null)
                              .Select(t => (Written: t.LastWriteUtc, Tape: (TapeFile?)t, Box: (BlackBoxRecording?)null))
                              .Concat(boxes.Where(b => LaunchOf(b, launches) is null)
                                           .Select(b => (Written: b.LastWriteUtc, Tape: (TapeFile?)null, Box: (BlackBoxRecording?)b)))
@@ -317,6 +317,27 @@ public sealed class HaslerTapes
 
     private TapeFile ReadTape(string path) =>
         new(path, Path.GetFileNameWithoutExtension(path), _files.GetLastWriteTimeUtc(path), _files.GetFileSize(path));
+
+    private List<BlackBoxRecording> ReadBlackBoxes() =>
+        _files.DirectoryExists(Folder)
+            ? _files.GetFiles(Folder, "*.blackbox").Select(ReadBlackBox).ToList()
+            : new List<BlackBoxRecording>();
+
+    /// <summary>
+    /// The launch a tape came from. A tape tells nothing of its run but when it was written: the last launch
+    /// before then, unless a black box shows another run, one the starter didn't launch, began between the two.
+    /// That run wrote the tape, not the launch's.
+    /// </summary>
+    public static TapeLaunch? LaunchOf(TapeFile tape, IReadOnlyList<TapeLaunch> launches, IReadOnlyList<BlackBoxRecording> boxes)
+    {
+        var launch = launches.LastOrDefault(l => l.Covers(tape.LastWriteUtc));
+        if (launch is null)
+            return null;
+        bool another = boxes.Any(box => NamedBy(box.Path) is { } named
+                                        && named.StartedUtc > launch.LaunchedUtc && named.StartedUtc < tape.LastWriteUtc
+                                        && LaunchOf(box, launches) != launch);
+        return another ? null : launch;
+    }
 
     /// <summary>
     /// The launch a black box came from. Unlike a tape, it says which: its name has the scenery and the moment

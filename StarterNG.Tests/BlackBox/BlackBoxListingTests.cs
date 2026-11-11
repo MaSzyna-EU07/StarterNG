@@ -122,6 +122,30 @@ public class BlackBoxListingTests
     }
 
     [Fact]
+    public void A_tape_written_after_another_run_began_is_not_taken_for_the_launch_before()
+    {
+        // The starter launched Bałtyk; later a run of another scenery, not launched from it, wrote its tape and black box.
+        var files = new InMemoryFileSystem();
+        var installation = new TestInstallation(files);
+        installation.Clock.Now = Launched;
+        installation.Tapes.RecordLaunch("baltyk.scn", TimeSpan.Zero, Array.Empty<TapeVehicle>(), "ep07", new[] { "ep07" }, "Bałtyk");
+        string box = Box("td", Launched.AddHours(5));
+        files.WithFile(Log("ep07.dat"), "t").WrittenAt(Log("ep07.dat"), Launched.AddMinutes(50))
+             .WithFile(Log("bb-su45.dat"), "t").WrittenAt(Log("bb-su45.dat"), Launched.AddHours(5).AddMinutes(8))
+             .WithFile(Log(box), "b").WrittenAt(Log(box), Launched.AddHours(5).AddMinutes(8));
+
+        var sessions = installation.Tapes.Sessions();
+
+        var baltyk = Assert.Single(sessions, session => session.Launch is not null);
+        Assert.Equal("ep07", Assert.Single(baltyk.Tapes).Vehicle);
+        Assert.Empty(baltyk.BlackBoxes);
+        var other = Assert.Single(sessions, session => session.Launch is null);
+        Assert.Equal("bb-su45", Assert.Single(other.Tapes).Vehicle);
+        Assert.Single(other.BlackBoxes);
+        Assert.Null(installation.Tapes.ContextOf(other.Tapes[0]).StartClock);
+    }
+
+    [Fact]
     public void A_black_box_started_before_a_launch_is_not_taken_for_it()
     {
         // Started earlier, and only finished writing after the starter launched the same scenery again.

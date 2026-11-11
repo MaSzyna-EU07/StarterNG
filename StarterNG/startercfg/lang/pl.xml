@@ -904,6 +904,7 @@
     <String key="HaslerBlackBox">Czarna skrzynka</String>
     <String key="HaslerBlackBoxTip">Cała sesja na mapie: jazda względem AI, komendy, sygnalizatory, kabina</String>
     <String key="HaslerClickBlackBox">kliknij taśmę: czarna skrzynka w tym momencie</String>
+    <String key="HaslerSessionNoTape">W tej sesji nie ma taśmy, jest tylko czarna skrzynka.</String>
     <String key="WarehouseSaved">W magazynie: {0}</String>
     <String key="WarehouseNothingToAdd">Wybierz skład z pojazdami</String>
     <String key="GfxGroupLevelTip">Poziom tylko tej części grafiki</String>

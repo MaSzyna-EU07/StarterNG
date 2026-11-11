@@ -853,6 +853,7 @@
     <String key="HaslerBlackBox">Fekete doboz</String>
     <String key="HaslerBlackBoxTip">A teljes menet a térképen: vezetés az AI-hoz képest, parancsok, jelzők, vezetőfülke</String>
     <String key="HaslerClickBlackBox">kattintson a szalagra: a fekete doboz abban a pillanatban</String>
+    <String key="HaslerSessionNoTape">Ebben a munkamenetben nincs szalag, csak a fekete doboz.</String>
     <String key="WarehouseSaved">A raktárban: {0}</String>
     <String key="WarehouseNothingToAdd">Válassz járműveket tartalmazó szerelvényt</String>
     <String key="GfxGroupLevelTip">Csak a grafika ezen részének szintje</String>

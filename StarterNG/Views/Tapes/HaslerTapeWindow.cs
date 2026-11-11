@@ -121,19 +121,28 @@ public sealed class HaslerTapeWindow : Window
         };
         _list.SelectionChanged += async (_, _) =>
         {
-            // A black box opens in a window of its own on a click or Enter, not when the arrows go over it; the tape shown stays.
-            if (_list.SelectedItem is TreeViewItem { Tag: BlackBoxRecording })
-                return;
             // A session stands for its first tape, the player's own if it has one.
-            if (_list.SelectedItem is TreeViewItem { Tag: TapeSession } session)
-                session.IsExpanded = true;
-            var file = _list.SelectedItem switch
+            if (_list.SelectedItem is TreeViewItem { Tag: TapeSession } node)
+                node.IsExpanded = true;
+            // A black box opens in a window of its own on a click or Enter, not when the arrows go over it; the
+            // tape beside it is one of its session's, the one shown if it is.
+            var session = _list.SelectedItem switch
             {
-                TreeViewItem { Tag: TapeFile tape } => tape,
-                TreeViewItem { Tag: TapeSession { Tapes.Count: > 0 } run } => run.Tapes[0],
+                TreeViewItem { Tag: TapeSession run } => run,
+                TreeViewItem { Tag: BlackBoxRecording box } =>
+                    _sessions.FirstOrDefault(s => s.BlackBoxes.Any(b => b.Path == box.Path)),
                 _ => null
             };
-            if (file is null || file == _shown)
+            if (_list.SelectedItem is TreeViewItem { Tag: BlackBoxRecording } && session?.Tapes.Any(t => t.Path == _shown?.Path) == true)
+                return;
+            var file = _list.SelectedItem is TreeViewItem { Tag: TapeFile tape } ? tape : session?.Tapes.FirstOrDefault();
+            if (file is null)
+            {
+                if (session is not null)
+                    ShowNoTape();
+                return;
+            }
+            if (file == _shown)
                 return;
 
             ApplyContext(_tapes.ContextOf(file));
@@ -584,6 +593,16 @@ public sealed class HaslerTapeWindow : Window
             ? clock.ToString(@"hh\:mm", CultureInfo.InvariantCulture)
             : "";
         _recorder.SelectedIndex = context.Recorder == RecorderKind.Electronic ? 1 : 0;
+    }
+
+    /// <summary>A session with a black box and no tape: no tape of another session left beside it.</summary>
+    private void ShowNoTape()
+    {
+        _shown = null;
+        _view.Tape = null;
+        _view.Mark = null;
+        _cursor.Text = "";
+        _summary.Text = App.Loc["HaslerSessionNoTape"];
     }
 
     private async Task ShowAsync(TapeFile file, bool scrollToEnd)
