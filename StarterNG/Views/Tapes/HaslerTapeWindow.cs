@@ -61,6 +61,7 @@ public sealed class HaslerTapeWindow : Window
     private readonly Dictionary<DateTime, bool> _expanded = new();
     private readonly Dictionary<string, BlackBoxWindow> _blackBoxes = new(StringComparer.OrdinalIgnoreCase);
     private HashSet<string> _liveBlackBoxes = new(StringComparer.OrdinalIgnoreCase);
+    private IReadOnlyList<TapeSession> _sessions = Array.Empty<TapeSession>();
 
     private TapeFile? _shown;
     private string? _followed;
@@ -138,6 +139,7 @@ public sealed class HaslerTapeWindow : Window
         _view = NewView(RecorderKind.Hasler);
         _view.Scale = DefaultKmScale;
         _view.Hovered += ShowCursor;
+        _view.Picked += PickOnTape;
         _scroll = new ScrollViewer
         {
             HorizontalScrollBarVisibility = ScrollBarVisibility.Auto,
@@ -286,9 +288,11 @@ public sealed class HaslerTapeWindow : Window
 
         var old = _view;
         old.Hovered -= ShowCursor;
+        old.Picked -= PickOnTape;
         _view = NewView(Recorder);
         _view.CopySettingsFrom(old);
         _view.Hovered += ShowCursor;
+        _view.Picked += PickOnTape;
         _scroll.Content = _view;
         // The other view is not as tall; an offset kept from it would hide its top rows.
         _scroll.Offset = new Vector(_scroll.Offset.X, 0);
@@ -313,6 +317,7 @@ public sealed class HaslerTapeWindow : Window
     private void ShowSessions(IReadOnlyList<TapeSession> sessions, bool toDriven)
     {
         _running = sessions.Any(session => session.Running);
+        _sessions = sessions;
         _listed = Fingerprint(sessions);
         ShowWhatIsKnown();
 
@@ -346,6 +351,7 @@ public sealed class HaslerTapeWindow : Window
         {
             _shown = null;
             _view.Tape = null;
+            _view.Mark = null;
             _summary.Text = "";
             return;
         }
@@ -413,11 +419,16 @@ public sealed class HaslerTapeWindow : Window
         return item;
     }
 
-    /// <summary>The black box in its window, read on while the session runs; one window a file.</summary>
-    private async Task OpenBlackBoxAsync(BlackBoxRecording box)
+    /// <summary>
+    /// The black box in its window, read on while the session runs; one window a file. Given a moment, it opens
+    /// there. Where it plays is marked on a tape of the same session.
+    /// </summary>
+    private async Task OpenBlackBoxAsync(BlackBoxRecording box, double? at = null)
     {
         if (_blackBoxes.TryGetValue(box.Path, out var open))
         {
+            if (at is { } moment)
+                open.SeekTo(moment);
             open.Activate();
             return;
         }
@@ -427,9 +438,73 @@ public sealed class HaslerTapeWindow : Window
             Live = _liveBlackBoxes.Contains(box.Path)
         };
         _blackBoxes[box.Path] = window;
-        window.Closed += (_, _) => _blackBoxes.Remove(box.Path);
+        window.TimeChanged += t => FollowBlackBox(box, t);
+        window.Closed += (_, _) =>
+        {
+            _blackBoxes.Remove(box.Path);
+            ShowMark(scrollTo: false);
+        };
         window.Show(this);
         await window.OpenAsync(box.Path);
+        if (at is { } t)
+            window.SeekTo(t);
+    }
+
+    /// <summary>The session of the tape shown, with its black boxes; null for a tape no list has any more.</summary>
+    private TapeSession? ShownSession =>
+        _shown is { } shown
+            ? _sessions.FirstOrDefault(session => session.Tapes.Any(tape => tape.Path == shown.Path))
+            : null;
+
+    /// <summary>
+    /// A click on the tape takes the black box of its session to the same moment, opening it if no window has it.
+    /// Both count seconds of the simulation from its start, so a tape's own time is the black box's.
+    /// </summary>
+    private void PickOnTape(TapeSample sample)
+    {
+        if (ShownSession is not { BlackBoxes.Count: > 0 } session)
+            return;
+        var open = session.BlackBoxes.Where(box => _blackBoxes.ContainsKey(box.Path)).ToList();
+        if (open.Count == 0)
+        {
+            _ = OpenBlackBoxAsync(session.BlackBoxes[0], sample.Time);
+            return;
+        }
+        foreach (var box in open)
+            _blackBoxes[box.Path].SeekTo(sample.Time);
+    }
+
+    /// <summary>Where a black box of the session shown plays, on its tape, brought into view as it moves on.</summary>
+    private void FollowBlackBox(BlackBoxRecording box, double t)
+    {
+        if (ShownSession?.BlackBoxes.Any(b => b.Path == box.Path) != true)
+            return;
+        // Played, it moves every frame: the tape is drawn again only when the mark moves on it.
+        double? x = _view.XAt(t), was = _view.MarkX;
+        if (x is { } now && was is { } before && Math.Abs(now - before) < 0.5)
+            return;
+        _view.Mark = t;
+        BringMarkIntoView();
+    }
+
+    /// <summary>The mark of an open black box of the session shown, or none, on a tape just shown or changed.</summary>
+    private void ShowMark(bool scrollTo)
+    {
+        var window = ShownSession?.BlackBoxes.Select(box => _blackBoxes.GetValueOrDefault(box.Path))
+                                  .FirstOrDefault(w => w is not null);
+        _view.Mark = window?.CurrentTime;
+        if (scrollTo)
+            BringMarkIntoView();
+    }
+
+    private void BringMarkIntoView()
+    {
+        if (_view.MarkX is not { } x)
+            return;
+        double left = _scroll.Offset.X, width = _scroll.Viewport.Width;
+        if (width <= 0 || (x >= left + 16 && x <= left + width - 16))
+            return;
+        _scroll.Offset = new Vector(Math.Max(0, x - width / 2), _scroll.Offset.Y);
     }
 
     /// <summary>The newest black box of a running session is still written; once the session ends, its last part is read and that is all.</summary>
@@ -496,11 +571,13 @@ public sealed class HaslerTapeWindow : Window
             if (tape is null)
             {
                 _view.Tape = null;
+                _view.Mark = null;
                 _summary.Text = string.Format(App.Loc["HaslerUnreadable"], file.Path);
                 return;
             }
 
             _view.Tape = tape;
+            ShowMark(scrollTo: !scrollToEnd);
             _summary.Text = string.Format(App.Loc["HaslerSummary"], file.Vehicle, TapeFigures.Clock(tape.Duration),
                                           TapeFigures.Clock(tape.RunningTime), TapeFigures.Clock(tape.StandingTime),
                                           tape.DistanceM / 1000.0, tape.MaxSpeedKmh, tape.AverageSpeedKmh,
@@ -588,6 +665,8 @@ public sealed class HaslerTapeWindow : Window
 
         var copy = NewView(Recorder);
         copy.CopySettingsFrom(_view);
+        // The paper alone, not where a black box happens to be.
+        copy.Mark = null;
         // The trip it was asked for: a reload may have come in behind the file picker.
         copy.Tape = tape;
         copy.Measure(Size.Infinity);
@@ -631,6 +710,8 @@ public sealed class HaslerTapeWindow : Window
                             s.BrakePressBar, YesNo(s.Current), YesNo(s.SecurityAlarm))
             : string.Format(App.Loc["HaslerCursor"], time, s.DistanceM / 1000.0, s.SpeedKmh, s.BrakePressBar,
                             YesNo(s.Current));
+        if (ShownSession is { BlackBoxes.Count: > 0 })
+            _cursor.Text += "   " + App.Loc["HaslerClickBlackBox"];
     }
 
     private static string YesNo(bool on) => on ? App.Loc["HaslerYes"] : App.Loc["HaslerNo"];

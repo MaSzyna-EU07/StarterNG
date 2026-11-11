@@ -291,6 +291,9 @@ public sealed class BlackBoxWindow : Window
     /// <summary>Goes to a moment of the recording, in seconds from its start.</summary>
     public void SeekTo(double t) => SetTime(t);
 
+    /// <summary>The moment shown has changed: played on, sought or read further.</summary>
+    public event Action<double>? TimeChanged;
+
     /// <summary>Keeps the user's train in the middle of the map.</summary>
     public bool FollowTrain
     {
@@ -453,6 +456,7 @@ public sealed class BlackBoxWindow : Window
         _events.ShowTime(_time);
         ShowReadout(null);
         ShowDelay(recording);
+        TimeChanged?.Invoke(_time);
     }
 
     /// <summary>How late the user's train was at the moment played, by the clock.</summary>
