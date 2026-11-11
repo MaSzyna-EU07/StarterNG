@@ -174,9 +174,11 @@ public sealed class BlackBoxWindow : Window
         DockPanel.SetDock(_tabs, Dock.Top);
         side.Children.Add(_tabs);
         side.Children.Add(new Panel { Children = { _events, _timetableScroll, _summaryScroll } });
-        var cabCard = UiKit.Group(_strings["Cab"], _cab);
+        var cabCard = UiKit.Group(_strings["Cab"], new ScrollViewer { Content = _cab, HorizontalScrollBarVisibility = Avalonia.Controls.Primitives.ScrollBarVisibility.Disabled });
         cabCard.Margin = new Thickness(0, UiKit.Gap, 0, 0);
         var sideColumn = new DockPanel();
+        // On a short window the cab scrolls, so the list above keeps room for a few rows.
+        sideColumn.SizeChanged += (_, e) => cabCard.MaxHeight = Math.Max(160, e.NewSize.Height - 200);
         DockPanel.SetDock(cabCard, Dock.Bottom);
         sideColumn.Children.Add(cabCard);
         sideColumn.Children.Add(UiKit.Frame(side));

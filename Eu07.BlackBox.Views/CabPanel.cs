@@ -163,7 +163,7 @@ public sealed class CabPanel : Control
         for (int g = 0; g < groups.Length; g++)
         {
             double groupWidth = Math.Max(20, widths[g] + spare);
-            using (context.PushClip(new Rect(x, top, groupWidth - 4, size.Height - top)))
+            using (context.PushClip(new Rect(x, top, groupWidth, size.Height - top)))
             {
                 context.DrawText(MapView.Text(Strings[groups[g].Title], Palette.DimText, 10, FontWeight.SemiBold), new Point(x, top));
                 double y = top + 16;

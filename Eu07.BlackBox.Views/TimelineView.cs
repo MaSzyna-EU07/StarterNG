@@ -127,7 +127,7 @@ public sealed class TimelineView : Control
             context.DrawLine(new Pen(Palette.Cursor, 1.5), new Point(cursor, Top - 6), new Point(cursor, size.Height - AxisHeight));
             // The moment played, on the axis.
             var clock = MapView.Text(recording.ClockAt(_time).ToString(@"hh\:mm\:ss", CultureInfo.InvariantCulture), Palette.Cursor, 10, FontWeight.SemiBold);
-            var bubble = new Rect(Math.Clamp(cursor - clock.Width / 2 - 5, Left, size.Width - Right - clock.Width - 10), size.Height - AxisHeight + 2,
+            var bubble = new Rect(Math.Max(Left, Math.Min(cursor - clock.Width / 2 - 5, size.Width - Right - clock.Width - 10)), size.Height - AxisHeight + 2,
                                   clock.Width + 10, clock.Height + 2);
             context.DrawRectangle(Palette.Card, new Pen(Palette.Cursor, 1), bubble);
             context.DrawText(clock, new Point(bubble.X + 5, bubble.Y + 1));
@@ -477,13 +477,16 @@ public sealed class TimelineView : Control
         double marks = chartBottom + 6 + Bands * (BandHeight + BandGap);
         bool inPlates = pointer.Y >= Top - 16 && pointer.Y <= Top - 2;
         bool inMarks = pointer.Y >= marks - 2 && pointer.Y <= marks + MarksHeight + 2;
-        if (!inPlates && !inMarks)
+        if (!inPlates && !inMarks || pointer.X < Left || pointer.X > Left + PlotWidth)
             return null;
+        double end = _start + PlotWidth * _secondsPerPixel;
         var culture = CultureInfo.CurrentCulture;
         string? found = null;
         double best = 5;
         void Consider(double time, Func<string> text)
         {
+            if (time < _start || time > end)
+                return;
             double d = Math.Abs(X(time) - pointer.X);
             if (d < best)
             {
@@ -533,7 +536,7 @@ public sealed class TimelineView : Control
         if (_pointer is not { } pointer)
             return;
         var label = MapView.Text(text, Palette.Text, 11);
-        double x = Math.Clamp(pointer.X + 10, Left, size.Width - Right - label.Width - 12);
+        double x = Math.Max(Left, Math.Min(pointer.X + 10, size.Width - Right - label.Width - 12));
         double y = Math.Max(2, pointer.Y - label.Height - 12);
         var box = new Rect(x, y, label.Width + 12, label.Height + 6);
         context.DrawRectangle(Palette.Card, new Pen(Palette.CardBorder, 1), box, 3, 3);
