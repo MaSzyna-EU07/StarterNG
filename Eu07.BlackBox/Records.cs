@@ -240,9 +240,9 @@ public sealed record StationEvent(double Time, int Vehicle, StationKind Kind, in
     /// Whether the whole train stood along the platform, when its length is known: as the driver takes it, the length of
     /// the trains a W32 is for is the room it has there too.
     /// </summary>
-    public bool? OnPlatform => Platform != 0 ? OffPlatform <= PlatformTolerance : null;
+    public bool? OnPlatform => Platform != 0 ? -Distance <= PlatformTolerance && Distance + TrainLength - PlatformLength <= PlatformTolerance : null;
 
-    /// <summary>How far off the platform a train may stand and still count as along it [m].</summary>
+    /// <summary>How far off the platform a train may stand at either end and still count as along it [m].</summary>
     public const double PlatformTolerance = 2;
 
     /// <summary>The length of the platform [m], without the digit of its side.</summary>

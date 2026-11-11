@@ -407,8 +407,14 @@ public sealed class Recording
         if (s.Vehicle == vehicle)
             return true;
         // The couplings tell the train exactly; a recording made before them has the distance only.
-        return _couplings.Count > 0 ? ConsistAt(s.Vehicle, t).Contains(vehicle) : s.Position.DistanceTo(place) <= reach;
+        return CouplingsWritten ? ConsistAt(s.Vehicle, t).Contains(vehicle) : s.Position.DistanceTo(place) <= reach;
     }
+
+    /// <summary>
+    /// Whether the couplings were written: a recording made since has the movement in its cab samples, and one with
+    /// no train of more than one vehicle has no coupling at all.
+    /// </summary>
+    private bool CouplingsWritten => _couplings.Count > 0 || (_cab.Count > 0 && _cab[0].Movement != Movement.Unknown);
 
     /// <summary>The vehicles coupled into one train with the one given at t, itself included.</summary>
     public IReadOnlySet<int> ConsistAt(int vehicle, double t)
@@ -476,7 +482,7 @@ public sealed class Recording
     {
         var timetable = LastAtOrBefore(_timetables, t, x => x.Time) is var i and >= 0 ? _timetables[i] : _timetables.FirstOrDefault();
         // A recording made before the couplings were written can't tell the trains apart: the timetable stays.
-        if (timetable is null || CabAt(t) is not { } sample || sample.Vehicle == timetable.Vehicle || _couplings.Count == 0)
+        if (timetable is null || CabAt(t) is not { } sample || sample.Vehicle == timetable.Vehicle || !CouplingsWritten)
             return timetable;
         // another vehicle of the same train (the other cab, a car of it) keeps the timetable
         return ConsistAt(sample.Vehicle, t).Contains(timetable.Vehicle) ? timetable : null;

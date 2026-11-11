@@ -125,6 +125,16 @@ public class HeadCodeTests
     }
 
     [Fact]
+    public void An_older_recording_reads_a_pattern_asked_for_as_the_signal_it_shows()
+    {
+        // Pc 5 asked for at the tail, the rear-end signals lit, no lamps written: Pc 5 as before
+        var f = new BlackBoxFile().Info();
+        for (double t = 0; t < 30; t += 0.5)
+            f.Cab(t, 1, 1000 + t * 10, 40, lightsHead: Pc1, lightsTail: 0x40, movement: 1, hintTail: 0x22);
+        Assert.Empty(BlackBoxReader.Read(f.End(30).Stream()).Summarize().LightsFaults);
+    }
+
+    [Fact]
     public void An_older_recording_tells_nothing_of_the_signals()
     {
         var f = new BlackBoxFile().Info();
@@ -154,6 +164,32 @@ public class UserVehicleTests
         Assert.Equal("ROJ1", r.TimetableAt(20)!.Train);
         Assert.Equal("ROJ1", r.TimetableAt(70)!.Train);
         Assert.Null(r.TimetableAt(120));
+    }
+
+    [Fact]
+    public void Single_vehicles_with_no_coupling_written_are_still_told_apart()
+    {
+        // A recording made with the movement written, where no train is longer than one vehicle: no coupling at all.
+        var f = new BlackBoxFile().Info()
+            .Timetable(0, 1, "ROJ1", "A", "B", ("A", -1, 635), ("B", 640, -1));
+        for (double t = 0; t < 100; t += 0.5)
+            f.Cab(t, t < 50 ? 1u : 9u, 1000, 0, movement: 1);
+        var r = BlackBoxReader.Read(f.End(100).Stream());
+
+        Assert.Equal("ROJ1", r.TimetableAt(20)!.Train);
+        Assert.Null(r.TimetableAt(70));
+    }
+
+    [Fact]
+    public void An_older_recording_with_no_coupling_keeps_the_timetable()
+    {
+        var f = new BlackBoxFile().Info()
+            .Timetable(0, 1, "ROJ1", "A", "B", ("A", -1, 635), ("B", 640, -1));
+        for (double t = 0; t < 100; t += 0.5)
+            f.Cab(t, t < 50 ? 1u : 2u, 1000, 0);
+        var r = BlackBoxReader.Read(f.End(100).Stream());
+
+        Assert.Equal("ROJ1", r.TimetableAt(70)!.Train);
     }
 }
 

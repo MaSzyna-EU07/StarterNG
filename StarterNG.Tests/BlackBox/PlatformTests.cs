@@ -48,6 +48,15 @@ public class PlatformTests
     }
 
     [Fact]
+    public void Each_end_has_its_own_tolerance()
+    {
+        // the head 1.5 m past the stop point, the tail 1.5 m past the platform's end
+        var stop = Stop(-1.5f, 204f, 201);
+        Assert.True(stop.OnPlatform);
+        Assert.Equal(3, stop.OffPlatform, 1);
+    }
+
+    [Fact]
     public void A_train_within_the_platform_is_along_it()
     {
         var stop = Stop(63.2f, 129.8f, 201);

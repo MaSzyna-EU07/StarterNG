@@ -101,7 +101,8 @@ public static class HeadCodes
         var pattern = (Lights)hint;
         if (usual == HeadCode.Pc1 && pattern == (Lights.RedMarkerLeft | Lights.HeadlightRight | Lights.HeadlightUpper))
             return Shows(HeadCode.Pc2, lit, equipped);
-        return (lit & ~HighBeams) == (equipped is { } lamps ? pattern & lamps : pattern);
+        // a recording made before the lamps were written: the signal the pattern shows, as before
+        return equipped is { } lamps ? (lit & ~HighBeams) == (pattern & lamps) : Of(lit) == Of(pattern);
     }
 
     /// <summary>
