@@ -614,6 +614,8 @@ public sealed class HaslerTapeWindow : Window
         _tapeless = session.StartedUtc;
         _view.Tape = null;
         _view.Mark = null;
+        // With no tape the view would still draw a strip of blank paper beside the words.
+        _scroll.IsVisible = false;
         _cursor.Text = "";
         _summary.Text = App.Loc[session.BlackBoxes.Count > 0 ? "HaslerSessionNoTape" : "HaslerSessionEmpty"];
     }
@@ -629,6 +631,7 @@ public sealed class HaslerTapeWindow : Window
             bool another = file.Path != _shown?.Path;
             _shown = file;
             _tapeless = null;
+            _scroll.IsVisible = tape is not null;
             if (tape is null)
             {
                 _view.Tape = null;
