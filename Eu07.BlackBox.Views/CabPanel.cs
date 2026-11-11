@@ -20,7 +20,7 @@ public sealed class CabPanel : Control
 {
     private const double Pad = 14;
     private const double LampRow = 14;
-    private const int DoorColumns = 3;
+    private const int DoorColumns = 2;
 
     private Recording? _recording;
     private double _time;
@@ -34,7 +34,7 @@ public sealed class CabPanel : Control
     public CabPanel()
     {
         ClipToBounds = true;
-        Height = 650;
+        Height = 664;
     }
 
     public IBlackBoxStrings Strings { get; set; } = new DefaultBlackBoxStrings();
@@ -129,8 +129,8 @@ public sealed class CabPanel : Control
         double y = top + gauge;
         if (extra is { } x1)
         {
-            // where the driver's brake valve takes the pipe
-            Gauge(context, Strings["CabEqualizing"], x1.EqualizingReservoir, 6, null, $"{x1.EqualizingReservoir:0.00} bar", Palette.Target, Pad, y, width);
+            // what the driver's brake valve shows: its equalizing reservoir, the FV4a's time reservoir
+            Gauge(context, Strings["CabDriverValve"], x1.DriverValve, 6, null, $"{x1.DriverValve:0.00} bar", Palette.Target, Pad, y, width);
             y += gauge;
         }
         Gauge(context, Strings["CabCylinder"], s.BrakeCylinder, 6, null, $"{s.BrakeCylinder:0.0} bar", Palette.Brakes, Pad, y, width);
@@ -211,7 +211,7 @@ public sealed class CabPanel : Control
             x += groupWidth;
         }
 
-        // The doors under them, across: open, permitted, the departure signal, the steps and the lock.
+        // The doors under them, in two columns: open, permitted, the departure signal, the steps and the lock.
         top = Math.Max(bottom, top + 16 + 9 * LampRow) + 6;
         context.DrawText(MapView.Text(Strings["CabGroupDoors"], Palette.DimText, 10, FontWeight.SemiBold), new Point(Pad, top));
         var doors = Doors(s);
@@ -232,8 +232,11 @@ public sealed class CabPanel : Control
     /// </summary>
     private void DrawDrive(DrawingContext context, CabSample s, double top, double third, CultureInfo culture)
     {
-        void At(int column, int row, string label, string value, IBrush? brush = null) =>
-            Value(context, label, value, Pad + column * third, top + row * 36, brush);
+        void At(int column, int row, string label, string value, IBrush? brush = null)
+        {
+            using (context.PushClip(new Rect(Pad + column * third, top + row * 36, third - 4, 34)))
+                Value(context, label, value, Pad + column * third, top + row * 36, brush);
+        }
 
         string voltage = _powered.Contains(s.Vehicle) ? $"{s.Voltage:0} V" : "—";
         if (s.Extra is not { } e)
@@ -535,7 +538,7 @@ public sealed class CabPanel : Control
         return [("CabGroupPower", power.ToArray()), ("CabGroupDriving", driving.ToArray()), ("CabGroupSafety", safety.ToArray())];
     }
 
-    /// <summary>The doors of the vehicle the user is in, in rows of three: open, the lock, the permits, the steps, the departure signal.</summary>
+    /// <summary>The doors of the vehicle the user is in, in rows of two: open, the lock, the permits, the steps, the departure signal.</summary>
     private (string Text, IBrush? Lit)[] Doors(CabSample s)
     {
         (string, IBrush?) On(string key, CabDevices device, IBrush colour) => (Strings[key], s.Has(device) ? colour : null);

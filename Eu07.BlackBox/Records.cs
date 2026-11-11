@@ -118,12 +118,12 @@ public enum EngineKind : byte
 
 /// <summary>
 /// The rest of a look at the user's train, written from the same version as the doors' permits: what drives it,
-/// the brakes' setting and mode, the hand brake, the radio, the horn, the pressures of the equalizing reservoir
-/// and the main reservoir pipe, a diesel's oil, temperatures, clutch and torque converter, the cruise control,
+/// the brakes' setting and mode, the hand brake, the radio, the horn, the pressure the driver's brake valve shows
+/// (its equalizing reservoir, the FV4a's time reservoir) and that of the main reservoir pipe, a diesel's oil, temperatures, clutch and torque converter, the cruise control,
 /// the power and the integrated controller of a unit, the highest brake cylinder pressure of the train. The
 /// temperatures and the oil mean something for a diesel only.
 /// </summary>
-public readonly record struct CabExtra(EngineKind Engine, byte BrakeDelay, byte RadioChannel, float EqualizingReservoir,
+public readonly record struct CabExtra(EngineKind Engine, byte BrakeDelay, byte RadioChannel, float DriverValve,
                                        float FeedPipe, float OilPressure, float WaterTemperature, float OilTemperature,
                                        float EngineTemperature, float SpeedControlKmh, float EnginePower, sbyte HandBrake,
                                        byte BrakeMode, byte Horn, float IntegratedController, float Clutch, float ConverterFill,

@@ -267,12 +267,15 @@ public sealed class EventList : ListBox
         _ => "CameraFree"
     };
 
-    /// <summary>The switches the driver worked, as the cab tells them: what came on and went off.</summary>
+    /// <summary>
+    /// The switches the driver worked, as the cab tells them: what came on and went off. Not the compressor and the
+    /// motor fans, which go on and off by themselves.
+    /// </summary>
     private static readonly (CabDevices Device, string Key)[] Switched =
     [
         (CabDevices.MainBreaker, "DevMainBreaker"), (CabDevices.PantographFront, "DevPantographFront"),
         (CabDevices.PantographRear, "DevPantographRear"), (CabDevices.FuelPump, "DevFuelPump"), (CabDevices.OilPump, "DevOilPump"),
-        (CabDevices.Converter, "DevConverter"), (CabDevices.Compressor, "DevCompressor"), (CabDevices.MotorBlowers, "DevMotorBlowers"),
+        (CabDevices.Converter, "DevConverter"),
         (CabDevices.Heating, "DevHeating"), (CabDevices.Radio, "DevRadio"), (CabDevices.ShuntMode, "DevShuntMode"),
         (CabDevices.SpringBrake, "DevSpringBrake"), (CabDevices.BrakeReleaser, "DevBrakeReleaser"),
         (CabDevices.DoorPermitLeft, "DevDoorPermitLeft"), (CabDevices.DoorPermitRight, "DevDoorPermitRight"),

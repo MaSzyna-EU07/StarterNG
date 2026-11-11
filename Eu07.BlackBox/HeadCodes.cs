@@ -86,13 +86,13 @@ public static class HeadCodes
         _ => null
     };
 
-    /// <summary>Whether both ends showed what they were to; null when nothing tells it.</summary>
     /// <summary>
     /// An end with no lamp at all, a draisine's: the simulator still asks it for a signal it can't show, so it
     /// is not judged. A recording made before the lamps were written can't tell.
     /// </summary>
     public static bool NoLamps(Lights? equipped) => equipped == Lights.None;
 
+    /// <summary>Whether both ends showed what they were to; null when nothing tells it.</summary>
     public static bool? Right(CabSample sample) =>
         HeadRight(sample) is { } head && TailRight(sample) is { } tail ? head && tail : null;
 
