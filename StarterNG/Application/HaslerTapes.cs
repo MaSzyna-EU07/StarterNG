@@ -260,7 +260,7 @@ public sealed class HaslerTapes
             var boxes = _files.DirectoryExists(Folder)
                 ? _files.GetFiles(Folder, "*.blackbox").Select(ReadBlackBox).ToList()
                 : new List<BlackBoxRecording>();
-            var boxesBehind = boxes.GroupBy(box => launches.LastOrDefault(l => l.Covers(box.LastWriteUtc)))
+            var boxesBehind = boxes.GroupBy(box => LaunchOf(box, launches))
                                    .Where(group => group.Key is not null)
                                    .ToDictionary(group => group.Key!, group => group.ToList());
 
@@ -281,7 +281,7 @@ public sealed class HaslerTapes
             // What no launch covers goes together by when it was written: a run writes it all at its end.
             var loose = tapes.Where(t => !launches.Any(l => l.Covers(t.LastWriteUtc)))
                              .Select(t => (Written: t.LastWriteUtc, Tape: (TapeFile?)t, Box: (BlackBoxRecording?)null))
-                             .Concat(boxes.Where(b => !launches.Any(l => l.Covers(b.LastWriteUtc)))
+                             .Concat(boxes.Where(b => LaunchOf(b, launches) is null)
                                           .Select(b => (Written: b.LastWriteUtc, Tape: (TapeFile?)null, Box: (BlackBoxRecording?)b)))
                              .OrderBy(file => file.Written);
             var run = new List<TapeFile>();
@@ -317,6 +317,50 @@ public sealed class HaslerTapes
 
     private TapeFile ReadTape(string path) =>
         new(path, Path.GetFileNameWithoutExtension(path), _files.GetLastWriteTimeUtc(path), _files.GetFileSize(path));
+
+    /// <summary>
+    /// The launch a black box came from. Unlike a tape, it says which: its name has the scenery and the moment
+    /// the recording started. So it is the last launch before that moment, and only if that launch was of the
+    /// same scenery; one the starter didn't launch, copied in or started on its own, goes with no launch.
+    /// </summary>
+    public static TapeLaunch? LaunchOf(BlackBoxRecording box, IReadOnlyList<TapeLaunch> launches)
+    {
+        if (NamedBy(box.Path) is not { } named)
+            return launches.LastOrDefault(l => l.Covers(box.LastWriteUtc));
+        var launch = launches.LastOrDefault(l => l.Covers(named.StartedUtc));
+        return launch is not null && string.Equals(SceneryStem(launch.Scenery), named.Scenery, StringComparison.OrdinalIgnoreCase)
+            ? launch
+            : null;
+    }
+
+    private const string BlackBoxStamp = "yyyy-MM-dd_HH-mm-ss";
+
+    /// <summary>
+    /// The scenery and the start a black box is named by, <c>scenery_YYYY-MM-DD_HH-MM-SS</c> in the local time
+    /// of the computer that ran it; null for a name not made so.
+    /// </summary>
+    public static (string Scenery, DateTime StartedUtc)? NamedBy(string path)
+    {
+        string name = Path.GetFileNameWithoutExtension(path);
+        int stamp = BlackBoxStamp.Length;
+        if (name.Length < stamp + 2 || name[^(stamp + 1)] != '_'
+            || !DateTime.TryParseExact(name[^stamp..], BlackBoxStamp, CultureInfo.InvariantCulture,
+                                       DateTimeStyles.AssumeLocal, out var local))
+            return null;
+        return (name[..^(stamp + 1)], local.ToUniversalTime());
+    }
+
+    /// <summary>A scenery's file as the simulator names its black box: no '$' in front, but for ASCII letters, digits, '-' and '_' all '_'.</summary>
+    public static string SceneryStem(string scenery)
+    {
+        string stem = Path.GetFileNameWithoutExtension(scenery);
+        if (stem.StartsWith('$'))
+            stem = stem[1..];
+        var text = new StringBuilder(stem.Length);
+        foreach (char c in stem)
+            text.Append(char.IsAsciiLetterOrDigit(c) || c is '-' or '_' ? c : '_');
+        return text.Length == 0 ? "scenery" : text.ToString();
+    }
 
     private BlackBoxRecording ReadBlackBox(string path) =>
         new(path, _files.GetLastWriteTimeUtc(path), _files.GetFileSize(path));

@@ -9,30 +9,35 @@ public class BlackBoxListingTests
 
     private static string Log(string name) => TestInstallation.At("physicslog", name);
 
+    /// <summary>A black box's name: the simulator stamps it with the local time it started at.</summary>
+    private static string Box(string scenery, DateTime startedUtc) =>
+        $"{scenery}_{startedUtc.ToLocalTime():yyyy-MM-dd_HH-mm-ss}.blackbox";
+
     [Fact]
     public void Each_run_keeps_its_own_black_box_next_to_its_tapes()
     {
+        string first = Box("td", Launched.AddSeconds(5)), second = Box("td", Launched.AddHours(1).AddSeconds(5));
         var files = new InMemoryFileSystem()
             .WithFile(Log("ra.dat"), "t")
-            .WithFile(Log("td_2025-12-31_23-00-05.blackbox"), "b")
-            .WithFile(Log("td_2026-01-01_00-00-05.blackbox"), "b");
+            .WithFile(Log(first), "b")
+            .WithFile(Log(second), "b");
         var installation = new TestInstallation(files);
         var tapes = installation.Tapes;
         installation.Clock.Now = Launched;
         tapes.RecordLaunch("td.scn", TimeSpan.Zero, Array.Empty<TapeVehicle>(), "ra", new[] { "ra" }, "A");
         installation.Clock.Now = Launched.AddHours(1);
         tapes.RecordLaunch("td.scn", TimeSpan.Zero, Array.Empty<TapeVehicle>(), "ra", new[] { "ra" }, "B");
-        files.WrittenAt(Log("td_2025-12-31_23-00-05.blackbox"), Launched.AddMinutes(30))
-             .WrittenAt(Log("td_2026-01-01_00-00-05.blackbox"), Launched.AddMinutes(90))
+        files.WrittenAt(Log(first), Launched.AddMinutes(30))
+             .WrittenAt(Log(second), Launched.AddMinutes(90))
              .WrittenAt(Log("ra.dat"), Launched.AddMinutes(90));
 
         var sessions = tapes.Sessions();
 
         Assert.Equal(new[] { "B", "A" }, sessions.Select(session => session.Launch!.SceneryName));
-        Assert.EndsWith("00-00-05.blackbox", Assert.Single(sessions[0].BlackBoxes).Path);
+        Assert.EndsWith(second, Assert.Single(sessions[0].BlackBoxes).Path);
         Assert.Single(sessions[0].Tapes);
         // The tape of the first run was written over by the second; its black box was not.
-        Assert.EndsWith("23-00-05.blackbox", Assert.Single(sessions[1].BlackBoxes).Path);
+        Assert.EndsWith(first, Assert.Single(sessions[1].BlackBoxes).Path);
         Assert.Empty(sessions[1].Tapes);
         Assert.Equal(Launched.AddMinutes(30), sessions[1].LastWrittenUtc);
     }
@@ -83,8 +88,9 @@ public class BlackBoxListingTests
         installation.Clock.Now = Launched;
         var tapes = installation.Tapes;
         tapes.RecordLaunch("td.scn", TimeSpan.Zero, Array.Empty<TapeVehicle>(), "ra");
-        files.WithFile(Log("td_2025-12-31_23-00-20.blackbox"), "b")
-             .WrittenAt(Log("td_2025-12-31_23-00-20.blackbox"), Launched.AddMinutes(5));
+        string box = Box("td", Launched.AddSeconds(20));
+        files.WithFile(Log(box), "b")
+             .WrittenAt(Log(box), Launched.AddMinutes(5));
 
         installation.SimulatorRunning = true;
         var running = Assert.Single(tapes.Sessions());
@@ -93,4 +99,49 @@ public class BlackBoxListingTests
         Assert.Empty(running.Tapes);
         Assert.Single(running.BlackBoxes);
     }
+
+    [Fact]
+    public void A_black_box_of_another_scenery_written_after_a_launch_is_not_taken_for_its_run()
+    {
+        // Copied in, or a run started without the starter: written after the last launch, but of another scenery.
+        var files = new InMemoryFileSystem();
+        var installation = new TestInstallation(files);
+        installation.Clock.Now = Launched;
+        installation.Tapes.RecordLaunch("$baltyk.scn", TimeSpan.Zero, Array.Empty<TapeVehicle>(), "ra", new[] { "ra" }, "Bałtyk");
+        string own = Box("baltyk", Launched.AddSeconds(10)), other = Box("l053_poludnie", Launched.AddHours(3));
+        files.WithFile(Log(own), "b").WrittenAt(Log(own), Launched.AddMinutes(40))
+             .WithFile(Log(other), "b").WrittenAt(Log(other), Launched.AddHours(4));
+
+        var sessions = installation.Tapes.Sessions();
+
+        Assert.Equal(2, sessions.Count);
+        var loose = Assert.Single(sessions, session => session.Launch is null);
+        Assert.EndsWith(other, Assert.Single(loose.BlackBoxes).Path);
+        var launched = Assert.Single(sessions, session => session.Launch is not null);
+        Assert.EndsWith(own, Assert.Single(launched.BlackBoxes).Path);
+    }
+
+    [Fact]
+    public void A_black_box_started_before_a_launch_is_not_taken_for_it()
+    {
+        // Started earlier, and only finished writing after the starter launched the same scenery again.
+        var files = new InMemoryFileSystem();
+        var installation = new TestInstallation(files);
+        installation.Clock.Now = Launched;
+        installation.Tapes.RecordLaunch("td.scn", TimeSpan.Zero, Array.Empty<TapeVehicle>(), "ra");
+        string early = Box("td", Launched.AddHours(-2));
+        files.WithFile(Log(early), "b").WrittenAt(Log(early), Launched.AddMinutes(1));
+
+        var session = Assert.Single(installation.Tapes.Sessions());
+
+        Assert.Null(session.Launch);
+        Assert.Single(session.BlackBoxes);
+    }
+
+    [Theory]
+    [InlineData("$td.scn", "td")]
+    [InlineData("l053_poludnie.scn", "l053_poludnie")]
+    [InlineData("Bałtyk zima.scn", "Ba_tyk_zima")]
+    public void The_scenery_is_named_as_the_simulator_names_the_black_box(string scenery, string stem) =>
+        Assert.Equal(stem, StarterNG.Application.HaslerTapes.SceneryStem(scenery));
 }
