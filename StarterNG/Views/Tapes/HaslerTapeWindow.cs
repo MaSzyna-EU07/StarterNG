@@ -367,7 +367,9 @@ public sealed class HaslerTapeWindow : Window
 
         _empty.Text = string.Format(App.Loc["HaslerNoTapes"], _tapes.Folder);
         _empty.IsVisible = first is null;
-        _scroll.IsVisible = first is not null;
+        // Shown again only by a tape loaded into it: one picked again as it is, unreadable, stays hidden.
+        if (first is null)
+            _scroll.IsVisible = false;
         if (pick is null && again is not null)
         {
             // The session picked had no tape; picked again, it shows the tape it has now, or still none.
