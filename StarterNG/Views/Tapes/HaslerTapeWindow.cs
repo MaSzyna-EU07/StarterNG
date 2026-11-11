@@ -457,8 +457,9 @@ public sealed class HaslerTapeWindow : Window
         };
         window.Show(this);
         await window.OpenAsync(box.Path);
-        // The last moment asked for while the file was read.
-        if (_wantedAt.Remove(box.Path, out double wanted))
+        // The last moment asked for while the file was read; not a window closed meanwhile, whose file another reads.
+        if (_blackBoxes.TryGetValue(box.Path, out var current) && current == window
+            && _wantedAt.Remove(box.Path, out double wanted))
             window.SeekTo(wanted);
     }
 
