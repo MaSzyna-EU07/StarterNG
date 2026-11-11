@@ -412,7 +412,7 @@ public sealed class MapView : Control
         }
     }
 
-    private static StreamGeometry Diamond(Point p, double size)
+    internal static StreamGeometry Diamond(Point p, double size)
     {
         var geometry = new StreamGeometry();
         using (var g = geometry.Open())
@@ -546,7 +546,7 @@ public sealed class MapView : Control
         {
             (Palette.Within, Strings["LegendWithin"]),
             (Palette.Slightly, string.Format(CultureInfo.CurrentCulture, Strings["LegendSlightly"], DrivingSummary.DefaultTolerance)),
-            (Palette.Over, Strings["LegendOver"]),
+            (Palette.Over, string.Format(CultureInfo.CurrentCulture, Strings["LegendOver"], DrivingSummary.DefaultTolerance)),
             (Palette.Autopilot, Strings["LegendAutopilot"]),
             (Palette.NoData, Strings["LegendNoData"])
         };
@@ -562,25 +562,33 @@ public sealed class MapView : Control
             if (r.Cameras.Count > 0)
                 marks.Add((Palette.HornPoint, Strings["LegendCamera"], 2));
         }
-        var texts = rows.Select(row => Text(row.Text, Palette.DimText, 11)).Concat(marks.Select(m => Text(m.Text, Palette.DimText, 11))).ToList();
-        const double line = 17;
-        double width = texts.Max(t => t.Width) + 44, height = texts.Count * line + 14 + (marks.Count > 0 ? 6 : 0);
+        // Each part under a title of its own, in the text's colour: the dim one is hard to read on the map.
+        var title = Text(Strings["LegendTitle"], Palette.DimText, 11);
+        var marksTitle = Text(Strings["LegendMarks"], Palette.DimText, 11);
+        var texts = rows.Select(row => Text(row.Text, Palette.Text, 12)).Concat(marks.Select(m => Text(m.Text, Palette.Text, 12))).ToList();
+        const double line = 19, heading = 18, gap = 8;
+        double width = Math.Max(texts.Max(t => t.Width) + 44, Math.Max(title.Width, marks.Count > 0 ? marksTitle.Width : 0) + 24);
+        double height = 10 + heading + rows.Length * line + (marks.Count > 0 ? gap + heading + marks.Count * line : 0) + 6;
         var box = new Rect(10, size.Height - height - 10, width, height);
-        context.DrawRectangle(Palette.Faded(Palette.Card, 0.9), new Pen(Palette.CardBorder, 1), box);
-        double y = box.Top + 7;
+        context.DrawRectangle(Palette.Faded(Palette.Card, 0.96), new Pen(Palette.CardBorder, 1), box, 3, 3);
+        double y = box.Top + 8;
+        context.DrawText(title, new Point(box.Left + 12, y));
+        y += heading;
         for (int i = 0; i < rows.Length; i++, y += line)
         {
-            context.DrawLine(new Pen(rows[i].Brush, 4, lineCap: PenLineCap.Round), new Point(box.Left + 12, y + 8), new Point(box.Left + 26, y + 8));
-            context.DrawText(texts[i], new Point(box.Left + 34, y));
+            context.DrawLine(new Pen(rows[i].Brush, 5, lineCap: PenLineCap.Round), new Point(box.Left + 13, y + 9), new Point(box.Left + 27, y + 9));
+            context.DrawText(texts[i], new Point(box.Left + 36, y));
         }
         if (marks.Count > 0)
         {
-            context.DrawLine(new Pen(Palette.Grid, 1), new Point(box.Left + 10, y + 3), new Point(box.Right - 10, y + 3));
-            y += 6;
+            y += gap;
+            context.DrawLine(new Pen(Palette.Grid, 1), new Point(box.Left + 10, y - gap / 2), new Point(box.Right - 10, y - gap / 2));
+            context.DrawText(marksTitle, new Point(box.Left + 12, y));
+            y += heading;
         }
         for (int i = 0; i < marks.Count; i++, y += line)
         {
-            var c = new Point(box.Left + 19, y + 8);
+            var c = new Point(box.Left + 20, y + 9);
             if (marks[i].Shape == 0)
                 context.DrawRectangle(marks[i].Brush, null, new Rect(c.X - 3, c.Y - 4, 6, 8), 1.5, 1.5);
             else if (marks[i].Shape == 3)
@@ -589,7 +597,7 @@ public sealed class MapView : Control
                 context.DrawGeometry(marks[i].Brush, null, Diamond(c, 4.5));
             else
                 context.DrawEllipse(marks[i].Brush, null, c, 4, 4);
-            context.DrawText(texts[rows.Length + i], new Point(box.Left + 34, y));
+            context.DrawText(texts[rows.Length + i], new Point(box.Left + 36, y));
         }
     }
 

@@ -20,7 +20,7 @@ public sealed class TimelineView : Control
 {
     private const double Left = 56;
     private const double Right = 12;
-    private const double Top = 22;
+    private const double Top = 36;
     private const double BandHeight = 8;
     private const double BandGap = 3;
     private const double MarksHeight = 16;
@@ -35,6 +35,7 @@ public sealed class TimelineView : Control
     private double _pressedStart;
     private bool _dragged;
     private double? _hover;
+    private Point? _pointer;
     private int _measured = -1;
     private Recording? _measuredOf;
     private double _speedTop = 40;
@@ -134,6 +135,8 @@ public sealed class TimelineView : Control
         DrawSpeedLabels(context, top, Y);
         DrawBandLabels(context, chartBottom + 6);
         DrawKey(context);
+        if (MarkUnderPointer(recording, chartBottom) is { } mark)
+            DrawMarkLabel(context, mark, size);
     }
 
     /// <summary>The top of the speed scale and the highest step of the controller, once a reading.</summary>
@@ -330,6 +333,9 @@ public sealed class TimelineView : Control
             var text = MapView.Text(names[i], Palette.FaintText, 9);
             context.DrawText(text, new Point(Left - 6 - text.Width, y + (BandHeight - text.Height) / 2));
         }
+        var events = MapView.Text(Strings["BandEvents"], Palette.FaintText, 9);
+        double marks = top + Bands * (BandHeight + BandGap);
+        context.DrawText(events, new Point(Left - 6 - events.Width, marks + (MarksHeight - events.Height) / 2));
     }
 
     /// <summary>
@@ -427,14 +433,111 @@ public sealed class TimelineView : Control
 
     private void DrawKey(DrawingContext context)
     {
-        double x = Left + 4;
-        foreach (var (brush, key) in new[] { (Palette.Speed, "TimelineSpeed"), (Palette.Target, "TimelineTarget"), (Palette.Limit, "TimelineLimit") })
+        const double y = 10;
+        double x = Left + 4, limit = Bounds.Width - Right;
+        bool Room(string key) => x + 18 + MapView.Text(Strings[key], Palette.DimText, 10).Width <= limit;
+        void Name(string key)
         {
-            context.DrawLine(new Pen(brush, 2), new Point(x, 10), new Point(x + 14, 10));
             var text = MapView.Text(Strings[key], Palette.DimText, 10);
-            context.DrawText(text, new Point(x + 18, 10 - text.Height / 2));
+            context.DrawText(text, new Point(x + 18, y - text.Height / 2));
             x += 18 + text.Width + 14;
         }
+        foreach (var (brush, key) in new[] { (Palette.Speed, "TimelineSpeed"), (Palette.Target, "TimelineTarget"), (Palette.Limit, "TimelineLimit") })
+        {
+            if (!Room(key))
+                return;
+            context.DrawLine(new Pen(brush, 2), new Point(x, y), new Point(x + 14, y));
+            Name(key);
+        }
+        // the marks, as they are drawn above the chart and in the row of the events
+        if (Room("KeyStation"))
+        {
+            context.DrawRectangle(Palette.Station, null, new Rect(x + 4, y - 4, 6, 8), 1.5, 1.5);
+            Name("KeyStation");
+        }
+        if (Room("KeyHorn"))
+        {
+            context.DrawGeometry(Palette.Good, null, MapView.Diamond(new Point(x + 7, y), 4));
+            Name("KeyHorn");
+        }
+        foreach (var (brush, key) in new[] { (Palette.Within, "KeySignal"), (Palette.Warn, "KeyCoupling"), (Palette.Autopilot, "KeyDriver"), (Palette.Command, "KeyCommand") })
+        {
+            if (!Room(key))
+                return;
+            context.DrawLine(new Pen(brush, 2), new Point(x + 7, y - 5), new Point(x + 7, y + 5));
+            Name(key);
+        }
+    }
+
+    /// <summary>What the mark under the pointer is: the nearest within a few pixels, in the row of the events or the plates above.</summary>
+    private string? MarkUnderPointer(Recording recording, double chartBottom)
+    {
+        if (_pointer is not { } pointer)
+            return null;
+        double marks = chartBottom + 6 + Bands * (BandHeight + BandGap);
+        bool inPlates = pointer.Y >= Top - 16 && pointer.Y <= Top - 2;
+        bool inMarks = pointer.Y >= marks - 2 && pointer.Y <= marks + MarksHeight + 2;
+        if (!inPlates && !inMarks)
+            return null;
+        var culture = CultureInfo.CurrentCulture;
+        string? found = null;
+        double best = 5;
+        void Consider(double time, Func<string> text)
+        {
+            double d = Math.Abs(X(time) - pointer.X);
+            if (d < best)
+            {
+                best = d;
+                found = text();
+            }
+        }
+        if (inPlates)
+        {
+            foreach (var station in recording.UserStations())
+                if (station.Kind != StationKind.Ready)
+                    Consider(station.Time, () => string.Format(culture, Strings[station.Kind switch
+                    {
+                        StationKind.Stopped => "TlStationStopped",
+                        StationKind.Missed => "TlStationMissed",
+                        _ => "TlStationPassed"
+                    }], StationNames.Display(station.Station)));
+            foreach (var horn in recording.UserHornChecks())
+                Consider(horn.Request.Time, () => Strings[horn.Sounded ? "TlHornSounded" : "TlHornSilent"]);
+        }
+        foreach (var p in recording.UserPassings())
+        {
+            if (!inMarks && !p.AtDanger)
+                continue;
+            Consider(p.Time, () =>
+            {
+                string name = recording.Signal(p.Signal)?.Name ?? p.Event;
+                return p.AtDanger
+                    ? string.Format(culture, Strings["TlSignalDanger"], name)
+                    : string.Format(culture, Strings["TlSignal"], name, MapView.AspectText(Strings, p.Speed1, p.Speed2));
+            });
+        }
+        if (inMarks)
+        {
+            foreach (var c in recording.UserCouplings())
+                Consider(c.Time, () => Strings[c.Coupled ? "TlCoupled" : c.Uncoupled ? "TlUncoupled" : "TlCouplingChanged"]);
+            foreach (var d in recording.DriverChanges)
+                Consider(d.Time, () => Strings[d.Driving == Driver.Ai ? "TlAutopilotOn" : "TlAutopilotOff"]);
+            foreach (var c in recording.UserCommands())
+                Consider(c.Time, () => string.Format(culture, Strings["TlCommand"], c.Name));
+        }
+        return found;
+    }
+
+    private void DrawMarkLabel(DrawingContext context, string text, Size size)
+    {
+        if (_pointer is not { } pointer)
+            return;
+        var label = MapView.Text(text, Palette.Text, 11);
+        double x = Math.Clamp(pointer.X + 10, Left, size.Width - Right - label.Width - 12);
+        double y = Math.Max(2, pointer.Y - label.Height - 12);
+        var box = new Rect(x, y, label.Width + 12, label.Height + 6);
+        context.DrawRectangle(Palette.Card, new Pen(Palette.CardBorder, 1), box, 3, 3);
+        context.DrawText(label, new Point(x + 6, y + 3));
     }
 
     protected override void OnPointerPressed(PointerPressedEventArgs e)
@@ -468,6 +571,7 @@ public sealed class TimelineView : Control
                 _start = Math.Clamp(_pressedStart - moved * _secondsPerPixel, 0, Math.Max(0, _recording.Duration - PlotWidth * _secondsPerPixel * 0.5));
         }
         _hover = position.X >= Left ? Math.Clamp(TimeAt(position.X), 0, _recording.Duration) : null;
+        _pointer = position;
         Hovered?.Invoke(_hover);
         InvalidateVisual();
     }
@@ -485,6 +589,7 @@ public sealed class TimelineView : Control
     {
         base.OnPointerExited(e);
         _hover = null;
+        _pointer = null;
         Hovered?.Invoke(null);
         InvalidateVisual();
     }
