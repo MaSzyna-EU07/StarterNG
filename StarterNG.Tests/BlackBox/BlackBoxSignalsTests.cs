@@ -131,7 +131,9 @@ public class HeadCodeTests
         var f = new BlackBoxFile().Info();
         for (double t = 0; t < 30; t += 0.5)
             f.Cab(t, 1, 1000 + t * 10, 40, lightsHead: Pc1, lightsTail: 0x40, movement: 1, hintTail: 0x22);
-        Assert.Empty(BlackBoxReader.Read(f.End(30).Stream()).Summarize().LightsFaults);
+        var summary = BlackBoxReader.Read(f.End(30).Stream()).Summarize();
+        Assert.True(summary.LightsJudgedSeconds > 25);
+        Assert.Empty(summary.LightsFaults);
     }
 
     [Fact]
