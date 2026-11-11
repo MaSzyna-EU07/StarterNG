@@ -328,9 +328,23 @@ public sealed class HaslerTapes
         if (NamedBy(box.Path) is not { } named)
             return launches.LastOrDefault(l => l.Covers(box.LastWriteUtc));
         var launch = launches.LastOrDefault(l => l.Covers(named.StartedUtc));
-        return launch is not null && string.Equals(SceneryStem(launch.Scenery), named.Scenery, StringComparison.OrdinalIgnoreCase)
-            ? launch
-            : null;
+        return launch is not null && SameStem(SceneryStem(launch.Scenery), named.Scenery) ? launch : null;
+    }
+
+    /// <summary>
+    /// Two stems of one scenery. The simulator turns each byte of a letter outside ASCII into '_': one for 'ł'
+    /// on Windows, two where the name comes as UTF-8. Runs of '_' are taken as one, and the case doesn't count.
+    /// </summary>
+    public static bool SameStem(string a, string b) =>
+        string.Equals(Squeezed(a), Squeezed(b), StringComparison.OrdinalIgnoreCase);
+
+    private static string Squeezed(string stem)
+    {
+        var text = new StringBuilder(stem.Length);
+        foreach (char c in stem)
+            if (c != '_' || text.Length == 0 || text[^1] != '_')
+                text.Append(c);
+        return text.ToString();
     }
 
     private const string BlackBoxStamp = "yyyy-MM-dd_HH-mm-ss";

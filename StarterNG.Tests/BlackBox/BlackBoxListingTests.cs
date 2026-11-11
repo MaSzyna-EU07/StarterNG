@@ -144,4 +144,13 @@ public class BlackBoxListingTests
     [InlineData("Bałtyk zima.scn", "Ba_tyk_zima")]
     public void The_scenery_is_named_as_the_simulator_names_the_black_box(string scenery, string stem) =>
         Assert.Equal(stem, StarterNG.Application.HaslerTapes.SceneryStem(scenery));
+
+    [Theory]
+    [InlineData("Ba_tyk_zima", true)]   // Windows: 'ł' is one byte of its code page
+    [InlineData("Ba__tyk_zima", true)]  // Linux: two bytes of UTF-8
+    [InlineData("BA__TYK_ZIMA", true)]
+    [InlineData("Baltyk_zima", false)]
+    public void A_letter_outside_ascii_matches_however_many_bytes_it_was(string named, bool same) =>
+        Assert.Equal(same, StarterNG.Application.HaslerTapes.SameStem(
+            StarterNG.Application.HaslerTapes.SceneryStem("Bałtyk zima.scn"), named));
 }
