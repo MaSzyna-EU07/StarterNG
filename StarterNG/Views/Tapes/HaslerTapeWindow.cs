@@ -66,6 +66,8 @@ public sealed class HaslerTapeWindow : Window
     private readonly Action<TapeSample> _picked;
 
     private TapeFile? _shown;
+    /// <summary>The session picked that has no tape, so that a refresh of the list goes back to it and not to a tape of another.</summary>
+    private DateTime? _tapeless;
     private string? _followed;
     private string _listed = "";
     private bool _running;
@@ -139,7 +141,7 @@ public sealed class HaslerTapeWindow : Window
             if (file is null)
             {
                 if (session is not null)
-                    ShowNoTape();
+                    ShowNoTape(session);
                 return;
             }
             if (file == _shown)
@@ -340,6 +342,7 @@ public sealed class HaslerTapeWindow : Window
         if (toDriven)
             _followed = driven;
         string? selected = toDriven && driven is not null ? driven : _shown?.Path;
+        DateTime? tapeless = toDriven && driven is not null ? null : _tapeless;
         FollowBlackBoxes(sessions);
 
         foreach (var node in _list.Items.OfType<TreeViewItem>())
@@ -347,10 +350,13 @@ public sealed class HaslerTapeWindow : Window
         _list.Items.Clear();
 
         (TreeViewItem Node, TreeViewItem Tape)? first = null, pick = null;
+        TreeViewItem? again = null;
         for (int i = 0; i < sessions.Count; i++)
         {
             var node = SessionItem(sessions[i], _expanded.GetValueOrDefault(sessions[i].StartedUtc, i == 0));
             _list.Items.Add(node);
+            if (sessions[i].StartedUtc == tapeless)
+                again = node;
             foreach (var tape in node.Items.OfType<TreeViewItem>().Where(item => item.Tag is TapeFile))
             {
                 first ??= (node, tape);
@@ -362,6 +368,12 @@ public sealed class HaslerTapeWindow : Window
         _empty.Text = string.Format(App.Loc["HaslerNoTapes"], _tapes.Folder);
         _empty.IsVisible = first is null;
         _scroll.IsVisible = first is not null;
+        if (pick is null && again is not null)
+        {
+            // The session picked had no tape; picked again, it shows the tape it has now, or still none.
+            _list.SelectedItem = again;
+            return;
+        }
         if ((pick ?? first) is not { } chosen)
         {
             _shown = null;
@@ -595,14 +607,15 @@ public sealed class HaslerTapeWindow : Window
         _recorder.SelectedIndex = context.Recorder == RecorderKind.Electronic ? 1 : 0;
     }
 
-    /// <summary>A session with a black box and no tape: no tape of another session left beside it.</summary>
-    private void ShowNoTape()
+    /// <summary>A session with no tape, a black box at most: no tape of another session left beside it.</summary>
+    private void ShowNoTape(TapeSession session)
     {
         _shown = null;
+        _tapeless = session.StartedUtc;
         _view.Tape = null;
         _view.Mark = null;
         _cursor.Text = "";
-        _summary.Text = App.Loc["HaslerSessionNoTape"];
+        _summary.Text = App.Loc[session.BlackBoxes.Count > 0 ? "HaslerSessionNoTape" : "HaslerSessionEmpty"];
     }
 
     private async Task ShowAsync(TapeFile file, bool scrollToEnd)
@@ -615,6 +628,7 @@ public sealed class HaslerTapeWindow : Window
             var tape = await Task.Run(() => _tapes.Load(file));
             bool another = file.Path != _shown?.Path;
             _shown = file;
+            _tapeless = null;
             if (tape is null)
             {
                 _view.Tape = null;
