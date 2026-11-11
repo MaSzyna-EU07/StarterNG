@@ -21,6 +21,7 @@ public sealed class CabPanel : Control
     private const double Pad = 14;
     private const double LampRow = 14;
     private const int DoorColumns = 2;
+    private const double DriveRow = 34;
 
     private Recording? _recording;
     private double _time;
@@ -34,7 +35,7 @@ public sealed class CabPanel : Control
     public CabPanel()
     {
         ClipToBounds = true;
-        Height = 664;
+        Height = 696;
     }
 
     public IBlackBoxStrings Strings { get; set; } = new DefaultBlackBoxStrings();
@@ -156,7 +157,7 @@ public sealed class CabPanel : Control
         double driveTop = y + gauge + 4;
         top = Section(context, Strings["CabSectionDrive"], Pad, driveTop, half - 10);
         Section(context, Strings["CabLights"], half + 4, driveTop, right);
-        DrawDrive(context, s, top, (half - 10 - Pad) / 3, culture);
+        DrawDrive(context, s, top, half - 10 - Pad, culture);
         double row = top;
         foreach (var (key, lights, equipped, required, isRight) in new[]
                  {
@@ -182,7 +183,7 @@ public sealed class CabPanel : Control
         }
 
         // The devices, in three groups side by side: lit as their lamps are in the cab, the ones off faint.
-        top = Section(context, Strings["CabSectionDevices"], Pad, top + 76, right);
+        top = Section(context, Strings["CabSectionDevices"], Pad, top + 3 * DriveRow + 6, right);
         var groups = Devices(s, culture);
         var widths = new double[groups.Length];
         for (int g = 0; g < groups.Length; g++)
@@ -225,60 +226,67 @@ public sealed class CabPanel : Control
     }
 
     /// <summary>
-    /// The traction, in two rows of three, as fits what drives the vehicle: the voltage, the current and the
-    /// revolutions of an electric one, the power and the cruise control under; the revolutions and the oil
-    /// pressure of a diesel, its temperatures under. A recording made before the engine was written: the first
-    /// row of an electric one, no voltage for a vehicle which never had any.
+    /// The traction, in two columns, as fits what drives the vehicle: the voltage, the current, the revolutions,
+    /// the power and the cruise control of an electric one; the revolutions, the current (or the clutch, or the
+    /// torque converter), the oil pressure and the temperatures of a diesel. A recording made before the engine
+    /// was written: those of an electric one it had then, no voltage for a vehicle which never had any.
     /// </summary>
-    private void DrawDrive(DrawingContext context, CabSample s, double top, double third, CultureInfo culture)
+    private void DrawDrive(DrawingContext context, CabSample s, double top, double width, CultureInfo culture)
     {
-        void At(int column, int row, string label, string value, IBrush? brush = null)
-        {
-            using (context.PushClip(new Rect(Pad + column * third, top + row * 36, third - 4, 34)))
-                Value(context, label, value, Pad + column * third, top + row * 36, brush);
-        }
+        var cells = new List<(string Label, string Value, IBrush? Brush)>();
+        void Add(string key, string value, IBrush? brush = null) => cells.Add((Strings[key], value, brush));
 
         string voltage = _powered.Contains(s.Vehicle) ? $"{s.Voltage:0} V" : "—";
-        if (s.Extra is not { } e)
+        switch (s.Extra?.Engine)
         {
-            At(0, 0, Strings["CabVoltage"], voltage);
-            At(1, 0, Strings["CabCurrent"], $"{s.MotorCurrent:0} A");
-            At(2, 0, Strings["CabRpm"], $"{s.EngineRpm:0}");
-            return;
-        }
-        string oil = string.Format(culture, "{0:0.00} MPa", e.OilPressure);
-        switch (e.Engine)
-        {
+            case null:
+                Add("CabVoltage", voltage);
+                Add("CabCurrent", $"{s.MotorCurrent:0} A");
+                Add("CabRpm", $"{s.EngineRpm:0}");
+                break;
             case EngineKind.Electric:
             case EngineKind.ElectricInduction:
-                At(0, 0, Strings["CabVoltage"], voltage);
-                At(1, 0, Strings["CabCurrent"], $"{s.MotorCurrent:0} A");
-                At(2, 0, Strings["CabRpm"], $"{s.EngineRpm:0}");
-                At(0, 1, Strings["CabPower"], $"{e.EnginePower:0} kW");
-                At(1, 1, Strings["CabSpeedControl"], s.Has(CabDevices.SpeedControl) ? $"{e.SpeedControlKmh:0} km/h" : "—");
+            {
+                var e = s.Extra.Value;
+                Add("CabVoltage", voltage);
+                Add("CabCurrent", $"{s.MotorCurrent:0} A");
+                Add("CabRpm", $"{s.EngineRpm:0}");
+                Add("CabPower", $"{e.EnginePower:0} kW");
+                Add("CabSpeedControl", s.Has(CabDevices.SpeedControl) ? $"{e.SpeedControlKmh:0} km/h" : "—");
                 break;
+            }
             case EngineKind.DieselElectric:
             case EngineKind.Diesel:
-                At(0, 0, Strings["CabRpm"], $"{s.EngineRpm:0}");
+            {
+                var e = s.Extra.Value;
+                Add("CabRpm", $"{s.EngineRpm:0}");
                 if (e.Engine == EngineKind.DieselElectric)
-                    At(1, 0, Strings["CabCurrent"], $"{s.MotorCurrent:0} A");
+                    Add("CabCurrent", $"{s.MotorCurrent:0} A");
                 else if (_hydraulic.Contains(s.Vehicle))
-                    At(1, 0, Strings["CabConverterFill"], $"{e.ConverterFill * 100:0} %");
+                    Add("CabConverterFill", $"{e.ConverterFill * 100:0} %");
                 else
-                    At(1, 0, Strings["CabClutch"], $"{e.Clutch * 100:0} %");
-                At(2, 0, Strings["CabOilPressure"], oil);
+                    Add("CabClutch", $"{e.Clutch * 100:0} %");
+                Add("CabOilPressure", string.Format(culture, "{0:0.00} MPa", e.OilPressure));
                 // the temperatures, warm when the engine is too hot
                 var heat = s.Has(CabDevices.EngineHot) ? Palette.Bad : null;
-                At(0, 1, Strings["CabWater"], $"{e.WaterTemperature:0} °C", heat);
-                At(1, 1, Strings["CabOil"], $"{e.OilTemperature:0} °C", heat);
-                At(2, 1, Strings["CabEngine"], $"{e.EngineTemperature:0} °C", heat);
+                Add("CabWater", $"{e.WaterTemperature:0} °C", heat);
+                Add("CabOil", $"{e.OilTemperature:0} °C", heat);
+                Add("CabEngine", $"{e.EngineTemperature:0} °C", heat);
                 break;
+            }
             case EngineKind.Steam:
-                At(0, 0, Strings["CabRpm"], $"{s.EngineRpm:0}");
+                Add("CabRpm", $"{s.EngineRpm:0}");
                 break;
             default:
                 context.DrawText(MapView.Text(Strings["CabNoDrive"], Palette.DimText, 11), new Point(Pad, top + 2));
-                break;
+                return;
+        }
+        double column = width / 2;
+        for (int i = 0; i < cells.Count; i++)
+        {
+            double x = Pad + i % 2 * column, y = top + i / 2 * DriveRow;
+            using (context.PushClip(new Rect(x, y, column - 4, DriveRow)))
+                Value(context, cells[i].Label, cells[i].Value, x, y, cells[i].Brush);
         }
     }
 
