@@ -62,6 +62,8 @@ public sealed class HaslerTapeWindow : Window
     private readonly Dictionary<string, BlackBoxWindow> _blackBoxes = new(StringComparer.OrdinalIgnoreCase);
     private HashSet<string> _liveBlackBoxes = new(StringComparer.OrdinalIgnoreCase);
     private IReadOnlyList<TapeSession> _sessions = Array.Empty<TapeSession>();
+    private readonly Dictionary<string, double> _wantedAt = new(StringComparer.OrdinalIgnoreCase);
+    private readonly Action<TapeSample> _picked;
 
     private TapeFile? _shown;
     private string? _followed;
@@ -89,8 +91,10 @@ public sealed class HaslerTapeWindow : Window
         _scale.Value = DefaultKmScale;
         _scale.PropertyChanged += (_, e) =>
         {
-            if (e.Property == RangeBase.ValueProperty)
-                _view.Scale = _scale.Value;
+            if (e.Property != RangeBase.ValueProperty)
+                return;
+            _view.Scale = _scale.Value;
+            ShowMark(scrollTo: false);
         };
         _live.Content = App.Loc["HaslerLive"];
         ToolTip.SetShowOnDisabled(_live, true);
@@ -139,7 +143,8 @@ public sealed class HaslerTapeWindow : Window
         _view = NewView(RecorderKind.Hasler);
         _view.Scale = DefaultKmScale;
         _view.Hovered += ShowCursor;
-        _view.Picked += PickOnTape;
+        _picked = async sample => await PickOnTapeAsync(sample);
+        _view.Picked += _picked;
         _scroll = new ScrollViewer
         {
             HorizontalScrollBarVisibility = ScrollBarVisibility.Auto,
@@ -288,15 +293,16 @@ public sealed class HaslerTapeWindow : Window
 
         var old = _view;
         old.Hovered -= ShowCursor;
-        old.Picked -= PickOnTape;
+        old.Picked -= _picked;
         _view = NewView(Recorder);
         _view.CopySettingsFrom(old);
         _view.Hovered += ShowCursor;
-        _view.Picked += PickOnTape;
+        _view.Picked += _picked;
         _scroll.Content = _view;
         // The other view is not as tall; an offset kept from it would hide its top rows.
         _scroll.Offset = new Vector(_scroll.Offset.X, 0);
         _cursor.Text = "";
+        ShowMark(scrollTo: false);
     }
 
     private async Task RefreshListAsync(bool toDriven = false) =>
@@ -428,7 +434,7 @@ public sealed class HaslerTapeWindow : Window
         if (_blackBoxes.TryGetValue(box.Path, out var open))
         {
             if (at is { } moment)
-                open.SeekTo(moment);
+                SeekBlackBox(box, open, moment);
             open.Activate();
             return;
         }
@@ -438,15 +444,30 @@ public sealed class HaslerTapeWindow : Window
             Live = _liveBlackBoxes.Contains(box.Path)
         };
         _blackBoxes[box.Path] = window;
-        window.TimeChanged += t => FollowBlackBox(box, t);
+        if (at is { } first)
+            _wantedAt[box.Path] = first;
+        void Follow(double t) => FollowBlackBox(box, window, t);
+        window.TimeChanged += Follow;
         window.Closed += (_, _) =>
         {
+            window.TimeChanged -= Follow;
             _blackBoxes.Remove(box.Path);
+            _wantedAt.Remove(box.Path);
             ShowMark(scrollTo: false);
         };
         window.Show(this);
         await window.OpenAsync(box.Path);
-        if (at is { } t)
+        // The last moment asked for while the file was read.
+        if (_wantedAt.Remove(box.Path, out double wanted))
+            window.SeekTo(wanted);
+    }
+
+    /// <summary>A window still reading its file has no moment to go to yet: it goes there once it has read it.</summary>
+    private void SeekBlackBox(BlackBoxRecording box, BlackBoxWindow window, double t)
+    {
+        if (window.Recording is null)
+            _wantedAt[box.Path] = t;
+        else
             window.SeekTo(t);
     }
 
@@ -458,40 +479,45 @@ public sealed class HaslerTapeWindow : Window
 
     /// <summary>
     /// A click on the tape takes the black box of its session to the same moment, opening it if no window has it.
-    /// Both count seconds of the simulation from its start, so a tape's own time is the black box's.
+    /// Both count seconds of the simulation from its start, so a tape's own time is the black box's. Also the click
+    /// that brings this window back from the black box's: going back to the tape is to look at another moment.
     /// </summary>
-    private void PickOnTape(TapeSample sample)
+    private async Task PickOnTapeAsync(TapeSample sample)
     {
         if (ShownSession is not { BlackBoxes.Count: > 0 } session)
             return;
         var open = session.BlackBoxes.Where(box => _blackBoxes.ContainsKey(box.Path)).ToList();
         if (open.Count == 0)
         {
-            _ = OpenBlackBoxAsync(session.BlackBoxes[0], sample.Time);
+            await OpenBlackBoxAsync(session.BlackBoxes[0], sample.Time);
             return;
         }
         foreach (var box in open)
-            _blackBoxes[box.Path].SeekTo(sample.Time);
+            SeekBlackBox(box, _blackBoxes[box.Path], sample.Time);
     }
 
     /// <summary>Where a black box of the session shown plays, on its tape, brought into view as it moves on.</summary>
-    private void FollowBlackBox(BlackBoxRecording box, double t)
+    private void FollowBlackBox(BlackBoxRecording box, BlackBoxWindow window, double t)
     {
-        if (ShownSession?.BlackBoxes.Any(b => b.Path == box.Path) != true)
+        if (!_blackBoxes.TryGetValue(box.Path, out var open) || open != window
+            || ShownSession?.BlackBoxes.Any(b => b.Path == box.Path) != true)
             return;
         // Played, it moves every frame: the tape is drawn again only when the mark moves on it.
         double? x = _view.XAt(t), was = _view.MarkX;
-        if (x is { } now && was is { } before && Math.Abs(now - before) < 0.5)
+        if (x == was || (x is { } now && was is { } before && Math.Abs(now - before) < 0.5))
             return;
         _view.Mark = t;
         BringMarkIntoView();
     }
 
-    /// <summary>The mark of an open black box of the session shown, or none, on a tape just shown or changed.</summary>
+    /// <summary>
+    /// The mark of an open black box of the session shown, or none: on a tape just shown, and on a view changed,
+    /// where a mark held back while it stood still on the old one would stand wrong.
+    /// </summary>
     private void ShowMark(bool scrollTo)
     {
         var window = ShownSession?.BlackBoxes.Select(box => _blackBoxes.GetValueOrDefault(box.Path))
-                                  .FirstOrDefault(w => w is not null);
+                                  .FirstOrDefault(w => w?.Recording is not null);
         _view.Mark = window?.CurrentTime;
         if (scrollTo)
             BringMarkIntoView();
@@ -567,6 +593,7 @@ public sealed class HaslerTapeWindow : Window
         try
         {
             var tape = await Task.Run(() => _tapes.Load(file));
+            bool another = file.Path != _shown?.Path;
             _shown = file;
             if (tape is null)
             {
@@ -577,7 +604,7 @@ public sealed class HaslerTapeWindow : Window
             }
 
             _view.Tape = tape;
-            ShowMark(scrollTo: !scrollToEnd);
+            ShowMark(scrollTo: another && !scrollToEnd);
             _summary.Text = string.Format(App.Loc["HaslerSummary"], file.Vehicle, TapeFigures.Clock(tape.Duration),
                                           TapeFigures.Clock(tape.RunningTime), TapeFigures.Clock(tape.StandingTime),
                                           tape.DistanceM / 1000.0, tape.MaxSpeedKmh, tape.AverageSpeedKmh,
@@ -589,6 +616,8 @@ public sealed class HaslerTapeWindow : Window
             // The log counts seconds from the start: an hour comes only from what the starter noted.
             if (string.IsNullOrWhiteSpace(_startClock.Text))
                 _summary.Text += " · " + App.Loc["HaslerClockUnknown"];
+            if (ShownSession is { BlackBoxes.Count: > 0 })
+                _summary.Text += " · " + App.Loc["HaslerClickBlackBox"];
             if (scrollToEnd)
                 Dispatcher.UIThread.Post(() => _scroll.Offset = new Vector(double.MaxValue, _scroll.Offset.Y),
                                          DispatcherPriority.Background);
@@ -645,6 +674,7 @@ public sealed class HaslerTapeWindow : Window
         _view.ByDistance = byDistance;
         _scale.Value = byDistance ? DefaultKmScale : DefaultMinuteScale;
         _scale.Maximum = byDistance ? 600 : 300;
+        ShowMark(scrollTo: false);
     }
 
     /// <summary>The whole tape, not just what is scrolled into view, drawn afresh at the chosen scale.</summary>
@@ -710,8 +740,6 @@ public sealed class HaslerTapeWindow : Window
                             s.BrakePressBar, YesNo(s.Current), YesNo(s.SecurityAlarm))
             : string.Format(App.Loc["HaslerCursor"], time, s.DistanceM / 1000.0, s.SpeedKmh, s.BrakePressBar,
                             YesNo(s.Current));
-        if (ShownSession is { BlackBoxes.Count: > 0 })
-            _cursor.Text += "   " + App.Loc["HaslerClickBlackBox"];
     }
 
     private static string YesNo(bool on) => on ? App.Loc["HaslerYes"] : App.Loc["HaslerNo"];

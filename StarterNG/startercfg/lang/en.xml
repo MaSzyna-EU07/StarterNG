@@ -1081,7 +1081,7 @@
     <String key="HaslerSessionRunning">running</String>
     <String key="HaslerBlackBox">Black box</String>
     <String key="HaslerBlackBoxTip">The whole session on a map: the driving against the AI, the commands, the signals, the cab</String>
-    <String key="HaslerClickBlackBox">click: the black box at this moment</String>
+    <String key="HaslerClickBlackBox">click the tape: the black box at that moment</String>
     <String key="WarehouseSaved">In the warehouse: {0}</String>
     <String key="WarehouseNothingToAdd">Pick a consist with vehicles</String>
     <String key="GfxGroupLevelTip">Level for this part of the graphics only</String>
