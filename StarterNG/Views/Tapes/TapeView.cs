@@ -31,12 +31,21 @@ public abstract class TapeView : Control
     public static readonly StyledProperty<TimeSpan> StartClockProperty =
         AvaloniaProperty.Register<TapeView, TimeSpan>(nameof(StartClock));
 
+    /// <summary>
+    /// The moment a black box of the same run is at, in the tape's own seconds: both count the simulation from
+    /// its start, paused or not. Null draws nothing.
+    /// </summary>
+    public static readonly StyledProperty<double?> MarkProperty =
+        AvaloniaProperty.Register<TapeView, double?>(nameof(Mark));
+
     private static readonly IPen CursorPen = new Pen(new SolidColorBrush(Color.Parse("#FFB000")), 1);
+    private static readonly IBrush MarkBrush = new SolidColorBrush(Color.Parse("#4FC3F7"));
+    private static readonly IPen MarkPen = new Pen(MarkBrush, 2);
 
     static TapeView()
     {
         AffectsMeasure<TapeView>(TapeProperty, ByDistanceProperty, ScaleProperty);
-        AffectsRender<TapeView>(TapeProperty, ByDistanceProperty, ScaleProperty, StartClockProperty);
+        AffectsRender<TapeView>(TapeProperty, ByDistanceProperty, ScaleProperty, StartClockProperty, MarkProperty);
     }
 
     public HaslerTape? Tape
@@ -63,8 +72,17 @@ public abstract class TapeView : Control
         set => SetValue(StartClockProperty, value);
     }
 
+    public double? Mark
+    {
+        get => GetValue(MarkProperty);
+        set => SetValue(MarkProperty, value);
+    }
+
     /// <summary>The sample under the pointer, or null once it leaves the tape.</summary>
     public event Action<TapeSample?>? Hovered;
+
+    /// <summary>The sample clicked on.</summary>
+    public event Action<TapeSample>? Picked;
 
     protected abstract double LeftMargin { get; }
 
@@ -86,6 +104,23 @@ public abstract class TapeView : Control
     private double PositionOf(double x) =>
         ByDistance ? (x - LeftMargin) / Scale * 1000.0 : (x - LeftMargin) / Scale * 60.0 + (Tape?.StartTime ?? 0);
 
+    /// <summary>
+    /// Where the mark stands across the tape; null with no mark or outside the trip. By distance it is where the
+    /// train was at that moment, so through a stop the mark stands still.
+    /// </summary>
+    public double? MarkX => Mark is { } t ? XAt(t) : null;
+
+    /// <summary>Where a moment of the trip stands across the tape; null outside the trip.</summary>
+    public double? XAt(double t)
+    {
+        var tape = Tape;
+        if (tape is null || tape.IsEmpty || t < tape.StartTime || t > tape.Samples[^1].Time)
+            return null;
+        return ByDistance
+            ? XOf(tape.Samples[tape.IndexAt(t, byDistance: false)])
+            : LeftMargin + (t - tape.StartTime) / 60.0 * Scale;
+    }
+
     /// <summary>Seconds since midnight at the sample, by the clock the trip started at.</summary>
     public double ClockAt(TapeSample s) => StartClock.TotalSeconds + s.Time - (Tape?.StartTime ?? 0);
 
@@ -96,6 +131,7 @@ public abstract class TapeView : Control
         ByDistance = other.ByDistance;
         Scale = other.Scale;
         StartClock = other.StartClock;
+        Mark = other.Mark;
     }
 
     protected override Size MeasureOverride(Size availableSize) =>
@@ -110,6 +146,7 @@ public abstract class TapeView : Control
             return;
 
         DrawTape(context, tape);
+        DrawMark(context);
         DrawCursor(context);
     }
 
@@ -133,12 +170,42 @@ public abstract class TapeView : Control
         Hovered?.Invoke(index < 0 ? null : tape.Samples[index]);
     }
 
+    protected override void OnPointerPressed(PointerPressedEventArgs e)
+    {
+        base.OnPointerPressed(e);
+        var tape = Tape;
+        if (tape is null || tape.IsEmpty || !e.GetCurrentPoint(this).Properties.IsLeftButtonPressed)
+            return;
+
+        double x = Math.Clamp(e.GetPosition(this).X, LeftMargin, TapeRight);
+        int index = tape.IndexAt(PositionOf(x), ByDistance);
+        if (index >= 0)
+            Picked?.Invoke(tape.Samples[index]);
+    }
+
     protected override void OnPointerExited(PointerEventArgs e)
     {
         base.OnPointerExited(e);
         CursorX = null;
         InvalidateVisual();
         Hovered?.Invoke(null);
+    }
+
+    /// <summary>A line across the tape with a notch on top, in a colour of its own: not the pointer's.</summary>
+    private void DrawMark(DrawingContext context)
+    {
+        if (MarkX is not { } x)
+            return;
+        context.DrawLine(MarkPen, new Point(x, 0), new Point(x, TapeHeight));
+        var notch = new StreamGeometry();
+        using (var g = notch.Open())
+        {
+            g.BeginFigure(new Point(x - 5, 0), true);
+            g.LineTo(new Point(x + 5, 0));
+            g.LineTo(new Point(x, 7));
+            g.EndFigure(true);
+        }
+        context.DrawGeometry(MarkBrush, null, notch);
     }
 
     private void DrawCursor(DrawingContext context)

@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+    <!-- The window that replays a black box: the map, the timeline, the events. Code
+         only, no XAML loaded at run time, so it goes through NativeAOT and trimming
+         in the starter and in the viewer alike. -->
+    <PropertyGroup>
+        <TargetFramework>net9.0</TargetFramework>
+        <Nullable>enable</Nullable>
+        <IsAotCompatible>true</IsAotCompatible>
+        <IsTrimmable>true</IsTrimmable>
+        <RootNamespace>Eu07.BlackBox.Views</RootNamespace>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <PackageReference Include="Avalonia" Version="12.1.4" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\Eu07.BlackBox\Eu07.BlackBox.csproj" />
+    </ItemGroup>
+</Project>

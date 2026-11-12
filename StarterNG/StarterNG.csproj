@@ -38,6 +38,12 @@
     </ItemGroup>
 
     <ItemGroup>
+        <!-- The black box of the simulator: its reader and the window it is played back in. -->
+        <ProjectReference Include="..\Eu07.BlackBox\Eu07.BlackBox.csproj" />
+        <ProjectReference Include="..\Eu07.BlackBox.Views\Eu07.BlackBox.Views.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
       <Folder Include="Assets\Logo\" />
     </ItemGroup>
 

@@ -850,6 +850,11 @@
     <String key="HaslerSession">Relace</String>
     <String key="HaslerSessionTapes">pásek: {0}</String>
     <String key="HaslerSessionRunning">běží</String>
+    <String key="HaslerBlackBox">Černá skříňka</String>
+    <String key="HaslerBlackBoxTip">Celá relace na mapě: jízda oproti AI, povely, návěstidla, kabina</String>
+    <String key="HaslerClickBlackBox">klikněte na pásku: černá skříňka v tom okamžiku</String>
+    <String key="HaslerSessionNoTape">Tato relace nemá pásku, jen černou skříňku.</String>
+    <String key="HaslerSessionEmpty">Tato relace zatím nemá pásku ani černou skříňku.</String>
     <String key="WarehouseSaved">Ve skladu: {0}</String>
     <String key="WarehouseNothingToAdd">Vyberte soupravu s vozidly</String>
     <String key="GfxGroupLevelTip">Úroveň jen pro tuto část grafiky</String>

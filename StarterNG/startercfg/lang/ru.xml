@@ -850,6 +850,11 @@
     <String key="HaslerSession">Сеанс</String>
     <String key="HaslerSessionTapes">лент: {0}</String>
     <String key="HaslerSessionRunning">идёт</String>
+    <String key="HaslerBlackBox">Чёрный ящик</String>
+    <String key="HaslerBlackBoxTip">Вся сессия на карте: езда по сравнению с ИИ, команды, светофоры, кабина</String>
+    <String key="HaslerClickBlackBox">щёлкните по ленте: чёрный ящик в этот момент</String>
+    <String key="HaslerSessionNoTape">В этом сеансе нет ленты, только чёрный ящик.</String>
+    <String key="HaslerSessionEmpty">В этом сеансе пока нет ни ленты, ни чёрного ящика.</String>
     <String key="WarehouseSaved">На складе: {0}</String>
     <String key="WarehouseNothingToAdd">Выберите состав с транспортом</String>
     <String key="GfxGroupLevelTip">Уровень только для этой части графики</String>
