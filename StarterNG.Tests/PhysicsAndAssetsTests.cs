@@ -66,6 +66,19 @@ public class PhysicsAndAssetsTests
     }
 
     [Fact]
+    public void A_dot_in_the_model_name_is_part_of_the_name()
+    {
+        // As in the game: cd/9-107_v1 holds 9-107.13.fiz, 9-107.6.fiz and more.
+        var installation = new TestInstallation(new InMemoryFileSystem()
+            .WithFile(Fiz("cd", "9-107_v1", "9-107.13"), "Load: LoadAccepted=coal MaxLoad=58")
+            .WithFile(Fiz("cd", "9-107_v1", "9-107.6"), "Load: LoadAccepted=coal MaxLoad=55"));
+
+        Assert.Equal(58, installation.Physics.For("cd/9-107_v1/", "9-107.13")!.MaxLoad);
+        Assert.Equal(55, installation.Physics.For("cd/9-107_v1/", "9-107.6")!.MaxLoad);
+        Assert.Equal(58, installation.Physics.For("cd/9-107_v1/", "9-107.13.e3d")!.MaxLoad);
+    }
+
+    [Fact]
     public void A_dumb_variant_stands_in_when_the_model_has_no_fiz_of_its_own()
     {
         var installation = new TestInstallation(new InMemoryFileSystem()
