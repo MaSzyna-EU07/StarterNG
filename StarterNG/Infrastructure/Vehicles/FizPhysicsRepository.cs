@@ -51,7 +51,7 @@ public sealed class FizPhysicsRepository : IPhysicsRepository
         if (string.IsNullOrEmpty(model))
             return null;
 
-        string name = Path.GetFileNameWithoutExtension(model);
+        string name = Path.GetFileName(model);
         if (name.Length == 0)
             return null;
 
@@ -60,7 +60,10 @@ public sealed class FizPhysicsRepository : IPhysicsRepository
         if (_cache.TryGetValue(key, out var cached))
             return cached;
 
-        var physics = Read(folder, name);
+        // The name as written first: in 9-107.13 the dot is part of the name, not an extension.
+        string bare = Path.GetFileNameWithoutExtension(name);
+        var physics = Read(folder, name)
+            ?? (bare.Length > 0 && bare != name ? Read(folder, bare) : null);
         _cache[key] = physics;
         return physics;
     }
