@@ -13,6 +13,6 @@ public static class AppInfo
 #if DEBUG
         text += " (DEBUG)";
 #endif
-        return text + " public beta";
+        return text;
     }
 }
