@@ -772,7 +772,6 @@
     <String key="SyntaxVehicleOutsideTrainset">Vehicle {0} stands outside a trainset: header missing?</String>
     <String key="SyntaxNotANumber">{0}: “{1}” instead of a number</String>
     <String key="SyntaxMissingInclude">File {1} not found (include)</String>
-    <String key="SyntaxIncludeLetterCase">File {1} is on disk as {0}: the Linux eu07 will not load it</String>
     <String key="SyntaxIncludeNotClosed">include {1} without end</String>
     <String key="SyntaxTrainsetUnreadable">Trainset {0} could not be read</String>
     <String key="SyntaxVehicleUnreadable">Vehicle {0} could not be read</String>

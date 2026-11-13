@@ -182,6 +182,20 @@ public class TimetableLocatorTests
         Assert.NotNull(new TimetableLocator(files).Resolve(scenery, "r1.txt"));
     }
 
+    [Theory]
+    [InlineData(@"rozklady\tgs3657")]
+    [InlineData("ROZKLADY/TGS3657.TXT")]
+    public void A_timetable_named_in_other_case_or_with_backslashes_is_found_as_on_disk(string name)
+    {
+        var files = new InMemoryFileSystem(caseSensitive: true)
+            .WithFile(TestInstallation.At("scenery", "Braniewo.scn"), "//$n Braniewo")
+            .WithFile(TestInstallation.At("scenery", "Rozklady", "TGS3657.txt"), "rozkład");
+        var scenery = Assert.Single(new TestInstallation(files).Sceneries.LoadAll());
+
+        Assert.Equal(TestInstallation.At("scenery", "Rozklady", "TGS3657.txt"),
+                     new TimetableLocator(files).Resolve(scenery, name));
+    }
+
     [Fact]
     public void The_formats_none_and_a_missing_file_both_resolve_to_nothing()
     {
@@ -194,4 +208,27 @@ public class TimetableLocatorTests
         Assert.Null(locator.Resolve(scenery, "nieistniejacy"));
         Assert.Null(locator.Resolve(scenery, null));
     }
+}
+
+public class AttachmentLocatorTests
+{
+    [Theory]
+    [InlineData(@"scenery\Braniewo\opis.PDF")]
+    [InlineData("SCENERY/braniewo/Opis.pdf")]
+    public void An_attachment_named_in_other_case_is_found_as_on_disk(string named)
+    {
+        var installation = new TestInstallation(new InMemoryFileSystem(caseSensitive: true)
+            .WithFile(TestInstallation.At("scenery", "Braniewo", "Opis.pdf"), "%PDF"));
+
+        Assert.Equal(TestInstallation.At("scenery", "Braniewo", "Opis.pdf"),
+                     new AttachmentLocator(installation.Files, installation.Paths)
+                         .Resolve(new SceneryAttachment { FilePath = named }));
+    }
+
+    [Theory]
+    [InlineData("scenery/brak.pdf")]
+    [InlineData("")]
+    public void An_attachment_that_is_not_there_is_not_found(string named) =>
+        Assert.Null(new AttachmentLocator(new InMemoryFileSystem(caseSensitive: true), new TestInstallation().Paths)
+                        .Resolve(new SceneryAttachment { FilePath = named }));
 }

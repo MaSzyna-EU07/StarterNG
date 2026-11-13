@@ -22,6 +22,20 @@ public sealed class PhysicalFileSystemTests : IDisposable
     }
 
     [Fact]
+    public void A_pattern_lists_names_in_any_letter_case()
+    {
+        Directory.CreateDirectory(Path.Combine(_root, "PKP", "EP09"));
+        foreach (string name in new[] { "Braniewo.SCN", "kato.scn", "notes.txt", Path.Combine("PKP", "EP09", "EP09.FIZ"),
+                                        Path.Combine("PKP", "EP09", "ep09dumb.fiz") })
+            File.WriteAllText(Path.Combine(_root, name), "");
+
+        Assert.Equal(new[] { "Braniewo.SCN", "kato.scn" },
+                     _files.GetFiles(_root, "*.scn").Select(Path.GetFileName).Order(StringComparer.Ordinal));
+        Assert.Equal(new[] { "EP09.FIZ", "ep09dumb.fiz" },
+                     _files.GetFilesRecursive(_root, "*.fiz").Select(Path.GetFileName).Order(StringComparer.Ordinal));
+    }
+
+    [Fact]
     public void An_atomic_write_that_cannot_finish_leaves_what_stood_there()
     {
         string path = Path.Combine(_root, "file.json");

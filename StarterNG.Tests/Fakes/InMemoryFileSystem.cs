@@ -97,6 +97,8 @@ public sealed class InMemoryFileSystem : IFileSystem
         return this;
     }
 
+    public bool IgnoresCase => _comparison == StringComparison.OrdinalIgnoreCase;
+
     public bool FileExists(string path) => _files.ContainsKey(Normalize(path));
 
     /// <summary>A link counts as the directory it points at, as the disk has it.</summary>
@@ -273,6 +275,9 @@ public sealed class InMemoryFileSystem : IFileSystem
                 return;
             slash = key.LastIndexOf('/');
         }
+        // An absolute Unix path's parent is the root, "/", which normalises to "".
+        if (slash == 0)
+            _directories.Add("");
     }
 
     private static string Normalize(string path) =>

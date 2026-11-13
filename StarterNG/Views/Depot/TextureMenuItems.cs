@@ -1,8 +1,10 @@
 using System.IO;
 using Avalonia.Controls;
 using Avalonia.Input.Platform;
+using StarterNG.Application;
 using StarterNG.Domain;
 using StarterNG.Domain.Vehicles;
+using StarterNG.Infrastructure.Vehicles;
 
 namespace StarterNG.Views;
 
@@ -17,13 +19,7 @@ internal static class TextureMenuItems
             if (TopLevel.GetTopLevel(owner)?.Clipboard is { } clipboard)
                 await clipboard.SetTextAsync(Consist.Base(texture.Skinfile));
         });
-        menu.AddItem(App.Loc["OpenTextureFolder"], () => Infrastructure.Diagnostics.OpenOrReport(FolderOf(texture)));
-    }
-
-    private static string FolderOf(VehicleTexture texture)
-    {
-        string dir = Path.Combine(Directory.GetCurrentDirectory(), "dynamic",
-            texture.Directory.Replace('/', Path.DirectorySeparatorChar).TrimEnd('\\', '/'));
-        return Directory.Exists(dir) ? dir : Path.Combine(Directory.GetCurrentDirectory(), texture.Directory);
+        menu.AddItem(App.Loc["OpenTextureFolder"], () => Infrastructure.Diagnostics.OpenOrReport(
+            Path.GetFullPath(TextureFolder.Of(AppServices.Current.Files, AppServices.Current.Paths, texture))));
     }
 }
