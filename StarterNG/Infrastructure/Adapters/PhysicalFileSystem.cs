@@ -91,8 +91,18 @@ public sealed class PhysicalFileSystem : IFileSystem
     public void CopyFile(string sourcePath, string destinationPath, bool overwrite) =>
         File.Copy(sourcePath, destinationPath, overwrite);
 
+    // The pattern matches names in any letter case, as on Windows: the game's data,
+    // made there, has X.SCN as well as x.scn.
     public IReadOnlyList<string> GetFiles(string path, string searchPattern = "*") =>
-        Directory.Exists(path) ? Directory.GetFiles(path, searchPattern) : Array.Empty<string>();
+        Directory.Exists(path)
+            ? Directory.GetFiles(path, searchPattern, new EnumerationOptions
+            {
+                IgnoreInaccessible = false,
+                AttributesToSkip = 0,
+                MatchType = MatchType.Win32,
+                MatchCasing = MatchCasing.CaseInsensitive
+            })
+            : Array.Empty<string>();
 
     // A folder it may not enter costs what is in it, not the whole listing.
     public IReadOnlyList<string> GetFilesRecursive(string path, string searchPattern) =>
@@ -102,7 +112,8 @@ public sealed class PhysicalFileSystem : IFileSystem
                 RecurseSubdirectories = true,
                 IgnoreInaccessible = true,
                 AttributesToSkip = 0,
-                MatchType = MatchType.Win32
+                MatchType = MatchType.Win32,
+                MatchCasing = MatchCasing.CaseInsensitive
             })
             : Array.Empty<string>();
 
