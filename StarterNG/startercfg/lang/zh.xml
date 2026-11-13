@@ -923,7 +923,7 @@
     <String key="Cmd.nearestcarcouplingdisconnect">解钩（最近车钩）</String>
     <String key="Cmd.nearestcarcoupleradapterattach">安装转换车钩</String>
     <String key="Cmd.nearestcarcoupleradapterremove">拆除转换车钩</String>
-    <String key="Cmd.occupiedcarcouplingdisconnect">本人驾驶室侧解钩</String>
+    <String key="Cmd.occupiedcarcouplingdisconnect">前端连挂器解挂</String>
     <String key="Cmd.doortoggleleft">左侧车门开/关</String>
     <String key="Cmd.doortoggleright">右侧车门开/关</String>
     <String key="Cmd.doorpermitleft">允许开启左侧车门</String>
