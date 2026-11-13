@@ -273,7 +273,7 @@ public class ScenerySyntaxTests
             include koniec.scm
             """;
 
-        var scenery = TestScenery.Parser().Parse("scenery/x.scn", scn, _ => true);
+        var scenery = TestScenery.Parser().Parse("scenery/x.scn", scn, new SceneryFileLookup(_ => true));
 
         Assert.Empty(scenery.Faults);
         Assert.Equal("td/rozklad", Assert.Single(scenery.Trainsets).Name);
@@ -326,7 +326,7 @@ public class ScenerySyntaxTests
             endoptional
             """;
 
-        var faults = TestScenery.Parser().Parse("scenery/x.scn", scn, name => name is "tory.scm" or "budynek.inc").Faults;
+        var faults = TestScenery.Parser().Parse("scenery/x.scn", scn, new SceneryFileLookup(name => name is "tory.scm" or "budynek.inc")).Faults;
 
         Assert.Equal((SceneryFaultKind.MissingInclude, "x.scn", 2, null, "brak.scm"), Seen(Assert.Single(faults)));
     }
@@ -378,4 +378,58 @@ public class ScenerySyntaxTests
         Assert.Equal(sbt, scenery.HasCompanionTimetable);
         Assert.Equal(sbt ? 0 : 1, scenery.Faults.Count);
     }
+
+    private static IReadOnlyList<SceneryFault> TerrainFaults(string scn, bool sbt, params string[] onDisk)
+    {
+        var files = new InMemoryFileSystem(caseSensitive: true).WithLegacyFile("game/scenery/Mapa.scn", scn);
+        if (sbt)
+            files.WithFile("game/scenery/mapa.sbt", "EU07");
+        foreach (string file in onDisk)
+            files.WithFile("game/scenery/" + file, "");
+        return TestScenery.Repository(files).Load("game/scenery/Mapa.scn")!.Faults;
+    }
+
+    [Theory]
+    [InlineData("Teren/Mapa.txtf")]
+    [InlineData("teren/mapa.btf")]
+    [InlineData("TEREN/MAPA.BTF")]
+    public void A_terrain_file_found_as_text_or_binary_is_no_fault(string onDisk) =>
+        Assert.Empty(TerrainFaults("terrain teren/mapa.txtf endterrain\nFirstInit\n", sbt: false, onDisk));
+
+    [Fact]
+    public void A_terrain_file_missing_both_ways_is_reported_but_an_sbt_named_with_it_is_not()
+    {
+        var faults = TerrainFaults("// teren\nterrain teren/mapa.btf teren/stara.sbt\nendterrain\nFirstInit\n", sbt: false);
+
+        Assert.Equal((SceneryFaultKind.MissingTerrainFile, "Mapa.scn", 2, null, "teren/mapa.btf"),
+                     Seen(Assert.Single(faults)));
+    }
+
+    [Fact]
+    public void A_terrain_file_takes_the_place_of_the_sbt_so_terrain_includes_are_read_after_all()
+    {
+        var faults = TerrainFaults("terrain teren/mapa.txtf endterrain\ninclude nmt/brak_ter.scm end\nFirstInit\n",
+                                   sbt: true, "teren/mapa.txtf");
+
+        Assert.Equal((SceneryFaultKind.MissingInclude, "Mapa.scn", 2, null, "nmt/brak_ter.scm"),
+                     Seen(Assert.Single(faults)));
+    }
+
+    [Theory]
+    [InlineData("include nmt/brak_ter.scm end\nterrain teren/mapa.txtf endterrain\nFirstInit\n", 2)]
+    [InlineData("node -1 0 t1 triangles trawa\n0 0 0 0 0 0 0 0 end\nendtri\nterrain teren/mapa.txtf endterrain\nFirstInit\n", 4)]
+    [InlineData("node -1 -1 t1 model 0 0 0 0 teren.t3d none endmodel\nterrain teren/mapa.txtf endterrain\nFirstInit\n", 2)]
+    [InlineData("FirstInit\nterrain teren/mapa.txtf endterrain\n", 2)]
+    public void A_terrain_file_behind_what_the_sbt_already_gave_is_passed_over(string scn, int line)
+    {
+        var faults = TerrainFaults(scn, sbt: true, "teren/mapa.txtf");
+
+        Assert.Equal((SceneryFaultKind.TerrainFileBehindSbt, "Mapa.scn", line, null, "teren/mapa.txtf"),
+                     Seen(Assert.Single(faults)));
+    }
+
+    [Fact]
+    public void A_model_not_of_the_terrain_leaves_the_sbt_free_to_give_way() =>
+        Assert.Empty(TerrainFaults("node 500 0 m1 model 0 0 0 0 dom.t3d none endmodel\nterrain teren/mapa.txtf endterrain\nFirstInit\n",
+                                   sbt: true, "teren/mapa.txtf"));
 }

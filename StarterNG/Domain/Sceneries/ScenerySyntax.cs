@@ -5,6 +5,14 @@ using System.Linq;
 
 namespace StarterNG.Domain.Sceneries;
 
+/// <summary>What the simulator finds of the files a scenery names.</summary>
+/// <param name="Opens">Whether it opens a file of the scenery folder, named as the scenery names it.</param>
+/// <param name="HasSbt">
+/// Whether the scenery has its own .sbt: while that is in use, its terrain includes
+/// (<c>_ter.scm</c>) and terrain geometry are passed over, the .sbt holding them.
+/// </param>
+public sealed record SceneryFileLookup(Func<string, bool> Opens, bool HasSbt = false);
+
 /// <summary>
 /// Goes through a scenery's text for the parts the starter reads - trainsets,
 /// vehicles, includes - finding where each trainset and loose vehicle is, and
@@ -29,17 +37,17 @@ public static class ScenerySyntax
 
     /// <param name="text">The scenery's text, its includes put in place.</param>
     /// <param name="file">The scenery's file name, for faults in its own text.</param>
-    /// <param name="opensInclude">
-    /// Whether the simulator opens an include, named as the include names it; null
-    /// leaves includes unchecked.
+    /// <param name="files">
+    /// What the simulator finds of the files the scenery names - includes and terrain
+    /// files; null leaves them unchecked.
     /// </param>
-    public static Result Scan(string text, string file, Func<string, bool>? opensInclude = null)
+    public static Result Scan(string text, string file, SceneryFileLookup? files = null)
     {
         string code = SceneryCode.Mask(text, out int unclosed);
         var tokens = SceneryCode.Tokens(code);
         var lines = new SceneryLines(text, file);
 
-        var simulator = new Reading(tokens, lines, opensInclude, asSimulator: true);
+        var simulator = new Reading(tokens, lines, files, asSimulator: true);
         simulator.Run();
         var author = new Reading(tokens, lines, null, asSimulator: false);
         author.Run();
@@ -110,8 +118,14 @@ public static class ScenerySyntax
     }
 
     private sealed class Reading(
-        List<SceneryCode.Token> tokens, SceneryLines lines, Func<string, bool>? opensInclude, bool asSimulator)
+        List<SceneryCode.Token> tokens, SceneryLines lines, SceneryFileLookup? files, bool asSimulator)
     {
+        // Whether the scenery's .sbt is in use, and whether the simulator passed over
+        // something of the text on its account already - or got past FirstInit - after
+        // which a terrain file can no longer take its place.
+        private bool _sbt = files?.HasSbt ?? false;
+        private bool _sbtTaken;
+
         public readonly List<(int Start, int End, string Name)> Trainsets = new();
         public readonly List<(int, int)> Loose = new();
         public readonly List<SceneryFault> Faults = new();
@@ -156,12 +170,20 @@ public static class ScenerySyntax
                 {
                     // Not a vehicle: only its kind is stepped over, what follows is its own.
                     if (i + 4 >= tokens.Count || !tokens[i + 4].Is("dynamic"))
+                    {
+                        if (_sbt && TerrainGeometry(i))
+                            _sbtTaken = true;
                         i += 4;
+                    }
                     else
                         i = Vehicle(i);
                 }
                 else if (token.Is("include"))
                     i = Include(i);
+                else if (token.Is("terrain") && asSimulator)
+                    i = Terrain(i);
+                else if (token.Is("firstinit"))
+                    _sbtTaken |= _sbt;
             }
 
             if (_open is { } last)
@@ -369,8 +391,13 @@ public static class ScenerySyntax
                 return stop < tokens.Count && tokens[stop].Is("end") ? stop : stop - 1;
             }
 
-            if (opensInclude is not null && Plain(name) && !opensInclude(name))
-                Fault(SceneryFaultKind.MissingInclude, token.Index, token: name);
+            if (files is not null && Plain(name))
+            {
+                if (_sbt && SimulatorNames.Lower(name).Contains("_ter.scm"))
+                    _sbtTaken = true;
+                else if (!files.Opens(name))
+                    Fault(SceneryFaultKind.MissingInclude, token.Index, token: name);
+            }
 
             // The simulator takes its parameters up to the word "end", written just so,
             // whatever comes before it.
@@ -381,6 +408,52 @@ public static class ScenerySyntax
             if (Lost(at + 1, last) is not null)
                 Fault(SceneryFaultKind.IncludeNotClosed, token.Index, token: name, swallowed: (at + 1, last));
             return last;
+        }
+
+        /// <summary>
+        /// A terrain directive: the files it names up to <c>endterrain</c>. Of a terrain
+        /// file (.txtf, .btf) the simulator takes the text or the binary file of the same
+        /// name, whichever is there; an .sbt it passes over quietly when it cannot use it.
+        /// </summary>
+        private int Terrain(int at)
+        {
+            int end = at + 1;
+            while (end < tokens.Count && !tokens[end].Is("endterrain"))
+                end++;
+
+            for (int named = at + 1; named < end && files is not null; named++)
+            {
+                string name = tokens[named].Text;
+                string lower = SimulatorNames.Lower(name);
+                if (!Plain(name) || !(lower.EndsWith(".txtf") || lower.EndsWith(".btf")))
+                    continue;
+
+                string stem = name[..name.LastIndexOf('.')];
+                if (!files.Opens(stem + ".txtf") && !files.Opens(stem + ".btf"))
+                    Fault(SceneryFaultKind.MissingTerrainFile, tokens[named].Index, token: name);
+                else if (_sbtTaken)
+                    Fault(SceneryFaultKind.TerrainFileBehindSbt, tokens[named].Index, token: name);
+                else
+                    // The .sbt gives way: the terrain includes from here on are read after all.
+                    _sbt = false;
+            }
+            return Math.Min(end, tokens.Count - 1);
+        }
+
+        /// <summary>
+        /// Whether the node starting at the given word is terrain geometry, which an .sbt
+        /// in use holds in its place: triangles or lines, or a model shown from any distance.
+        /// </summary>
+        private bool TerrainGeometry(int at)
+        {
+            if (at + 4 >= tokens.Count)
+                return false;
+            var kind = tokens[at + 4];
+            if (kind.Is("model"))
+                return double.TryParse(tokens[at + 2].Text, NumberStyles.Float, CultureInfo.InvariantCulture,
+                                       out double nearest) && nearest < 0;
+            return kind.Is("triangles") || kind.Is("triangle_strip") || kind.Is("triangle_fan") ||
+                   kind.Is("lines") || kind.Is("line_strip") || kind.Is("line_loop");
         }
 
         // A vehicle with no trainset around it, written as within one - offset, crew,
