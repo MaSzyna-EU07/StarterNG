@@ -144,7 +144,7 @@ public sealed class StartSimulation
         if (saveSettings)
             _settings.CaptureAndSave();
 
-        if (_settings.Settings.PhysicsLog)
+        if (_settings.Settings.PhysicsLog || _settings.Settings.BlackBox)
             _tapes.RecordLaunch(scenery, trainset, freeFly ? null : vehicle);
 
         string[] arguments = freeFly || string.IsNullOrEmpty(vehicle)

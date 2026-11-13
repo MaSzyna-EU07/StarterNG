@@ -516,8 +516,10 @@
     <String key="BreakingPantographPossibilityDesc">Disabling protects the pantograph from breaking on faulty overhead line geometry.</String>
     <String key="PowerOverheadLineOnly">Powered only under overhead line</String>
     <String key="PowerOverheadLineOnlyDesc">When disabled, a raised pantograph can power the vehicle even without touching the wire.</String>
-    <String key="SaveSpeedometerTapes">Save physics parameters log</String>
-    <String key="SaveSpeedometerTapesDesc">Writes a detailed trip log to the physicslog/ folder.</String>
+    <String key="SaveBlackBox">Record the black box and the speedometer tapes</String>
+    <String key="SaveBlackBoxDesc">Records the session to one file in the physicslog/ folder and, when the simulator closes, writes the tapes (.dat) of the vehicles you were in.</String>
+    <String key="SaveSpeedometerTapes">Save the physics log of every vehicle</String>
+    <String key="SaveSpeedometerTapesDesc">Writes the log of every vehicle of the scenery to the physicslog/ folder as it runs, 20 times a second. For diagnostics: on a large scenery that is hundreds of open files.</String>
     <String key="SaveSimLogs">Save simulation log</String>
     <String key="KeepPrevLogs">Keep previous logs</String>
     <String key="KeepPrevLogsDesc">Creates a separate log file for each scenery instead of overwriting errors.txt.</String>
@@ -1073,6 +1075,7 @@
     <String key="HaslerTrain">train {0}</String>
     <String key="HaslerRoleDrivenEarlier">Driven earlier</String>
     <String key="HaslerLiveIdle">Works while a session started from the starter runs.</String>
+    <String key="HaslerLiveAtClose">The black box writes the tapes when the simulator closes. Live works with the physics log.</String>
     <String key="HaslerLogOff">The simulator's log is off: the starter does not see changes of vehicle.</String>
     <String key="HaslerLogEnable">Turn the log on</String>
     <String key="HaslerRoleStartedIn">Vehicle at the start</String>

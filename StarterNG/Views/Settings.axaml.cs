@@ -329,6 +329,7 @@ public partial class Settings : UserControl, ISettingsCapture
         WhileLoading(() =>
         {
             SpeedometerTapesCb.IsChecked = AppServices.Current.Settings.PhysicsLog;
+            BlackBoxCb.IsChecked = AppServices.Current.Settings.BlackBox;
             SimLogsCb.IsChecked = AppServices.Current.Settings.DebugLog;
         });
 
@@ -441,6 +442,7 @@ public partial class Settings : UserControl, ISettingsCapture
         PantographBreakCb.IsChecked = s.EnableTraction;
         OverheadOnlyCb.IsChecked = s.LiveTraction;
         SpeedometerTapesCb.IsChecked = s.PhysicsLog;
+        BlackBoxCb.IsChecked = s.BlackBox;
         SimLogsCb.IsChecked = s.DebugLog;
         KeepLogsCb.IsChecked = s.MultipleLogs;
         DisplaySimulationCb.IsChecked = s.DisplaySimulation;
@@ -874,6 +876,7 @@ public partial class Settings : UserControl, ISettingsCapture
         s.EnableTraction = IsChecked(PantographBreakCb);
         s.LiveTraction = IsChecked(OverheadOnlyCb);
         s.PhysicsLog = IsChecked(SpeedometerTapesCb);
+        s.BlackBox = IsChecked(BlackBoxCb);
         s.DebugLog = IsChecked(SimLogsCb);
         s.MultipleLogs = IsChecked(KeepLogsCb);
         s.DisplaySimulation = IsChecked(DisplaySimulationCb);

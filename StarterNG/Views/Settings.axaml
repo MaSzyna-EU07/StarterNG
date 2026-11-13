@@ -553,6 +553,9 @@
                                     <ctl:SettingRow ConfigKey="livetraction" Description="{Binding [PowerOverheadLineOnlyDesc], Source={x:Static starterNg:App.Loc}}">
                                         <CheckBox x:Name="OverheadOnlyCb" Content="{Binding [PowerOverheadLineOnly], Source={x:Static starterNg:App.Loc}}" />
                                     </ctl:SettingRow>
+                                    <ctl:SettingRow Description="{Binding [SaveBlackBoxDesc], Source={x:Static starterNg:App.Loc}}" ConfigKey="blackbox">
+                                        <CheckBox x:Name="BlackBoxCb" Content="{Binding [SaveBlackBox], Source={x:Static starterNg:App.Loc}}" />
+                                    </ctl:SettingRow>
                                     <ctl:SettingRow Description="{Binding [SaveSpeedometerTapesDesc], Source={x:Static starterNg:App.Loc}}" ConfigKey="physicslog">
                                         <CheckBox x:Name="SpeedometerTapesCb" Content="{Binding [SaveSpeedometerTapes], Source={x:Static starterNg:App.Loc}}" />
                                     </ctl:SettingRow>

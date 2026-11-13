@@ -157,6 +157,9 @@ public sealed class SettingsSerializer
         s.EnableTraction = c.GetBool("enabletraction", true);
         s.LiveTraction = c.GetBool("livetraction", true);
         s.PhysicsLog = c.GetBool("physicslog", false);
+        // the simulator records the black box along with the physics log when the ini says nothing of it
+        s.BlackBoxInIni = c.Has("blackbox");
+        s.BlackBox = s.BlackBoxInIni ? c.GetBool("blackbox", false) : s.PhysicsLog;
         int debugLog = c.GetInt("debuglog", 3);
         s.DebugLog = (debugLog & 1) != 0;
         s.DebugLogVisible = (debugLog & 2) != 0;
@@ -370,6 +373,10 @@ public sealed class SettingsSerializer
         c.SetBool("enabletraction", s.EnableTraction);
         c.SetBool("livetraction", s.LiveTraction);
         c.SetBool("physicslog", s.PhysicsLog);
+        // written where it says more than the physics log, or where the file has it already: an ini without it
+        // stays so, and a line written once and no longer saying more goes away on the next save
+        if (s.BlackBoxInIni || s.BlackBox != s.PhysicsLog)
+            c.SetBool("blackbox", s.BlackBox);
         c.SetInt("debuglog",
             (s.DebugLog ? 1 : 0) | (s.DebugLogVisible ? 2 : 0) | s.DebugLogExtraBits);
         c.SetBool("multiplelogs", s.MultipleLogs);

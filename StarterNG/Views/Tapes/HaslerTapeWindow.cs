@@ -163,7 +163,7 @@ public sealed class HaslerTapeWindow : Window
             Content = _view
         };
 
-        _recordingOff = Strip("HaslerRecordingOff", "HaslerRecordingEnable", settings => settings.PhysicsLog = true);
+        _recordingOff = Strip("HaslerRecordingOff", "HaslerRecordingEnable", settings => settings.BlackBox = true);
         _logOff = Strip("HaslerLogOff", "HaslerLogEnable", settings => settings.DebugLog = true);
 
         var folder = ToolButton(App.Loc["HaslerOpenFolder"]);
@@ -229,14 +229,18 @@ public sealed class HaslerTapeWindow : Window
     private void ShowWhatIsKnown()
     {
         var settings = AppServices.Current.Settings;
-        _recordingOff.IsVisible = !settings.PhysicsLog;
-        _logOff.IsVisible = settings.PhysicsLog && !settings.DebugLog;
+        bool recording = settings.PhysicsLog || settings.BlackBox;
+        _recordingOff.IsVisible = !recording;
+        _logOff.IsVisible = recording && !settings.DebugLog;
 
-        bool canFollow = _running && _tapes.DrivenVehicle is not null;
+        // the black box alone writes the tapes when the simulator closes: only the physics log grows while it runs
+        bool canFollow = _running && settings.PhysicsLog && _tapes.DrivenVehicle is not null;
         _live.IsEnabled = canFollow;
         if (!canFollow)
             _live.IsChecked = false;
-        ToolTip.SetTip(_live, App.Loc[canFollow ? "HaslerLiveTip" : "HaslerLiveIdle"]);
+        ToolTip.SetTip(_live, App.Loc[canFollow ? "HaslerLiveTip"
+                                      : _running && !settings.PhysicsLog ? "HaslerLiveAtClose"
+                                      : "HaslerLiveIdle"]);
     }
 
     private DockPanel Strip(string textKey, string buttonKey, Action<SimulatorSettings> enable)

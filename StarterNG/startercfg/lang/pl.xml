@@ -516,8 +516,10 @@
     <String key="BreakingPantographPossibilityDesc">Wyłączenie chroni pantograf przed uszkodzeniem przy błędnej geometrii sieci.</String>
     <String key="PowerOverheadLineOnly">Zasilanie tylko pod siecią trakcyjna</String>
     <String key="PowerOverheadLineOnlyDesc">Gdy wyłączone, podniesiony pantograf zasila pojazd nawet bez kontaktu z drutem.</String>
-    <String key="SaveSpeedometerTapes">Zapisuj log parametrów fizycznych</String>
-    <String key="SaveSpeedometerTapesDesc">Zapisuje szczegółowy log jazdy do folderu physicslog/.</String>
+    <String key="SaveBlackBox">Zapisuj czarną skrzynkę i taśmy prędkościomierza</String>
+    <String key="SaveBlackBoxDesc">Nagrywa przejazd do jednego pliku w folderze physicslog/, a po zamknięciu symulatora zapisuje taśmy (.dat) pojazdów, w których byłeś.</String>
+    <String key="SaveSpeedometerTapes">Zapisuj log parametrów fizycznych wszystkich pojazdów</String>
+    <String key="SaveSpeedometerTapesDesc">Zapisuje na bieżąco log każdego pojazdu scenerii do folderu physicslog/, 20 razy na sekundę. Do diagnostyki: na dużej scenerii to setki otwartych plików.</String>
     <String key="SaveSimLogs">Zapisuj log z symulacji</String>
     <String key="KeepPrevLogs">Zachowuj poprzednie logi</String>
     <String key="KeepPrevLogsDesc">Tworzy osobny plik logu dla każdej scenerii zamiast nadpisywać errors.txt.</String>
@@ -895,6 +897,7 @@
     <String key="HaslerTrain">pociąg {0}</String>
     <String key="HaslerRoleDrivenEarlier">Prowadzony wcześniej</String>
     <String key="HaslerLiveIdle">Działa, gdy trwa sesja uruchomiona ze Startera.</String>
+    <String key="HaslerLiveAtClose">Czarna skrzynka zapisuje taśmy po zamknięciu symulatora. Na żywo działa z logiem parametrów fizycznych.</String>
     <String key="HaslerLogOff">Log symulatora jest wyłączony: Starter nie widzi przesiadek.</String>
     <String key="HaslerLogEnable">Włącz log</String>
     <String key="HaslerRoleStartedIn">Pojazd ze startu</String>

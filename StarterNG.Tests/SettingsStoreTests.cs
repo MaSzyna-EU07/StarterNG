@@ -1302,4 +1302,86 @@ public class SettingsStoreTests
         Assert.False(store.LoadFailed);
         Assert.Equal(60, store.Settings.FieldOfView);
     }
+
+    [Theory]
+    [InlineData("physicslog yes\n", true)]
+    [InlineData("physicslog no\n", false)]
+    [InlineData("physicslog yes\nblackbox no\n", false)]
+    [InlineData("physicslog no\nblackbox yes\n", true)]
+    public void The_black_box_goes_with_the_physics_log_unless_the_ini_says_otherwise(string ini, bool recorded)
+    {
+        var installation = WithHome(new InMemoryFileSystem().WithFile(UserIni, ini));
+
+        installation.SettingsStore.Load();
+
+        Assert.Equal(recorded, installation.SettingsStore.Settings.BlackBox);
+    }
+
+    [Fact]
+    public void Tapes_turned_on_write_the_black_box_and_leave_the_physics_log_off()
+    {
+        var installation = WithHome(new InMemoryFileSystem().WithFile(UserIni, "physicslog no\n"));
+        installation.SettingsStore.Load();
+        installation.SettingsStore.Settings.BlackBox = true;
+
+        installation.SettingsStore.Save();
+
+        Assert.Equal("blackbox yes", LineFor(installation, "blackbox"));
+        Assert.Equal("physicslog no", LineFor(installation, "physicslog"));
+    }
+
+    [Fact]
+    public void A_black_box_that_says_no_more_than_the_physics_log_adds_no_line()
+    {
+        var installation = WithHome(new InMemoryFileSystem().WithFile(UserIni, "physicslog yes\n"));
+        installation.SettingsStore.Load();
+        installation.SettingsStore.Settings.Width = 1600;
+
+        installation.SettingsStore.Save();
+
+        Assert.Null(LineFor(installation, "blackbox"));
+    }
+
+    [Theory]
+    [InlineData("physicslog yes\nblackbox yes\n")]
+    [InlineData("physicslog no\nblackbox yes\n")]
+    public void A_black_box_line_of_the_file_says_no_once_the_box_is_off(string ini)
+    {
+        var installation = WithHome(new InMemoryFileSystem().WithFile(UserIni, ini));
+        installation.SettingsStore.Load();
+        installation.SettingsStore.Settings.BlackBox = false;
+        installation.SettingsStore.Settings.PhysicsLog = false;
+
+        installation.SettingsStore.Save();
+
+        Assert.Equal("blackbox no", LineFor(installation, "blackbox"));
+        Assert.Equal("physicslog no", LineFor(installation, "physicslog"));
+    }
+
+    [Fact]
+    public void The_physics_log_turned_off_keeps_the_tapes_it_brought()
+    {
+        // an ini of before the black box had a key: the tapes came with the physics log
+        var installation = WithHome(new InMemoryFileSystem().WithFile(UserIni, "physicslog yes\n"));
+        installation.SettingsStore.Load();
+        installation.SettingsStore.Settings.PhysicsLog = false;
+
+        installation.SettingsStore.Save();
+
+        Assert.Equal("blackbox yes", LineFor(installation, "blackbox"));
+    }
+
+    [Fact]
+    public void A_black_box_line_written_once_goes_away_when_it_says_no_more()
+    {
+        var installation = WithHome(new InMemoryFileSystem().WithFile(UserIni, "physicslog no\n"));
+        installation.SettingsStore.Load();
+        installation.SettingsStore.Settings.BlackBox = true;
+        installation.SettingsStore.Save();
+
+        installation.SettingsStore.Settings.BlackBox = false;
+        installation.SettingsStore.Save();
+
+        Assert.Null(LineFor(installation, "blackbox"));
+    }
 }

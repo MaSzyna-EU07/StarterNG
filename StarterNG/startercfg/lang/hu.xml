@@ -497,7 +497,9 @@
     <String key="PhysicsAccuracyIncreased">Növelt fizikai pontosság</String>
     <String key="BreakingPantographPossibility">Áramszedő törésének lehetősége</String>
     <String key="PowerOverheadLineOnly">Táplálás csak felsővezeték alatt</String>
-    <String key="SaveSpeedometerTapes">Sebességmérő-szalagok mentése</String>
+    <String key="SaveBlackBox">Fekete doboz és sebességmérő-szalagok rögzítése</String>
+    <String key="SaveBlackBoxDesc">A menetet egy fájlba rögzíti a physicslog/ mappában, és a szimulátor bezárásakor kiírja azoknak a járműveknek a szalagjait (.dat), amelyekben ültél.</String>
+    <String key="SaveSpeedometerTapes">Minden jármű fizikai naplójának mentése</String>
     <String key="SaveSimLogs">Szimulációs napló mentése</String>
     <String key="KeepPrevLogs">Korábbi naplók megtartása</String>
     <String key="DisplaySimulation">Szimuláció megjelenítése</String>
@@ -844,6 +846,7 @@
     <String key="HaslerTrain">vonat {0}</String>
     <String key="HaslerRoleDrivenEarlier">Korábban vezetett</String>
     <String key="HaslerLiveIdle">Az indítóból indított munkamenet alatt működik.</String>
+    <String key="HaslerLiveAtClose">A fekete doboz a szimulátor bezárásakor írja ki a szalagokat. Az élő nézet a fizikai naplóval működik.</String>
     <String key="HaslerLogOff">A szimulátor naplója ki van kapcsolva: az indító nem látja a járműváltást.</String>
     <String key="HaslerLogEnable">Napló bekapcsolása</String>
     <String key="HaslerRoleStartedIn">Indulási jármű</String>

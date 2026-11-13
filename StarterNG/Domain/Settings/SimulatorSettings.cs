@@ -133,6 +133,13 @@ public sealed class SimulatorSettings
     public bool EnableTraction = true;
     public bool LiveTraction = true;
     public bool PhysicsLog;
+    /// <summary>
+    /// The black box of the session, and with it the tapes (.dat) of the vehicles the player was in, written when the
+    /// simulator closes: the tapes without the log of every vehicle. With no entry of its own it goes with the physics log.
+    /// </summary>
+    public bool BlackBox;
+    /// <summary>Whether eu07.ini had a line of its own for the black box when read: it is kept saying what is wanted.</summary>
+    public bool BlackBoxInIni;
     public bool DebugLog = true;
     public bool MultipleLogs;
     public bool DisplaySimulation = true;
