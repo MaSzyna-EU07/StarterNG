@@ -29,13 +29,16 @@ public readonly record struct TapeSample(
 public sealed class HaslerTape
 {
     // Columns counted from the start; the security flag is counted from the end, past
-    // the command, which is free text. The header says m/s and MPa, the values are km/h and bar.
+    // the command, which is free text, as far from the end as the header has it: the
+    // simulator adds a new column at the end (the vehicle's speed, 2026-10). The header
+    // says m/s and MPa, the values are km/h and bar.
     private const int TimeColumn = 0;
     private const int VelocityColumn = 1;
     private const int BrakePressColumn = 8;
     private const int PipePressColumn = 9;
     private const int MotorCurrentColumn = 10;
-    private const int SecurityFromEnd = 6;
+    private const string SecurityHeading = "Security";
+    private const int SecurityFromEndOf25 = 6; // a log with no header to tell: the columns up to the water's temperature
     private const int MinimumColumns = 17;
 
     public HaslerTape(IReadOnlyList<TapeSample> samples)
@@ -77,9 +80,16 @@ public sealed class HaslerTape
         double distance = 0;
         TapeSample? previous = null;
 
+        int securityFromEnd = SecurityFromEndOf25;
         foreach (var raw in text.Split('\n'))
         {
             var columns = raw.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries);
+            int heading = Array.IndexOf(columns, SecurityHeading);
+            if (heading >= 0)
+            {
+                securityFromEnd = columns.Length - heading;
+                continue;
+            }
             if (columns.Length < MinimumColumns
                 || !Number(columns[TimeColumn], out double time)
                 || !Number(columns[VelocityColumn], out double velocity))
@@ -88,7 +98,7 @@ public sealed class HaslerTape
             Number(columns[BrakePressColumn], out double brake);
             Number(columns[PipePressColumn], out double pipe);
             Number(columns[MotorCurrentColumn], out double current);
-            bool security = columns[^SecurityFromEnd] == "1";
+            bool security = securityFromEnd <= columns.Length && columns[^securityFromEnd] == "1";
 
             double speed = Math.Abs(velocity);
             if (previous is { } p)

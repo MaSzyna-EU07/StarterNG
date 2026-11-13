@@ -69,6 +69,24 @@ public class HaslerTapeTests
     }
 
     [Fact]
+    public void The_security_flag_is_found_where_the_header_puts_it_with_the_vehicle_speed_at_the_end()
+    {
+        // the simulator's log since 2026-10: a column of the vehicle's speed after the temperatures
+        string header = Header.Replace("WaterAuxTemp[Deg]\r\n", "WaterAuxTemp[Deg] VehicleVelocity[km/h]\r\n");
+        static string WithSpeed(string line, double kmh) =>
+            line.Replace("\r\n", string.Create(CultureInfo.InvariantCulture, $" {kmh:0.0000}\r\n"));
+        // the wheels slipping, the alerter quiet: the column before the speed used to be read as the alerter
+        string slipping = Line(0, 36, 0, 0, security: 0).Replace(" 0 0 0.0000 0.0000 0.0000 0.0000\r\n",
+                                                                  " 0 1 0.0000 0.0000 0.0000 0.0000\r\n");
+
+        var tape = HaslerTape.Parse(header + WithSpeed(slipping, 36) + WithSpeed(Line(1, 36, 0, 0, security: 1), 36));
+
+        Assert.Equal(2, tape.Samples.Count);
+        Assert.False(tape.Samples[0].SecurityAlarm);
+        Assert.True(tape.Samples[1].SecurityAlarm);
+    }
+
+    [Fact]
     public void The_sample_under_a_point_of_the_tape_is_found_by_time_and_by_distance()
     {
         var tape = HaslerTape.Parse(Header + Line(0, 36, 0, 0) + Line(1, 36, 0, 0) + Line(2, 36, 0, 0));
