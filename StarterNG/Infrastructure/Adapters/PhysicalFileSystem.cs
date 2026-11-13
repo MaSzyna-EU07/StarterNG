@@ -10,6 +10,9 @@ public sealed class PhysicalFileSystem : IFileSystem
 {
     public const string TempSuffix = ".starter.tmp";
 
+    // Their disks as they come; a Linux one tells case apart.
+    public bool IgnoresCase { get; } = OperatingSystem.IsWindows() || OperatingSystem.IsMacOS();
+
     public bool FileExists(string path) => File.Exists(path);
 
     public bool DirectoryExists(string path) => Directory.Exists(path);

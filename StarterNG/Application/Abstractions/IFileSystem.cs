@@ -7,6 +7,9 @@ namespace StarterNG.Application.Abstractions;
 
 public interface IFileSystem
 {
+    /// <summary>Whether a name finds its file whatever the case of its letters, as on Windows and macOS.</summary>
+    bool IgnoresCase { get; }
+
     bool FileExists(string path);
 
     bool DirectoryExists(string path);

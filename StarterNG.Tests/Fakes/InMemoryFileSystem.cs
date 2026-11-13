@@ -97,6 +97,8 @@ public sealed class InMemoryFileSystem : IFileSystem
         return this;
     }
 
+    public bool IgnoresCase => _comparison == StringComparison.OrdinalIgnoreCase;
+
     public bool FileExists(string path) => _files.ContainsKey(Normalize(path));
 
     /// <summary>A link counts as the directory it points at, as the disk has it.</summary>
