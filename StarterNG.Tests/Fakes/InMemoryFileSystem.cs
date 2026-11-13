@@ -275,6 +275,9 @@ public sealed class InMemoryFileSystem : IFileSystem
                 return;
             slash = key.LastIndexOf('/');
         }
+        // An absolute Unix path's parent is the root, "/", which normalises to "".
+        if (slash == 0)
+            _directories.Add("");
     }
 
     private static string Normalize(string path) =>
