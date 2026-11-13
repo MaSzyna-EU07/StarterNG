@@ -366,8 +366,12 @@ public readonly record struct CabSample(double Time, int Vehicle, Position Posit
                                         Lights LightsHead, Lights LightsTail, sbyte CabEnd = 0,
                                         SecurityFlags Security = SecurityFlags.None, float LateralAcceleration = 0,
                                         Movement Movement = Movement.Unknown, short LightHintHead = -1, short LightHintTail = -1,
-                                        Lights? EquippedHead = null, Lights? EquippedTail = null, CabExtra? Extra = null)
+                                        Lights? EquippedHead = null, Lights? EquippedTail = null, CabExtra? Extra = null,
+                                        float? WheelSpeedKmh = null)
 {
+    // WheelSpeedKmh: the speed of the wheels as they turn, which the speedometer shows, signed as SpeedKmh; apart
+    // from it while they slip, 0 while they are locked in a skid. None in a recording made before it.
+
     public bool Has(CabDevices device) => (Devices & device) == device;
     public bool Has(SecurityFlags flag) => (Security & flag) == flag;
 

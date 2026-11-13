@@ -172,6 +172,9 @@ public sealed class BlackBoxReader
                         Extra = new CabExtra((EngineKind)r.U8(), r.U8(), r.U8(), r.F32(), r.F32(), r.F32(), r.F32(), r.F32(),
                                              r.F32(), r.F32(), r.F32(), r.I8(), r.U8(), r.U8(), r.F32(), r.F32(), r.F32(), r.F32())
                     };
+                // The speed of the wheels, later again.
+                if (sample.Extra is not null && r.Remaining >= 4)
+                    sample = sample with { WheelSpeedKmh = r.F32() };
                 rec.AddCab(sample);
                 break;
             }

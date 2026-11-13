@@ -22,6 +22,7 @@ public sealed class CabPanel : Control
     private const double LampRow = 14;
     private const int DoorColumns = 2;
     private const double DriveRow = 34;
+    private const double WheelsApartKmh = 1.0; // the wheels shown when they turn this much faster or slower
 
     private Recording? _recording;
     private double _time;
@@ -92,7 +93,12 @@ public sealed class CabPanel : Control
         var speed = MapView.Text(s.AbsSpeedKmh.ToString("0", culture), judgement is SpeedJudgement.Over ? Palette.Bad
                                      : judgement is SpeedJudgement.Slightly ? Palette.Warn : Palette.Text, 36, FontWeight.SemiBold);
         context.DrawText(speed, new Point(Pad, 24));
-        context.DrawText(MapView.Text("km/h", Palette.DimText, 12), new Point(Pad + speed.Width + 4, 24 + speed.Height - 21));
+        var unit = MapView.Text("km/h", Palette.DimText, 12);
+        context.DrawText(unit, new Point(Pad + speed.Width + 4, 24 + speed.Height - 21));
+        // the wheels, when they turn otherwise: slipping, or locked in a skid
+        if (s.WheelSpeedKmh is { } wheels && Math.Abs(Math.Abs(wheels) - s.AbsSpeedKmh) >= WheelsApartKmh)
+            context.DrawText(MapView.Text(string.Format(culture, Strings["CabWheels"], Math.Abs(wheels)), Palette.Warn, 12),
+                             new Point(Pad + speed.Width + 4 + unit.Width + 8, 24 + speed.Height - 21));
         double gaugeX = Pad + Math.Max(150, width * 0.42);
         if (s.AiValid)
         {
