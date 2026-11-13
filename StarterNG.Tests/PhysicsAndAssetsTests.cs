@@ -66,6 +66,19 @@ public class PhysicsAndAssetsTests
     }
 
     [Fact]
+    public void An_include_named_in_other_case_is_followed()
+    {
+        var installation = new TestInstallation(new InMemoryFileSystem(caseSensitive: true)
+            .WithFile(Fiz("pkp", "ep07", "ep07"), "include Common.FIZ 84000 end")
+            .WithFile(TestInstallation.At("dynamic", "pkp", "ep07", "common.fiz"), "Param: M=(1) Vmax=125"));
+
+        var physics = installation.Physics.For("pkp/ep07/", "ep07")!;
+
+        Assert.Equal(84000, physics.Mass);
+        Assert.Equal(125, physics.VMax);
+    }
+
+    [Fact]
     public void A_dot_in_the_model_name_is_part_of_the_name()
     {
         // As in the game: cd/9-107_v1 holds 9-107.13.fiz, 9-107.6.fiz and more.
@@ -199,6 +212,33 @@ public class PhysicsAndAssetsTests
             .WithFile(TestInstallation.At("dynamic", "pkp", "ep07", "ep07.t3d"), "model");
         var installation = new TestInstallation(files);
         installation.Vehicles.Load(installation.Library.Vehicles);
+
+        Assert.Empty(installation.MissingAssets.Scan(installation.Library.Vehicles));
+    }
+
+    [Fact]
+    public void A_livery_with_no_folder_is_looked_for_in_dynamic_itself()
+    {
+        var installation = new TestInstallation(new InMemoryFileSystem(caseSensitive: true)
+            .WithFile(TestInstallation.At("dynamic", "EP09.bmp"), "bitmap")
+            .WithFile(TestInstallation.At("dynamic", "ep09.e3d"), "model"));
+        var catalog = new StarterNG.Domain.Vehicles.VehicleCatalog(installation.MiniTextures);
+        catalog.Textures.Add(new StarterNG.Domain.Vehicles.VehicleTexture { Directory = "", Skinfile = "ep09", Model = "EP09" });
+
+        Assert.Empty(installation.MissingAssets.Scan(catalog));
+    }
+
+    [Fact]
+    public void A_skin_and_model_on_disk_in_other_case_are_not_reported()
+    {
+        var files = new InMemoryFileSystem(caseSensitive: true)
+            .WithFile(TestInstallation.At("dynamic", "PKP", "EP09", "textures.txt"),
+                      "EP09-014.mat=ep09.e3d,ep09")
+            .WithFile(TestInstallation.At("dynamic", "PKP", "EP09", "ep09-014.BMP"), "bitmap")
+            .WithFile(TestInstallation.At("dynamic", "PKP", "EP09", "EP09.E3D"), "model");
+        var installation = new TestInstallation(files);
+        installation.Vehicles.Load(installation.Library.Vehicles);
+        Assert.NotEmpty(installation.Library.Vehicles.Textures);
 
         Assert.Empty(installation.MissingAssets.Scan(installation.Library.Vehicles));
     }

@@ -23,6 +23,7 @@ public sealed class FizPhysicsRepository : IPhysicsRepository
     };
 
     private readonly IFileSystem _files;
+    private readonly CaseInsensitivePaths _names;
     private readonly IGamePaths _paths;
     private readonly IDiagnosticsLog _log;
 
@@ -38,6 +39,7 @@ public sealed class FizPhysicsRepository : IPhysicsRepository
     public FizPhysicsRepository(IFileSystem files, IGamePaths paths, IDiagnosticsLog log)
     {
         _files = files;
+        _names = new CaseInsensitivePaths(files);
         _paths = paths;
         _log = log;
     }
@@ -165,8 +167,9 @@ public sealed class FizPhysicsRepository : IPhysicsRepository
                 while (i < tokens.Count && !tokens[i].Equals("end", StringComparison.OrdinalIgnoreCase))
                     includeParameters.Add(Resolve(tokens[i++], parameters));
 
-                Parse(physics, Path.Combine(directory, includeFile), directory, includeParameters.ToArray(),
-                      depth + 1);
+                // Named in the letter case of whoever wrote the include, not always that of the file.
+                string included = _names.Find(directory, includeFile) ?? Path.Combine(directory, includeFile);
+                Parse(physics, included, directory, includeParameters.ToArray(), depth + 1);
                 pendingKey = null;
                 continue;
             }
