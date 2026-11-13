@@ -5,16 +5,21 @@ using System.Runtime.InteropServices;
 using Avalonia;
 using Avalonia.Media.Imaging;
 using Avalonia.Platform;
+using StarterNG.Application.Abstractions;
+using StarterNG.Infrastructure.Adapters;
 
 namespace StarterNG.Infrastructure;
 
 public static class LoadingScreen
 {
+    private static readonly string[] Extensions = { ".bmp", ".jpg", ".jpeg", ".png" };
+
     public static void Prepare(string? logoKey, string? sceneryName = null)
     {
         try
         {
-            string? src = ResolveSource(logoKey) ?? ResolveSource(sceneryName) ?? PickRandom();
+            string? src = FindSource(new PhysicalFileSystem(), Directory.GetCurrentDirectory(), logoKey, sceneryName,
+                                     Random.Shared);
             if (src is null) return;
 
             string destDir = Path.Combine(Directory.GetCurrentDirectory(), "textures");
@@ -35,32 +40,36 @@ public static class LoadingScreen
         }
     }
 
-    private static string? ResolveSource(string? key)
+    /// <summary>
+    /// The picture of textures/logo under <paramref name="root"/> to show: the trainset's,
+    /// else the scenery's, else one of logo*.* at random; its name and extension in any
+    /// letter case. Null when there is none.
+    /// </summary>
+    public static string? FindSource(IFileSystem files, string root, string? logoKey, string? sceneryName,
+                                     Random random)
+    {
+        var names = new CaseInsensitivePaths(files);
+        if (names.Find(root, "textures/logo", directory: true) is not { } dir)
+            return null;
+        return Named(names, dir, logoKey) ?? Named(names, dir, sceneryName) ?? PickRandom(files, dir, random);
+    }
+
+    private static string? Named(CaseInsensitivePaths names, string dir, string? key)
     {
         if (string.IsNullOrWhiteSpace(key)) return null;
         key = Path.GetFileNameWithoutExtension(key.Trim());
-        string dir = Path.Combine(Directory.GetCurrentDirectory(), "textures", "logo");
-        foreach (string ext in new[] { ".bmp", ".jpg", ".jpeg", ".png" })
-        {
-            string path = Path.Combine(dir, key + ext);
-            if (File.Exists(path)) return path;
-        }
-        return null;
+        if (key.Length == 0) return null;
+        return Extensions.Select(ext => names.Find(dir, key + ext)).FirstOrDefault(path => path is not null);
     }
 
-    private static string? PickRandom()
+    private static string? PickRandom(IFileSystem files, string dir, Random random)
     {
-        string dir = Path.Combine(Directory.GetCurrentDirectory(), "textures", "logo");
-        if (!Directory.Exists(dir)) return null;
-        var files = Directory.GetFiles(dir, "logo*.*")
-            .Where(f =>
-            {
-                string e = Path.GetExtension(f).ToLowerInvariant();
-                return e is ".bmp" or ".jpg" or ".jpeg" or ".png";
-            })
+        var logos = files.GetFiles(dir, "logo*.*")
+            .Where(f => Extensions.Contains(Path.GetExtension(f), StringComparer.OrdinalIgnoreCase))
+            .Order(StringComparer.Ordinal)
             .ToArray();
-        if (files.Length == 0) return null;
-        return files[Random.Shared.Next(files.Length)];
+        if (logos.Length == 0) return null;
+        return logos[random.Next(logos.Length)];
     }
 
     private static void WriteBmp(string sourcePath, string destPath)
