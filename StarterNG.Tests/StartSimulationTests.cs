@@ -41,7 +41,7 @@ public class StartSimulationTests
     }
 
     [Fact]
-    public void With_the_black_box_alone_the_launch_is_noted_for_the_tapes_it_writes_at_the_end()
+    public void With_the_black_box_alone_the_launch_is_noted_for_the_tapes_it_writes()
     {
         var (start, _, installation) = Rig(files => files.WithExecutable(Build), sceneryClock: "07:52");
         installation.SettingsStore.Settings.BlackBox = true;

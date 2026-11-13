@@ -498,7 +498,7 @@
     <String key="BreakingPantographPossibility">Možnost zlomení pantografu</String>
     <String key="PowerOverheadLineOnly">Napájení jen pod trolejí</String>
     <String key="SaveBlackBox">Nahrávat černou skříňku a pásky rychloměru</String>
-    <String key="SaveBlackBoxDesc">Nahrává jízdu do jednoho souboru ve složce physicslog/ a po zavření simulátoru zapíše pásky (.dat) vozidel, ve kterých jste byli.</String>
+    <String key="SaveBlackBoxDesc">Nahrává jízdu do jednoho souboru ve složce physicslog/ a průběžně, každé 2 s, zapisuje pásky (.dat) vozidel, ve kterých jste.</String>
     <String key="SaveSpeedometerTapes">Ukládat fyzikální log všech vozidel</String>
     <String key="SaveSimLogs">Ukládat log simulace</String>
     <String key="KeepPrevLogs">Zachovat předchozí logy</String>
@@ -846,7 +846,6 @@
     <String key="HaslerTrain">vlak {0}</String>
     <String key="HaslerRoleDrivenEarlier">Řízené dříve</String>
     <String key="HaslerLiveIdle">Funguje, když běží relace spuštěná ze starteru.</String>
-    <String key="HaslerLiveAtClose">Černá skříňka zapíše pásky po zavření simulátoru. Živě funguje s fyzikálním logem.</String>
     <String key="HaslerLogOff">Log simulátoru je vypnutý: starter nevidí přesedání.</String>
     <String key="HaslerLogEnable">Zapnout log</String>
     <String key="HaslerRoleStartedIn">Vozidlo ze startu</String>

@@ -81,6 +81,28 @@ public class BlackBoxListingTests
     }
 
     [Fact]
+    public void The_tape_of_a_vehicle_left_early_in_a_run_with_no_launch_goes_with_its_black_box()
+    {
+        // The black box writes the tapes as it goes: that of the vehicle the player left after ten minutes ends
+        // twenty minutes before the run, that of the next one with it.
+        var started = new DateTime(2026, 3, 1, 12, 0, 0, DateTimeKind.Utc);
+        string box = Box("td", started);
+        var installation = new TestInstallation(new InMemoryFileSystem()
+            .WithFile(Log("first.dat"), "t")
+            .WithFile(Log("second.dat"), "t")
+            .WithFile(Log(box), "b")
+            .WrittenAt(Log("first.dat"), started.AddMinutes(10))
+            .WrittenAt(Log(box), started.AddMinutes(30))
+            .WrittenAt(Log("second.dat"), started.AddMinutes(30).AddSeconds(1)));
+
+        var session = Assert.Single(installation.Tapes.Sessions());
+
+        Assert.Null(session.Launch);
+        Assert.Equal(new[] { "first", "second" }, session.Tapes.Select(tape => tape.Vehicle).Order());
+        Assert.EndsWith(box, Assert.Single(session.BlackBoxes).Path);
+    }
+
+    [Fact]
     public void The_black_box_of_a_running_session_is_listed_while_it_is_written()
     {
         var files = new InMemoryFileSystem();

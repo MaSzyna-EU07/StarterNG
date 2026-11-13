@@ -35,6 +35,7 @@ public sealed class HaslerTapes
 {
     private const int RememberedLaunches = 30;
     private static readonly TimeSpan QuietBetweenRuns = TimeSpan.FromMinutes(2);
+    private static readonly TimeSpan TapesAfterBlackBox = TimeSpan.FromSeconds(10);
 
     private readonly IFileSystem _files;
     private readonly IGamePaths _paths;
@@ -244,8 +245,9 @@ public sealed class HaslerTapes
     /// <summary>
     /// The runs the tapes came from, the running or latest one first. A tape belongs
     /// to the last launch before it was written, unless a run the starter didn't launch
-    /// began between them; one with no launch goes with those written about the same
-    /// time, as a run writes them all at its end.
+    /// began between them; one with no launch goes with the black box recording when it
+    /// was written, or else with those written about the same time, as a run writes its
+    /// logs until it ends.
     /// </summary>
     public IReadOnlyList<TapeSession> Sessions()
     {
@@ -278,11 +280,14 @@ public sealed class HaslerTapes
                                      boxesBehind.GetValueOrDefault(launch, new List<BlackBoxRecording>())));
             }
 
-            // What no launch covers goes together by when it was written: a run writes it all at its end.
+            // What no launch covers goes together by when it was written: a run writes its logs until it ends. A tape
+            // written while a black box recorded is of its run, though: the black box writes the tapes of the player's
+            // vehicles as it goes, and that of a vehicle the player left ends before the run does.
+            var looseBoxes = boxes.Where(b => LaunchOf(b, launches) is null).ToList();
             var loose = tapes.Where(t => tapeLaunch[t] is null)
-                             .Select(t => (Written: t.LastWriteUtc, Tape: (TapeFile?)t, Box: (BlackBoxRecording?)null))
-                             .Concat(boxes.Where(b => LaunchOf(b, launches) is null)
-                                          .Select(b => (Written: b.LastWriteUtc, Tape: (TapeFile?)null, Box: (BlackBoxRecording?)b)))
+                             .Select(t => (Written: RecordingAt(t.LastWriteUtc, looseBoxes)?.LastWriteUtc ?? t.LastWriteUtc,
+                                           Tape: (TapeFile?)t, Box: (BlackBoxRecording?)null))
+                             .Concat(looseBoxes.Select(b => (Written: b.LastWriteUtc, Tape: (TapeFile?)null, Box: (BlackBoxRecording?)b)))
                              .OrderBy(file => file.Written);
             var run = new List<TapeFile>();
             var runBoxes = new List<BlackBoxRecording>();
@@ -314,6 +319,16 @@ public sealed class HaslerTapes
             return Array.Empty<TapeSession>();
         }
     }
+
+    /// <summary>
+    /// The black box that was recording at the moment, the tapes being written last, a moment after it is closed.
+    /// Of more, the one that stopped nearest to it.
+    /// </summary>
+    private static BlackBoxRecording? RecordingAt(DateTime momentUtc, IEnumerable<BlackBoxRecording> boxes) =>
+        boxes.Where(box => NamedBy(box.Path) is { } named && named.StartedUtc <= momentUtc
+                           && momentUtc <= box.LastWriteUtc + TapesAfterBlackBox)
+             .OrderBy(box => (box.LastWriteUtc - momentUtc).Duration())
+             .FirstOrDefault();
 
     private TapeFile ReadTape(string path) =>
         new(path, Path.GetFileNameWithoutExtension(path), _files.GetLastWriteTimeUtc(path), _files.GetFileSize(path));

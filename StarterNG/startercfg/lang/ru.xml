@@ -498,7 +498,7 @@
     <String key="BreakingPantographPossibility">Возможность излома пантографа</String>
     <String key="PowerOverheadLineOnly">Питание только под контактной сетью</String>
     <String key="SaveBlackBox">Записывать чёрный ящик и ленты скоростемера</String>
-    <String key="SaveBlackBoxDesc">Записывает поездку в один файл в папке physicslog/, а при закрытии симулятора сохраняет ленты (.dat) тех единиц, в которых вы были.</String>
+    <String key="SaveBlackBoxDesc">Записывает поездку в один файл в папке physicslog/ и по ходу, каждые 2 с, сохраняет ленты (.dat) тех единиц, в которых вы находитесь.</String>
     <String key="SaveSpeedometerTapes">Сохранять физический лог всех единиц</String>
     <String key="SaveSimLogs">Сохранять журнал симуляции</String>
     <String key="KeepPrevLogs">Сохранять предыдущие журналы</String>
@@ -846,7 +846,6 @@
     <String key="HaslerTrain">поезд {0}</String>
     <String key="HaslerRoleDrivenEarlier">Управлялся ранее</String>
     <String key="HaslerLiveIdle">Работает, пока идёт сеанс, запущенный из стартера.</String>
-    <String key="HaslerLiveAtClose">Чёрный ящик сохраняет ленты при закрытии симулятора. Режим «вживую» работает с физическим логом.</String>
     <String key="HaslerLogOff">Журнал симулятора выключен: стартер не видит пересадок.</String>
     <String key="HaslerLogEnable">Включить журнал</String>
     <String key="HaslerRoleStartedIn">Транспорт на старте</String>
