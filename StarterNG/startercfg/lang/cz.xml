@@ -742,7 +742,6 @@
     <String key="SyntaxVehicleOutsideTrainset">Vozidlo {0} stojí mimo soupravu: chybí záhlaví trainset?</String>
     <String key="SyntaxNotANumber">{0}: „{1}“ místo čísla</String>
     <String key="SyntaxMissingInclude">Soubor {1} nenalezen (include)</String>
-    <String key="SyntaxIncludeLetterCase">Soubor {1} je na disku jako {0}: linuxový eu07 ho nenačte</String>
     <String key="SyntaxIncludeNotClosed">include {1} bez end</String>
     <String key="SyntaxTrainsetUnreadable">Soupravu {0} se nepodařilo načíst</String>
     <String key="SyntaxVehicleUnreadable">Vozidlo {0} se nepodařilo načíst</String>
