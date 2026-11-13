@@ -1079,6 +1079,11 @@
     <String key="HaslerSession">会话</String>
     <String key="HaslerSessionTapes">纸带：{0}</String>
     <String key="HaslerSessionRunning">运行中</String>
+    <String key="HaslerBlackBox">黑匣子</String>
+    <String key="HaslerBlackBoxTip">整个会话在地图上：与 AI 的相对运行、操作命令、信号机、驾驶室</String>
+    <String key="HaslerClickBlackBox">点击纸带：查看该时刻的黑匣子</String>
+    <String key="HaslerSessionNoTape">本次会话没有纸带，只有黑匣子。</String>
+    <String key="HaslerSessionEmpty">本次会话还没有纸带，也没有黑匣子。</String>
     <String key="WarehouseSaved">在仓库中：{0}</String>
     <String key="WarehouseNothingToAdd">请选择含有车辆的编组</String>
     <String key="GfxGroupLevelTip">仅针对该图形部分的级别</String>
