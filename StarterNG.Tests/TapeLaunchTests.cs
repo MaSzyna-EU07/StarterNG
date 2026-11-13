@@ -131,6 +131,17 @@ public class TapeLaunchTests
                         .TrainNumber(new StarterNG.Domain.Sceneries.Scenery(TestInstallation.At("scenery", "td.scn"), ""), name));
 
     [Fact]
+    public void The_train_number_comes_from_a_timetable_named_in_other_case_with_backslashes()
+    {
+        var files = new InMemoryFileSystem(caseSensitive: true)
+            .WithFile(TestInstallation.At("scenery", "Baltyk", "EIE1531.txt"), "[ Rodzaj i numer pociagu | EIE1531 ]\r\n");
+
+        Assert.Equal("EIE1531", new StarterNG.Infrastructure.Sceneries.TimetableLocator(files)
+                         .TrainNumber(new StarterNG.Domain.Sceneries.Scenery(TestInstallation.At("scenery", "td.scn"), ""),
+                                      @"baltyk\eie1531"));
+    }
+
+    [Fact]
     public void A_timetable_that_is_not_there_gives_no_train_number() =>
         Assert.Null(new StarterNG.Infrastructure.Sceneries.TimetableLocator(new InMemoryFileSystem())
                         .TrainNumber(new StarterNG.Domain.Sceneries.Scenery(TestInstallation.At("scenery", "td.scn"), ""),

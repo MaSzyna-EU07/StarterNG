@@ -89,6 +89,23 @@ public class SceneryRepositoryTests
         Assert.Equal(Path.Combine("game", "scenery", "images", "kato.jpg"), image);
     }
 
+    [Theory]
+    [InlineData("calkowo_v2_kopalniaA.jpg", "game/scenery/images/calkowo_v2_kopalniaA.jpg")]
+    [InlineData(@"Images\Calkowo_V2_KopalniaA.JPG", "game/scenery/images/calkowo_v2_kopalniaA.jpg")]
+    [InlineData("CALKOWO_V2.JPG", "game/scenery/Calkowo_v2.jpg")]
+    public void The_preview_image_is_found_whatever_the_case_it_is_named_in(string named, string onDisk)
+    {
+        var files = new InMemoryFileSystem(caseSensitive: true)
+            .WithFile("game/scenery/calkowo.scn", "//$i " + named)
+            .WithFile("game/scenery/images/calkowo_v2_kopalniaA.jpg", "binary")
+            .WithFile("game/scenery/Calkowo_v2.jpg", "binary");
+        var scenery = Assert.Single(Build(files, out _).LoadAll());
+
+        string? image = new SceneryImageLocator(files).Resolve(scenery);
+
+        Assert.Equal(Path.GetFullPath(onDisk), Path.GetFullPath(image!));
+    }
+
     [Fact]
     public void A_scenery_without_an_image_directive_resolves_to_nothing()
     {
