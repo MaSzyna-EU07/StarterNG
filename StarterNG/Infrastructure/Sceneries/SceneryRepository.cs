@@ -7,7 +7,6 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using StarterNG.Application.Abstractions;
-using StarterNG.Domain;
 using StarterNG.Domain.Sceneries;
 using StarterNG.Infrastructure.Adapters;
 
@@ -78,10 +77,9 @@ public sealed class SceneryRepository : ISceneryRepository
             var encodings = new Dictionary<string, Encoding>(StringComparer.Ordinal);
 
             // With its own .sbt the scenery's terrain comes from it, and the simulator
-            // passes its terrain includes over without opening them.
+            // passes its terrain includes over without opening them - unless a terrain
+            // file takes its place.
             bool binaryTerrain = Opens(Path.GetFileNameWithoutExtension(path) + ".sbt");
-            bool OpensInclude(string name) =>
-                Opens(name) || (binaryTerrain && SimulatorNames.Lower(name).Contains("_ter.scm"));
 
             (string File, string Text)? ReadInclude(string name)
             {
@@ -98,7 +96,7 @@ public sealed class SceneryRepository : ISceneryRepository
 
             string own = LegacyText.Decode(_files.ReadAllBytes(path), out var ownEncoding);
             string text = SceneryIncludes.Inline(own, ReadInclude);
-            var scenery = _parser.Parse(path, text, OpensInclude);
+            var scenery = _parser.Parse(path, text, new SceneryFileLookup(Opens, binaryTerrain));
             scenery.HasCompanionTimetable = binaryTerrain;
             scenery.Sources = sources;
             scenery.TextEncoding = ownEncoding;
