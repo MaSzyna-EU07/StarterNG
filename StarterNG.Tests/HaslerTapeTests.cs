@@ -87,6 +87,31 @@ public class HaslerTapeTests
     }
 
     [Fact]
+    public void A_command_named_like_a_heading_is_read_as_a_line_not_as_the_header()
+    {
+        var tape = HaslerTape.Parse(Header + Line(0, 36, 0, 0, command: "Security") + Line(1, 36, 0, 0, security: 1));
+
+        Assert.Equal(2, tape.Samples.Count);
+        Assert.False(tape.Samples[0].SecurityAlarm);
+        Assert.True(tape.Samples[1].SecurityAlarm);
+    }
+
+    [Fact]
+    public void A_gap_in_the_time_is_neither_driving_nor_standing_and_covers_no_distance()
+    {
+        // the player in another vehicle for ten minutes, then back in this one
+        var tape = HaslerTape.Parse(Header + Line(0, 36, 0, 0) + Line(1, 36, 0, 0) + Line(601, 36, 0, 0)
+                                    + Line(602, 36, 0, 0) + Line(603, 0, 0, 0));
+
+        Assert.Equal(603, tape.Duration, 6);
+        Assert.Equal(600, tape.GapTime, 6);
+        Assert.Equal(2, tape.RunningTime, 6);
+        Assert.Equal(1, tape.StandingTime, 6); // the last second, stopping
+        Assert.Equal(10 + 10 + 5, tape.DistanceM, 6);
+        Assert.Equal(25 / 3.0 * 3.6, tape.AverageWithStopsKmh, 6);
+    }
+
+    [Fact]
     public void The_sample_under_a_point_of_the_tape_is_found_by_time_and_by_distance()
     {
         var tape = HaslerTape.Parse(Header + Line(0, 36, 0, 0) + Line(1, 36, 0, 0) + Line(2, 36, 0, 0));
