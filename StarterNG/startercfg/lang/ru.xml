@@ -98,6 +98,7 @@
     <String key="HaslerClockUnknown">час неизвестен, время считается от начала симуляции</String>
     <String key="HaslerUnreadable">Не удалось прочитать ленту {0}.</String>
     <String key="HaslerSummary">{0} · записано {1} (движение {2}, стоянка {3}) · путь {4:0.00} км · Vmax {5:0} км/ч · средняя в движении {6:0} км/ч · средняя со стоянками {7:0} км/ч</String>
+    <String key="HaslerGap">не записано {0}</String>
     <String key="HaslerCursor">{0} · {1:0.0} км · {2:0} км/ч · цилиндры {3:0.0} бар · ток {4}</String>
     <String key="HaslerTrackCylinders">Цилиндры</String>
     <String key="HaslerTrackPipe">ТМ</String>

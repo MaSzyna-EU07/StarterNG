@@ -98,6 +98,7 @@
     <String key="HaslerClockUnknown">hodina neznámá, čas se počítá od startu simulace</String>
     <String key="HaslerUnreadable">Pásku {0} se nepodařilo přečíst.</String>
     <String key="HaslerSummary">{0} · zaznamenáno {1} (jízda {2}, stání {3}) · dráha {4:0.00} km · Vmax {5:0} km/h · průměr za jízdy {6:0} km/h · průměr se zastávkami {7:0} km/h</String>
+    <String key="HaslerGap">nezaznamenáno {0}</String>
     <String key="HaslerCursor">{0} · {1:0.0} km · {2:0} km/h · válce {3:0.0} bar · proud {4}</String>
     <String key="HaslerTrackCylinders">Válce</String>
     <String key="HaslerTrackPipe">HP</String>

@@ -284,8 +284,9 @@ public sealed class HaslerTapes
             // written while a black box recorded is of its run, though: the black box writes the tapes of the player's
             // vehicles as it goes, and that of a vehicle the player left ends before the run does.
             var looseBoxes = boxes.Where(b => LaunchOf(b, launches) is null).ToList();
+            var recordings = Recordings(looseBoxes);
             var loose = tapes.Where(t => tapeLaunch[t] is null)
-                             .Select(t => (Written: RecordingAt(t.LastWriteUtc, looseBoxes)?.LastWriteUtc ?? t.LastWriteUtc,
+                             .Select(t => (Written: RecordingAt(t.LastWriteUtc, recordings)?.LastWriteUtc ?? t.LastWriteUtc,
                                            Tape: (TapeFile?)t, Box: (BlackBoxRecording?)null))
                              .Concat(looseBoxes.Select(b => (Written: b.LastWriteUtc, Tape: (TapeFile?)null, Box: (BlackBoxRecording?)b)))
                              .OrderBy(file => file.Written);
@@ -321,14 +322,37 @@ public sealed class HaslerTapes
     }
 
     /// <summary>
+    /// When each black box recorded, its name read once: from the start its name has, to when it was last written,
+    /// and the tapes a moment after. No longer than until the next one started, though: a box downloaded or copied
+    /// later was last written then, not when it stopped, and would take in the tapes of the runs since.
+    /// </summary>
+    public static IReadOnlyList<(BlackBoxRecording Box, DateTime FromUtc, DateTime ToUtc)> Recordings(IEnumerable<BlackBoxRecording> boxes)
+    {
+        var named = boxes.Select(box => (Box: box, Named: NamedBy(box.Path)))
+                         .Where(each => each.Named is not null)
+                         .Select(each => (each.Box, FromUtc: each.Named!.Value.StartedUtc))
+                         .OrderBy(each => each.FromUtc)
+                         .ToList();
+        var recordings = new List<(BlackBoxRecording, DateTime, DateTime)>(named.Count);
+        for (int i = 0; i < named.Count; i++)
+        {
+            var to = named[i].Box.LastWriteUtc + TapesAfterBlackBox;
+            if (i + 1 < named.Count && named[i + 1].FromUtc < to)
+                to = named[i + 1].FromUtc;
+            recordings.Add((named[i].Box, named[i].FromUtc, to));
+        }
+        return recordings;
+    }
+
+    /// <summary>
     /// The black box that was recording at the moment, the tapes being written last, a moment after it is closed.
     /// Of more, the one that stopped nearest to it.
     /// </summary>
-    private static BlackBoxRecording? RecordingAt(DateTime momentUtc, IEnumerable<BlackBoxRecording> boxes) =>
-        boxes.Where(box => NamedBy(box.Path) is { } named && named.StartedUtc <= momentUtc
-                           && momentUtc <= box.LastWriteUtc + TapesAfterBlackBox)
-             .OrderBy(box => (box.LastWriteUtc - momentUtc).Duration())
-             .FirstOrDefault();
+    public static BlackBoxRecording? RecordingAt(DateTime momentUtc, IEnumerable<(BlackBoxRecording Box, DateTime FromUtc, DateTime ToUtc)> recordings) =>
+        recordings.Where(each => each.FromUtc <= momentUtc && momentUtc <= each.ToUtc)
+                  .OrderBy(each => (each.Box.LastWriteUtc - momentUtc).Duration())
+                  .Select(each => each.Box)
+                  .FirstOrDefault();
 
     private TapeFile ReadTape(string path) =>
         new(path, Path.GetFileNameWithoutExtension(path), _files.GetLastWriteTimeUtc(path), _files.GetFileSize(path));
@@ -426,19 +450,64 @@ public sealed class HaslerTapes
         return new TapeSession(launch, started, written.Count > 0 ? written.Max() : started, running, listed, recorded);
     }
 
-    public HaslerTape? Load(TapeFile file)
+    // the tape followed as the simulator writes it: what of its file was read, and where it ended
+    private readonly object _followedLock = new();
+    private (string Path, long Read, byte[] Tail, HaslerTape.Reader Reader)? _followed;
+    // what of the end of the read part is kept, to tell the file still has it: one begun anew doesn't
+    private const int FollowedTail = 256;
+
+    public HaslerTape? Load(TapeFile file) => Load(file, follow: false);
+
+    private static byte[] Bytes(Stream stream, long from, long to)
     {
-        try
+        stream.Seek(from, SeekOrigin.Begin);
+        var bytes = new byte[to - from];
+        stream.ReadExactly(bytes);
+        return bytes;
+    }
+
+    /// <summary>
+    /// The tape of the file. Followed, the one read last and grown since: only what was added is read, so a log
+    /// written fast, at a higher time speed, is kept up with; a line not ended yet waits for the next time. Not
+    /// followed, or another file, or one shorter than was read - begun anew - it is read whole, and kept to be
+    /// followed from there.
+    /// </summary>
+    public HaslerTape? Load(TapeFile file, bool follow)
+    {
+        lock (_followedLock)
         {
-            // Through OpenRead, which does not mind the simulator still writing the file.
-            using var stream = _files.OpenRead(file.Path);
-            using var reader = new StreamReader(stream, Encoding.ASCII);
-            return HaslerTape.Parse(reader.ReadToEnd());
-        }
-        catch (Exception ex)
-        {
-            _log.Log($"reading {file.Path}", ex);
-            return null;
+            try
+            {
+                // Through OpenRead, which does not mind the simulator still writing the file.
+                using var stream = _files.OpenRead(file.Path);
+                if (!stream.CanSeek)
+                {
+                    _followed = null;
+                    using var whole = new StreamReader(stream, Encoding.ASCII);
+                    return HaslerTape.Parse(whole.ReadToEnd());
+                }
+
+                long length = stream.Length;
+                // the same file grown, its end as it was read: else another, or begun anew, read whole
+                if (!follow || _followed is not { } followed || followed.Path != file.Path || length < followed.Read
+                    || !Bytes(stream, followed.Read - followed.Tail.Length, followed.Read).AsSpan().SequenceEqual(followed.Tail))
+                    followed = (file.Path, 0, Array.Empty<byte>(), new HaslerTape.Reader());
+                followed.Reader.Feed(Encoding.ASCII.GetString(Bytes(stream, followed.Read, length)));
+                // the time went back in what was added: the log begun anew and already longer than was read
+                if (followed.Read > 0 && followed.Reader.WentBack)
+                {
+                    followed = (file.Path, 0, Array.Empty<byte>(), new HaslerTape.Reader());
+                    followed.Reader.Feed(Encoding.ASCII.GetString(Bytes(stream, 0, length)));
+                }
+                _followed = (file.Path, length, Bytes(stream, Math.Max(0, length - FollowedTail), length), followed.Reader);
+                return followed.Reader.Tape(final: !follow);
+            }
+            catch (Exception ex)
+            {
+                _followed = null;
+                _log.Log($"reading {file.Path}", ex);
+                return null;
+            }
         }
     }
 }

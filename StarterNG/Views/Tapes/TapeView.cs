@@ -247,8 +247,22 @@ public abstract class TapeView : Control
             }
         }
 
+        double? before = null;
         foreach (var s in tape.Samples)
         {
+            // A gap, the player in another vehicle, is not drawn as if the train drove or stood through it: the
+            // line breaks off there.
+            if (before is { } previous && s.Time - previous > tape.GapSeconds)
+            {
+                Flush();
+                column = int.MinValue;
+                if (begun)
+                {
+                    g.EndFigure(false);
+                    begun = false;
+                }
+            }
+            before = s.Time;
             int c = (int)Math.Round(XOf(s));
             double value = y(s);
             if (c != column)

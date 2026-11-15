@@ -98,6 +98,7 @@
     <String key="HaslerClockUnknown">godzina nieznana, czas liczony od startu symulacji</String>
     <String key="HaslerUnreadable">Nie udało się odczytać taśmy {0}.</String>
     <String key="HaslerSummary">{0} · zarejestrowano {1} (jazda {2}, postój {3}) · droga {4:0.00} km · Vmax {5:0} km/h · Vśr jazdy {6:0} km/h · Vśr z postojami {7:0} km/h</String>
+    <String key="HaslerGap">nie zarejestrowano {0}</String>
     <String key="HaslerCursor">{0} · {1:0.0} km · {2:0} km/h · cylindry {3:0.0} bar · prąd {4}</String>
     <String key="HaslerTrackCylinders">Cylindry</String>
     <String key="HaslerTrackPipe">PG</String>

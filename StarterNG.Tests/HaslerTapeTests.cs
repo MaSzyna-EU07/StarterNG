@@ -112,6 +112,77 @@ public class HaslerTapeTests
     }
 
     [Fact]
+    public void A_stall_of_the_simulator_a_little_over_a_second_is_driven_not_a_gap()
+    {
+        // a line every 0.05 s, as at 60 FPS, and one step of 1.017 s: the frame held to a second, and the frame after
+        var text = new System.Text.StringBuilder(Header);
+        double t = 0;
+        for (int i = 0; i < 40; i++, t += 0.05)
+            text.Append(Line(t, 100, 0, 0));
+        t += 1.017 - 0.05;
+        for (int i = 0; i < 40; i++, t += 0.05)
+            text.Append(Line(t, 100, 0, 0));
+
+        var tape = HaslerTape.Parse(text.ToString());
+
+        Assert.Equal(0, tape.GapTime, 6);
+        Assert.Equal(tape.Duration, tape.RunningTime, 6);
+        Assert.Equal(tape.Duration * 100 / 3.6, tape.DistanceM, 6);
+    }
+
+    [Fact]
+    public void A_tape_read_in_pieces_cut_anywhere_is_the_tape_read_whole()
+    {
+        string text = Header + Line(0, 18, 0, 0, command: "Set Velocity") + Line(1, 36, 0.45, 0) + Line(2, 36, 0, 400)
+                      + Line(602, 36, 0, 0, security: 1) + Line(603, 0, 0, 0);
+        var whole = HaslerTape.Parse(text);
+
+        for (int cut = 1; cut < text.Length; cut += 7)
+        {
+            var reader = new HaslerTape.Reader();
+            reader.Feed(text[..cut]);
+            reader.Feed(text[cut..]);
+            Assert.Equal(whole.Samples, reader.Tape(final: true).Samples);
+        }
+    }
+
+    [Fact]
+    public void A_line_not_ended_waits_for_its_end_while_the_tape_is_followed()
+    {
+        var reader = new HaslerTape.Reader();
+        string line = Line(1, 36, 0, 0);
+        reader.Feed(Header + Line(0, 36, 0, 0) + line[..20]);
+
+        Assert.Single(reader.Tape(final: false).Samples);
+        Assert.Single(reader.Tape(final: false).Samples);
+        reader.Feed(line[20..]);
+        Assert.Equal(2, reader.Tape(final: false).Samples.Count);
+    }
+
+    [Fact]
+    public void A_followed_tape_reads_what_was_added_and_one_begun_anew_whole()
+    {
+        string path = TestInstallation.At("physicslog", "EU07-424.dat");
+        var files = new InMemoryFileSystem().WithFile(path, Header + Line(0, 36, 0, 0));
+        var tapes = new TestInstallation(files).Tapes;
+        var file = Assert.Single(tapes.List());
+
+        Assert.Single(tapes.Load(file, follow: false)!.Samples);
+        files.WithFile(path, Header + Line(0, 36, 0, 0) + Line(1, 36, 0, 0) + Line(2, 36, 0, 0));
+        Assert.Equal(3, tapes.Load(file, follow: true)!.Samples.Count);
+
+        // begun anew, and already longer than was read: its time goes back
+        files.WithFile(path, Header + Line(0, 72, 0, 0) + Line(1, 72, 0, 0) + Line(2, 72, 0, 0) + Line(3, 72, 0, 0));
+        var tape = tapes.Load(file, follow: true)!;
+        Assert.Equal(4, tape.Samples.Count);
+        Assert.All(tape.Samples, s => Assert.Equal(72, s.SpeedKmh, 6));
+
+        // begun anew, and shorter
+        files.WithFile(path, Header + Line(0, 18, 0, 0));
+        Assert.Equal(18, Assert.Single(tapes.Load(file, follow: true)!.Samples).SpeedKmh, 6);
+    }
+
+    [Fact]
     public void The_sample_under_a_point_of_the_tape_is_found_by_time_and_by_distance()
     {
         var tape = HaslerTape.Parse(Header + Line(0, 36, 0, 0) + Line(1, 36, 0, 0) + Line(2, 36, 0, 0));

@@ -631,7 +631,9 @@ public sealed class HaslerTapeWindow : Window
         _loading = true;
         try
         {
-            var tape = await Task.Run(() => _tapes.Load(file));
+            // the same tape grown, as the simulator writes it: only what was added is read
+            bool follow = file.Path == _shown?.Path && file.Size >= _shown.Size;
+            var tape = await Task.Run(() => _tapes.Load(file, follow));
             bool another = file.Path != _shown?.Path;
             _shown = file;
             _tapeless = null;
@@ -646,10 +648,13 @@ public sealed class HaslerTapeWindow : Window
 
             _view.Tape = tape;
             ShowMark(scrollTo: another && !scrollToEnd);
-            _summary.Text = string.Format(App.Loc["HaslerSummary"], file.Vehicle, TapeFigures.Clock(tape.Duration),
+            // what was recorded is running and standing; a gap, the player in another vehicle, is neither
+            _summary.Text = string.Format(App.Loc["HaslerSummary"], file.Vehicle, TapeFigures.Clock(tape.Duration - tape.GapTime),
                                           TapeFigures.Clock(tape.RunningTime), TapeFigures.Clock(tape.StandingTime),
                                           tape.DistanceM / 1000.0, tape.MaxSpeedKmh, tape.AverageSpeedKmh,
                                           tape.AverageWithStopsKmh);
+            if (tape.GapTime > 0)
+                _summary.Text += " · " + string.Format(App.Loc["HaslerGap"], TapeFigures.Clock(tape.GapTime));
             if (_context?.Scenery is { } scenery)
                 _summary.Text += " · " + string.Format(App.Loc["HaslerScenario"], scenery);
             if (_context?.Train is { } train)

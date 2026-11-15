@@ -98,6 +98,7 @@
     <String key="HaslerClockUnknown">hour unknown, time counted from the start of the simulation</String>
     <String key="HaslerUnreadable">Could not read the tape {0}.</String>
     <String key="HaslerSummary">{0} · recorded {1} (running {2}, standing {3}) · distance {4:0.00} km · Vmax {5:0} km/h · running average {6:0} km/h · average with stops {7:0} km/h</String>
+    <String key="HaslerGap">not recorded {0}</String>
     <String key="HaslerCursor">{0} · {1:0.0} km · {2:0} km/h · cylinders {3:0.0} bar · current {4}</String>
     <String key="HaslerTrackCylinders">Cylinders</String>
     <String key="HaslerTrackPipe">BP</String>

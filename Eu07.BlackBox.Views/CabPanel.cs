@@ -95,11 +95,16 @@ public sealed class CabPanel : Control
         context.DrawText(speed, new Point(Pad, 24));
         var unit = MapView.Text("km/h", Palette.DimText, 12);
         context.DrawText(unit, new Point(Pad + speed.Width + 4, 24 + speed.Height - 21));
-        // the wheels, when they turn otherwise: slipping, or locked in a skid
-        if (s.WheelSpeedKmh is { } wheels && Math.Abs(Math.Abs(wheels) - s.AbsSpeedKmh) >= WheelsApartKmh)
-            context.DrawText(MapView.Text(string.Format(culture, Strings["CabWheels"], Math.Abs(wheels)), Palette.Warn, 12),
-                             new Point(Pad + speed.Width + 4 + unit.Width + 8, 24 + speed.Height - 21));
         double gaugeX = Pad + Math.Max(150, width * 0.42);
+        // the wheels, when they turn otherwise: slipping, or locked in a skid. Signed both, so wheels slipping ahead
+        // of a train rolling back show too. Kept off the gauges at the right, as the AI's line is.
+        if (s.WheelSpeedKmh is { } wheels && Math.Abs(wheels - s.SpeedKmh) >= WheelsApartKmh)
+        {
+            double wheelsX = Pad + speed.Width + 4 + unit.Width + 8;
+            using (context.PushClip(new Rect(wheelsX, 24, Math.Max(0, gaugeX - 8 - wheelsX), 40)))
+                context.DrawText(MapView.Text(string.Format(culture, Strings["CabWheels"], Math.Abs(wheels)), Palette.Warn, 12),
+                                 new Point(wheelsX, 24 + speed.Height - 21));
+        }
         if (s.AiValid)
         {
             using (context.PushClip(new Rect(Pad, 76, gaugeX - Pad - 8, 40)))

@@ -60,13 +60,15 @@ public class BlackBoxListingTests
     public void Black_boxes_with_no_launch_noted_go_with_the_tapes_written_about_the_same_time()
     {
         var early = new DateTime(2026, 3, 1, 12, 0, 0, DateTimeKind.Utc);
+        // named in the local time they started at, whatever the zone the tests run in
+        string first = Box("td", early.AddHours(-1)), second = Box("td", early.AddMinutes(30));
         var installation = new TestInstallation(new InMemoryFileSystem()
             .WithFile(Log("a.dat"), "t")
-            .WithFile(Log("td_2026-03-01_11-00-00.blackbox"), "b")
-            .WithFile(Log("td_2026-03-01_12-30-00.blackbox"), "b")
+            .WithFile(Log(first), "b")
+            .WithFile(Log(second), "b")
             .WrittenAt(Log("a.dat"), early)
-            .WrittenAt(Log("td_2026-03-01_11-00-00.blackbox"), early.AddSeconds(2))
-            .WrittenAt(Log("td_2026-03-01_12-30-00.blackbox"), early.AddHours(1)));
+            .WrittenAt(Log(first), early.AddSeconds(2))
+            .WrittenAt(Log(second), early.AddHours(1)));
 
         var sessions = installation.Tapes.Sessions();
 
@@ -74,9 +76,9 @@ public class BlackBoxListingTests
         Assert.All(sessions, session => Assert.Null(session.Launch));
         // Newest first: the black box on its own, then the run with the tape.
         Assert.Empty(sessions[0].Tapes);
-        Assert.EndsWith("12-30-00.blackbox", Assert.Single(sessions[0].BlackBoxes).Path);
+        Assert.EndsWith(second, Assert.Single(sessions[0].BlackBoxes).Path);
         Assert.Single(sessions[1].Tapes);
-        Assert.EndsWith("11-00-00.blackbox", Assert.Single(sessions[1].BlackBoxes).Path);
+        Assert.EndsWith(first, Assert.Single(sessions[1].BlackBoxes).Path);
         Assert.Equal(early, sessions[1].StartedUtc);
     }
 
@@ -100,6 +102,31 @@ public class BlackBoxListingTests
         Assert.Null(session.Launch);
         Assert.Equal(new[] { "first", "second" }, session.Tapes.Select(tape => tape.Vehicle).Order());
         Assert.EndsWith(box, Assert.Single(session.BlackBoxes).Path);
+    }
+
+    [Fact]
+    public void A_black_box_downloaded_later_takes_in_no_tapes_of_the_runs_after_it()
+    {
+        // Shared and downloaded two weeks later, so last written then; a run of its own with no launch noted since.
+        var shared = new DateTime(2026, 3, 1, 12, 0, 0, DateTimeKind.Utc);
+        var later = shared.AddDays(7);
+        string old = Box("td", shared), own = Box("td", later);
+        var installation = new TestInstallation(new InMemoryFileSystem()
+            .WithFile(Log(old), "b").WrittenAt(Log(old), shared.AddDays(14))
+            .WithFile(Log(own), "b").WrittenAt(Log(own), later.AddMinutes(30))
+            .WithFile(Log("ra.dat"), "t").WrittenAt(Log("ra.dat"), later.AddMinutes(30).AddSeconds(1))
+            .WithFile(Log("left.dat"), "t").WrittenAt(Log("left.dat"), later.AddMinutes(10)));
+
+        var recordings = StarterNG.Application.HaslerTapes.Recordings(new[]
+        {
+            new StarterNG.Application.BlackBoxRecording(Log(old), shared.AddDays(14), 1),
+            new StarterNG.Application.BlackBoxRecording(Log(own), later.AddMinutes(30), 1),
+        });
+        Assert.EndsWith(own, StarterNG.Application.HaslerTapes.RecordingAt(later.AddMinutes(10), recordings)!.Path);
+
+        var mine = Assert.Single(installation.Tapes.Sessions(), session => session.Tapes.Count > 0);
+        Assert.Equal(new[] { "left", "ra" }, mine.Tapes.Select(tape => tape.Vehicle).Order());
+        Assert.EndsWith(own, Assert.Single(mine.BlackBoxes).Path);
     }
 
     [Fact]

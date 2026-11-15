@@ -98,6 +98,7 @@
     <String key="HaslerClockUnknown">az óra ismeretlen, az idő a szimuláció kezdetétől számít</String>
     <String key="HaslerUnreadable">A(z) {0} szalag nem olvasható.</String>
     <String key="HaslerSummary">{0} · rögzítve {1} (menet {2}, állás {3}) · út {4:0.00} km · Vmax {5:0} km/h · menetátlag {6:0} km/h · átlag megállásokkal {7:0} km/h</String>
+    <String key="HaslerGap">nem rögzítve {0}</String>
     <String key="HaslerCursor">{0} · {1:0.0} km · {2:0} km/h · hengerek {3:0.0} bar · áram {4}</String>
     <String key="HaslerTrackCylinders">Hengerek</String>
     <String key="HaslerTrackPipe">Fővez.</String>
