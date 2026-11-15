@@ -230,7 +230,8 @@ public sealed class HaslerTapeWindow : Window
         {
             _closed = true;
             _timer.Stop();
-            _tapes.Forget();
+            if (_shown is { } shown)
+                _tapes.Forget(shown.Path);
         };
     }
 
@@ -648,7 +649,7 @@ public sealed class HaslerTapeWindow : Window
             var tape = await Task.Run(() => _tapes.Load(file, follow));
             if (_closed)
             {
-                _tapes.Forget();
+                _tapes.Forget(file.Path);
                 return;
             }
             bool another = file.Path != _shown?.Path;

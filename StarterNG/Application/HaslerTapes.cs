@@ -458,11 +458,15 @@ public sealed class HaslerTapes
 
     public HaslerTape? Load(TapeFile file) => Load(file, follow: false);
 
-    /// <summary>No tape followed any more: what was kept of the last one is let go.</summary>
-    public void Forget()
+    /// <summary>
+    /// The tape of this file no longer followed: what was kept of it is let go. Another file's, followed for another
+    /// window, stays.
+    /// </summary>
+    public void Forget(string path)
     {
         lock (_followedLock)
-            _followed = null;
+            if (_followed?.Path == path)
+                _followed = null;
     }
 
     // what the file has between the two: less, up to its end, when it was cut shorter since its length was taken

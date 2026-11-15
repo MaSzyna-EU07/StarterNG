@@ -1437,6 +1437,24 @@ public class SettingsStoreTests
     }
 
     [Fact]
+    public void An_imported_ini_from_before_the_tapes_of_the_trains_is_moved_as_a_profile_is()
+    {
+        string backup = Path.Combine("/home/kolejarz", "backup", "eu07.ini");
+        var files = new InMemoryFileSystem()
+            .WithFile(UserIni, "physicslog yes\nphysicslog.trains no\n")
+            .WithFile(backup, "physicslog yes\nblackbox yes\n");
+        var store = WithHome(files).SettingsStore;
+        store.Load();
+
+        Assert.True(store.ImportFrom(backup));
+        store.Save();
+
+        Assert.False(store.Settings.PhysicsLog);
+        Assert.True(store.Settings.PhysicsLogTrains);
+        Assert.Contains("physicslog.trains yes", files.ReadAllText(UserIni, System.Text.Encoding.UTF8));
+    }
+
+    [Fact]
     public void Once_moved_the_physics_log_of_every_vehicle_turned_on_again_stays_on()
     {
         var installation = WithHome(new InMemoryFileSystem().WithFile(UserIni, "physicslog yes\nblackbox yes\n"));

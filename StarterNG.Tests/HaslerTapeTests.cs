@@ -183,6 +183,26 @@ public class HaslerTapeTests
     }
 
     [Fact]
+    public void Forgetting_another_file_keeps_the_followed_tape_and_its_own_lets_it_go()
+    {
+        string Lines(int firstSpeed, int count) =>
+            Header + Line(0, firstSpeed, 0, 0) + string.Concat(Enumerable.Range(1, count).Select(t => Line(t, 36, 0, 0)));
+        string path = TestInstallation.At("physicslog", "EU07-424.dat");
+        var files = new InMemoryFileSystem().WithFile(path, Lines(36, 20));
+        var tapes = new TestInstallation(files).Tapes;
+        var file = Assert.Single(tapes.List());
+        tapes.Load(file, follow: false);
+
+        // the first line changed, as long as it was and far from the end: a tape still followed doesn't read it again
+        files.WithFile(path, Lines(72, 21));
+        tapes.Forget(TestInstallation.At("physicslog", "EU07-111.dat"));
+        Assert.Equal(36, tapes.Load(file, follow: true)!.Samples[0].SpeedKmh, 6);
+
+        tapes.Forget(file.Path);
+        Assert.Equal(72, tapes.Load(file, follow: true)!.Samples[0].SpeedKmh, 6);
+    }
+
+    [Fact]
     public void The_sample_under_a_point_of_the_tape_is_found_by_time_and_by_distance()
     {
         var tape = HaslerTape.Parse(Header + Line(0, 36, 0, 0) + Line(1, 36, 0, 0) + Line(2, 36, 0, 0));

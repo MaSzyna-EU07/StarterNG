@@ -236,6 +236,8 @@ public sealed class SettingsStore
         s.WindowMaximized = maximized;
         s.CabLampLight = cabLampLight;
         s.DepthPrepassScene = depthPrepassScene;
+        // an ini of before the tapes of the trains goes the same way as a profile
+        SettingsSerializer.MoveToTrainTapes(s);
         return true;
     }
 
