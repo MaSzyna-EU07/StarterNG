@@ -658,6 +658,9 @@
     <String key="WarehouseAppend">Append warehouse consist</String>
     <String key="WarehouseImportFile">Add consists from file...</String>
     <String key="StartWithoutSaving">Start without saving settings</String>
+    <String key="StartUnsavedMessage">The settings have unsaved changes. The simulator starts with them only if they are saved.</String>
+    <String key="StartUnsavedSave">Save and start</String>
+    <String key="StartUnsavedWithout">Start without saving</String>
     <String key="StartMore">More ways to start</String>
     <String key="StartFreeFly">Start with no vehicle</String>
     <String key="StartEditorShort">Scenery editor</String>

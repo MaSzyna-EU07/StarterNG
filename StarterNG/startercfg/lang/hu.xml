@@ -632,6 +632,9 @@
     <String key="WarehouseAppend">Raktári szerelvény hozzáfűzése</String>
     <String key="WarehouseImportFile">Szerelvények hozzáadása fájlból...</String>
     <String key="StartWithoutSaving">Indítás a beállítások mentése nélkül</String>
+    <String key="StartUnsavedMessage">A beállításokban nem mentett módosítások vannak. A szimulátor csak akkor indul velük, ha mentve lesznek.</String>
+    <String key="StartUnsavedSave">Mentés és indítás</String>
+    <String key="StartUnsavedWithout">Indítás mentés nélkül</String>
     <String key="StartMore">További indítási módok</String>
     <String key="StartFreeFly">Indítás jármű nélkül</String>
     <String key="StartEditorShort">Pályaszerkesztő</String>

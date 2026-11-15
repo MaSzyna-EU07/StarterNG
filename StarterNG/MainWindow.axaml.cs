@@ -610,6 +610,18 @@ public partial class MainWindow : Window
                                        App.Loc["StartNoStaffTitle"], MessageBoxButtons.YesNo))
                 return;
 
+            // edits on the settings page not saved: said before they go to the simulator, or not
+            if (saveSettings && SettingsView.HasUnsavedChanges)
+            {
+                var save = await MessageBox.Choose(this, App.Loc["StartUnsavedMessage"], App.Loc["UnsavedChanges"],
+                                                   App.Loc["StartUnsavedSave"], App.Loc["StartUnsavedWithout"]);
+                if (save is null)
+                    return;
+                if (save == true)
+                    SettingsView.Save();
+                saveSettings = save == true;
+            }
+
             LoadingScreen.Prepare(trainset?.Logo, Path.GetFileNameWithoutExtension(scenery.Path));
 
             await FollowStartAsync(() => AppServices.Current.StartSimulation.Execute(freeFly, saveSettings));

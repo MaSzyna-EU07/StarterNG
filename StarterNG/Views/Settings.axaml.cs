@@ -1482,9 +1482,12 @@ public partial class Settings : UserControl, ISettingsCapture
         UpdateSaveState();
     }
 
+    /// <summary>Edits on the page, or of the keys, not saved yet: what "Niezapisane zmiany" tells.</summary>
+    public bool HasUnsavedChanges => _dirty || KeyboardConfig.Instance.Dirty;
+
     private void UpdateSaveState()
     {
-        bool dirty = _dirty || KeyboardConfig.Instance.Dirty;
+        bool dirty = HasUnsavedChanges;
         SaveButton.Classes.Set("Accent", dirty);
         SaveStatus.Text = dirty ? App.Loc["UnsavedChanges"] : string.Empty;
     }
