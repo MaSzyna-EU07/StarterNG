@@ -282,6 +282,8 @@ public sealed class EventList : ListBox
         (CabDevices.DoorStep, "DevDoorStep"), (CabDevices.DoorLock, "DevDoorLock"), (CabDevices.SpeedControl, "DevSpeedControl")
     ];
 
+    private const CabDevices DoorSides = CabDevices.DoorsLeft | CabDevices.DoorsRight | CabDevices.DoorPermitLeft | CabDevices.DoorPermitRight;
+
     /// <summary>
     /// What the driver did in the cab, from one look to the next in the same vehicle: the switches on and off, the
     /// doors opened and closed, the departure signal, the hand brake, the brakes' setting, the radio's channel, the
@@ -291,7 +293,8 @@ public sealed class EventList : ListBox
     {
         CabSample? last = null;
         bool movingOpen = false;
-        foreach (var s in recording.Cab)
+        // the doors' sides as the driver has them, from the cab the driver is in (CabSample.AsTheCabSees)
+        foreach (var s in recording.Cab.Select(sample => sample.AsTheCabSees))
         {
             if (last is not { } b || b.Vehicle != s.Vehicle)
             {
@@ -299,8 +302,10 @@ public sealed class EventList : ListBox
                 movingOpen = false;
                 continue;
             }
-            bool Came(CabDevices device) => !b.Has(device) && s.Has(device);
-            bool Went(CabDevices device) => b.Has(device) && !s.Has(device);
+            // another cab swaps the sides, and tells nothing of the doors
+            bool sameCab = b.CabEnd == s.CabEnd;
+            bool Came(CabDevices device) => !b.Has(device) && s.Has(device) && (sameCab || (device & DoorSides) == 0);
+            bool Went(CabDevices device) => b.Has(device) && !s.Has(device) && (sameCab || (device & DoorSides) == 0);
             foreach (var (device, key) in Switched)
             {
                 if (Came(device))

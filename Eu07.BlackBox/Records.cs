@@ -375,6 +375,26 @@ public readonly record struct CabSample(double Time, int Vehicle, Position Posit
     public bool Has(CabDevices device) => (Devices & device) == device;
     public bool Has(SecurityFlags flag) => (Security & flag) == flag;
 
+    private const CabDevices LeftDoors = CabDevices.DoorsLeft | CabDevices.DoorPermitLeft;
+    private const CabDevices RightDoors = CabDevices.DoorsRight | CabDevices.DoorPermitRight;
+
+    /// <summary>
+    /// The doors as the driver has them: the recording holds the left and right of the vehicle, and from its rear
+    /// cab the driver's left is the vehicle's right, as the simulator works the doors from it. Out of a cab, the
+    /// vehicle's.
+    /// </summary>
+    public CabSample AsTheCabSees =>
+        CabEnd >= 0
+            ? this
+            : this with
+            {
+                Devices = (Devices & ~(LeftDoors | RightDoors))
+                          | ((Devices & CabDevices.DoorsLeft) != 0 ? CabDevices.DoorsRight : 0)
+                          | ((Devices & CabDevices.DoorsRight) != 0 ? CabDevices.DoorsLeft : 0)
+                          | ((Devices & CabDevices.DoorPermitLeft) != 0 ? CabDevices.DoorPermitRight : 0)
+                          | ((Devices & CabDevices.DoorPermitRight) != 0 ? CabDevices.DoorPermitLeft : 0)
+            };
+
     public bool AiValid => (Flags & CabFlags.AiValid) != 0;
     public bool InCab => (Flags & CabFlags.InCab) != 0;
     public float AbsSpeedKmh => Math.Abs(SpeedKmh);

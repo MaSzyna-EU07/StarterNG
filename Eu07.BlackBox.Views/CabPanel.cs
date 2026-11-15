@@ -226,7 +226,7 @@ public sealed class CabPanel : Control
         // The doors under them, in two columns: open, permitted, the departure signal, the steps and the lock.
         top = Math.Max(bottom, top + 16 + 9 * LampRow) + 6;
         context.DrawText(MapView.Text(Strings["CabGroupDoors"], Palette.DimText, 10, FontWeight.SemiBold), new Point(Pad, top));
-        var doors = Doors(s);
+        var doors = Doors(s.AsTheCabSees);
         double doorColumn = width / DoorColumns;
         for (int i = 0; i < doors.Length; i++)
         {
