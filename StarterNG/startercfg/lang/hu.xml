@@ -592,8 +592,10 @@
     <String key="About">Névjegy</String>
     <String key="Close">Bezárás</String>
     <String key="CpuNoAvx2Title">AVX2 nélküli processzor</String>
-    <String key="CpuNoAvx2">Ez a processzor nem tudja az AVX2-t, a hivatalos szimulátornak pedig kell: nem indul el.&#10;&#10;A szimulátor lefordítható AVX2 nélkül (CMake -DENABLE_AVX2=OFF). Útmutató:&#10;{0}</String>
+    <String key="CpuNoAvx2">Ez a processzor nem tudja az AVX2-t, a hivatalos szimulátornak pedig kell: nem indul el.&#10;&#10;Van AVX2 nélküli szimulátor-változat - a fájl neve _noavx2-re végződik. Tegye a játék mappájába, és az indító magától azt használja. A szimulátor saját maga is lefordítható (CMake -DENABLE_AVX2=OFF). Útmutató:&#10;{0}</String>
     <String key="CpuNoAvx2Open">Útmutató megnyitása</String>
+    <String key="CpuNoAvx2Chosen">Ez a processzor nem tudja az AVX2-t, a kiválasztott {0} szimulátornak pedig kell: nem indul el.&#10;&#10;A játék mappájában van AVX2 nélküli változat: {1}. Az automatikus választás ezt veszi.</String>
+    <String key="CpuNoAvx2UseIt">Automatikus választás</String>
     <String key="DontShowAgain">Ne mutasd többé</String>
     <String key="SettingsPath">Beállítások betöltve innen:</String>
 
