@@ -37,6 +37,13 @@ public static class ScreenReaderNames
         ComboBox.PlaceholderTextProperty.Changed.AddClassHandler<ComboBox>((c, _) => Give(c, c.PlaceholderText));
         TextBox.PlaceholderTextProperty.Changed.AddClassHandler<TextBox>((t, _) => Give(t, t.PlaceholderText));
 
+        Control.LoadedEvent.AddClassHandler<ComboBox>((c, _) => NameByLabel(c));
+        Control.LoadedEvent.AddClassHandler<TextBox>((c, _) => NameByLabel(c));
+        Control.LoadedEvent.AddClassHandler<Slider>((c, _) => NameByLabel(c));
+        Control.LoadedEvent.AddClassHandler<NumericUpDown>((c, _) => NameByLabel(c));
+        Control.LoadedEvent.AddClassHandler<DatePicker>((c, _) => NameByLabel(c));
+        Control.LoadedEvent.AddClassHandler<TimePicker>((c, _) => NameByLabel(c));
+
         TemplatedControl.TemplateAppliedEvent.AddClassHandler<DatePicker>((p, e) => KeepPickerButton(p, e));
         TemplatedControl.TemplateAppliedEvent.AddClassHandler<TimePicker>((p, e) => KeepPickerButton(p, e));
         DatePicker.SelectedDateProperty.Changed.AddClassHandler<DatePicker>((p, _) => NamePicker(p));
@@ -84,6 +91,55 @@ public static class ScreenReaderNames
 
     public static string? TimeText(TimeSpan? time) =>
         time?.ToString(@"hh\:mm", CultureInfo.InvariantCulture);
+
+    // The labels already followed, so a label read again is not followed twice.
+    private static readonly ConditionalWeakTable<TextBlock, Control> Followed = new();
+
+    /// <summary>Longer than this, a text beside a field is a description, not its label.</summary>
+    private const int LabelLength = 60;
+
+    /// <summary>
+    /// A field named by the label a sighted reader sees beside it, and named again when
+    /// the label changes with the language. A name given otherwise is left alone.
+    /// </summary>
+    public static void NameByLabel(Control input)
+    {
+        if (LabelOf(input) is not { } label)
+            return;
+
+        Give(input, TextOf(label));
+        if (Followed.TryAdd(label, input))
+            label.PropertyChanged += (_, e) =>
+            {
+                if (e.Property == TextBlock.TextProperty)
+                    Give(input, TextOf(label));
+            };
+    }
+
+    /// <summary>
+    /// The text that labels a field: to its left in the same grid row, above it in the
+    /// same grid column, or just before it in any other panel. Null when there is none.
+    /// </summary>
+    public static TextBlock? LabelOf(Control input)
+    {
+        if (input.Parent is not Panel panel)
+            return null;
+
+        var labels = panel.Children.OfType<TextBlock>().Where(IsLabel).ToList();
+        if (panel is Grid)
+        {
+            int row = Grid.GetRow(input), column = Grid.GetColumn(input);
+            return labels.Where(t => Grid.GetRow(t) == row && Grid.GetColumn(t) < column)
+                       .OrderByDescending(Grid.GetColumn).FirstOrDefault()
+                   ?? labels.FirstOrDefault(t => Grid.GetColumn(t) == column && Grid.GetRow(t) == row - 1);
+        }
+
+        int at = panel.Children.IndexOf(input);
+        return at > 0 && panel.Children[at - 1] is TextBlock before && labels.Contains(before) ? before : null;
+    }
+
+    private static bool IsLabel(TextBlock block) =>
+        block.IsVisible && TextOf(block) is { Length: <= LabelLength };
 
     /// <summary>
     /// A panel with a title, such as Scenerie or Skład, made a named group: the reader
