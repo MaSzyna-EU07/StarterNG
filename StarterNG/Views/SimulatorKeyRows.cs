@@ -70,7 +70,7 @@ internal sealed class SimulatorKeyRows
         Control input = key.Kind switch
         {
             SimulatorKeyKind.Toggle => new CheckBox(),
-            SimulatorKeyKind.Number => new Slider
+            SimulatorKeyKind.Number => new ReadableSlider
             {
                 Minimum = key.Minimum,
                 Maximum = key.Maximum,

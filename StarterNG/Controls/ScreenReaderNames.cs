@@ -95,6 +95,16 @@ public static class ScreenReaderNames
             Give(input, label);
     }
 
+    /// <summary>
+    /// The value a setting row shows, given to the slider in it, so the reader hears
+    /// "100%" or "Wyłączone" and not where the knob stands.
+    /// </summary>
+    public static void TellValue(object? content, string? valueText)
+    {
+        foreach (var slider in Inputs(content).OfType<ReadableSlider>())
+            slider.ValueText = valueText;
+    }
+
     private static IEnumerable<Control> Inputs(object? content) => content switch
     {
         ComboBox or Slider or TextBox or NumericUpDown => new[] { (Control)content },

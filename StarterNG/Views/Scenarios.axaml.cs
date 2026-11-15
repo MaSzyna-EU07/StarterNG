@@ -762,6 +762,8 @@ public partial class Scenarios : UserControl
     {
         weatherTempLabel.Text = $"{(int)weatherTemp.Value} °C";
         weatherFogLabel.Text = FogScale2(FogScale.ToMetres(weatherFog.Value));
+        weatherTemp.ValueText = weatherTempLabel.Text;
+        weatherFog.ValueText = weatherFogLabel.Text;
         weatherDayDate.Text = string.Format(LanguageCulture, App.Loc["DayOfYear"], SelectedDayOfYear());
 
         weatherRestore.IsEnabled = _currentScenery?.Weather.Changed ?? false;

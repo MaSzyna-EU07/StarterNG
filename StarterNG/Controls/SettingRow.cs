@@ -77,6 +77,9 @@ public class SettingRow : ContentControl
 
         if (change.Property == LabelProperty || change.Property == ContentProperty)
             ScreenReaderNames.NameInputs(Content, Label);
+
+        if (change.Property == ValueTextProperty || change.Property == ContentProperty)
+            ScreenReaderNames.TellValue(Content, ValueText);
     }
 
     // Again once in the window: a panel given as content may be filled after it was set.
@@ -84,6 +87,7 @@ public class SettingRow : ContentControl
     {
         base.OnLoaded(e);
         ScreenReaderNames.NameInputs(Content, Label);
+        ScreenReaderNames.TellValue(Content, ValueText);
     }
 
     private void UpdatePseudoClasses()

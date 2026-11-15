@@ -4,6 +4,7 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:starterNg="clr-namespace:StarterNG"
              xmlns:infra="clr-namespace:StarterNG.Infrastructure"
+             xmlns:ctl="clr-namespace:StarterNG.Controls"
              xmlns:materialIcons="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
              mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
              x:Class="StarterNG.Views.Scenarios"
@@ -147,7 +148,7 @@
                             <TextBlock Grid.Row="4" Grid.Column="0" VerticalAlignment="Center"
                                        Foreground="{StaticResource CarbonFgDim}"
                                        Text="{Binding [Temperature], Source={x:Static starterNg:App.Loc}}" />
-                            <Slider Grid.Row="4" Grid.Column="2" Name="weatherTemp" AutomationProperties.Name="{Binding [Temperature], Source={x:Static starterNg:App.Loc}}"
+                            <ctl:ReadableSlider Grid.Row="4" Grid.Column="2" Name="weatherTemp" AutomationProperties.Name="{Binding [Temperature], Source={x:Static starterNg:App.Loc}}"
                                     Minimum="-50" Maximum="50"
                                     TickFrequency="1" IsSnapToTickEnabled="True"
                                     ValueChanged="Weather_OnSliderChanged" />
@@ -164,7 +165,7 @@
                             <TextBlock Grid.Row="7" Grid.Column="0" VerticalAlignment="Center"
                                        Foreground="{StaticResource CarbonFgDim}"
                                        Text="{Binding [Visibility], Source={x:Static starterNg:App.Loc}}" />
-                            <Slider Grid.Row="7" Grid.Column="2" Name="weatherFog" AutomationProperties.Name="{Binding [Visibility], Source={x:Static starterNg:App.Loc}}"
+                            <ctl:ReadableSlider Grid.Row="7" Grid.Column="2" Name="weatherFog" AutomationProperties.Name="{Binding [Visibility], Source={x:Static starterNg:App.Loc}}"
                                     Minimum="0" Maximum="1000"
                                     TickFrequency="1" IsSnapToTickEnabled="True"
                                     ValueChanged="Weather_OnSliderChanged" />
