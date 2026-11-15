@@ -49,6 +49,11 @@ public class ExpandableTreeViewItem : TreeViewItem
     {
         base.OnApplyTemplate(e);
         _row = e.NameScope.Find<Control>("PART_LayoutRoot");
+        // A part of a template is passed over when Windows looks for what lies under the
+        // mouse, so the gaps beside the arrow and the name led to the entry, which told no
+        // state. As a control the row itself is found there.
+        if (_row is not null)
+            AutomationProperties.SetAccessibilityView(_row, AccessibilityView.Control);
         TellRowLater();
     }
 
