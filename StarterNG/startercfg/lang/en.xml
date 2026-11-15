@@ -591,6 +591,9 @@
     <String key="SettingsSaved">Settings saved</String>
     <String key="DefaultsRestored">Defaults restored</String>
     <String key="SettingsRestored">Saved settings restored</String>
+    <String key="TreeExpanded">expanded</String>
+    <String key="TreeCollapsed">collapsed</String>
+    <String key="SceneryImage">Scenery picture</String>
     <String key="SettingsNotSaved">Could not save the settings</String>
     <String key="UnsavedChanges">Unsaved changes</String>
 

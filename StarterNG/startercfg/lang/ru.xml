@@ -565,6 +565,9 @@
     <String key="SettingsSaved">Настройки сохранены</String>
     <String key="DefaultsRestored">Восстановлены значения по умолчанию</String>
     <String key="SettingsRestored">Восстановлены сохранённые настройки</String>
+    <String key="TreeExpanded">развёрнуто</String>
+    <String key="TreeCollapsed">свёрнуто</String>
+    <String key="SceneryImage">Изображение сценерии</String>
     <String key="SettingsNotSaved">Не удалось сохранить настройки</String>
     <String key="UnsavedChanges">Несохранённые изменения</String>
 

@@ -8,6 +8,7 @@ using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Avalonia;
+using Avalonia.Automation;
 using Avalonia.Animation;
 using Avalonia.Controls;
 using Avalonia.Input;
@@ -410,6 +411,8 @@ public partial class Scenarios : UserControl
         sceneryDescription.Text = scenery.LocalizedDescription(AppServices.Current.SceneryTexts);
 
         string? imagePath = AppServices.Current.SceneryImages.Resolve(scenery);
+        // Under the mouse a reader hears what the picture is of.
+        AutomationProperties.SetName(sceneryImage, $"{App.Loc["SceneryImage"]}: {scenery.Name}");
         if (imagePath is not null)
         {
             try

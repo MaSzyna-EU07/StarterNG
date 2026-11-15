@@ -591,6 +591,9 @@
     <String key="SettingsSaved">Zapisano ustawienia</String>
     <String key="DefaultsRestored">Przywrócono domyślne</String>
     <String key="SettingsRestored">Przywrócono zapisane ustawienia</String>
+    <String key="TreeExpanded">rozwinięte</String>
+    <String key="TreeCollapsed">zwinięte</String>
+    <String key="SceneryImage">Obraz scenerii</String>
     <String key="SettingsNotSaved">Nie udało się zapisać ustawień</String>
     <String key="UnsavedChanges">Niezapisane zmiany</String>
 

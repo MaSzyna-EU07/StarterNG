@@ -49,4 +49,14 @@ public class ExpandableTreeViewItemTests
         Assert.Null(item.ReadableParent);
         Assert.Null(peer.GetParent());
     }
+
+    [Fact]
+    public void The_row_under_the_mouse_is_told_open_or_closed_and_a_leaf_nothing()
+    {
+        static string Loc(string key) => key == "TreeExpanded" ? "rozwinięte" : "zwinięte";
+
+        Assert.Equal("rozwinięte", ExpandableTreeViewItem.WordFor(ExpandCollapseState.Expanded, Loc));
+        Assert.Equal("zwinięte", ExpandableTreeViewItem.WordFor(ExpandCollapseState.Collapsed, Loc));
+        Assert.Null(ExpandableTreeViewItem.WordFor(ExpandCollapseState.LeafNode, Loc));
+    }
 }

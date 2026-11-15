@@ -565,6 +565,9 @@
     <String key="SettingsSaved">Nastavení uloženo</String>
     <String key="DefaultsRestored">Výchozí hodnoty obnoveny</String>
     <String key="SettingsRestored">Uložené nastavení obnoveno</String>
+    <String key="TreeExpanded">rozbaleno</String>
+    <String key="TreeCollapsed">sbaleno</String>
+    <String key="SceneryImage">Obrázek scenérie</String>
     <String key="SettingsNotSaved">Nastavení se nepodařilo uložit</String>
     <String key="UnsavedChanges">Neuložené změny</String>
 

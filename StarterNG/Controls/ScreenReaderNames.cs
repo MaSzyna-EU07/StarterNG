@@ -36,6 +36,7 @@ public static class ScreenReaderNames
 
         ComboBox.PlaceholderTextProperty.Changed.AddClassHandler<ComboBox>((c, _) => Give(c, c.PlaceholderText));
         TextBox.PlaceholderTextProperty.Changed.AddClassHandler<TextBox>((t, _) => Give(t, t.PlaceholderText));
+        SelectingItemsControl.SelectionChangedEvent.AddClassHandler<ComboBox>((c, _) => TellChoice(c));
 
         Control.LoadedEvent.AddClassHandler<ComboBox>((c, _) => NameByLabel(c));
         Control.LoadedEvent.AddClassHandler<TextBox>((c, _) => NameByLabel(c));
@@ -43,6 +44,8 @@ public static class ScreenReaderNames
         Control.LoadedEvent.AddClassHandler<NumericUpDown>((c, _) => NameByLabel(c));
         Control.LoadedEvent.AddClassHandler<DatePicker>((c, _) => NameByLabel(c));
         Control.LoadedEvent.AddClassHandler<TimePicker>((c, _) => NameByLabel(c));
+        Control.LoadedEvent.AddClassHandler<Image>((i, _) => NamePicture(i));
+        Control.LoadedEvent.AddClassHandler<PathIcon>((i, _) => NamePicture(i));
 
         TemplatedControl.TemplateAppliedEvent.AddClassHandler<DatePicker>((p, e) => KeepPickerButton(p, e));
         TemplatedControl.TemplateAppliedEvent.AddClassHandler<TimePicker>((p, e) => KeepPickerButton(p, e));
@@ -157,6 +160,56 @@ public static class ScreenReaderNames
         // Content as well as control: NVDA passes over a group that is not both.
         AutomationProperties.SetAccessibilityView(panel, name is null ? AccessibilityView.Default : AccessibilityView.Content);
     }
+
+    // How far up a picture looks for what it shows: the button or card it sits in,
+    // not the panel around them.
+    private const int PictureReach = 3;
+
+    /// <summary>
+    /// Names a picture after the button or card it lies in. Under the mouse a reader
+    /// hears what lies there, and a bare picture said nothing: a vehicle in the consist,
+    /// the logo, an icon on a button.
+    /// </summary>
+    public static void NamePicture(Control picture)
+    {
+        if ((!string.IsNullOrEmpty(AutomationProperties.GetName(picture)) && !Given.TryGetValue(picture, out _))
+            || AutomationProperties.GetLabeledBy(picture) is not null)
+            return;
+
+        var holder = picture.Parent as Control;
+        for (int i = 0; i < PictureReach && holder is not null; i++, holder = holder.Parent as Control)
+        {
+            if (!string.IsNullOrEmpty(AutomationProperties.GetName(holder)) || holder is Button)
+            {
+                AutomationProperties.SetLabeledBy(picture, holder);
+                return;
+            }
+            if (TextOf(ToolTip.GetTip(holder)) is { } tip)
+            {
+                Give(picture, tip);
+                return;
+            }
+        }
+    }
+
+    /// <summary>
+    /// Says what a closed list now holds when the arrow keys change it. Avalonia tells
+    /// Windows of a new value only for a list one types into, so NVDA said nothing.
+    /// </summary>
+    public static void TellChoice(ComboBox combo)
+    {
+        if (combo.IsKeyboardFocusWithin && !combo.IsDropDownOpen && !combo.IsEditable)
+            Announcer.Say(combo, SpokenItem(combo.SelectedItem));
+    }
+
+    /// <summary>What a reader is told a list entry is, as Avalonia tells it.</summary>
+    public static string? SpokenItem(object? item) => item switch
+    {
+        null => null,
+        Control c when AutomationProperties.GetName(c) is { Length: > 0 } name => name,
+        ContentControl c => TextOf(c.Content) ?? c.Content?.ToString(),
+        _ => TextOf(item) ?? item.ToString(),
+    };
 
     // A sign such as "?" says nothing read aloud; its tooltip says what it does.
     private static void NameButton(Button button) =>
