@@ -1258,6 +1258,23 @@ public class SettingsStoreTests
     }
 
     [Fact]
+    public void A_profile_from_before_the_move_is_not_moved_and_keeps_the_players_mark()
+    {
+        var files = new InMemoryFileSystem()
+            .WithFile(UserIni, "starter.physicslog.moved yes\nphysicslog yes\n")
+            .WithFile(Profile, "physicslog yes\n");
+        var store = WithHome(files).SettingsStore;
+        store.Load();
+
+        Assert.True(store.TryLoadProfile(Profile));
+        store.Save();
+
+        Assert.True(store.Settings.PhysicsLog);
+        Assert.False(store.Settings.PhysicsLogTrains);
+        Assert.Contains("starter.physicslog.moved yes", files.ReadAllText(UserIni, System.Text.Encoding.UTF8));
+    }
+
+    [Fact]
     public void A_missing_profile_leaves_the_settings_as_they_are()
     {
         var installation = WithHome(new InMemoryFileSystem().WithFile(UserIni, "fieldofview 60\n"));
