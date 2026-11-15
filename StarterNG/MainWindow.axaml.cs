@@ -108,7 +108,13 @@ public partial class MainWindow : Window
             _sceneryFilesTimer.Start();
             FollowLastRun();
         };
-        Activated += (_, _) => CheckExternalSettings();
+        Activated += (_, _) =>
+        {
+            CheckExternalSettings();
+            // Back from a build or a download: a new simulator is on the list already.
+            if (SettingsView.IsVisible)
+                SettingsView.RefreshExecutables();
+        };
         _sceneryFilesTimer.Tick += async (_, _) => await LookAtSceneryFilesAsync();
         Closed += (_, _) => _sceneryFilesTimer.Stop();
     }

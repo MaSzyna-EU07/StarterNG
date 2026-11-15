@@ -105,6 +105,13 @@ public partial class Settings : UserControl, ISettingsCapture
 
         FeedbackCb.SelectionChanged += FeedbackCb_OnSelectionChanged;
         SelectExeCb.SelectionChanged += (_, _) => UpdateIdleNotes();
+        // Coming to the page or to the list is when a new build is looked for.
+        SelectExeCb.GotFocus += (_, _) => RefreshExecutables();
+        PropertyChanged += (_, e) =>
+        {
+            if (e.Property == IsVisibleProperty && IsVisible)
+                RefreshExecutables();
+        };
         FullscreenWindowedCb.IsCheckedChanged += (_, _) => UpdateIdleNotes();
         App.Loc.LanguageChanged += UpdateIdleNotes;
         App.Loc.LanguageChanged += UpdateGpuNote;
@@ -246,16 +253,33 @@ public partial class Settings : UserControl, ISettingsCapture
 
     private void PopulateExeCombo()
     {
-        string? current = (SelectExeCb.SelectedItem as ComboBoxItem)?.Content?.ToString();
+        int index = SelectExeCb.SelectedIndex;
+        string? chosen = index > 0 ? (SelectExeCb.SelectedItem as ComboBoxItem)?.Content?.ToString() : null;
+        var (entries, at) = ExecutableList.Refreshed(AppServices.Current.Executables.ListCandidates(), chosen);
+
+        // The same files as shown: left alone, so a reader on the list hears nothing change.
+        var shown = SelectExeCb.Items.Skip(1).Select(item => (item as ComboBoxItem)?.Content?.ToString() ?? "");
+        if (SelectExeCb.Items.Count > 0 && shown.SequenceEqual(entries, StringComparer.Ordinal))
+            return;
+
         SelectExeCb.Items.Clear();
         SelectExeCb.Items.Add(new ComboBoxItem { Content = App.Loc["SelectEXEAuto"] });
-        foreach (string exe in AppServices.Current.Executables.ListCandidates())
+        foreach (string exe in entries)
             SelectExeCb.Items.Add(new ComboBoxItem { Content = exe });
-        if (current is not null)
-        {
-            int idx = FindComboIndexByContent(SelectExeCb, current);
-            SelectExeCb.SelectedIndex = idx >= 0 ? idx : 0;
-        }
+        if (index >= 0)
+            SelectExeCb.SelectedIndex = at >= 0 ? at + 1 : 0;
+    }
+
+    /// <summary>
+    /// Looks at the simulator folder again, so a build copied in while the starter runs is
+    /// on the list without reopening anything. The choice stays as it was and is no edit:
+    /// nothing waits for Save after it. Not while the list is open under the user's hand.
+    /// </summary>
+    public void RefreshExecutables()
+    {
+        if (SelectExeCb.IsDropDownOpen)
+            return;
+        WhileLoading(PopulateExeCombo);
     }
 
     private async void BrowseExeButton_OnClick(object? sender, RoutedEventArgs e) =>
