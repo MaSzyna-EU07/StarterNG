@@ -142,6 +142,34 @@ public class ScreenReaderNamesTests
     }
 
     [Fact]
+    public void A_setting_row_describes_its_inputs_with_its_explanation()
+    {
+        var check = new CheckBox { Content = "Tryb pełnoekranowy" };
+        var slider = new Slider();
+        var row = new SettingRow { Label = "Ekran", Content = Row(check, slider) };
+        row.Description = "Gra zajmie cały ekran.";
+        row.IdleNote = "Ten symulator nie zna tego ustawienia.";
+
+        Assert.Equal("Gra zajmie cały ekran., Ten symulator nie zna tego ustawienia.", AutomationProperties.GetHelpText(check));
+        Assert.Equal(AutomationProperties.GetHelpText(check), AutomationProperties.GetHelpText(slider));
+        Assert.Null(AutomationProperties.GetName(check));
+
+        row.Description = null;
+        row.IdleNote = null;
+        Assert.Null(AutomationProperties.GetHelpText(check));
+    }
+
+    [Fact]
+    public void A_description_given_on_purpose_is_left_alone()
+    {
+        var box = new TextBox();
+        AutomationProperties.SetHelpText(box, "Ścieżka do exe");
+        _ = new SettingRow { Content = box, Description = "Plik symulatora" };
+
+        Assert.Equal("Ścieżka do exe", AutomationProperties.GetHelpText(box));
+    }
+
+    [Fact]
     public void A_setting_row_without_a_label_leaves_its_input_unnamed()
     {
         var box = new TextBox();

@@ -154,11 +154,46 @@ public static class ScreenReaderNames
         string? name = TextOf(panel.Header);
         Give(panel, name);
         AutomationProperties.SetControlTypeOverride(panel, name is null ? null : AutomationControlType.Group);
-        AutomationProperties.SetIsControlElementOverride(panel, name is null ? null : true);
+        // Content as well as control: NVDA passes over a group that is not both.
+        AutomationProperties.SetAccessibilityView(panel, name is null ? AccessibilityView.Default : AccessibilityView.Content);
     }
 
     private static void NameButton(Button button) =>
         Give(button, button.Content is string ? null : TextOf(ToolTip.GetTip(button)) ?? TextOf(button.Content));
+
+    // The descriptions given here, so a later one replaces it but nothing else.
+    private static readonly ConditionalWeakTable<StyledElement, string> Described = new();
+
+    /// <summary>
+    /// The inputs of a setting row, described by the row's explanation and the note on
+    /// why the simulator would pass it over: a reader hears them after the name, where
+    /// a sighted one sees them under it.
+    /// </summary>
+    public static void DescribeInputs(object? content, params string?[] notes)
+    {
+        string? text = Join(notes) is { Length: > 0 } joined ? joined : null;
+        foreach (var input in DescribedInputs(content))
+            Describe(input, text);
+    }
+
+    private static void Describe(StyledElement target, string? text)
+    {
+        string? current = AutomationProperties.GetHelpText(target);
+        bool ours = Described.TryGetValue(target, out string? given) && current == given;
+        if (!string.IsNullOrEmpty(current) && !ours)
+            return;
+
+        if (string.IsNullOrEmpty(text))
+        {
+            if (ours)
+                target.ClearValue(AutomationProperties.HelpTextProperty);
+            Described.Remove(target);
+            return;
+        }
+
+        AutomationProperties.SetHelpText(target, text);
+        Described.AddOrUpdate(target, text);
+    }
 
     /// <summary>
     /// The inputs of a setting row, named by the row's label: a list, a slider or a box
@@ -186,6 +221,15 @@ public static class ScreenReaderNames
         Panel panel => panel.Children.SelectMany(Inputs),
         Decorator decorator => Inputs(decorator.Child),
         _ => Array.Empty<Control>()
+    };
+
+    // A check box says its own text, so it is described but never named by the row.
+    private static IEnumerable<Control> DescribedInputs(object? content) => content switch
+    {
+        CheckBox box => new[] { (Control)box },
+        Panel panel => panel.Children.SelectMany(DescribedInputs),
+        Decorator decorator => DescribedInputs(decorator.Child),
+        _ => Inputs(content)
     };
 
     /// <summary>The text a reader would see on it, or null when it shows none.</summary>

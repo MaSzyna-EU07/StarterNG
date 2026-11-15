@@ -166,7 +166,7 @@
                                        Foreground="{StaticResource CarbonFgDim}"
                                        Text="{Binding [Visibility], Source={x:Static starterNg:App.Loc}}" />
                             <ctl:ReadableSlider Grid.Row="7" Grid.Column="2" Name="weatherFog" AutomationProperties.Name="{Binding [Visibility], Source={x:Static starterNg:App.Loc}}"
-                                    Minimum="0" Maximum="1000"
+                                    Minimum="0" Maximum="1000" SmallChange="20" LargeChange="100"
                                     TickFrequency="1" IsSnapToTickEnabled="True"
                                     ValueChanged="Weather_OnSliderChanged" />
                             <TextBlock Grid.Row="7" Grid.Column="4" Name="weatherFogLabel"

@@ -92,7 +92,7 @@ public class NamedGroupTests
 
         Assert.Equal("Scenerie", AutomationProperties.GetName(panel));
         Assert.Equal(AutomationControlType.Group, AutomationProperties.GetControlTypeOverride(panel));
-        Assert.True(AutomationProperties.GetIsControlElementOverride(panel));
+        Assert.Equal(AccessibilityView.Content, AutomationProperties.GetAccessibilityView(panel));
     }
 
     [Fact]
@@ -103,6 +103,7 @@ public class NamedGroupTests
 
         Assert.Null(AutomationProperties.GetName(panel));
         Assert.Null(AutomationProperties.GetControlTypeOverride(panel));
+        Assert.Equal(AccessibilityView.Default, AutomationProperties.GetAccessibilityView(panel));
     }
 
     [Fact]
