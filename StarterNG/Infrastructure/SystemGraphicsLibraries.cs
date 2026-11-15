@@ -19,58 +19,72 @@ namespace StarterNG.Infrastructure;
 /// Elsewhere there is nothing of the kind to keep out. Under Wine or Proton the system
 /// folder is the prefix's, so what is taken there is what would have been taken anyway.
 /// </summary>
-public static class SystemGraphicsLibraries
+public sealed class SystemGraphicsLibraries
 {
+    public delegate bool Loader(string path, out IntPtr handle);
+
     // dxgi ahead of d3d11, which asks for it.
-    private static readonly string[] Names = { "dxgi", "d3d11", "d3d9", "opengl32" };
+    public static readonly IReadOnlyList<string> Names = new[] { "dxgi", "d3d11", "d3d9", "opengl32" };
 
-    private static readonly Dictionary<string, IntPtr> Loaded = new(StringComparer.OrdinalIgnoreCase);
-    private static readonly List<string> Shadowed = new();
+    private readonly Dictionary<string, IntPtr> _loaded = new(StringComparer.OrdinalIgnoreCase);
+    private readonly List<string> _shadowed = new();
 
-    /// <param name="importers">The assemblies whose imports of these libraries are to get the system ones.</param>
-    public static void LoadFirst(params Assembly[] importers)
+    private SystemGraphicsLibraries()
     {
-        if (!OperatingSystem.IsWindows())
-            return;
+    }
 
-        string system = Environment.SystemDirectory;
-        string own = AppContext.BaseDirectory;
+    /// <summary>The files of these names that lay beside the starter.</summary>
+    public IReadOnlyList<string> Shadowed => _shadowed;
 
+    /// <summary>What goes to the log about them, or null when none lay there.</summary>
+    public string? Note => _shadowed.Count > 0
+        ? $"Graphics libraries beside the starter, left to the simulator: {string.Join(", ", _shadowed)}"
+        : null;
+
+    /// <summary>The libraries of this Windows, or null on any other system.</summary>
+    public static SystemGraphicsLibraries? TakeOnWindows() =>
+        OperatingSystem.IsWindows()
+            ? Take(Environment.SystemDirectory, AppContext.BaseDirectory, File.Exists, NativeLibrary.TryLoad)
+            : null;
+
+    public static SystemGraphicsLibraries Take(string systemDirectory, string ownDirectory,
+                                               Func<string, bool> exists, Loader load)
+    {
+        var taken = new SystemGraphicsLibraries();
         foreach (string name in Names)
         {
             string file = name + ".dll";
-            if (File.Exists(Path.Combine(own, file)))
-                Shadowed.Add(file);
-            if (NativeLibrary.TryLoad(Path.Combine(system, file), out IntPtr handle))
-                Loaded[name] = handle;
+            if (exists(Path.Combine(ownDirectory, file)))
+                taken._shadowed.Add(file);
+            if (load(Path.Combine(systemDirectory, file), out IntPtr handle))
+                taken._loaded[name] = handle;
         }
-
-        foreach (var importer in importers)
-        {
-            try
-            {
-                NativeLibrary.SetDllImportResolver(importer, Resolve);
-            }
-            catch (InvalidOperationException)
-            {
-                // It has a resolver of its own already; that one decides.
-            }
-        }
+        return taken;
     }
 
-    private static IntPtr Resolve(string libraryName, Assembly assembly, DllImportSearchPath? searchPath)
+    /// <summary>The system library for an import of one of these names; zero leaves it to the usual search.</summary>
+    public IntPtr Resolve(string libraryName)
     {
         string name = libraryName.EndsWith(".dll", StringComparison.OrdinalIgnoreCase)
             ? libraryName[..^4]
             : libraryName;
-        // Zero leaves the library to the usual search.
-        return Loaded.TryGetValue(name, out IntPtr handle) ? handle : IntPtr.Zero;
+        return _loaded.TryGetValue(name, out IntPtr handle) ? handle : IntPtr.Zero;
     }
 
-    /// <summary>Which of them lay beside the starter, once the log can take it.</summary>
-    public static void LogShadowed()
+    /// <summary>
+    /// The assembly's imports of these names get the system libraries. False when it
+    /// has a resolver of its own already; that one decides.
+    /// </summary>
+    public bool ServeTo(Assembly importer)
     {
-        if (Shadowed.Count > 0)
-            Diagnostics.Log($"Graphics libraries beside the starter, left to the simulator: {string.Join(", ", Shadowed)}");
+        try
+        {
+            NativeLibrary.SetDllImportResolver(importer, (name, _, _) => Resolve(name));
+            return true;
+        }
+        catch (InvalidOperationException)
+        {
+            return false;
+        }
     }
 }
