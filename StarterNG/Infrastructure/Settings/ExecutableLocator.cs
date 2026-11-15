@@ -37,7 +37,7 @@ public sealed class ExecutableLocator
 
     /// <summary>
     /// The end of the name of a simulator built without AVX2, last before any extension:
-    /// eu07-x64_20261115_abc1234_noavx2.exe, eu07_noavx2. It runs on any x86-64 processor.
+    /// eu07-x64_2026-11-15_abc1234_noavx2.exe, eu07_noavx2. It runs on any x86-64 processor.
     /// </summary>
     public const string NoAvx2Suffix = "_noavx2";
 

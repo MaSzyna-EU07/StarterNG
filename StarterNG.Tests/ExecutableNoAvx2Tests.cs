@@ -24,10 +24,10 @@ public class ExecutableNoAvx2Tests
 
     [Theory]
     [InlineData("eu07_noavx2", true)]
-    [InlineData("eu07-x64_20261115_abc1234_noavx2.exe", true)]
+    [InlineData("eu07-x64_2026-11-15_abc1234_noavx2.exe", true)]
     [InlineData("EU07_NOAVX2.EXE", true)]
     [InlineData("eu07", false)]
-    [InlineData("eu07-x64_20261115_abc1234.exe", false)]
+    [InlineData("eu07-x64_2026-11-15_abc1234.exe", false)]
     [InlineData("eu07_noavx2_old.exe", false)]
     public void A_build_without_avx2_is_known_by_the_end_of_its_name(string name, bool noAvx2) =>
         Assert.Equal(noAvx2, ExecutableLocator.IsNoAvx2(name));
@@ -47,11 +47,11 @@ public class ExecutableNoAvx2Tests
     [Fact]
     public void Without_avx2_the_newest_build_without_it_is_chosen()
     {
-        var files = With("eu07_20261101_aaa_noavx2", "eu07_20261115_bbb_noavx2")
-            .WrittenAt(TestInstallation.At("eu07_20261101_aaa_noavx2"), Older)
-            .WrittenAt(TestInstallation.At("eu07_20261115_bbb_noavx2"), Newer);
+        var files = With("eu07_2026-11-01_aaa_noavx2", "eu07_2026-11-15_bbb_noavx2")
+            .WrittenAt(TestInstallation.At("eu07_2026-11-01_aaa_noavx2"), Older)
+            .WrittenAt(TestInstallation.At("eu07_2026-11-15_bbb_noavx2"), Newer);
 
-        Assert.Equal("eu07_20261115_bbb_noavx2", Automatic(files, lacksAvx2: true));
+        Assert.Equal("eu07_2026-11-15_bbb_noavx2", Automatic(files, lacksAvx2: true));
     }
 
     [Fact]
@@ -72,11 +72,11 @@ public class ExecutableNoAvx2Tests
     [Fact]
     public void The_newest_build_without_avx2_is_offered_by_name()
     {
-        var files = With("eu07", "eu07_20261101_aaa_noavx2", "eu07_20261115_bbb_noavx2")
-            .WrittenAt(TestInstallation.At("eu07_20261101_aaa_noavx2"), Older)
-            .WrittenAt(TestInstallation.At("eu07_20261115_bbb_noavx2"), Newer);
+        var files = With("eu07", "eu07_2026-11-01_aaa_noavx2", "eu07_2026-11-15_bbb_noavx2")
+            .WrittenAt(TestInstallation.At("eu07_2026-11-01_aaa_noavx2"), Older)
+            .WrittenAt(TestInstallation.At("eu07_2026-11-15_bbb_noavx2"), Newer);
 
-        Assert.Equal("eu07_20261115_bbb_noavx2", new TestInstallation(files).Executables.NewestNoAvx2());
+        Assert.Equal("eu07_2026-11-15_bbb_noavx2", new TestInstallation(files).Executables.NewestNoAvx2());
         Assert.Null(new TestInstallation(With("eu07")).Executables.NewestNoAvx2());
     }
 }
