@@ -9,6 +9,25 @@ namespace StarterNG.Infrastructure.Settings;
 
 public sealed class SettingsSerializer
 {
+    // the physics log of every vehicle moved once to the tapes of the trains (SimulatorSettings.PhysicsLogMoved)
+    private const string PhysicsLogMovedKey = "starter.physicslog.moved";
+
+    /// <summary>
+    /// "physicslog yes", left on from a starter which called it the speedometer's tapes: the log of every vehicle,
+    /// hundreds of files on a big scenery. Moved once to the tapes of the trains, with the black box unless the ini
+    /// turned it off itself; whoever wants the log of every vehicle turns it on again, and it stays so. A change of
+    /// the starter's, after the file is read, so saving writes it.
+    /// </summary>
+    public static void MovePhysicsLog(SimulatorSettings s)
+    {
+        if (!s.PhysicsLogMoved && s.PhysicsLog)
+        {
+            s.PhysicsLog = false;
+            s.PhysicsLogTrains = true;
+        }
+        s.PhysicsLogMoved = true;
+    }
+
     private readonly bool _dlssPlatform;
 
     /// <param name="dlssPlatform">Whether the simulator can have DLSS here at all (not on macOS).</param>
@@ -162,6 +181,7 @@ public sealed class SettingsSerializer
         // the simulator records the black box along with the physics logs when the ini says nothing of it
         s.BlackBoxInIni = c.Has("blackbox");
         s.BlackBox = s.BlackBoxInIni ? c.GetBool("blackbox", false) : s.PhysicsLog || s.PhysicsLogTrains;
+        s.PhysicsLogMoved = c.GetBool(PhysicsLogMovedKey, false);
         int debugLog = c.GetInt("debuglog", 3);
         s.DebugLog = (debugLog & 1) != 0;
         s.DebugLogVisible = (debugLog & 2) != 0;
@@ -382,6 +402,8 @@ public sealed class SettingsSerializer
         // a simulator before it doesn't know the line: an ini without it stays so while it is off
         if (s.PhysicsLogTrainsInIni || s.PhysicsLogTrains)
             c.SetBool("physicslog.trains", s.PhysicsLogTrains);
+        if (s.PhysicsLogMoved)
+            c.SetBool(PhysicsLogMovedKey, true);
         c.SetInt("debuglog",
             (s.DebugLog ? 1 : 0) | (s.DebugLogVisible ? 2 : 0) | s.DebugLogExtraBits);
         c.SetBool("multiplelogs", s.MultipleLogs);

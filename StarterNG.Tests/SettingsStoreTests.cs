@@ -1304,9 +1304,9 @@ public class SettingsStoreTests
     }
 
     [Theory]
-    [InlineData("physicslog yes\n", true)]
+    [InlineData("starter.physicslog.moved yes\nphysicslog yes\n", true)]
     [InlineData("physicslog no\n", false)]
-    [InlineData("physicslog yes\nblackbox no\n", false)]
+    [InlineData("starter.physicslog.moved yes\nphysicslog yes\nblackbox no\n", false)]
     [InlineData("physicslog no\nblackbox yes\n", true)]
     public void The_black_box_goes_with_the_physics_log_unless_the_ini_says_otherwise(string ini, bool recorded)
     {
@@ -1333,7 +1333,7 @@ public class SettingsStoreTests
     [Fact]
     public void A_black_box_that_says_no_more_than_the_physics_log_adds_no_line()
     {
-        var installation = WithHome(new InMemoryFileSystem().WithFile(UserIni, "physicslog yes\n"));
+        var installation = WithHome(new InMemoryFileSystem().WithFile(UserIni, "starter.physicslog.moved yes\nphysicslog yes\n"));
         installation.SettingsStore.Load();
         installation.SettingsStore.Settings.Width = 1600;
 
@@ -1343,7 +1343,7 @@ public class SettingsStoreTests
     }
 
     [Theory]
-    [InlineData("physicslog yes\nblackbox yes\n")]
+    [InlineData("starter.physicslog.moved yes\nphysicslog yes\nblackbox yes\n")]
     [InlineData("physicslog no\nblackbox yes\n")]
     public void A_black_box_line_of_the_file_says_no_once_the_box_is_off(string ini)
     {
@@ -1362,7 +1362,7 @@ public class SettingsStoreTests
     public void The_physics_log_turned_off_keeps_the_tapes_it_brought()
     {
         // an ini of before the black box had a key: the tapes came with the physics log
-        var installation = WithHome(new InMemoryFileSystem().WithFile(UserIni, "physicslog yes\n"));
+        var installation = WithHome(new InMemoryFileSystem().WithFile(UserIni, "starter.physicslog.moved yes\nphysicslog yes\n"));
         installation.SettingsStore.Load();
         installation.SettingsStore.Settings.PhysicsLog = false;
 
@@ -1383,6 +1383,50 @@ public class SettingsStoreTests
 
         Assert.Equal(trains, installation.SettingsStore.Settings.PhysicsLogTrains);
         Assert.Equal(recorded, installation.SettingsStore.Settings.BlackBox);
+    }
+
+    [Theory]
+    [InlineData("physicslog yes\n", true)]
+    [InlineData("physicslog yes\nblackbox no\n", false)]
+    public void The_physics_log_of_every_vehicle_left_on_is_moved_once_to_the_tapes_of_the_trains(string ini, bool recorded)
+    {
+        var installation = WithHome(new InMemoryFileSystem().WithFile(UserIni, ini));
+
+        installation.SettingsStore.Load();
+        var s = installation.SettingsStore.Settings;
+        Assert.False(s.PhysicsLog);
+        Assert.True(s.PhysicsLogTrains);
+        // a black box the ini turned off itself stays off
+        Assert.Equal(recorded, s.BlackBox);
+
+        installation.SettingsStore.Save();
+        Assert.Equal("physicslog no", LineFor(installation, "physicslog"));
+        Assert.Equal("physicslog.trains yes", LineFor(installation, "physicslog.trains"));
+        Assert.Equal("starter.physicslog.moved yes", LineFor(installation, "starter.physicslog.moved"));
+    }
+
+    [Fact]
+    public void The_physics_log_of_every_vehicle_turned_on_again_stays_on()
+    {
+        var installation = WithHome(new InMemoryFileSystem().WithFile(UserIni, "physicslog yes\n"));
+        installation.SettingsStore.Load();
+        installation.SettingsStore.Settings.PhysicsLog = true;
+        installation.SettingsStore.Save();
+
+        installation.SettingsStore.Load();
+
+        Assert.True(installation.SettingsStore.Settings.PhysicsLog);
+        Assert.Equal("physicslog yes", LineFor(installation, "physicslog"));
+    }
+
+    [Fact]
+    public void A_new_ini_is_marked_so_the_physics_log_turned_on_later_is_never_moved()
+    {
+        var installation = WithHome(new InMemoryFileSystem().WithFile(UserIni, "physicslog no\n"));
+        installation.SettingsStore.Load();
+        installation.SettingsStore.Save();
+
+        Assert.Equal("starter.physicslog.moved yes", LineFor(installation, "starter.physicslog.moved"));
     }
 
     [Fact]

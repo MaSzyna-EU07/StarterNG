@@ -147,6 +147,11 @@ public sealed class SimulatorSettings
     public bool PhysicsLogTrains;
     /// <summary>Whether eu07.ini had a line for the logs of the trains when read: kept, else written only when on.</summary>
     public bool PhysicsLogTrainsInIni;
+    /// <summary>
+    /// Whether the physics log of every vehicle, which a starter before called the speedometer's tapes, was moved once
+    /// to the tapes of the trains and the black box: an ini read with it on and this not yet done is moved so.
+    /// </summary>
+    public bool PhysicsLogMoved;
     public bool DebugLog = true;
     public bool MultipleLogs;
     public bool DisplaySimulation = true;

@@ -113,6 +113,8 @@ public sealed class SettingsStore
 
         _serializer.Read(Settings, _config);
         _synced = Render(Settings);
+        if (!LoadFailed)
+            SettingsSerializer.MovePhysicsLog(Settings);
         TouchConfigAge();
     }
 
