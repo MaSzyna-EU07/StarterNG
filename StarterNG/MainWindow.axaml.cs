@@ -14,6 +14,7 @@ using Avalonia.Threading;
 using Avalonia.VisualTree;
 using StarterNG.Classes;
 using StarterNG.Infrastructure;
+using StarterNG.Infrastructure.Adapters;
 using StarterNG.Views;
 using StarterNG.Application;
 using StarterNG.Application.Abstractions;
@@ -39,8 +40,16 @@ public partial class MainWindow : Window
     private DateTime _openedUtc = DateTime.UtcNow;
     private DateTime _startedUtc = DateTime.MinValue;
     private bool _starting;
-    private bool _lookingAtSceneryFiles;
-    private readonly DispatcherTimer _sceneryFilesTimer = new() { Interval = TimeSpan.FromSeconds(2) };
+    // Scenery files: looked at when the system reports a change, once the burst a save makes
+    // has passed; on coming back to the window or from the simulator; and now and then anyway,
+    // for the drives and systems where the reports do not come - often where none come at all.
+    private static readonly TimeSpan SceneryQuiet = TimeSpan.FromMilliseconds(400);
+    private static readonly TimeSpan SceneryLookWatched = TimeSpan.FromSeconds(30);
+    private static readonly TimeSpan SceneryLookUnwatched = TimeSpan.FromSeconds(2);
+    private readonly DispatcherTimer _sceneryQuietTimer = new() { Interval = SceneryQuiet };
+    private readonly DispatcherTimer _sceneryFilesTimer = new() { Interval = SceneryLookUnwatched };
+    private readonly OneAtATime _sceneryLook;
+    private FolderChanges? _sceneryChanges;
 
     public MainWindow()
     {
@@ -100,29 +109,57 @@ public partial class MainWindow : Window
         AddHandler(KeyDownEvent, OnShortcutKey, RoutingStrategies.Tunnel);
 
         AppServices.Current.State.Changed += UpdateStartButton;
+        _sceneryLook = new OneAtATime(LookAtSceneryFilesAsync);
         Opened += (_, _) =>
         {
 
             _openedUtc = DateTime.UtcNow;
             UpdateStartButton();
-            _sceneryFilesTimer.Start();
+            WatchSceneryFiles();
             FollowLastRun();
         };
-        Activated += (_, _) => CheckExternalSettings();
-        _sceneryFilesTimer.Tick += async (_, _) => await LookAtSceneryFilesAsync();
-        Closed += (_, _) => _sceneryFilesTimer.Stop();
+        Activated += async (_, _) =>
+        {
+            CheckExternalSettings();
+            await _sceneryLook.RunAsync();
+        };
+        _sceneryFilesTimer.Tick += async (_, _) => await _sceneryLook.RunAsync();
+        _sceneryQuietTimer.Tick += async (_, _) =>
+        {
+            _sceneryQuietTimer.Stop();
+            await _sceneryLook.RunAsync();
+        };
+        Closed += (_, _) =>
+        {
+            _sceneryFilesTimer.Stop();
+            _sceneryQuietTimer.Stop();
+            _sceneryChanges?.Dispose();
+        };
+    }
+
+    private void WatchSceneryFiles()
+    {
+        _sceneryChanges = new FolderChanges(AppServices.Current.Paths.Scenery);
+        // Each report puts the look off again, so a save of many files is one look after it.
+        _sceneryChanges.Changed += () => Dispatcher.UIThread.Post(() =>
+        {
+            _sceneryQuietTimer.Stop();
+            _sceneryQuietTimer.Start();
+        });
+        _sceneryFilesTimer.Interval = _sceneryChanges.Watching ? SceneryLookWatched : SceneryLookUnwatched;
+        _sceneryFilesTimer.Start();
     }
 
     /// <summary>
     /// Scenery files changed outside the starter are picked up without a reload. Not
     /// with the simulator running: it is left in peace, and what it changes comes in after it.
+    /// Run through <see cref="_sceneryLook"/>, one look at a time.
     /// </summary>
     private async Task LookAtSceneryFilesAsync()
     {
-        if (_lookingAtSceneryFiles || AppServices.Current.State.SimulatorRunning || !IsVisible || WindowState == WindowState.Minimized)
+        if (AppServices.Current.State.SimulatorRunning || !IsVisible || WindowState == WindowState.Minimized)
             return;
 
-        _lookingAtSceneryFiles = true;
         try
         {
             var services = AppServices.Current;
@@ -137,10 +174,6 @@ public partial class MainWindow : Window
         catch (Exception ex)
         {
             Diagnostics.Log("Following the scenery files", ex);
-        }
-        finally
-        {
-            _lookingAtSceneryFiles = false;
         }
     }
 
@@ -700,6 +733,8 @@ public partial class MainWindow : Window
             FollowLastRun();
             RestoreFromSimulator();
             ReportIfCrashed(simulator, executable, started);
+            // What the simulator or its editor wrote while it ran comes in now.
+            _ = _sceneryLook.RunAsync();
         }), TaskScheduler.Default);
     }
 
