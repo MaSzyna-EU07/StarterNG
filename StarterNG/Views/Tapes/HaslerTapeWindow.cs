@@ -224,7 +224,11 @@ public sealed class HaslerTapeWindow : Window
             await RefreshListAsync();
         };
         Activated += (_, _) => ShowWhatIsKnown();
-        Closed += (_, _) => _timer.Stop();
+        Closed += (_, _) =>
+        {
+            _timer.Stop();
+            _tapes.Forget();
+        };
     }
 
     /// <summary>

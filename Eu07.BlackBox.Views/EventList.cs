@@ -302,8 +302,8 @@ public sealed class EventList : ListBox
                 movingOpen = false;
                 continue;
             }
-            // another cab swaps the sides, and tells nothing of the doors
-            bool sameCab = b.CabEnd == s.CabEnd;
+            // the other end swaps the sides, and tells nothing of the doors; no cab (0) sees them as the front one does
+            bool sameCab = (b.CabEnd < 0) == (s.CabEnd < 0);
             bool Came(CabDevices device) => !b.Has(device) && s.Has(device) && (sameCab || (device & DoorSides) == 0);
             bool Went(CabDevices device) => b.Has(device) && !s.Has(device) && (sameCab || (device & DoorSides) == 0);
             foreach (var (device, key) in Switched)

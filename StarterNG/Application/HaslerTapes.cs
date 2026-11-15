@@ -458,12 +458,29 @@ public sealed class HaslerTapes
 
     public HaslerTape? Load(TapeFile file) => Load(file, follow: false);
 
+    /// <summary>No tape followed any more: what was kept of the last one is let go.</summary>
+    public void Forget()
+    {
+        lock (_followedLock)
+            _followed = null;
+    }
+
+    // what the file has between the two: less, up to its end, when it was cut shorter since its length was taken
     private static byte[] Bytes(Stream stream, long from, long to)
     {
         stream.Seek(from, SeekOrigin.Begin);
         var bytes = new byte[to - from];
-        stream.ReadExactly(bytes);
-        return bytes;
+        int read = stream.ReadAtLeast(bytes, bytes.Length, throwOnEndOfStream: false);
+        return read == bytes.Length ? bytes : bytes[..read];
+    }
+
+    // the end of what was read, after the part added to it
+    private static byte[] Tail(byte[] before, byte[] added)
+    {
+        if (added.Length >= FollowedTail)
+            return added[^FollowedTail..];
+        var keptBefore = Math.Min(before.Length, FollowedTail - added.Length);
+        return [.. before[^keptBefore..], .. added];
     }
 
     /// <summary>
@@ -492,14 +509,17 @@ public sealed class HaslerTapes
                 if (!follow || _followed is not { } followed || followed.Path != file.Path || length < followed.Read
                     || !Bytes(stream, followed.Read - followed.Tail.Length, followed.Read).AsSpan().SequenceEqual(followed.Tail))
                     followed = (file.Path, 0, Array.Empty<byte>(), new HaslerTape.Reader());
-                followed.Reader.Feed(Encoding.ASCII.GetString(Bytes(stream, followed.Read, length)));
+                // what was read, not the length taken before: the file may be cut shorter meanwhile
+                var added = Bytes(stream, followed.Read, length);
+                followed.Reader.Feed(Encoding.ASCII.GetString(added));
                 // the time went back in what was added: the log begun anew and already longer than was read
                 if (followed.Read > 0 && followed.Reader.WentBack)
                 {
                     followed = (file.Path, 0, Array.Empty<byte>(), new HaslerTape.Reader());
-                    followed.Reader.Feed(Encoding.ASCII.GetString(Bytes(stream, 0, length)));
+                    added = Bytes(stream, 0, length);
+                    followed.Reader.Feed(Encoding.ASCII.GetString(added));
                 }
-                _followed = (file.Path, length, Bytes(stream, Math.Max(0, length - FollowedTail), length), followed.Reader);
+                _followed = (file.Path, followed.Read + added.Length, Tail(followed.Tail, added), followed.Reader);
                 return followed.Reader.Tape(final: !follow);
             }
             catch (Exception ex)
