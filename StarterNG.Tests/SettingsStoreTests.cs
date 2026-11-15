@@ -1258,20 +1258,20 @@ public class SettingsStoreTests
     }
 
     [Fact]
-    public void A_profile_from_before_the_move_is_not_moved_and_keeps_the_players_mark()
+    public void A_profile_from_before_the_tapes_of_the_trains_is_moved_as_the_ini_would_be()
     {
         var files = new InMemoryFileSystem()
-            .WithFile(UserIni, "starter.physicslog.moved yes\nphysicslog yes\n")
-            .WithFile(Profile, "physicslog yes\n");
+            .WithFile(UserIni, "physicslog no\nphysicslog.trains no\n")
+            .WithFile(Profile, "physicslog yes\nblackbox yes\n");
         var store = WithHome(files).SettingsStore;
         store.Load();
 
         Assert.True(store.TryLoadProfile(Profile));
         store.Save();
 
-        Assert.True(store.Settings.PhysicsLog);
-        Assert.False(store.Settings.PhysicsLogTrains);
-        Assert.Contains("starter.physicslog.moved yes", files.ReadAllText(UserIni, System.Text.Encoding.UTF8));
+        Assert.False(store.Settings.PhysicsLog);
+        Assert.True(store.Settings.PhysicsLogTrains);
+        Assert.Contains("physicslog.trains yes", files.ReadAllText(UserIni, System.Text.Encoding.UTF8));
     }
 
     [Fact]
@@ -1321,9 +1321,9 @@ public class SettingsStoreTests
     }
 
     [Theory]
-    [InlineData("starter.physicslog.moved yes\nphysicslog yes\n", true)]
+    [InlineData("physicslog yes\n", true)]
     [InlineData("physicslog no\n", false)]
-    [InlineData("starter.physicslog.moved yes\nphysicslog yes\nblackbox no\n", false)]
+    [InlineData("physicslog yes\nblackbox no\n", false)]
     [InlineData("physicslog no\nblackbox yes\n", true)]
     public void The_black_box_goes_with_the_physics_log_unless_the_ini_says_otherwise(string ini, bool recorded)
     {
@@ -1350,7 +1350,7 @@ public class SettingsStoreTests
     [Fact]
     public void A_black_box_that_says_no_more_than_the_physics_log_adds_no_line()
     {
-        var installation = WithHome(new InMemoryFileSystem().WithFile(UserIni, "starter.physicslog.moved yes\nphysicslog yes\n"));
+        var installation = WithHome(new InMemoryFileSystem().WithFile(UserIni, "physicslog yes\n"));
         installation.SettingsStore.Load();
         installation.SettingsStore.Settings.Width = 1600;
 
@@ -1360,7 +1360,7 @@ public class SettingsStoreTests
     }
 
     [Theory]
-    [InlineData("starter.physicslog.moved yes\nphysicslog yes\nblackbox yes\n")]
+    [InlineData("physicslog yes\nblackbox yes\n")]
     [InlineData("physicslog no\nblackbox yes\n")]
     public void A_black_box_line_of_the_file_says_no_once_the_box_is_off(string ini)
     {
@@ -1379,7 +1379,7 @@ public class SettingsStoreTests
     public void The_physics_log_turned_off_keeps_the_tapes_it_brought()
     {
         // an ini of before the black box had a key: the tapes came with the physics log
-        var installation = WithHome(new InMemoryFileSystem().WithFile(UserIni, "starter.physicslog.moved yes\nphysicslog yes\n"));
+        var installation = WithHome(new InMemoryFileSystem().WithFile(UserIni, "physicslog yes\n"));
         installation.SettingsStore.Load();
         installation.SettingsStore.Settings.PhysicsLog = false;
 
@@ -1403,9 +1403,9 @@ public class SettingsStoreTests
     }
 
     [Theory]
-    [InlineData("physicslog yes\n", true)]
-    [InlineData("physicslog yes\nblackbox no\n", false)]
-    public void The_physics_log_of_every_vehicle_left_on_is_moved_once_to_the_tapes_of_the_trains(string ini, bool recorded)
+    [InlineData("physicslog yes\nblackbox yes\n")]
+    [InlineData("physicslog no\nblackbox yes\n")]
+    public void Recording_turned_on_before_the_tapes_of_the_trains_is_moved_to_them(string ini)
     {
         var installation = WithHome(new InMemoryFileSystem().WithFile(UserIni, ini));
 
@@ -1413,37 +1413,43 @@ public class SettingsStoreTests
         var s = installation.SettingsStore.Settings;
         Assert.False(s.PhysicsLog);
         Assert.True(s.PhysicsLogTrains);
-        // a black box the ini turned off itself stays off
-        Assert.Equal(recorded, s.BlackBox);
+        Assert.True(s.BlackBox);
 
         installation.SettingsStore.Save();
         Assert.Equal("physicslog no", LineFor(installation, "physicslog"));
         Assert.Equal("physicslog.trains yes", LineFor(installation, "physicslog.trains"));
-        Assert.Equal("starter.physicslog.moved yes", LineFor(installation, "starter.physicslog.moved"));
+        Assert.Equal("blackbox yes", LineFor(installation, "blackbox"));
+    }
+
+    [Theory]
+    [InlineData("physicslog yes\n", true)]
+    [InlineData("physicslog yes\nblackbox no\n", true)]
+    [InlineData("physicslog yes\nblackbox yes\nphysicslog.trains no\n", true)]
+    [InlineData("physicslog no\nblackbox yes\nphysicslog.trains no\n", false)]
+    public void Without_a_black_box_line_saying_yes_or_with_the_trains_tapes_line_nothing_is_moved(string ini, bool physicsLog)
+    {
+        var installation = WithHome(new InMemoryFileSystem().WithFile(UserIni, ini));
+
+        installation.SettingsStore.Load();
+
+        Assert.Equal(physicsLog, installation.SettingsStore.Settings.PhysicsLog);
+        Assert.False(installation.SettingsStore.Settings.PhysicsLogTrains);
     }
 
     [Fact]
-    public void The_physics_log_of_every_vehicle_turned_on_again_stays_on()
+    public void Once_moved_the_physics_log_of_every_vehicle_turned_on_again_stays_on()
     {
-        var installation = WithHome(new InMemoryFileSystem().WithFile(UserIni, "physicslog yes\n"));
+        var installation = WithHome(new InMemoryFileSystem().WithFile(UserIni, "physicslog yes\nblackbox yes\n"));
         installation.SettingsStore.Load();
         installation.SettingsStore.Settings.PhysicsLog = true;
+        installation.SettingsStore.Settings.PhysicsLogTrains = false;
         installation.SettingsStore.Save();
 
         installation.SettingsStore.Load();
 
         Assert.True(installation.SettingsStore.Settings.PhysicsLog);
-        Assert.Equal("physicslog yes", LineFor(installation, "physicslog"));
-    }
-
-    [Fact]
-    public void A_new_ini_is_marked_so_the_physics_log_turned_on_later_is_never_moved()
-    {
-        var installation = WithHome(new InMemoryFileSystem().WithFile(UserIni, "physicslog no\n"));
-        installation.SettingsStore.Load();
-        installation.SettingsStore.Save();
-
-        Assert.Equal("starter.physicslog.moved yes", LineFor(installation, "starter.physicslog.moved"));
+        Assert.False(installation.SettingsStore.Settings.PhysicsLogTrains);
+        Assert.Equal("physicslog.trains no", LineFor(installation, "physicslog.trains"));
     }
 
     [Fact]

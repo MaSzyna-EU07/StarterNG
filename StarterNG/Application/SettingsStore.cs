@@ -83,9 +83,6 @@ public sealed class SettingsStore
         string source = _files.FileExists(_savePath) ? _savePath : _paths.InstallationConfigPath();
         LoadedFrom = source;
         LoadFrom(source);
-        // the player's own settings only, after the snapshot so the next save writes it; a profile is not moved
-        if (!LoadFailed)
-            SettingsSerializer.MovePhysicsLog(Settings);
     }
 
     /// <summary>A player with no settings of their own yet starts at High, in the file at once so the simulator goes by it too.</summary>
@@ -116,6 +113,9 @@ public sealed class SettingsStore
 
         _serializer.Read(Settings, _config);
         _synced = Render(Settings);
+        // after the snapshot, so the next save writes it; a profile of before goes the same way as the ini would
+        if (!LoadFailed)
+            SettingsSerializer.MoveToTrainTapes(Settings);
         TouchConfigAge();
     }
 
@@ -127,15 +127,9 @@ public sealed class SettingsStore
     {
         if (_files.FileExists(path))
         {
-            // a profile saved before the move has no mark of it: the player's mark is kept, so their own
-            // physicslog is not moved again at the next start
-            bool moved = Settings.PhysicsLogMoved;
             LoadFrom(path);
             if (!LoadFailed)
-            {
-                Settings.PhysicsLogMoved |= moved;
                 return true;
-            }
         }
 
         if (LoadFailed)
