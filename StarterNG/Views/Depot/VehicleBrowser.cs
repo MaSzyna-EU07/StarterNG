@@ -60,6 +60,8 @@ public sealed class VehicleBrowser
 
     private DispatcherTimer? _searchTimer;
 
+    private readonly SearchResultsTeller _searchResults;
+
     private Func<string?, bool>? _categoryFilter;
     private string? _classFilter;
 
@@ -82,6 +84,7 @@ public sealed class VehicleBrowser
 
         vehicleListBox.ContextRequested += List_OnContextRequested;
 
+        _searchResults = new SearchResultsTeller(searchBox, () => vehicleListBox.ItemCount);
         _searchTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(220) };
         _searchTimer.Tick += (_, _) =>
         {
@@ -564,6 +567,7 @@ public sealed class VehicleBrowser
         if (_suppress || _searchTimer is null) return;
         _searchTimer.Stop();
         _searchTimer.Start();
+        _searchResults.Changed();
     }
 
     public void HideArchivalCheck_OnChanged(object? sender, Avalonia.Interactivity.RoutedEventArgs e)

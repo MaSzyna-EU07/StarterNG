@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using Avalonia;
+using Avalonia.Automation.Peers;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Media;
@@ -51,6 +52,67 @@ public sealed class TimelineView : Control
     {
         ClipToBounds = true;
         MinHeight = 160;
+        // Walked from the keyboard too: the arrows step through the time.
+        Focusable = true;
+    }
+
+    private string? _spoken;
+
+    /// <summary>
+    /// What the moment played is said as - the clock, the speed, what the AI held - the
+    /// value a screen reader reads, again whenever it changes.
+    /// </summary>
+    public string? Spoken
+    {
+        get => _spoken;
+        set
+        {
+            string? before = _spoken;
+            _spoken = value;
+            (ControlAutomationPeer.FromElement(this) as SpokenPeer)?.Told(before, value);
+        }
+    }
+
+    protected override AutomationPeer OnCreateAutomationPeer() =>
+        new SpokenPeer(this, AutomationControlType.Slider, () => _spoken, () => Strings["TimelineHelp"]);
+
+    /// <summary>How far one press of an arrow goes, in seconds: Ctrl a minute, Page Up and Down ten.</summary>
+    public const double Step = 10, CtrlStep = 60, PageStep = 600;
+
+    protected override void OnKeyDown(KeyEventArgs e)
+    {
+        base.OnKeyDown(e);
+        if (_recording is not { } recording || recording.Duration <= 0)
+            return;
+
+        bool ctrl = e.KeyModifiers.HasFlag(KeyModifiers.Control);
+        double? to = e.Key switch
+        {
+            Key.Left => _time - (ctrl ? CtrlStep : Step),
+            Key.Right => _time + (ctrl ? CtrlStep : Step),
+            Key.PageUp => _time - PageStep,
+            Key.PageDown => _time + PageStep,
+            Key.Home => 0,
+            Key.End => recording.Duration,
+            _ => null
+        };
+        if (to is not { } t)
+            return;
+
+        Seek?.Invoke(Math.Clamp(t, 0, recording.Duration));
+        e.Handled = true;
+    }
+
+    protected override void OnGotFocus(FocusChangedEventArgs e)
+    {
+        base.OnGotFocus(e);
+        InvalidateVisual();
+    }
+
+    protected override void OnLostFocus(FocusChangedEventArgs e)
+    {
+        base.OnLostFocus(e);
+        InvalidateVisual();
     }
 
     public IBlackBoxStrings Strings { get; set; } = new DefaultBlackBoxStrings();
@@ -100,6 +162,8 @@ public sealed class TimelineView : Control
     public override void Render(DrawingContext context)
     {
         var size = Bounds.Size;
+        if (IsFocused)
+            context.DrawRectangle(null, Palette.FocusPen, new Rect(size).Deflate(1));
         var recording = _recording;
         if (recording is null || recording.Duration <= 0)
             return;

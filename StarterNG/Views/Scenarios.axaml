@@ -79,7 +79,7 @@
             <GridSplitter IsTabStop="False" AutomationProperties.Name="{Binding [PanelSplitter], Source={x:Static starterNg:App.Loc}}" Grid.Row="1" Height="4" HorizontalAlignment="Stretch"
                           Background="Transparent" ResizeDirection="Rows" />
 
-            <TabControl Grid.Row="2" Name="infoTabs">
+            <TabControl Grid.Row="2" Name="infoTabs" AutomationProperties.Name="{Binding [ScenarioDetails], Source={x:Static starterNg:App.Loc}}">
                 <TabItem Header="{Binding [TabDescription], Source={x:Static starterNg:App.Loc}}">
                     <Grid RowDefinitions="2*,6,*" Margin="4">
                         <Grid Grid.Row="0" ColumnDefinitions="*,3,225">

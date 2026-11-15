@@ -18,7 +18,7 @@
     <ctl:Announcer>
         <DockPanel LastChildFill="True">
 
-            <Border x:Name="TopBar" DockPanel.Dock="Top"
+            <Border x:Name="TopBar" DockPanel.Dock="Top" TabIndex="0"
                     Background="{StaticResource CarbonPanelBg}"
                     BorderBrush="{StaticResource CarbonBorderLight}"
                     BorderThickness="0,0,0,1"

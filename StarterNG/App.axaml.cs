@@ -27,6 +27,7 @@ public partial class App : Avalonia.Application
     {
         // Before any control exists: the names are given as controls are filled in.
         ScreenReaderNames.Install();
+        DialogKeyboard.Install();
 
         AvaloniaXamlLoader.Load(this);
 

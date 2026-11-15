@@ -26,6 +26,8 @@ public static class Palette
     public static readonly IBrush AccentFill = Brush("#177F00");
     public static readonly IBrush AccentFillHover = Brush("#1E9000");
     public static readonly IBrush AccentText = Brush("#FFFFFF");
+    /// <summary>The ring round a drawn control that has the keyboard, in the green of the starter's own.</summary>
+    public static readonly IPen FocusPen = new Pen(Accent, 2);
     public static readonly IBrush Good = Brush("#4cc46e");
 
     /// <summary>A delay: green on time, yellow a little late, red late, blue early.</summary>

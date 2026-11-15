@@ -46,6 +46,8 @@ internal static class IniChangesWindow
         var closeBtn = new Button { Content = App.Loc["Close"], MinWidth = 80 };
         closeBtn.Classes.Add("Flat");
         closeBtn.Click += (_, _) => win.Close();
+        saveBtn.IsDefault = true;
+        closeBtn.IsCancel = true;
         body.Children.Add(MessageBox.ButtonRow(saveBtn, closeBtn));
 
         win.Content = body;

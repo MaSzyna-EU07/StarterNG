@@ -15,6 +15,7 @@ using Material.Icons.Avalonia;
 using StarterNG.Classes;
 using StarterNG.Domain;
 using StarterNG.Domain.Vehicles;
+using StarterNG.Controls;
 
 namespace StarterNG.Views;
 
@@ -187,7 +188,8 @@ public sealed class VehicleCards
 
     /// <summary>Its place in the consist and what it holds, as a screen reader says it.</summary>
     private string CardName(ConsistItem item, int index) =>
-        $"{index + 1}. {string.Join(", ", item.Cars.Select(car => CardCaption(item, car, index)))}";
+        $"{index + 1}. {string.Join(", ", item.Cars.Select(car => CardCaption(item, car, index)))}"
+        + (item.Flipped ? $", {App.Loc["Reversed"]}" : string.Empty);
 
     private string CardCaption(ConsistItem item, Dynamic car, int index) =>
         TrainsetDisplay.VehicleLabel(car,
@@ -421,12 +423,22 @@ public sealed class VehicleCards
         panel.Children.Add(apply);
 
         var flyout = new Flyout { Content = panel, Placement = PlacementMode.Top };
-        apply.Click += (_, _) =>
+        void Apply()
         {
             _consist.SetWagonNumber(car, (int)(num.Value ?? 0));
             flyout.Hide();
+        }
+
+        apply.Click += (_, _) => Apply();
+        // As the flyout for several vehicles does: typed into at once, Enter sets it.
+        num.KeyDown += (_, e) =>
+        {
+            if (e.Key != Key.Enter) return;
+            e.Handled = true;
+            Apply();
         };
         flyout.ShowAt(anchor);
+        num.Focus();
     }
 
     /// <summary>
@@ -633,6 +645,10 @@ public sealed class VehicleCards
 
         btn.Content = glyph;
         btn.Foreground = new SolidColorBrush(Color.Parse(color));
+        // "2" alone said nothing read aloud: the reader hears who rides in it.
+        int choice = CrewChoices.IndexOf(type);
+        AutomationProperties.SetName(btn, ScreenReaderNames.PickerText(
+            App.Loc["CrewLabel"], choice >= 0 ? App.Loc[CrewChoices.All[choice].Key] : glyph));
     }
 
     /// <summary>
@@ -678,7 +694,7 @@ public sealed class VehicleCards
 
             var crew = new MenuItem { Header = App.Loc["CrewLabel"] };
             foreach (var (type, key) in CrewChoices.All)
-                crew.AddItem((item.Driver == type ? "● " : "○ ") + App.Loc[key], () => _consist.SetCrew(item, type));
+                crew.Items.Add(MenuItems.Choice(App.Loc[key], item.Driver == type, () => _consist.SetCrew(item, type)));
             menu.Items.Add(crew);
 
             // The member the panels show, not always the first car of a unit.

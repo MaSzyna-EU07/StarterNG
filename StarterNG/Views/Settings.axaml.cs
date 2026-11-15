@@ -1326,7 +1326,14 @@ public partial class Settings : UserControl, ISettingsCapture
             return;
 
         ApplyFilter();
+        _searchResults ??= new SearchResultsTeller(SettingsSearch, () => _shownCount);
+        _searchResults.Changed();
     }
+
+    private SearchResultsTeller? _searchResults;
+
+    // How many settings - or key bindings - the last filter left on the screen.
+    private int _shownCount;
 
     /// <summary>
     /// Single owner of what is on screen. With an empty query it shows the selected
@@ -1350,11 +1357,13 @@ public partial class Settings : UserControl, ISettingsCapture
         if (bindings)
         {
             _keyBindings.RebuildList();
+            _shownCount = _keyBindings.ShownCount;
             foreach (var entry in CategoryList.Items.OfType<ListBoxItem>())
                 entry.Classes.Set("NoHits", false);
             return;
         }
 
+        _shownCount = 0;
         foreach (var panel in SettingsStack.Children.OfType<StackPanel>())
         {
             bool anyRow = false;
@@ -1369,6 +1378,8 @@ public partial class Settings : UserControl, ISettingsCapture
                                    (!searching || TextMatch.Contains(RowSearchText(row), query));
                     row.IsVisible = visible;
                     anyInSection |= visible;
+                    if (visible && searching)
+                        _shownCount++;
                 }
 
                 section.IsVisible = anyInSection;

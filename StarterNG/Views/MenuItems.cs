@@ -15,6 +15,18 @@ internal static class MenuItems
         return item;
     }
 
+    /// <summary>
+    /// One of a set of entries of which one is chosen, marked as a radio entry. A dot
+    /// written before the text was read out as "black circle" and told no state.
+    /// </summary>
+    public static MenuItem Choice(string header, bool chosen, Action run)
+    {
+        var item = Item(header, run);
+        item.ToggleType = MenuItemToggleType.Radio;
+        item.IsChecked = chosen;
+        return item;
+    }
+
     /// <summary>The entry at the end of a menu or a submenu.</summary>
     public static MenuItem AddItem(this ItemsControl menu, object header, Action run, bool enabled = true,
                                    KeyGesture? gesture = null)

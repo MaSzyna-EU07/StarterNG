@@ -127,7 +127,8 @@
                 BorderThickness="1" CornerRadius="2" Padding="6">
             <!-- The tab picks what the consist strip edits: a consist of the scenery,
                  or a consist kept in the warehouse. -->
-            <TabControl Name="consistSourceTabs" SelectionChanged="ConsistSourceTabs_OnSelectionChanged">
+            <TabControl Name="consistSourceTabs" AutomationProperties.Name="{Binding [DepotConsistSources], Source={x:Static starterNg:App.Loc}}"
+                        SelectionChanged="ConsistSourceTabs_OnSelectionChanged">
                 <TabItem Name="sceneryConsistsTab"
                          Header="{Binding [SceneryConsists], Source={x:Static starterNg:App.Loc}}">
                     <DockPanel LastChildFill="True">
@@ -198,7 +199,7 @@
                 Background="{StaticResource CarbonPanelBg}"
                 BorderBrush="{StaticResource CarbonBorderLight}"
                 BorderThickness="1" CornerRadius="2" Padding="6">
-            <TabControl>
+            <TabControl AutomationProperties.Name="{Binding [DepotVehicleInfo], Source={x:Static starterNg:App.Loc}}">
                 <TabItem Header="{Binding [GeneralInfo], Source={x:Static starterNg:App.Loc}}">
                     <ScrollViewer VerticalScrollBarVisibility="Auto">
                         <StackPanel Name="generalPanel" Margin="4" Grid.IsSharedSizeScope="True" />
@@ -216,7 +217,7 @@
                 Background="{StaticResource CarbonPanelBg}"
                 BorderBrush="{StaticResource CarbonBorderLight}"
                 BorderThickness="1" CornerRadius="2" Padding="6">
-            <TabControl>
+            <TabControl AutomationProperties.Name="{Binding [DepotVehicleEdit], Source={x:Static starterNg:App.Loc}}">
                 <TabItem Header="{Binding [Coupling], Source={x:Static starterNg:App.Loc}}">
                     <!-- The coupling grid now uses the full tab width. The two
                          actions sit underneath, so they do not steal horizontal
@@ -321,7 +322,12 @@
                         <Panel>
                             <!-- Tab reaches the strip once and lands on the selected
                                  card; the arrow keys walk it from there. -->
+                            <!-- Read as the list of cards it is, so a reader hears where it is
+                                 and how many cards it holds. -->
                             <StackPanel Name="consistStack" Orientation="Horizontal"
+                                        AutomationProperties.Name="{Binding [Consist], Source={x:Static starterNg:App.Loc}}"
+                                        AutomationProperties.ControlTypeOverride="List"
+                                        AutomationProperties.AccessibilityView="Content"
                                         KeyboardNavigation.TabNavigation="Once"
                                         VerticalAlignment="Center" Spacing="0" />
                             <Canvas Name="consistOverlay" IsHitTestVisible="False" />

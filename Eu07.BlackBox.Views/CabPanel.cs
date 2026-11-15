@@ -3,7 +3,9 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using Avalonia;
+using Avalonia.Automation.Peers;
 using Avalonia.Controls;
+using Avalonia.Input;
 using Avalonia.Media;
 
 namespace Eu07.BlackBox.Views;
@@ -36,6 +38,36 @@ public sealed class CabPanel : Control
     {
         ClipToBounds = true;
         Height = 696;
+        // Reached with Tab, where a screen reader reads what the panel shows.
+        Focusable = true;
+    }
+
+    // What the panel showed when last drawn, a line a figure, as a screen reader is told it.
+    private List<string>? _saying;
+    private string? _said;
+
+    /// <summary>What the panel shows, said in words: the figures and the lamps that are lit.</summary>
+    public string? Said => _said;
+
+    private void Say(string text)
+    {
+        if (!string.IsNullOrWhiteSpace(text))
+            _saying?.Add(text.Trim());
+    }
+
+    protected override AutomationPeer OnCreateAutomationPeer() =>
+        new SpokenPeer(this, AutomationControlType.Pane, () => null, () => _said);
+
+    protected override void OnGotFocus(FocusChangedEventArgs e)
+    {
+        base.OnGotFocus(e);
+        InvalidateVisual();
+    }
+
+    protected override void OnLostFocus(FocusChangedEventArgs e)
+    {
+        base.OnLostFocus(e);
+        InvalidateVisual();
     }
 
     public IBlackBoxStrings Strings { get; set; } = new DefaultBlackBoxStrings();
@@ -63,6 +95,22 @@ public sealed class CabPanel : Control
 
     public override void Render(DrawingContext context)
     {
+        _saying = new List<string>();
+        try
+        {
+            DrawPanel(context);
+        }
+        finally
+        {
+            _said = string.Join(". ", _saying);
+            _saying = null;
+        }
+        if (IsFocused)
+            context.DrawRectangle(null, Palette.FocusPen, new Rect(Bounds.Size).Deflate(1));
+    }
+
+    private void DrawPanel(DrawingContext context)
+    {
         var size = Bounds.Size;
         double width = size.Width - 2 * Pad, right = size.Width - Pad;
 
@@ -70,6 +118,7 @@ public sealed class CabPanel : Control
         if (_recording is not { } recording || recording.CabAt(_time) is not { } s || _time - s.Time > 1.5)
         {
             context.DrawText(MapView.Text(Strings["CabNoData"], Palette.DimText, 12), new Point(Pad, 40));
+            Say(Strings["CabNoData"]);
             return;
         }
         Measure(recording);
@@ -84,6 +133,10 @@ public sealed class CabPanel : Control
             : s.Driving == Driver.Ai ? (Strings["CabDriverAi"], Palette.Autopilot)
             : (Strings["CabDriverUser"], Palette.UserTrain);
         chipX -= ChipLeft(context, driverText, driverBrush, chipX, 4) + 10;
+        Say(recording.Vehicle(s.Vehicle)?.Name ?? "");
+        Say(driverText);
+        if (s.CabEnd != 0)
+            Say(Strings[s.CabEnd > 0 ? "CabEndFront" : "CabEndRear"]);
         using (context.PushClip(new Rect(Pad, 0, Math.Max(0, chipX - Pad), 28)))
             context.DrawText(MapView.Text(recording.Vehicle(s.Vehicle)?.Name ?? "", Palette.Text, 12, FontWeight.SemiBold), new Point(Pad, 6));
 
@@ -92,6 +145,7 @@ public sealed class CabPanel : Control
         var speed = MapView.Text(s.AbsSpeedKmh.ToString("0", culture), judgement is SpeedJudgement.Over ? Palette.Bad
                                      : judgement is SpeedJudgement.Slightly ? Palette.Warn : Palette.Text, 36, FontWeight.SemiBold);
         context.DrawText(speed, new Point(Pad, 24));
+        Say($"{s.AbsSpeedKmh.ToString("0", culture)} km/h");
         context.DrawText(MapView.Text("km/h", Palette.DimText, 12), new Point(Pad + speed.Width + 4, 24 + speed.Height - 21));
         double gaugeX = Pad + Math.Max(150, width * 0.42);
         if (s.AiValid)
@@ -99,6 +153,9 @@ public sealed class CabPanel : Control
             using (context.PushClip(new Rect(Pad, 76, gaugeX - Pad - 8, 40)))
             {
                 context.DrawText(MapView.Text(string.Format(culture, Strings["CabAiTarget"], s.Ai.TargetKmh), Palette.Target, 12), new Point(Pad, 76));
+                Say(string.Format(culture, Strings["CabAiTarget"], s.Ai.TargetKmh));
+                if (s.Ai.HasNextLimit)
+                    Say(string.Format(culture, Strings["LimitAt"], s.Ai.NextLimitKmh, s.Ai.NextLimitDistance));
                 if (s.Ai.HasNextLimit)
                     context.DrawText(MapView.Text(string.Format(culture, Strings["LimitAt"], s.Ai.NextLimitKmh, s.Ai.NextLimitDistance), Palette.Limit, 11),
                                      new Point(Pad, 93));
@@ -174,6 +231,7 @@ public sealed class CabPanel : Control
                 ? string.Format(culture, Strings["CabLightsWant"], HeadCodes.Name(shown), HeadCodes.Name(want))
                 : isRight == true && required is { } met ? HeadCodes.Name(met) : HeadCodes.Name(shown);
             var brush = isRight is null ? Palette.DimText : isRight.Value ? Palette.Good : Palette.Bad;
+            Say($"{Strings[key]}: {text}");
             using (context.PushClip(new Rect(half + 44, row, right - half - 44, 28)))
             {
                 context.DrawText(MapView.Text(Strings[key], Palette.DimText, 10), new Point(half + 46, row));
@@ -201,6 +259,7 @@ public sealed class CabPanel : Control
             using (context.PushClip(new Rect(x, top, groupWidth, size.Height - top)))
             {
                 context.DrawText(MapView.Text(Strings[groups[g].Title], Palette.DimText, 10, FontWeight.SemiBold), new Point(x, top));
+                Say(Strings[groups[g].Title]);
                 double lampY = top + 16;
                 foreach (var (text, brush) in groups[g].Lamps)
                 {
@@ -215,6 +274,7 @@ public sealed class CabPanel : Control
         // The doors under them, in two columns: open, permitted, the departure signal, the steps and the lock.
         top = Math.Max(bottom, top + 16 + 9 * LampRow) + 6;
         context.DrawText(MapView.Text(Strings["CabGroupDoors"], Palette.DimText, 10, FontWeight.SemiBold), new Point(Pad, top));
+        Say(Strings["CabGroupDoors"]);
         var doors = Doors(s);
         double doorColumn = width / DoorColumns;
         for (int i = 0; i < doors.Length; i++)
@@ -279,6 +339,7 @@ public sealed class CabPanel : Control
                 break;
             default:
                 context.DrawText(MapView.Text(Strings["CabNoDrive"], Palette.DimText, 11), new Point(Pad, top + 2));
+                Say(Strings["CabNoDrive"]);
                 return;
         }
         double column = width / 2;
@@ -321,8 +382,9 @@ public sealed class CabPanel : Control
     }
 
     /// <summary>The title of a part of the panel, with a line from it to the right (and a note at its end); the top of the part returned.</summary>
-    private static double Section(DrawingContext context, string title, double x, double y, double right, string? note = null)
+    private double Section(DrawingContext context, string title, double x, double y, double right, string? note = null)
     {
+        Say(note is null ? title : $"{title}, {note}");
         var text = MapView.Text(title.ToUpper(CultureInfo.CurrentCulture), Palette.DimText, 9, FontWeight.SemiBold);
         context.DrawText(text, new Point(x, y));
         double end = right;
@@ -370,8 +432,9 @@ public sealed class CabPanel : Control
         _measured = recording.Revision;
     }
 
-    private static void Value(DrawingContext context, string label, string value, double x, double y, IBrush? brush = null)
+    private void Value(DrawingContext context, string label, string value, double x, double y, IBrush? brush = null)
     {
+        Say($"{label}: {value}");
         context.DrawText(MapView.Text(label, Palette.DimText, 10), new Point(x, y));
         context.DrawText(MapView.Text(value, brush ?? Palette.Text, 14, FontWeight.SemiBold), new Point(x, y + 13));
     }
@@ -387,9 +450,10 @@ public sealed class CabPanel : Control
     }
 
     /// <summary>A gauge: its name, a bar up to the value against the scale, a mark where it should stand, the value.</summary>
-    private static void Gauge(DrawingContext context, string label, float value, double scale, double? mark, string text,
-                              IBrush brush, double x, double y, double width)
+    private void Gauge(DrawingContext context, string label, float value, double scale, double? mark, string text,
+                       IBrush brush, double x, double y, double width)
     {
+        Say($"{label}: {text}");
         const double labelWidth = 118, valueWidth = 64;
         context.DrawText(MapView.Text(label, Palette.DimText, 11), new Point(x, y));
         double barX = x + labelWidth, barWidth = width - labelWidth - valueWidth;
@@ -408,9 +472,10 @@ public sealed class CabPanel : Control
     }
 
     /// <summary>A value either way of nought: a bar from the middle, to the right above it.</summary>
-    private static void Balance(DrawingContext context, string label, float value, double scale, double x, double y, double width)
+    private void Balance(DrawingContext context, string label, float value, double scale, double x, double y, double width)
     {
         var culture = CultureInfo.CurrentCulture;
+        Say($"{label}: {value.ToString("+0.00;−0.00;0.00", culture)} m/s²");
         context.DrawText(MapView.Text(label, Palette.DimText, 10), new Point(x, y));
         var v = MapView.Text($"{value.ToString("+0.00;−0.00;0.00", culture)} m/s²", Palette.Text, 11, FontWeight.SemiBold);
         context.DrawText(v, new Point(x + width - v.Width, y));
@@ -455,8 +520,11 @@ public sealed class CabPanel : Control
     }
 
     /// <summary>A device's lamp and its name: lit in its colour, the name bright; off, both faint.</summary>
-    private static void Lamp(DrawingContext context, string text, IBrush? lit, double x, double y)
+    private void Lamp(DrawingContext context, string text, IBrush? lit, double x, double y)
     {
+        // Only the lamps that are lit are told: the dark ones are the panel, not the moment.
+        if (lit is not null)
+            Say(text);
         var center = new Point(x + 4, y + 7);
         if (lit is not null)
             context.DrawEllipse(Palette.Faded(lit, 0.3), null, center, 6, 6);

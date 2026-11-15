@@ -86,6 +86,8 @@ public sealed class HaslerTapeWindow : Window
         MinWidth = 700;
         MinHeight = 420;
         WindowStartupLocation = WindowStartupLocation.CenterOwner;
+        // A window to keep open beside the starter, not a question to answer.
+        DialogKeyboard.SetEscapeCloses(this, false);
 
         _feed.ItemsSource = new[] { App.Loc["HaslerByDistance"], App.Loc["HaslerByTime"] };
         _feed.SelectedIndex = 0;
@@ -286,9 +288,16 @@ public sealed class HaslerTapeWindow : Window
 
     private RecorderKind Recorder => _recorder.SelectedIndex == 1 ? RecorderKind.Electronic : RecorderKind.Hasler;
 
-    private static TapeView NewView(RecorderKind kind) => kind == RecorderKind.Electronic
-        ? new ElectronicTapeView { HorizontalAlignment = HorizontalAlignment.Left, VerticalAlignment = VerticalAlignment.Top }
-        : new HaslerTapeView { HorizontalAlignment = HorizontalAlignment.Left, VerticalAlignment = VerticalAlignment.Top };
+    private static TapeView NewView(RecorderKind kind)
+    {
+        TapeView view = kind == RecorderKind.Electronic
+            ? new ElectronicTapeView { HorizontalAlignment = HorizontalAlignment.Left, VerticalAlignment = VerticalAlignment.Top }
+            : new HaslerTapeView { HorizontalAlignment = HorizontalAlignment.Left, VerticalAlignment = VerticalAlignment.Top };
+        // A picture to the eye; to a screen reader a slider along the trip, read sample by sample.
+        Avalonia.Automation.AutomationProperties.SetName(view, App.Loc["HaslerTapes"]);
+        Avalonia.Automation.AutomationProperties.SetHelpText(view, App.Loc["TapeKeysHelp"]);
+        return view;
+    }
 
     /// <summary>
     /// The same trip drawn the other way. Hasler paper is fed by distance and
@@ -467,6 +476,8 @@ public sealed class HaslerTapeWindow : Window
             CanOpenFiles = false,
             Live = _liveBlackBoxes.Contains(box.Path)
         };
+        // It stays open beside the tapes, as they stay beside the starter.
+        DialogKeyboard.SetEscapeCloses(window, false);
         _blackBoxes[box.Path] = window;
         if (at is { } first)
             _wantedAt[box.Path] = first;
@@ -770,6 +781,18 @@ public sealed class HaslerTapeWindow : Window
             _cursor.Text = "";
             return;
         }
+        try
+        {
+            ShowCursorText(s);
+        }
+        finally
+        {
+            _view.Spoken = _cursor.Text;
+        }
+    }
+
+    private void ShowCursorText(TapeSample s)
+    {
         // Only what the record in view shows: a Hasler tape has no brake pipe and
         // marks current as on or off, and the electronic screen draws the current
         // and the vigilance alarm as channels, not values.

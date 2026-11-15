@@ -116,8 +116,8 @@ public sealed class Warehouse
     }
 
     private MenuItem SortItem(PresetSort mode, string locKey) =>
-        MenuItems.Item((PresetStore.SortMode == mode ? "● " : "○ ") + App.Loc[locKey],
-                       () => { PresetStore.SortMode = mode; Refresh(); });
+        MenuItems.Choice(App.Loc[locKey], PresetStore.SortMode == mode,
+                         () => { PresetStore.SortMode = mode; Refresh(); });
 
     /// <summary>Asks for a name at the button pressed, and says where the consist went.</summary>
     public void SaveCurrent(Control anchor) =>

@@ -1,7 +1,9 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.Linq;
 using Avalonia;
+using Avalonia.Automation.Peers;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Media;
@@ -36,6 +38,84 @@ public sealed class TimetablePanel : Control
     {
         ClipToBounds = true;
         Cursor = new Cursor(StandardCursorType.Hand);
+        // The stations walked from the keyboard as well: the arrows go up and down the rows,
+        // Enter goes to the moment as a click does.
+        Focusable = true;
+    }
+
+    // The row the keyboard stands at; -1 until it is moved, when the station played is meant.
+    private int _keyRow = -1;
+    private string? _spoken;
+
+    protected override AutomationPeer OnCreateAutomationPeer() =>
+        new SpokenPeer(this, AutomationControlType.List, () => _spoken ?? RowText(KeyRow), () => Strings["TimetableHelp"]);
+
+    private int KeyRow => _keyRow >= 0 && _keyRow < _rows.Count ? _keyRow : Current();
+
+    /// <summary>A row as it is read: the station, the times of the timetable, the kilometre and what happened there.</summary>
+    private string? RowText(int i)
+    {
+        if (_timetable is null)
+            return Strings["TimetableNone"];
+        if (i < 0 || i >= _rows.Count)
+            return null;
+        var row = _rows[i];
+        var culture = CultureInfo.CurrentCulture;
+        string planned = row.Row.IsStop
+            ? $"{Minutes(row.Row.Arrival)} – {Minutes(row.Row.Departure)}"
+            : Minutes(row.Row.Departure);
+        var parts = new List<string> { StationNames.Display(row.Row.Station), planned };
+        if (row.Row.Km > 0 || i > 0)
+            parts.Add($"km {row.Row.Km.ToString("0.0", culture)}");
+        parts.AddRange(Chips(row, culture).Select(c => c.Text));
+        return $"{i + 1}/{_rows.Count}. {string.Join(", ", parts)}";
+    }
+
+    protected override void OnKeyDown(KeyEventArgs e)
+    {
+        base.OnKeyDown(e);
+        if (_rows.Count == 0)
+            return;
+
+        int at = KeyRow;
+        int? to = e.Key switch
+        {
+            Key.Up => at - 1,
+            Key.Down => at + 1,
+            Key.Home => 0,
+            Key.End => _rows.Count - 1,
+            _ => null
+        };
+        if (e.Key == Key.Enter && at >= 0 && (_rows[at].ArrivedAt ?? _rows[at].DepartedAt) is { } t)
+        {
+            Seek?.Invoke(Math.Max(0, t - 5));
+            e.Handled = true;
+            return;
+        }
+        if (to is not { } row)
+            return;
+
+        _keyRow = Math.Clamp(row, 0, _rows.Count - 1);
+        string? before = _spoken;
+        _spoken = RowText(_keyRow);
+        (ControlAutomationPeer.FromElement(this) as SpokenPeer)?.Told(before, _spoken);
+        this.BringIntoView(new Rect(0, HeaderHeight + _keyRow * RowHeight, Bounds.Width, RowHeight));
+        InvalidateVisual();
+        e.Handled = true;
+    }
+
+    protected override void OnGotFocus(FocusChangedEventArgs e)
+    {
+        base.OnGotFocus(e);
+        _spoken = null;
+        InvalidateVisual();
+    }
+
+    protected override void OnLostFocus(FocusChangedEventArgs e)
+    {
+        base.OnLostFocus(e);
+        _keyRow = -1;
+        InvalidateVisual();
     }
 
     public Recording? Recording
@@ -103,6 +183,8 @@ public sealed class TimetablePanel : Control
     {
         var size = Bounds.Size;
         var culture = CultureInfo.CurrentCulture;
+        if (IsFocused)
+            context.DrawRectangle(null, Palette.FocusPen, new Rect(size).Deflate(1));
         if (_timetable is not { } timetable)
         {
             context.DrawText(MapView.Text(Strings["TimetableNone"], Palette.DimText, 12), new Point(Pad, Pad));
@@ -130,6 +212,8 @@ public sealed class TimetablePanel : Control
             }
             else if (i == _hover)
                 context.DrawRectangle(Palette.Faded(Palette.CardHover, 0.6), null, new Rect(0, top, size.Width, RowHeight - 1));
+            if (IsFocused && i == KeyRow)
+                context.DrawRectangle(null, Palette.FocusPen, new Rect(1, top + 1, size.Width - 2, RowHeight - 3));
 
             // The line of the route through the stations, a dot each: hollow ahead, filled when done.
             var outcome = row.Outcome;

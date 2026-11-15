@@ -82,6 +82,8 @@ public static class AboutWindow
         };
         close.Classes.Add("Accent");
         close.Click += (_, _) => win.Close();
+        close.IsDefault = true;
+        close.IsCancel = true;
 
         var footer = new StackPanel
         {

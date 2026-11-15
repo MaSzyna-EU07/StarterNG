@@ -9,6 +9,7 @@ using Avalonia.Automation.Peers;
 using Avalonia.Controls;
 using Avalonia.Controls.Documents;
 using Avalonia.Controls.Primitives;
+using Avalonia.Input;
 
 namespace StarterNG.Controls;
 
@@ -53,6 +54,86 @@ public static class ScreenReaderNames
         TimePicker.SelectedTimeProperty.Changed.AddClassHandler<TimePicker>((p, _) => NamePicker(p));
         AutomationProperties.NameProperty.Changed.AddClassHandler<DatePicker>((p, _) => NamePicker(p));
         AutomationProperties.NameProperty.Changed.AddClassHandler<TimePicker>((p, _) => NamePicker(p));
+
+        TemplatedControl.TemplateAppliedEvent.AddClassHandler<NumericUpDown>((n, e) => ForwardToTextBox(n, e));
+        TemplatedControl.TemplateAppliedEvent.AddClassHandler<ButtonSpinner>((s, e) => NameSpinButtons(s, e));
+
+        AutomationProperties.NameProperty.Changed.AddClassHandler<Control>((c, e) => TranslateTemplateName(c, e));
+        AppLanguage.Changed += RetranslateTemplateNames;
+    }
+
+    /// <summary>
+    /// A number box is reached through the text box inside it, which had no name: the
+    /// reader heard "edit, 0,1" and not what the number is. It takes the box's name and
+    /// explanation, and keeps them when they change.
+    /// </summary>
+    private static void ForwardToTextBox(NumericUpDown box, TemplateAppliedEventArgs e)
+    {
+        if (e.NameScope.Find<TextBox>("PART_TextBox") is not { } text)
+            return;
+
+        text.Bind(AutomationProperties.NameProperty, box.GetObservable(AutomationProperties.NameProperty));
+        text.Bind(AutomationProperties.HelpTextProperty, box.GetObservable(AutomationProperties.HelpTextProperty));
+    }
+
+    /// <summary>
+    /// The arrows of a number box were read as "Avalonia.Controls.Shapes.Path" and were two
+    /// more stops for Tab. They say what they do, and Tab passes them: the arrow keys in the
+    /// box do the same, as in any spin box of Windows.
+    /// </summary>
+    private static void NameSpinButtons(ButtonSpinner spinner, TemplateAppliedEventArgs e)
+    {
+        foreach (var (part, key) in new[] { ("PART_IncreaseButton", "SpinUp"), ("PART_DecreaseButton", "SpinDown") })
+        {
+            if (e.NameScope.Find<Control>(part) is not { } button)
+                continue;
+
+            KeyboardNavigation.SetIsTabStop(button, false);
+            TemplateNames.AddOrUpdate(button, key);
+            AutomationProperties.SetName(button, AppLanguage.Text(key));
+        }
+    }
+
+    /// <summary>
+    /// The English names Avalonia's own templates give their parts - the window's buttons,
+    /// the arrows of a scroll bar - and the texts they are read as instead.
+    /// </summary>
+    private static readonly Dictionary<string, string> EnglishTemplateNames = new(StringComparer.Ordinal)
+    {
+        ["Minimize"] = "ChromeMinimize",
+        ["Maximize"] = "ChromeMaximize",
+        ["Restore"] = "ChromeRestore",
+        ["Close"] = "ChromeClose",
+        ["Line up"] = "ScrollLineUp",
+        ["Line down"] = "ScrollLineDown",
+        ["Page up"] = "ScrollPageUp",
+        ["Page down"] = "ScrollPageDown",
+        ["Column left"] = "ScrollColumnLeft",
+        ["Column right"] = "ScrollColumnRight",
+        ["Page left"] = "ScrollPageLeft",
+        ["Page right"] = "ScrollPageRight",
+        ["Position"] = "ScrollPosition",
+    };
+
+    // The parts given a translated name, with the text they were given it from.
+    private static readonly ConditionalWeakTable<Control, string> TemplateNames = new();
+
+    /// <summary>An English name set by a template is replaced by the same thing in the starter's language.</summary>
+    private static void TranslateTemplateName(Control control, AvaloniaPropertyChangedEventArgs e)
+    {
+        if (e.Priority == Avalonia.Data.BindingPriority.LocalValue || e.NewValue is not string english
+            || !EnglishTemplateNames.TryGetValue(english, out string? key)
+            || AppLanguage.Text(key) is not { Length: > 0 } text || text == english)
+            return;
+
+        TemplateNames.AddOrUpdate(control, key);
+        AutomationProperties.SetName(control, text);
+    }
+
+    private static void RetranslateTemplateNames()
+    {
+        foreach (var (control, key) in TemplateNames)
+            AutomationProperties.SetName(control, AppLanguage.Text(key));
     }
 
     // A date or time picker is reached through the button inside it, which was read as
@@ -129,6 +210,10 @@ public static class ScreenReaderNames
             return null;
 
         var labels = panel.Children.OfType<TextBlock>().Where(IsLabel).ToList();
+        // A panel that only holds inputs - a number box and the list shown in its place -
+        // is labelled where it stands itself.
+        if (labels.Count == 0)
+            return panel.Parent is Panel ? LabelOf(panel) : null;
         if (panel is Grid)
         {
             int row = Grid.GetRow(input), column = Grid.GetColumn(input);
@@ -302,6 +387,8 @@ public static class ScreenReaderNames
         string? text = content switch
         {
             string s => s,
+            // A sign such as a dot is given the words it stands for.
+            TextBlock block when AutomationProperties.GetName(block) is { Length: > 0 } name => name,
             TextBlock block => block.Inlines is { Count: > 0 } inlines ? TextOf(inlines) : block.Text,
             ContentControl inner => TextOf(inner.Content),
             Decorator decorator => TextOf(decorator.Child),
