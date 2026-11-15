@@ -163,7 +163,12 @@ public sealed class HaslerTapeWindow : Window
             Content = _view
         };
 
-        _recordingOff = Strip("HaslerRecordingOff", "HaslerRecordingEnable", settings => settings.BlackBox = true);
+        // the black box, with the tapes of the player's vehicles, and the tapes of every train
+        _recordingOff = Strip("HaslerRecordingOff", "HaslerRecordingEnable", settings =>
+        {
+            settings.BlackBox = true;
+            settings.PhysicsLogTrains = true;
+        });
         _logOff = Strip("HaslerLogOff", "HaslerLogEnable", settings => settings.DebugLog = true);
 
         var folder = ToolButton(App.Loc["HaslerOpenFolder"]);
@@ -229,7 +234,7 @@ public sealed class HaslerTapeWindow : Window
     private void ShowWhatIsKnown()
     {
         var settings = AppServices.Current.Settings;
-        bool recording = settings.PhysicsLog || settings.BlackBox;
+        bool recording = settings.PhysicsLog || settings.BlackBox || settings.PhysicsLogTrains;
         _recordingOff.IsVisible = !recording;
         _logOff.IsVisible = recording && !settings.DebugLog;
 

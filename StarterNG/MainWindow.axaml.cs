@@ -709,7 +709,8 @@ public partial class MainWindow : Window
     /// </summary>
     private static void FollowLastRun()
     {
-        if (AppServices.Current.Settings.PhysicsLog || AppServices.Current.Settings.BlackBox)
+        var settings = AppServices.Current.Settings;
+        if (settings.PhysicsLog || settings.BlackBox || settings.PhysicsLogTrains)
             _ = Task.Run(AppServices.Current.Tapes.FollowLastRun);
     }
 

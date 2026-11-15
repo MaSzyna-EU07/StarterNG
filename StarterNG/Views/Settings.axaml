@@ -556,6 +556,9 @@
                                     <ctl:SettingRow Description="{Binding [SaveBlackBoxDesc], Source={x:Static starterNg:App.Loc}}" ConfigKey="blackbox">
                                         <CheckBox x:Name="BlackBoxCb" Content="{Binding [SaveBlackBox], Source={x:Static starterNg:App.Loc}}" />
                                     </ctl:SettingRow>
+                                    <ctl:SettingRow Description="{Binding [SaveTrainTapesDesc], Source={x:Static starterNg:App.Loc}}" ConfigKey="physicslog.trains">
+                                        <CheckBox x:Name="TrainTapesCb" Content="{Binding [SaveTrainTapes], Source={x:Static starterNg:App.Loc}}" />
+                                    </ctl:SettingRow>
                                     <ctl:SettingRow Description="{Binding [SaveSpeedometerTapesDesc], Source={x:Static starterNg:App.Loc}}" ConfigKey="physicslog">
                                         <CheckBox x:Name="SpeedometerTapesCb" Content="{Binding [SaveSpeedometerTapes], Source={x:Static starterNg:App.Loc}}" />
                                     </ctl:SettingRow>

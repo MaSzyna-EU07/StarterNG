@@ -519,6 +519,8 @@
     <String key="PowerOverheadLineOnlyDesc">Gdy wyłączone, podniesiony pantograf zasila pojazd nawet bez kontaktu z drutem.</String>
     <String key="SaveBlackBox">Zapisuj czarną skrzynkę i taśmy prędkościomierza</String>
     <String key="SaveBlackBoxDesc">Nagrywa przejazd do jednego pliku w folderze physicslog/ i na bieżąco, co 2 s, zapisuje taśmy (.dat) pojazdów, w których jesteś.</String>
+    <String key="SaveTrainTapes">Zapisuj taśmy prędkościomierza wszystkich pociągów</String>
+    <String key="SaveTrainTapesDesc">Na bieżąco, co 2 s, zapisuje taśmy (.dat) każdego pociągu scenerii do folderu physicslog/: jedną na maszynistę pojazdów szynowych, bez pojazdów drogowych i pasażerów. Znacznie mniej plików niż log fizyki każdego pojazdu.</String>
     <String key="SaveSpeedometerTapes">Zapisuj log parametrów fizycznych wszystkich pojazdów</String>
     <String key="SaveSpeedometerTapesDesc">Zapisuje log każdego pojazdu scenerii do folderu physicslog/: wiersz co 0,05 s, dopisywany co 2 s. Do diagnostyki: na dużej scenerii to setki plików.</String>
     <String key="SaveSimLogs">Zapisuj log z symulacji</String>

@@ -330,6 +330,7 @@ public partial class Settings : UserControl, ISettingsCapture
         {
             SpeedometerTapesCb.IsChecked = AppServices.Current.Settings.PhysicsLog;
             BlackBoxCb.IsChecked = AppServices.Current.Settings.BlackBox;
+            TrainTapesCb.IsChecked = AppServices.Current.Settings.PhysicsLogTrains;
             SimLogsCb.IsChecked = AppServices.Current.Settings.DebugLog;
         });
 
@@ -443,6 +444,7 @@ public partial class Settings : UserControl, ISettingsCapture
         OverheadOnlyCb.IsChecked = s.LiveTraction;
         SpeedometerTapesCb.IsChecked = s.PhysicsLog;
         BlackBoxCb.IsChecked = s.BlackBox;
+        TrainTapesCb.IsChecked = s.PhysicsLogTrains;
         SimLogsCb.IsChecked = s.DebugLog;
         KeepLogsCb.IsChecked = s.MultipleLogs;
         DisplaySimulationCb.IsChecked = s.DisplaySimulation;
@@ -877,6 +879,7 @@ public partial class Settings : UserControl, ISettingsCapture
         s.LiveTraction = IsChecked(OverheadOnlyCb);
         s.PhysicsLog = IsChecked(SpeedometerTapesCb);
         s.BlackBox = IsChecked(BlackBoxCb);
+        s.PhysicsLogTrains = IsChecked(TrainTapesCb);
         s.DebugLog = IsChecked(SimLogsCb);
         s.MultipleLogs = IsChecked(KeepLogsCb);
         s.DisplaySimulation = IsChecked(DisplaySimulationCb);

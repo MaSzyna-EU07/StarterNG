@@ -519,6 +519,8 @@
     <String key="PowerOverheadLineOnlyDesc">When disabled, a raised pantograph can power the vehicle even without touching the wire.</String>
     <String key="SaveBlackBox">Record the black box and the speedometer tapes</String>
     <String key="SaveBlackBoxDesc">Records the session to one file in the physicslog/ folder and writes the tapes (.dat) of the vehicles you are in as it goes, every 2 s.</String>
+    <String key="SaveTrainTapes">Record the speedometer tapes of every train</String>
+    <String key="SaveTrainTapesDesc">Writes the tapes (.dat) of every train of the scenery to the physicslog/ folder as it goes, every 2 s: one per driver of rail vehicles, not of road vehicles nor passengers. Far fewer files than the physics log of every vehicle.</String>
     <String key="SaveSpeedometerTapes">Save the physics log of every vehicle</String>
     <String key="SaveSpeedometerTapesDesc">Writes the log of every vehicle of the scenery to the physicslog/ folder: a line every 0.05 s, added every 2 s. For diagnostics: on a large scenery that is hundreds of files.</String>
     <String key="SaveSimLogs">Save simulation log</String>

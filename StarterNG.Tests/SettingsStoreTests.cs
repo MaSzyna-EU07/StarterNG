@@ -1371,6 +1371,41 @@ public class SettingsStoreTests
         Assert.Equal("blackbox yes", LineFor(installation, "blackbox"));
     }
 
+    [Theory]
+    [InlineData("physicslog no\n", false, false)]
+    [InlineData("physicslog no\nphysicslog.trains yes\n", true, true)]
+    [InlineData("physicslog no\nphysicslog.trains yes\nblackbox no\n", true, false)]
+    public void The_logs_of_the_trains_are_read_and_bring_the_black_box_as_the_simulator_has_it(string ini, bool trains, bool recorded)
+    {
+        var installation = WithHome(new InMemoryFileSystem().WithFile(UserIni, ini));
+
+        installation.SettingsStore.Load();
+
+        Assert.Equal(trains, installation.SettingsStore.Settings.PhysicsLogTrains);
+        Assert.Equal(recorded, installation.SettingsStore.Settings.BlackBox);
+    }
+
+    [Fact]
+    public void The_logs_of_the_trains_are_written_only_once_on_or_where_the_file_has_them()
+    {
+        var installation = WithHome(new InMemoryFileSystem().WithFile(UserIni, "physicslog no\n"));
+        installation.SettingsStore.Load();
+        installation.SettingsStore.Save();
+        Assert.Null(LineFor(installation, "physicslog.trains"));
+
+        installation.SettingsStore.Settings.PhysicsLogTrains = true;
+        installation.SettingsStore.Settings.BlackBox = true;
+        installation.SettingsStore.Save();
+        Assert.Equal("physicslog.trains yes", LineFor(installation, "physicslog.trains"));
+        // it says no more than the logs of the trains bring
+        Assert.Null(LineFor(installation, "blackbox"));
+
+        installation.SettingsStore.Load();
+        installation.SettingsStore.Settings.PhysicsLogTrains = false;
+        installation.SettingsStore.Save();
+        Assert.Equal("physicslog.trains no", LineFor(installation, "physicslog.trains"));
+    }
+
     [Fact]
     public void A_black_box_line_written_once_goes_away_when_it_says_no_more()
     {

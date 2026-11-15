@@ -500,6 +500,8 @@
     <String key="PowerOverheadLineOnly">Питание только под контактной сетью</String>
     <String key="SaveBlackBox">Записывать чёрный ящик и ленты скоростемера</String>
     <String key="SaveBlackBoxDesc">Записывает поездку в один файл в папке physicslog/ и по ходу, каждые 2 с, сохраняет ленты (.dat) тех единиц, в которых вы находитесь.</String>
+    <String key="SaveTrainTapes">Записывать ленты скоростемера всех поездов</String>
+    <String key="SaveTrainTapesDesc">По ходу, каждые 2 с, сохраняет ленты (.dat) каждого поезда сценария в папку physicslog/: по одной на машиниста рельсового состава, без автомобилей и пассажиров. Гораздо меньше файлов, чем физический журнал каждой единицы.</String>
     <String key="SaveSpeedometerTapes">Сохранять физический лог всех единиц</String>
     <String key="SaveSimLogs">Сохранять журнал симуляции</String>
     <String key="KeepPrevLogs">Сохранять предыдущие журналы</String>

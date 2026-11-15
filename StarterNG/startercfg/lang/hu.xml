@@ -500,6 +500,8 @@
     <String key="PowerOverheadLineOnly">Táplálás csak felsővezeték alatt</String>
     <String key="SaveBlackBox">Fekete doboz és sebességmérő-szalagok rögzítése</String>
     <String key="SaveBlackBoxDesc">A menetet egy fájlba rögzíti a physicslog/ mappában, és menet közben, 2 másodpercenként kiírja azoknak a járműveknek a szalagjait (.dat), amelyekben ülsz.</String>
+    <String key="SaveTrainTapes">Minden vonat sebességmérő-szalagjának rögzítése</String>
+    <String key="SaveTrainTapesDesc">Menet közben, 2 másodpercenként kiírja a pálya minden vonatának szalagját (.dat) a physicslog/ mappába: egyet a sínjárművek minden vezetőjének, közúti járművek és utasok nélkül. Jóval kevesebb fájl, mint minden jármű fizikai naplója.</String>
     <String key="SaveSpeedometerTapes">Minden jármű fizikai naplójának mentése</String>
     <String key="SaveSimLogs">Szimulációs napló mentése</String>
     <String key="KeepPrevLogs">Korábbi naplók megtartása</String>
