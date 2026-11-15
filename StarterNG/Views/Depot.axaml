@@ -81,7 +81,7 @@
                           PointerWheelChanged="Combo_OnPointerWheel"
                           SelectionChanged="ClassCombo_OnSelectionChanged" />
 
-                <TextBox Name="searchBox" Grid.Row="3" Margin="0,0,0,6"
+                <TextBox Name="searchBox" AutomationProperties.LandmarkType="Search" Grid.Row="3" Margin="0,0,0,6"
                          PlaceholderText="{Binding [SearchAllVehicles], Source={x:Static starterNg:App.Loc}}"
                          TextChanged="SearchBox_OnTextChanged" />
 

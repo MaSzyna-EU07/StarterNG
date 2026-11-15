@@ -8,125 +8,129 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:views="clr-namespace:StarterNG.Views"
     xmlns:starterNg="clr-namespace:StarterNG"
+    xmlns:ctl="clr-namespace:StarterNG.Controls"
     Title="Starter MaSzyna"
     Icon="/Assets/starter.ico"
     Width="1010" Height="768" MinWidth="1010" MinHeight="666"
     WindowStartupLocation="CenterScreen">
 
-    <DockPanel LastChildFill="True">
+    <!-- Says what a click changed out of sight; see Announcer. -->
+    <ctl:Announcer>
+        <DockPanel LastChildFill="True">
 
-        <Border x:Name="TopBar" DockPanel.Dock="Top"
-                Background="{StaticResource CarbonPanelBg}"
-                BorderBrush="{StaticResource CarbonBorderLight}"
-                BorderThickness="0,0,0,1"
-                PointerPressed="TitleBar_OnPointerPressed">
-            <Grid RowDefinitions="44">
+            <Border x:Name="TopBar" DockPanel.Dock="Top"
+                    Background="{StaticResource CarbonPanelBg}"
+                    BorderBrush="{StaticResource CarbonBorderLight}"
+                    BorderThickness="0,0,0,1"
+                    PointerPressed="TitleBar_OnPointerPressed">
+                <Grid RowDefinitions="44">
 
-                <Grid ColumnDefinitions="Auto,*,Auto" Background="Transparent">
+                    <Grid ColumnDefinitions="Auto,*,Auto" Background="Transparent">
 
-                    <StackPanel x:Name="TopBarLeft" Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Stretch">
-                        <RadioButton x:Name="NavScenarios" GroupName="nav" Theme="{StaticResource NavTab}"
-                                     Tag="scenarios" IsChecked="True"
-                                     IsCheckedChanged="Nav_OnCheckedChanged"
-                                     Content="{Binding [NavScenarios], Source={x:Static starterNg:App.Loc}}" />
-                        <RadioButton x:Name="NavDepot" GroupName="nav" Theme="{StaticResource NavTab}"
-                                     Tag="depot"
-                                     IsCheckedChanged="Nav_OnCheckedChanged"
-                                     Content="{Binding [NavDepot], Source={x:Static starterNg:App.Loc}}" />
-                        <RadioButton x:Name="NavSettings" GroupName="nav" Theme="{StaticResource NavTab}"
-                                     Tag="settings"
-                                     IsCheckedChanged="Nav_OnCheckedChanged"
-                                     Content="{Binding [NavSettings], Source={x:Static starterNg:App.Loc}}" />
-                        <Button Classes="Basic" Click="openLastLogClick" Width="48" Cursor="Hand"
-                                HorizontalContentAlignment="Center"
-                                ToolTip.Tip="{Binding [ShowLatestLogTooltip], Source={x:Static starterNg:App.Loc}}">
-                            <materialIcons:MaterialIcon Kind="FileDocument" Height="16" Width="16" />
-                        </Button>
-                        <Button Classes="Basic" Click="openHaslerTapesClick" Width="48" Cursor="Hand"
-                                HorizontalContentAlignment="Center"
-                                ToolTip.Tip="{Binding [HaslerTapesTooltip], Source={x:Static starterNg:App.Loc}}">
-                            <materialIcons:MaterialIcon Kind="ChartLine" Height="16" Width="16" />
-                        </Button>
-                        <Button x:Name="HelpButton" Classes="Basic" Width="48" Cursor="Hand"
-                                ToolTip.Tip="{Binding [Help], Source={x:Static starterNg:App.Loc}}"
-                                Click="HelpButton_OnClick"
-                                Content="?" FontWeight="Bold" FontSize="16"
-                                HorizontalContentAlignment="Center" />
-                    </StackPanel>
-
-                    <StackPanel x:Name="TopBarRight" Grid.Column="2" Orientation="Horizontal"
-                                VerticalAlignment="Center" Margin="0,0,3,0" Spacing="0">
-                        <StackPanel x:Name="VersionPanel" Orientation="Vertical" VerticalAlignment="Center" Margin="0,0,6,0">
-                            <Label Content="{Binding [Version], Source={x:Static starterNg:App.Loc}}"
-                                   FontSize="12" Foreground="{StaticResource CarbonFgDim}" Padding="0" />
-                            <Label Content="{x:Static starterNg:AppInfo.Version}"
-                                   FontSize="12" Foreground="{StaticResource CarbonFg}" Padding="0" />
+                        <StackPanel x:Name="TopBarLeft" Grid.Column="0" AutomationProperties.LandmarkType="Navigation" AutomationProperties.ControlTypeOverride="Group" AutomationProperties.IsControlElementOverride="True" Orientation="Horizontal" VerticalAlignment="Stretch">
+                            <RadioButton x:Name="NavScenarios" GroupName="nav" Theme="{StaticResource NavTab}"
+                                         Tag="scenarios" IsChecked="True"
+                                         IsCheckedChanged="Nav_OnCheckedChanged"
+                                         Content="{Binding [NavScenarios], Source={x:Static starterNg:App.Loc}}" />
+                            <RadioButton x:Name="NavDepot" GroupName="nav" Theme="{StaticResource NavTab}"
+                                         Tag="depot"
+                                         IsCheckedChanged="Nav_OnCheckedChanged"
+                                         Content="{Binding [NavDepot], Source={x:Static starterNg:App.Loc}}" />
+                            <RadioButton x:Name="NavSettings" GroupName="nav" Theme="{StaticResource NavTab}"
+                                         Tag="settings"
+                                         IsCheckedChanged="Nav_OnCheckedChanged"
+                                         Content="{Binding [NavSettings], Source={x:Static starterNg:App.Loc}}" />
+                            <Button Classes="Basic" Click="openLastLogClick" Width="48" Cursor="Hand"
+                                    HorizontalContentAlignment="Center"
+                                    ToolTip.Tip="{Binding [ShowLatestLogTooltip], Source={x:Static starterNg:App.Loc}}">
+                                <materialIcons:MaterialIcon Kind="FileDocument" Height="16" Width="16" />
+                            </Button>
+                            <Button Classes="Basic" Click="openHaslerTapesClick" Width="48" Cursor="Hand"
+                                    HorizontalContentAlignment="Center"
+                                    ToolTip.Tip="{Binding [HaslerTapesTooltip], Source={x:Static starterNg:App.Loc}}">
+                                <materialIcons:MaterialIcon Kind="ChartLine" Height="16" Width="16" />
+                            </Button>
+                            <Button x:Name="HelpButton" Classes="Basic" Width="48" Cursor="Hand"
+                                    ToolTip.Tip="{Binding [Help], Source={x:Static starterNg:App.Loc}}"
+                                    Click="HelpButton_OnClick"
+                                    Content="?" FontWeight="Bold" FontSize="16"
+                                    HorizontalContentAlignment="Center" />
                         </StackPanel>
 
-                        <ComboBox x:Name="LangCombo" Width="96" VerticalAlignment="Center"
-                                  AutomationProperties.Name="{Binding [Language], Source={x:Static starterNg:App.Loc}}"
-                                  SelectionChanged="LangCombo_OnSelectionChanged" />
+                        <StackPanel x:Name="TopBarRight" Grid.Column="2" Orientation="Horizontal"
+                                    VerticalAlignment="Center" Margin="0,0,3,0" Spacing="0">
+                            <StackPanel x:Name="VersionPanel" Orientation="Vertical" VerticalAlignment="Center" Margin="0,0,6,0">
+                                <Label Content="{Binding [Version], Source={x:Static starterNg:App.Loc}}"
+                                       FontSize="12" Foreground="{StaticResource CarbonFgDim}" Padding="0" />
+                                <Label Content="{x:Static starterNg:AppInfo.Version}"
+                                       FontSize="12" Foreground="{StaticResource CarbonFg}" Padding="0" />
+                            </StackPanel>
 
-                        <Button Classes="Basic" Cursor="Hand" Tag="https://discord.gg/eu07" Click="linkClick"
-                                ToolTip.Tip="Discord">
-                            <PathIcon Data="{StaticResource DiscordLogo}" Height="12" />
-                        </Button>
-                        <Button Classes="Basic" Cursor="Hand" Tag="http://www.facebook.com/MaSzynaeu07pl" Click="linkClick"
-                                ToolTip.Tip="Facebook">
-                            <materialIcons:MaterialIcon Kind="Facebook" />
-                        </Button>
-                        <Button Classes="Basic" Cursor="Hand" Tag="http://www.youtube.com/@eu07official" Click="linkClick"
-                                ToolTip.Tip="YouTube">
-                            <materialIcons:MaterialIcon Kind="Youtube" />
-                        </Button>
-                        <Button Classes="Basic" Cursor="Hand" Tag="http://github.com/MaSzyna-EU07/" Click="linkClick"
-                                ToolTip.Tip="GitHub">
-                            <materialIcons:MaterialIcon Kind="Github" />
-                        </Button>
+                            <ComboBox x:Name="LangCombo" Width="96" VerticalAlignment="Center"
+                                      AutomationProperties.Name="{Binding [Language], Source={x:Static starterNg:App.Loc}}"
+                                      SelectionChanged="LangCombo_OnSelectionChanged" />
 
-                        <Button x:Name="LogoLink" Classes="Basic" Cursor="Hand" Tag="http://eu07.pl/" Click="linkClick"
-                                Padding="6,0" Margin="4,0,0,0"
-                                ToolTip.Tip="eu07.pl">
-                            <Image Source="/Assets/Logo/maszyna_white.png" Height="26" />
-                        </Button>
-                    </StackPanel>
+                            <Button Classes="Basic" Cursor="Hand" Tag="https://discord.gg/eu07" Click="linkClick"
+                                    ToolTip.Tip="Discord">
+                                <PathIcon Data="{StaticResource DiscordLogo}" Height="12" />
+                            </Button>
+                            <Button Classes="Basic" Cursor="Hand" Tag="http://www.facebook.com/MaSzynaeu07pl" Click="linkClick"
+                                    ToolTip.Tip="Facebook">
+                                <materialIcons:MaterialIcon Kind="Facebook" />
+                            </Button>
+                            <Button Classes="Basic" Cursor="Hand" Tag="http://www.youtube.com/@eu07official" Click="linkClick"
+                                    ToolTip.Tip="YouTube">
+                                <materialIcons:MaterialIcon Kind="Youtube" />
+                            </Button>
+                            <Button Classes="Basic" Cursor="Hand" Tag="http://github.com/MaSzyna-EU07/" Click="linkClick"
+                                    ToolTip.Tip="GitHub">
+                                <materialIcons:MaterialIcon Kind="Github" />
+                            </Button>
+
+                            <Button x:Name="LogoLink" Classes="Basic" Cursor="Hand" Tag="http://eu07.pl/" Click="linkClick"
+                                    Padding="6,0" Margin="4,0,0,0"
+                                    ToolTip.Tip="eu07.pl">
+                                <Image Source="/Assets/Logo/maszyna_white.png" Height="26" />
+                            </Button>
+                        </StackPanel>
+                    </Grid>
                 </Grid>
+            </Border>
+
+            <!-- The other ways to start - without saving, free fly - were only under the
+                 right button; the arrow beside it says they exist. The editor is not one
+                 of them: it opens the scenery itself, so it has a button of its own. -->
+            <Grid DockPanel.Dock="Bottom" ColumnDefinitions="*,Auto,Auto,Auto" ColumnSpacing="4" Margin="3">
+                <Button Name="startButton" Classes="Start" Height="42"
+                        TabIndex="9"
+                        Click="StartButton_OnClick"
+                        Content="{Binding [Start], Source={x:Static starterNg:App.Loc}}" />
+                <Button Name="startMoreButton" Grid.Column="1" Classes="Start" Width="36" Height="42"
+                        TabIndex="10" Cursor="Hand"
+                        Click="StartMoreButton_OnClick"
+                        ToolTip.Tip="{Binding [StartMore], Source={x:Static starterNg:App.Loc}}">
+                    <materialIcons:MaterialIcon Kind="ChevronUp" Width="20" Height="20" />
+                </Button>
+                <Button Name="startEditorButton" Grid.Column="2" Classes="Flat" Height="42" Padding="14,0"
+                        TabIndex="11" Cursor="Hand" VerticalContentAlignment="Center"
+                        Click="StartEditorButton_OnClick" />
+                <Button Name="startEditorMoreButton" Grid.Column="3" Classes="Flat" Width="36" Height="42" Padding="0"
+                        TabIndex="12" Cursor="Hand" HorizontalContentAlignment="Center" VerticalContentAlignment="Center"
+                        Click="StartEditorMoreButton_OnClick"
+                        ToolTip.Tip="{Binding [StartEditorWizard], Source={x:Static starterNg:App.Loc}}">
+                    <materialIcons:MaterialIcon Kind="ChevronUp" Width="20" Height="20" />
+                </Button>
             </Grid>
-        </Border>
 
-        <!-- The other ways to start - without saving, free fly - were only under the
-             right button; the arrow beside it says they exist. The editor is not one
-             of them: it opens the scenery itself, so it has a button of its own. -->
-        <Grid DockPanel.Dock="Bottom" ColumnDefinitions="*,Auto,Auto,Auto" ColumnSpacing="4" Margin="3">
-            <Button Name="startButton" Classes="Start" Height="42"
-                    TabIndex="9"
-                    Click="StartButton_OnClick"
-                    Content="{Binding [Start], Source={x:Static starterNg:App.Loc}}" />
-            <Button Name="startMoreButton" Grid.Column="1" Classes="Start" Width="36" Height="42"
-                    TabIndex="10" Cursor="Hand"
-                    Click="StartMoreButton_OnClick"
-                    ToolTip.Tip="{Binding [StartMore], Source={x:Static starterNg:App.Loc}}">
-                <materialIcons:MaterialIcon Kind="ChevronUp" Width="20" Height="20" />
-            </Button>
-            <Button Name="startEditorButton" Grid.Column="2" Classes="Flat" Height="42" Padding="14,0"
-                    TabIndex="11" Cursor="Hand" VerticalContentAlignment="Center"
-                    Click="StartEditorButton_OnClick" />
-            <Button Name="startEditorMoreButton" Grid.Column="3" Classes="Flat" Width="36" Height="42" Padding="0"
-                    TabIndex="12" Cursor="Hand" HorizontalContentAlignment="Center" VerticalContentAlignment="Center"
-                    Click="StartEditorMoreButton_OnClick"
-                    ToolTip.Tip="{Binding [StartEditorWizard], Source={x:Static starterNg:App.Loc}}">
-                <materialIcons:MaterialIcon Kind="ChevronUp" Width="20" Height="20" />
-            </Button>
-        </Grid>
-
-        <!-- Scrolls only below the size the pages are laid out for; see KeepPagesUsable. -->
-        <ScrollViewer x:Name="PageScroll" Margin="3,3,3,0" TabIndex="1"
-                      HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Disabled">
-            <Panel x:Name="PageHost">
-                <views:Scenarios x:Name="ScenariosView" />
-                <views:Depot x:Name="DepotView" IsVisible="False" />
-                <views:Settings x:Name="SettingsView" IsVisible="False" />
-            </Panel>
-        </ScrollViewer>
-    </DockPanel>
+            <!-- Scrolls only below the size the pages are laid out for; see KeepPagesUsable. -->
+            <ScrollViewer x:Name="PageScroll" AutomationProperties.LandmarkType="Main" Margin="3,3,3,0" TabIndex="1"
+                          HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Disabled">
+                <Panel x:Name="PageHost">
+                    <views:Scenarios x:Name="ScenariosView" />
+                    <views:Depot x:Name="DepotView" IsVisible="False" />
+                    <views:Settings x:Name="SettingsView" IsVisible="False" />
+                </Panel>
+            </ScrollViewer>
+        </DockPanel>
+    </ctl:Announcer>
 </Window>

@@ -5,6 +5,7 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using Avalonia;
 using Avalonia.Automation;
+using Avalonia.Automation.Peers;
 using Avalonia.Controls;
 using Avalonia.Controls.Documents;
 using Avalonia.Controls.Primitives;
@@ -30,6 +31,8 @@ public static class ScreenReaderNames
 
         ContentControl.ContentProperty.Changed.AddClassHandler<ListBoxItem>((i, _) => Give(i, TextOf(i.Content)));
         HeaderedItemsControl.HeaderProperty.Changed.AddClassHandler<TreeViewItem>((i, _) => Give(i, TextOf(i.Header)));
+
+        HeaderedContentControl.HeaderProperty.Changed.AddClassHandler<HeaderedContentControl>((c, _) => NameGroup(c));
 
         ComboBox.PlaceholderTextProperty.Changed.AddClassHandler<ComboBox>((c, _) => Give(c, c.PlaceholderText));
         TextBox.PlaceholderTextProperty.Changed.AddClassHandler<TextBox>((t, _) => Give(t, t.PlaceholderText));
@@ -81,6 +84,22 @@ public static class ScreenReaderNames
 
     public static string? TimeText(TimeSpan? time) =>
         time?.ToString(@"hh\:mm", CultureInfo.InvariantCulture);
+
+    /// <summary>
+    /// A panel with a title, such as Scenerie or Skład, made a named group: the reader
+    /// says where focus went in, where before the panel was not there for it at all.
+    /// Tabs and expanders, which are panels with a title too, speak for themselves.
+    /// </summary>
+    private static void NameGroup(HeaderedContentControl panel)
+    {
+        if (panel.GetType() != typeof(HeaderedContentControl) && panel is not SettingsSection)
+            return;
+
+        string? name = TextOf(panel.Header);
+        Give(panel, name);
+        AutomationProperties.SetControlTypeOverride(panel, name is null ? null : AutomationControlType.Group);
+        AutomationProperties.SetIsControlElementOverride(panel, name is null ? null : true);
+    }
 
     private static void NameButton(Button button) =>
         Give(button, button.Content is string ? null : TextOf(ToolTip.GetTip(button)) ?? TextOf(button.Content));

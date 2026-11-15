@@ -836,6 +836,7 @@ public partial class Scenarios : UserControl
     {
         var now = DateTime.Now;
         weatherTime.SelectedTime = new TimeSpan(now.Hour, now.Minute, 0);
+        Announcer.Say(this, ScreenReaderNames.PickerText(App.Loc["Time"], ScreenReaderNames.TimeText(weatherTime.SelectedTime)));
     }
 
     private void WeatherRestore_OnClick(object? sender, RoutedEventArgs e)
@@ -843,7 +844,17 @@ public partial class Scenarios : UserControl
         if (_currentScenery is null) return;
         _currentScenery.Weather.Restore();
         ShowWeather(_currentScenery);
+        Announcer.Say(this, WeatherSummary());
     }
+
+    /// <summary>The weather as a reader hears it once put back: every field and its value.</summary>
+    private string WeatherSummary() => string.Join(", ",
+        ScreenReaderNames.PickerText(App.Loc["Date"], ScreenReaderNames.DateText(weatherDate.SelectedDate, weatherDate.YearVisible)),
+        ScreenReaderNames.PickerText(App.Loc["Season"], ScreenReaderNames.TextOf(weatherSeason.SelectedItem)),
+        ScreenReaderNames.PickerText(App.Loc["Time"], ScreenReaderNames.TimeText(weatherTime.SelectedTime)),
+        ScreenReaderNames.PickerText(App.Loc["Temperature"], weatherTempLabel.Text),
+        ScreenReaderNames.PickerText(App.Loc["Visibility"], weatherFogLabel.Text),
+        ScreenReaderNames.PickerText(App.Loc["Overcast"], ScreenReaderNames.TextOf(weatherOvercast.SelectedItem)));
 
     private static TimeSpan? ParseTime(string? text)
     {

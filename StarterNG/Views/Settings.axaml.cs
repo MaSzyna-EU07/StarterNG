@@ -580,6 +580,7 @@ public partial class Settings : UserControl, ISettingsCapture
         // Chosen as a whole, its values are choices, not ones the screen could not show.
         ForgetShown(applied.ChosenKeys);
         UpdatePresetMarks();
+        Announcer.Say(this, ScreenReaderNames.PickerText(App.Loc["GfxColPresets"], App.Loc[preset.NameKey]));
     }
 
     /// <summary>Puts one part at a level, as edits waiting for Save.</summary>
@@ -747,6 +748,7 @@ public partial class Settings : UserControl, ISettingsCapture
 
         // Put back by hand, a value is a choice like any other.
         ForgetShown(keys);
+        Announcer.Say(this, ScreenReaderNames.PickerText(ScreenReaderNames.TextOf(section.Header), App.Loc["DefaultsRestored"]));
     }
 
     // ── Values the screen shows otherwise than the file has them ─────────────
@@ -1147,6 +1149,7 @@ public partial class Settings : UserControl, ISettingsCapture
         _keyBindings.Reload();
         _dirty = false;
         UpdateSaveState();
+        Announcer.Say(this, App.Loc["SettingsRestored"]);
     }
 
     /// <summary>The list as <see cref="ResolutionChoices"/> has it for the monitors there are now, with the size selected.</summary>

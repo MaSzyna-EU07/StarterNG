@@ -589,6 +589,8 @@
     <String key="Save">Zapisz</String>
     <String key="Reset">Przywróć</String>
     <String key="SettingsSaved">Zapisano ustawienia</String>
+    <String key="DefaultsRestored">Przywrócono domyślne</String>
+    <String key="SettingsRestored">Przywrócono zapisane ustawienia</String>
     <String key="SettingsNotSaved">Nie udało się zapisać ustawień</String>
     <String key="UnsavedChanges">Niezapisane zmiany</String>
 

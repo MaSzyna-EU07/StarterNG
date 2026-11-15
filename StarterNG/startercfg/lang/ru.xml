@@ -563,6 +563,8 @@
     <String key="Save">Сохранить</String>
     <String key="Reset">Сбросить</String>
     <String key="SettingsSaved">Настройки сохранены</String>
+    <String key="DefaultsRestored">Восстановлены значения по умолчанию</String>
+    <String key="SettingsRestored">Восстановлены сохранённые настройки</String>
     <String key="SettingsNotSaved">Не удалось сохранить настройки</String>
     <String key="UnsavedChanges">Несохранённые изменения</String>
 

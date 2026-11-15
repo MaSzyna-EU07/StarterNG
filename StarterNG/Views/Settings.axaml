@@ -22,7 +22,7 @@
                                TextTrimming="LeadingCharacterEllipsis" />
                 </DockPanel>
                 <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="12" HorizontalAlignment="Right">
-                    <TextBlock x:Name="SaveStatus" VerticalAlignment="Center" Opacity="0.8" Text="" />
+                    <TextBlock x:Name="SaveStatus" ctl:Announcer.Changes="True" VerticalAlignment="Center" Opacity="0.8" Text="" />
                     <Button x:Name="ChangesButton" Classes="Flat" Click="ChangesButton_OnClick"
                             Content="{Binding [IniChangesButton], Source={x:Static starterNg:App.Loc}}" />
                     <Button x:Name="ResetButton" Classes="Flat" Click="ResetButton_OnClick"
@@ -40,7 +40,7 @@
             <Border Grid.Column="0" Background="{StaticResource CarbonPanelBg}"
                     BorderBrush="{StaticResource CarbonBorderLight}" BorderThickness="0,0,1,0">
                 <DockPanel Margin="8,10,8,10">
-                    <TextBox x:Name="SettingsSearch" DockPanel.Dock="Top" Margin="0,0,0,10"
+                    <TextBox x:Name="SettingsSearch" AutomationProperties.LandmarkType="Search" DockPanel.Dock="Top" Margin="0,0,0,10"
                              PlaceholderText="{Binding [Search], Source={x:Static starterNg:App.Loc}}"
                              TextChanged="SettingsSearch_OnTextChanged" />
 
@@ -69,7 +69,7 @@
                                 Click="ExportIniButton_OnClick" />
                     </StackPanel>
 
-                    <ListBox x:Name="CategoryList" Classes="SettingsNav" SelectedIndex="0"
+                    <ListBox x:Name="CategoryList" AutomationProperties.LandmarkType="Navigation" Classes="SettingsNav" SelectedIndex="0"
                              ItemContainerTheme="{StaticResource SettingsNavItem}"
                              SelectionChanged="CategoryList_OnSelectionChanged">
                         <ListBoxItem Tag="general" Content="{Binding [General], Source={x:Static starterNg:App.Loc}}" />
@@ -94,7 +94,7 @@
                             <TextBlock VerticalAlignment="Center" FontWeight="Bold"
                                        Text="{Binding [GfxColPresets], Source={x:Static starterNg:App.Loc}}" />
                             <StackPanel x:Name="PresetButtons" Grid.Column="1" Orientation="Horizontal" Spacing="6" />
-                            <TextBlock x:Name="PresetStateText" Grid.Column="2" VerticalAlignment="Center" FontSize="12"
+                            <TextBlock x:Name="PresetStateText" ctl:Announcer.Changes="True" Grid.Column="2" VerticalAlignment="Center" FontSize="12"
                                        Foreground="{StaticResource CarbonFgDim}" />
                         </Grid>
                         <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">

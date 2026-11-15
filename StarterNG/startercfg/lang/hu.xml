@@ -563,6 +563,8 @@
     <String key="Save">Mentés</String>
     <String key="Reset">Visszaállítás</String>
     <String key="SettingsSaved">A beállítások elmentve</String>
+    <String key="DefaultsRestored">Alapértékek visszaállítva</String>
+    <String key="SettingsRestored">A mentett beállítások visszaállítva</String>
     <String key="SettingsNotSaved">A beállításokat nem sikerült elmenteni</String>
     <String key="UnsavedChanges">Nem mentett módosítások</String>
 

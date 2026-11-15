@@ -589,6 +589,8 @@
     <String key="Save">Save</String>
     <String key="Reset">Reset</String>
     <String key="SettingsSaved">Settings saved</String>
+    <String key="DefaultsRestored">Defaults restored</String>
+    <String key="SettingsRestored">Saved settings restored</String>
     <String key="SettingsNotSaved">Could not save the settings</String>
     <String key="UnsavedChanges">Unsaved changes</String>
 
