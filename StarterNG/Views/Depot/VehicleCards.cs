@@ -2,6 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Avalonia;
+using Avalonia.Automation;
+using Avalonia.Automation.Peers;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Layout;
@@ -146,6 +148,10 @@ public sealed class VehicleCards
             Focusable = true
         };
         card.Classes.Add("ConsistCard");
+        // The card shows pictures only; without a name a screen reader said nothing on it.
+        AutomationProperties.SetName(card, CardName(item, index));
+        AutomationProperties.SetControlTypeOverride(card, AutomationControlType.ListItem);
+        AutomationProperties.SetIsControlElementOverride(card, true);
         card.GotFocus += (_, _) => Select(item, null);
         card.KeyDown += (_, e) => OnCardKey(card, item, e);
         card.PointerPressed += (_, e) =>
@@ -178,6 +184,10 @@ public sealed class VehicleCards
         card.ContextMenu = BuildCardMenu(card, item);
         return card;
     }
+
+    /// <summary>Its place in the consist and what it holds, as a screen reader says it.</summary>
+    private string CardName(ConsistItem item, int index) =>
+        $"{index + 1}. {string.Join(", ", item.Cars.Select(car => CardCaption(item, car, index)))}";
 
     private string CardCaption(ConsistItem item, Dynamic car, int index) =>
         TrainsetDisplay.VehicleLabel(car,

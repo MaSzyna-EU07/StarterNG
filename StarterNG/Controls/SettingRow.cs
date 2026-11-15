@@ -1,5 +1,6 @@
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Interactivity;
 
 namespace StarterNG.Controls;
 
@@ -73,6 +74,16 @@ public class SettingRow : ContentControl
 
         if (change.Property == IdleNoteProperty)
             ToolTip.SetTip(this, string.IsNullOrEmpty(IdleNote) ? null : IdleNote);
+
+        if (change.Property == LabelProperty || change.Property == ContentProperty)
+            ScreenReaderNames.NameInputs(Content, Label);
+    }
+
+    // Again once in the window: a panel given as content may be filled after it was set.
+    protected override void OnLoaded(RoutedEventArgs e)
+    {
+        base.OnLoaded(e);
+        ScreenReaderNames.NameInputs(Content, Label);
     }
 
     private void UpdatePseudoClasses()

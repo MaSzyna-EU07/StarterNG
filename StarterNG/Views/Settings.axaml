@@ -47,7 +47,8 @@
                     <StackPanel DockPanel.Dock="Bottom" Spacing="6" Margin="0,14,0,0">
                         <TextBlock Classes="FieldLabel"
                                    Text="{Binding [SettingsProfile], Source={x:Static starterNg:App.Loc}}" />
-                        <ComboBox x:Name="ProfileCb" HorizontalAlignment="Stretch" />
+                        <ComboBox x:Name="ProfileCb" HorizontalAlignment="Stretch"
+                                  AutomationProperties.Name="{Binding [ProfilePick], Source={x:Static starterNg:App.Loc}}" />
                         <Button x:Name="ProfileApplyBtn" Classes="Flat" HorizontalAlignment="Stretch"
                                 HorizontalContentAlignment="Center"
                                 Content="{Binding [ProfileApply], Source={x:Static starterNg:App.Loc}}"

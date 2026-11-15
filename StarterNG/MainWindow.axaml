@@ -64,6 +64,7 @@
                         </StackPanel>
 
                         <ComboBox x:Name="LangCombo" Width="96" VerticalAlignment="Center"
+                                  AutomationProperties.Name="{Binding [Language], Source={x:Static starterNg:App.Loc}}"
                                   SelectionChanged="LangCombo_OnSelectionChanged" />
 
                         <Button Classes="Basic" Cursor="Hand" Tag="https://discord.gg/eu07" Click="linkClick"

@@ -578,12 +578,29 @@ public sealed class VehicleBrowser
         var set = _db.ResolveSet(texture);
         var browserTex = set is { Count: > 0 } ? set[0] : texture;
 
-        WhileSyncing(() =>
+        KeepingKeyboardFocus(() => WhileSyncing(() =>
         {
             ApplyFilters(VehicleInfo.CategoryOf(browserTex), VehicleInfo.ClassOf(browserTex));
             Rebuild();
             SelectListEntry(browserTex);
-        });
+        }));
+    }
+
+    /// <summary>
+    /// The list is rebuilt under the keyboard: the add button is switched off for a
+    /// moment and the rows are replaced, and focus fell out of the window with them -
+    /// Tab then went nowhere until something was clicked. It is handed back.
+    /// </summary>
+    private void KeepingKeyboardFocus(Action rebuild)
+    {
+        bool onAdd = addVehicleButton.IsFocused;
+        bool inList = vehicleListBox.IsKeyboardFocusWithin;
+        rebuild();
+
+        if (onAdd && addVehicleButton.IsEnabled)
+            addVehicleButton.Focus(NavigationMethod.Tab);
+        else if (onAdd || inList)
+            (vehicleListBox.SelectedItem as Control ?? vehicleListBox).Focus(NavigationMethod.Tab);
     }
 
     private void SyncCombosTo(VehicleTexture texture)
@@ -591,7 +608,7 @@ public sealed class VehicleBrowser
         if (_syncingCombos || !ApplyFilters(VehicleInfo.CategoryOf(texture), VehicleInfo.ClassOf(texture)))
             return;
 
-        PostSyncing(() => { Rebuild(); SelectListEntry(texture); });
+        PostSyncing(() => KeepingKeyboardFocus(() => { Rebuild(); SelectListEntry(texture); }));
     }
 
     private void WhileSyncing(Action work)

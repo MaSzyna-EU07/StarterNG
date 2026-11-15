@@ -86,6 +86,7 @@
                          TextChanged="SearchBox_OnTextChanged" />
 
                 <ListBox Name="vehicleListBox" Grid.Row="4" Classes="Compact" MinHeight="60"
+                         AutomationProperties.Name="{Binding [Vehicles], Source={x:Static starterNg:App.Loc}}"
                          SelectionChanged="VehicleListBox_OnSelectionChanged"
                          DoubleTapped="VehicleListBox_OnDoubleTapped"
                          PointerPressed="VehicleListBox_OnPointerPressed" />
@@ -145,6 +146,7 @@
                                       Content="{Binding [ShowAiVehicles], Source={x:Static starterNg:App.Loc}}" />
                         </StackPanel>
                         <ListBox Name="sceneryConsistList" Classes="Compact"
+                                 AutomationProperties.Name="{Binding [SceneryConsists], Source={x:Static starterNg:App.Loc}}"
                                  SelectionChanged="SceneryConsistList_OnSelectionChanged"
                                  KeyDown="SceneryConsistList_OnKeyDown" />
                     </DockPanel>
@@ -160,7 +162,8 @@
                         <TextBlock DockPanel.Dock="Bottom" Margin="2,6,0,0" FontSize="12" Opacity="0.6"
                                    TextWrapping="Wrap"
                                    Text="{Binding [WarehouseEditHint], Source={x:Static starterNg:App.Loc}}" />
-                        <ListBox Name="warehouseList" Classes="Compact" />
+                        <ListBox Name="warehouseList" Classes="Compact"
+                                 AutomationProperties.Name="{Binding [WarehouseConsists], Source={x:Static starterNg:App.Loc}}" />
                     </DockPanel>
                 </TabItem>
             </TabControl>
