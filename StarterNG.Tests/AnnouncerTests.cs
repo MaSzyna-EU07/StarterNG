@@ -2,6 +2,7 @@ using Avalonia.Automation;
 using Avalonia.Automation.Peers;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
+using Avalonia.VisualTree;
 using StarterNG.Controls;
 
 namespace StarterNG.Tests;
@@ -49,7 +50,12 @@ public class AnnouncerTests
     [Fact]
     public void A_control_outside_any_announcer_is_not_heard()
     {
-        Announcer.Say(new Button(), "Godzina: 07:05");
+        var button = new Button();
+
+        var thrown = Record.Exception(() => Announcer.Say(button, "Godzina: 07:05"));
+
+        Assert.Null(thrown);
+        Assert.Null(button.FindAncestorOfType<Announcer>());
     }
 
     [Fact]

@@ -101,7 +101,7 @@ public partial class Scenarios : UserControl
             sceneryList.Items.Add(ToTreeItem(node, expandGroups));
     }
 
-    private TreeViewItem ToTreeItem(SceneryTreeNode node, bool expandGroups)
+    private ExpandableTreeViewItem ToTreeItem(SceneryTreeNode node, bool expandGroups)
     {
         var item = new ExpandableTreeViewItem
         {

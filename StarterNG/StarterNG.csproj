@@ -44,6 +44,10 @@
     </ItemGroup>
 
     <ItemGroup>
+        <InternalsVisibleTo Include="StarterNG.Tests" />
+    </ItemGroup>
+
+    <ItemGroup>
       <Folder Include="Assets\Logo\" />
     </ItemGroup>
 

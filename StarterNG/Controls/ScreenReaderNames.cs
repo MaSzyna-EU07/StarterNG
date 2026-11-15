@@ -164,10 +164,12 @@ public static class ScreenReaderNames
     }
 
     /// <summary>The picker's label and what it holds, as the button inside it is read.</summary>
-    public static string? PickerText(string? label, string? value) =>
-        string.IsNullOrEmpty(label) ? value
-        : string.IsNullOrEmpty(value) ? label
-        : $"{label}: {value}";
+    public static string? PickerText(string? label, string? value)
+    {
+        if (string.IsNullOrEmpty(label))
+            return value;
+        return string.IsNullOrEmpty(value) ? label : $"{label}: {value}";
+    }
 
     /// <summary>Day and month in words, the year too when the picker shows one.</summary>
     public static string? DateText(DateTimeOffset? date, bool withYear) =>

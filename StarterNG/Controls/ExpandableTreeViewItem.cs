@@ -115,10 +115,12 @@ public class ExpandableTreeViewItem : TreeViewItem
     /// <summary>What a screen reader is told: a leaf, or open or closed.</summary>
     public ExpandCollapseState ExpandState => StateFor(ItemCount > 0, IsExpanded);
 
-    public static ExpandCollapseState StateFor(bool hasChildren, bool expanded) =>
-        !hasChildren ? ExpandCollapseState.LeafNode
-        : expanded ? ExpandCollapseState.Expanded
-        : ExpandCollapseState.Collapsed;
+    public static ExpandCollapseState StateFor(bool hasChildren, bool expanded) => (hasChildren, expanded) switch
+    {
+        (false, _) => ExpandCollapseState.LeafNode,
+        (true, true) => ExpandCollapseState.Expanded,
+        (true, false) => ExpandCollapseState.Collapsed
+    };
 
     /// <summary>The entry this one hangs under, or null at the top of the tree.</summary>
     public ExpandableTreeViewItem? ReadableParent => ItemsControlFromItemContainer(this) as ExpandableTreeViewItem;

@@ -399,7 +399,7 @@ public sealed class HaslerTapeWindow : Window
         _list.SelectedItem = chosen.Tape;
     }
 
-    private TreeViewItem SessionItem(TapeSession session, bool open)
+    private ExpandableTreeViewItem SessionItem(TapeSession session, bool open)
     {
         string title = session.Launch is { } launch
             ? string.Join(" · ", new[] { string.IsNullOrWhiteSpace(launch.SceneryName) ? launch.Scenery : launch.SceneryName, launch.Train }
@@ -441,7 +441,7 @@ public sealed class HaslerTapeWindow : Window
         return item;
     }
 
-    private TreeViewItem BlackBoxItem(BlackBoxRecording box)
+    private ExpandableTreeViewItem BlackBoxItem(BlackBoxRecording box)
     {
         var text = new StackPanel { Spacing = 1 };
         text.Children.Add(new TextBlock { Text = App.Loc["HaslerBlackBox"], FontWeight = FontWeight.SemiBold });
@@ -585,7 +585,7 @@ public sealed class HaslerTapeWindow : Window
         }
     }
 
-    private static TreeViewItem TapeItem(TapeFile file)
+    private static ExpandableTreeViewItem TapeItem(TapeFile file)
     {
         var text = new StackPanel { Spacing = 1 };
         text.Children.Add(new TextBlock

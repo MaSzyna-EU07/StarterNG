@@ -37,7 +37,7 @@ public static class StatsBar
             Margin = new Avalonia.Thickness(0, 0, last ? 0 : 22, 0),
             VerticalAlignment = VerticalAlignment.Center,
             TextTrimming = TextTrimming.CharacterEllipsis,
-            Inlines =
+            Inlines = new InlineCollection
             {
                 name,
                 new Run(" "),

@@ -436,7 +436,7 @@ internal sealed class KeyBindingsTab(Grid host, TextBox search)
         }
     }
 
-    private Control BuildKeyBlock(KeyCap[][] rows, Dictionary<string, KeyState> states, int blockIndex)
+    private StackPanel BuildKeyBlock(KeyCap[][] rows, Dictionary<string, KeyState> states, int blockIndex)
     {
         var block = new StackPanel { Spacing = KeyGap, VerticalAlignment = VerticalAlignment.Top };
         for (int r = 0; r < rows.Length; r++)
@@ -449,7 +449,7 @@ internal sealed class KeyBindingsTab(Grid host, TextBox search)
         return block;
     }
 
-    private Control BuildKeyCap(KeyCap cap, Dictionary<string, KeyState> states, int blockIndex, int rowIndex)
+    private Border BuildKeyCap(KeyCap cap, Dictionary<string, KeyState> states, int blockIndex, int rowIndex)
     {
         double width = cap.Width * KeyUnit + (cap.Width - 1) * KeyGap;
         var content = new Grid { Width = width, Height = KeyHeight };

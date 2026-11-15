@@ -123,99 +123,145 @@ public sealed class CabPanel : Control
         }
         Measure(recording);
         var culture = CultureInfo.CurrentCulture;
-        var extra = s.Extra;
 
-        // The vehicle at the left; who drives, from which cab, at the right.
+        DrawHeader(context, recording.Vehicle(s.Vehicle)?.Name ?? "", s, right);
+        DrawSpeed(context, s, width, right, culture);
+        DrawControls(context, s, width, right, culture);
+        double y = DrawBrakes(context, s, width, right, culture);
+
+        // The traction at the left, as fits what drives the vehicle; the lights of both ends of the train at the right.
+        double half = Pad + width / 2;
+        double driveTop = y + BrakeRow + 4;
+        double top = Section(context, Strings["CabSectionDrive"], Pad, driveTop, half - 10);
+        Section(context, Strings["CabLights"], half + 4, driveTop, right);
+        DrawDrive(context, s, top, half - 10 - Pad, culture);
+        DrawLights(context, s, new Rect(half, top, right - half, 0), culture);
+
+        top = DrawDevices(context, s, new Rect(Pad, top + 3 * DriveRow + 6, width, size.Height), culture);
+        DrawDoors(context, s, top, width, size.Height);
+    }
+
+    private const double BrakeRow = 17;
+
+    /// <summary>The vehicle at the left; who drives, from which cab, at the right.</summary>
+    private void DrawHeader(DrawingContext context, string name, CabSample s, double right)
+    {
+        string? end = s.CabEnd == 0 ? null : Strings[s.CabEnd > 0 ? "CabEndFront" : "CabEndRear"];
         double chipX = right;
-        if (s.CabEnd != 0)
-            chipX -= ChipLeft(context, Strings[s.CabEnd > 0 ? "CabEndFront" : "CabEndRear"], Palette.Text, chipX, 4) + 5;
-        var (driverText, driverBrush) = !s.InCab ? (Strings["CabOutside"], Palette.DimText)
-            : s.Driving == Driver.Ai ? (Strings["CabDriverAi"], Palette.Autopilot)
-            : (Strings["CabDriverUser"], Palette.UserTrain);
+        if (end is not null)
+            chipX -= ChipLeft(context, end, Palette.Text, chipX, 4) + 5;
+        var (driverText, driverBrush) = DriverChip(s);
         chipX -= ChipLeft(context, driverText, driverBrush, chipX, 4) + 10;
-        Say(recording.Vehicle(s.Vehicle)?.Name ?? "");
+        Say(name);
         Say(driverText);
-        if (s.CabEnd != 0)
-            Say(Strings[s.CabEnd > 0 ? "CabEndFront" : "CabEndRear"]);
+        if (end is not null)
+            Say(end);
         using (context.PushClip(new Rect(Pad, 0, Math.Max(0, chipX - Pad), 28)))
-            context.DrawText(MapView.Text(recording.Vehicle(s.Vehicle)?.Name ?? "", Palette.Text, 12, FontWeight.SemiBold), new Point(Pad, 6));
+            context.DrawText(MapView.Text(name, Palette.Text, 12, FontWeight.SemiBold), new Point(Pad, 6));
+    }
 
-        // The speed, large, what the AI would do under it, the accelerations at the right.
-        var judgement = DrivingSummary.Judge(s);
-        var speed = MapView.Text(s.AbsSpeedKmh.ToString("0", culture), judgement is SpeedJudgement.Over ? Palette.Bad
-                                     : judgement is SpeedJudgement.Slightly ? Palette.Warn : Palette.Text, 36, FontWeight.SemiBold);
+    private (string Text, IBrush Brush) DriverChip(CabSample s)
+    {
+        if (!s.InCab)
+            return (Strings["CabOutside"], Palette.DimText);
+        return s.Driving == Driver.Ai ? (Strings["CabDriverAi"], Palette.Autopilot) : (Strings["CabDriverUser"], Palette.UserTrain);
+    }
+
+    /// <summary>The speed, large, what the AI would do under it, the accelerations at the right.</summary>
+    private void DrawSpeed(DrawingContext context, CabSample s, double width, double right, CultureInfo culture)
+    {
+        string kmh = s.AbsSpeedKmh.ToString("0", culture);
+        var speed = MapView.Text(kmh, SpeedBrush(DrivingSummary.Judge(s)), 36, FontWeight.SemiBold);
         context.DrawText(speed, new Point(Pad, 24));
-        Say($"{s.AbsSpeedKmh.ToString("0", culture)} km/h");
+        Say($"{kmh} km/h");
         context.DrawText(MapView.Text("km/h", Palette.DimText, 12), new Point(Pad + speed.Width + 4, 24 + speed.Height - 21));
         double gaugeX = Pad + Math.Max(150, width * 0.42);
         if (s.AiValid)
         {
             using (context.PushClip(new Rect(Pad, 76, gaugeX - Pad - 8, 40)))
             {
-                context.DrawText(MapView.Text(string.Format(culture, Strings["CabAiTarget"], s.Ai.TargetKmh), Palette.Target, 12), new Point(Pad, 76));
-                Say(string.Format(culture, Strings["CabAiTarget"], s.Ai.TargetKmh));
+                string target = string.Format(culture, Strings["CabAiTarget"], s.Ai.TargetKmh);
+                context.DrawText(MapView.Text(target, Palette.Target, 12), new Point(Pad, 76));
+                Say(target);
                 if (s.Ai.HasNextLimit)
-                    Say(string.Format(culture, Strings["LimitAt"], s.Ai.NextLimitKmh, s.Ai.NextLimitDistance));
-                if (s.Ai.HasNextLimit)
-                    context.DrawText(MapView.Text(string.Format(culture, Strings["LimitAt"], s.Ai.NextLimitKmh, s.Ai.NextLimitDistance), Palette.Limit, 11),
-                                     new Point(Pad, 93));
+                {
+                    string limit = string.Format(culture, Strings["LimitAt"], s.Ai.NextLimitKmh, s.Ai.NextLimitDistance);
+                    Say(limit);
+                    context.DrawText(MapView.Text(limit, Palette.Limit, 11), new Point(Pad, 93));
+                }
             }
         }
         double gaugeWidth = right - gaugeX;
         Balance(context, Strings["CabAcceleration"], s.Acceleration, 1.5, gaugeX, 34, gaugeWidth);
         Balance(context, Strings["CabLateral"], s.LateralAcceleration, 1.5, gaugeX, 70, gaugeWidth);
+    }
 
-        // The controllers.
+    private static IBrush SpeedBrush(SpeedJudgement judgement) => judgement switch
+    {
+        SpeedJudgement.Over => Palette.Bad,
+        SpeedJudgement.Slightly => Palette.Warn,
+        _ => Palette.Text
+    };
+
+    /// <summary>The controllers.</summary>
+    private void DrawControls(DrawingContext context, CabSample s, double width, double right, CultureInfo culture)
+    {
         double top = Section(context, Strings["CabSectionControls"], Pad, 118, right);
         double column = width / 4;
         Value(context, Strings["CabController"], s.MainController.ToString(culture), Pad, top);
         Steps(context, s.MainController, _controllerTop, Pad, top + 34, column - 14);
-        if (extra is { } handle && _integrated.Contains(s.Vehicle))
+        if (s.Extra is { } handle && _integrated.Contains(s.Vehicle))
             Value(context, Strings["CabIntegrated"], (handle.IntegratedController * 100).ToString("+0;−0;0", culture) + " %", Pad + column, top);
         else
             Value(context, Strings["CabShunt"], s.ScndController.ToString(culture), Pad + column, top);
-        Value(context, Strings["CabReverser"], Strings[s.Reverser > 0 ? "CabForward" : s.Reverser < 0 ? "CabBackward" : "CabNeutral"], Pad + 2 * column, top);
+        string reverser = s.Reverser switch { > 0 => "CabForward", < 0 => "CabBackward", _ => "CabNeutral" };
+        Value(context, Strings["CabReverser"], Strings[reverser], Pad + 2 * column, top);
         Value(context, Strings["CabTrainBrake"], s.TrainBrake.ToString("0.0", culture), Pad + 3 * column, top);
+    }
 
-        // The brakes, as gauges, the setting (G, P, R) at the right of the title.
+    /// <summary>The brakes, as gauges, the setting (G, P, R) at the right of the title.</summary>
+    /// <returns>Where the last gauge stands.</returns>
+    private double DrawBrakes(DrawingContext context, CabSample s, double width, double right, CultureInfo culture)
+    {
+        var extra = s.Extra;
         string? setting = extra is { } e && (e.BrakeDelay | e.BrakeMode) != 0
             ? string.Format(culture, Strings["CabBrakeSetting"], string.Join(" · ", new[] { BrakeSetting(e.BrakeDelay), BrakeMode(e.BrakeMode) }.Where(t => t.Length > 0)))
             : null;
-        top = Section(context, Strings["CabSectionBrakes"], Pad, 180, right, setting);
-        const double gauge = 17;
-        Gauge(context, Strings["CabPipe"], s.BrakePipe, 6, 5, $"{s.BrakePipe:0.00} bar", Palette.Station, Pad, top, width);
-        double y = top + gauge;
-        if (extra is { } x1)
+        double y = Section(context, Strings["CabSectionBrakes"], Pad, 180, right, setting);
+        var gauges = new List<GaugeReading>
         {
-            // what the driver's brake valve shows: its equalizing reservoir, the FV4a's time reservoir
-            Gauge(context, Strings["CabDriverValve"], x1.DriverValve, 6, null, $"{x1.DriverValve:0.00} bar", Palette.Target, Pad, y, width);
-            y += gauge;
-        }
-        Gauge(context, Strings["CabCylinder"], s.BrakeCylinder, 6, null, $"{s.BrakeCylinder:0.0} bar", Palette.Brakes, Pad, y, width);
-        y += gauge;
-        if (extra is { } x3)
-        {
-            // the most braked vehicle of the train
-            Gauge(context, Strings["CabConsistCylinder"], x3.ConsistBrakeCylinder, 6, null, $"{x3.ConsistBrakeCylinder:0.0} bar", Palette.Brakes, Pad, y, width);
-            y += gauge;
-        }
-        Gauge(context, Strings["CabReservoir"], s.MainReservoir, 10, null, $"{s.MainReservoir:0.0} bar", Palette.Controller, Pad, y, width);
-        y += gauge;
-        if (extra is { } x2)
-        {
-            bool has = _feedPipe.Contains(s.Vehicle);
-            Gauge(context, Strings["CabFeedPipe"], has ? x2.FeedPipe : 0, 10, null, has ? $"{x2.FeedPipe:0.0} bar" : "—", Palette.Controller, Pad, y, width);
-            y += gauge;
-        }
-        Gauge(context, Strings["CabLocalBrake"], s.LocalBrake, 1, null, $"{s.LocalBrake * 100:0} %", Palette.Brakes, Pad, y, width);
+            new(Strings["CabPipe"], s.BrakePipe, 6, 5, $"{s.BrakePipe:0.00} bar", Palette.Station)
+        };
+        // what the driver's brake valve shows: its equalizing reservoir, the FV4a's time reservoir
+        if (extra is { } valve)
+            gauges.Add(new(Strings["CabDriverValve"], valve.DriverValve, 6, null, $"{valve.DriverValve:0.00} bar", Palette.Target));
+        gauges.Add(new(Strings["CabCylinder"], s.BrakeCylinder, 6, null, $"{s.BrakeCylinder:0.0} bar", Palette.Brakes));
+        // the most braked vehicle of the train
+        if (extra is { } most)
+            gauges.Add(new(Strings["CabConsistCylinder"], most.ConsistBrakeCylinder, 6, null, $"{most.ConsistBrakeCylinder:0.0} bar", Palette.Brakes));
+        gauges.Add(new(Strings["CabReservoir"], s.MainReservoir, 10, null, $"{s.MainReservoir:0.0} bar", Palette.Controller));
+        if (extra is { } feed)
+            gauges.Add(FeedPipe(s, feed));
+        gauges.Add(new(Strings["CabLocalBrake"], s.LocalBrake, 1, null, $"{s.LocalBrake * 100:0} %", Palette.Brakes));
 
-        // The traction at the left, as fits what drives the vehicle; the lights of both ends of the train at the right.
-        double half = Pad + width / 2;
-        double driveTop = y + gauge + 4;
-        top = Section(context, Strings["CabSectionDrive"], Pad, driveTop, half - 10);
-        Section(context, Strings["CabLights"], half + 4, driveTop, right);
-        DrawDrive(context, s, top, half - 10 - Pad, culture);
-        double row = top;
+        for (int i = 0; i < gauges.Count; i++)
+        {
+            if (i > 0)
+                y += BrakeRow;
+            Gauge(context, gauges[i], Pad, y, width);
+        }
+        return y;
+    }
+
+    private GaugeReading FeedPipe(CabSample s, CabExtra feed) => _feedPipe.Contains(s.Vehicle)
+        ? new(Strings["CabFeedPipe"], feed.FeedPipe, 10, null, $"{feed.FeedPipe:0.0} bar", Palette.Controller)
+        : new(Strings["CabFeedPipe"], 0, 10, null, "—", Palette.Controller);
+
+    /// <summary>The lights of both ends: the signal shown, green as it is to be, red otherwise with the one it is to show.</summary>
+    /// <param name="area">Left edge, top and width of the column; its height is not used.</param>
+    private void DrawLights(DrawingContext context, CabSample s, Rect area, CultureInfo culture)
+    {
+        double half = area.X, right = area.Right, row = area.Y;
         foreach (var (key, lights, equipped, required, isRight) in new[]
                  {
                      ("CabLightsHead", s.LightsHead, s.EquippedHead, HeadCodes.RequiredHead(s), HeadCodes.HeadRight(s)),
@@ -223,14 +269,8 @@ public sealed class CabPanel : Control
                  })
         {
             DrawFace(context, lights, new Point(half + 4 + 17, row + 15));
-            // the end, and under it the signal it shows: green as it is to be (with the lamps the vehicle has),
-            // red otherwise with the one it is to show
-            var shown = HeadCodes.Of(lights);
-            var text = HeadCodes.NoLamps(equipped) ? Strings["CabLightsNone"]
-                : isRight == false && required is { } want
-                ? string.Format(culture, Strings["CabLightsWant"], HeadCodes.Name(shown), HeadCodes.Name(want))
-                : isRight == true && required is { } met ? HeadCodes.Name(met) : HeadCodes.Name(shown);
-            var brush = isRight is null ? Palette.DimText : isRight.Value ? Palette.Good : Palette.Bad;
+            string text = LightsText(HeadCodes.Of(lights), HeadCodes.NoLamps(equipped), required, isRight, culture);
+            IBrush brush = isRight switch { null => Palette.DimText, true => Palette.Good, false => Palette.Bad };
             Say($"{Strings[key]}: {text}");
             using (context.PushClip(new Rect(half + 44, row, right - half - 44, 28)))
             {
@@ -239,9 +279,24 @@ public sealed class CabPanel : Control
             }
             row += 27;
         }
+    }
 
-        // The devices, in three groups side by side: lit as their lamps are in the cab, the ones off faint.
-        top = Section(context, Strings["CabSectionDevices"], Pad, top + 3 * DriveRow + 6, right);
+    private string LightsText(HeadCode shown, bool noLamps, HeadCode? required, bool? isRight, CultureInfo culture)
+    {
+        if (noLamps)
+            return Strings["CabLightsNone"];
+        if (isRight == false && required is { } want)
+            return string.Format(culture, Strings["CabLightsWant"], HeadCodes.Name(shown), HeadCodes.Name(want));
+        return isRight == true && required is { } met ? HeadCodes.Name(met) : HeadCodes.Name(shown);
+    }
+
+    /// <summary>The devices, in three groups side by side: lit as their lamps are in the cab, the ones off faint.</summary>
+    /// <param name="area">Left edge, top, width and the height of the whole panel.</param>
+    /// <returns>Where the doors go, under them.</returns>
+    private double DrawDevices(DrawingContext context, CabSample s, Rect area, CultureInfo culture)
+    {
+        double width = area.Width, height = area.Height;
+        double top = Section(context, Strings["CabSectionDevices"], area.X, area.Y, area.X + width);
         var groups = Devices(s, culture);
         var widths = new double[groups.Length];
         for (int g = 0; g < groups.Length; g++)
@@ -252,27 +307,34 @@ public sealed class CabPanel : Control
         }
         // each group as wide as its longest name, what is left shared between them
         double spare = (width - widths.Sum()) / groups.Length;
-        double x = Pad, bottom = top;
+        double x = area.X, bottom = top;
         for (int g = 0; g < groups.Length; g++)
         {
             double groupWidth = Math.Max(20, widths[g] + spare);
-            using (context.PushClip(new Rect(x, top, groupWidth, size.Height - top)))
-            {
-                context.DrawText(MapView.Text(Strings[groups[g].Title], Palette.DimText, 10, FontWeight.SemiBold), new Point(x, top));
-                Say(Strings[groups[g].Title]);
-                double lampY = top + 16;
-                foreach (var (text, brush) in groups[g].Lamps)
-                {
-                    Lamp(context, text, brush, x, lampY);
-                    lampY += LampRow;
-                }
-                bottom = Math.Max(bottom, lampY);
-            }
+            using (context.PushClip(new Rect(x, top, groupWidth, height - top)))
+                bottom = Math.Max(bottom, DrawGroup(context, groups[g], x, top));
             x += groupWidth;
         }
+        return Math.Max(bottom, top + 16 + 9 * LampRow) + 6;
+    }
 
-        // The doors under them, in two columns: open, permitted, the departure signal, the steps and the lock.
-        top = Math.Max(bottom, top + 16 + 9 * LampRow) + 6;
+    /// <returns>Where the group ends.</returns>
+    private double DrawGroup(DrawingContext context, (string Title, (string Text, IBrush? Lit)[] Lamps) group, double x, double top)
+    {
+        context.DrawText(MapView.Text(Strings[group.Title], Palette.DimText, 10, FontWeight.SemiBold), new Point(x, top));
+        Say(Strings[group.Title]);
+        double lampY = top + 16;
+        foreach (var (text, brush) in group.Lamps)
+        {
+            Lamp(context, text, brush, x, lampY);
+            lampY += LampRow;
+        }
+        return lampY;
+    }
+
+    /// <summary>The doors, in two columns: open, permitted, the departure signal, the steps and the lock.</summary>
+    private void DrawDoors(DrawingContext context, CabSample s, double top, double width, double height)
+    {
         context.DrawText(MapView.Text(Strings["CabGroupDoors"], Palette.DimText, 10, FontWeight.SemiBold), new Point(Pad, top));
         Say(Strings["CabGroupDoors"]);
         var doors = Doors(s);
@@ -280,7 +342,7 @@ public sealed class CabPanel : Control
         for (int i = 0; i < doors.Length; i++)
         {
             double doorX = Pad + i % DoorColumns * doorColumn;
-            using (context.PushClip(new Rect(doorX, top, doorColumn, size.Height - top)))
+            using (context.PushClip(new Rect(doorX, top, doorColumn, height - top)))
                 Lamp(context, doors[i].Text, doors[i].Lit, doorX, top + 16 + i / DoorColumns * LampRow);
         }
     }
@@ -450,9 +512,9 @@ public sealed class CabPanel : Control
     }
 
     /// <summary>A gauge: its name, a bar up to the value against the scale, a mark where it should stand, the value.</summary>
-    private void Gauge(DrawingContext context, string label, float value, double scale, double? mark, string text,
-                       IBrush brush, double x, double y, double width)
+    private void Gauge(DrawingContext context, GaugeReading reading, double x, double y, double width)
     {
+        var (label, value, scale, mark, text, brush) = reading;
         Say($"{label}: {text}");
         const double labelWidth = 118, valueWidth = 64;
         context.DrawText(MapView.Text(label, Palette.DimText, 11), new Point(x, y));
@@ -632,4 +694,7 @@ public sealed class CabPanel : Control
         doors.Add(On("DevDepartureSignal", CabDevices.DepartureSignal, Palette.LampWarning));
         return doors.ToArray();
     }
+
+    /// <summary>What one gauge shows: its name, the value against the scale, the mark, the value written out.</summary>
+    private readonly record struct GaugeReading(string Label, float Value, double Scale, double? Mark, string Text, IBrush Brush);
 }
