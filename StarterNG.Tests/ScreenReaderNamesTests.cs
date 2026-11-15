@@ -69,9 +69,18 @@ public class ScreenReaderNamesTests
     {
         var button = new Button { Content = new Image() };
         ToolTip.SetTip(button, "Pomoc");
-        button.Content = "?";
+        button.Content = "Pomoc";
 
         Assert.Null(AutomationProperties.GetName(button));
+    }
+
+    [Fact]
+    public void A_button_with_only_a_sign_on_it_is_named_by_its_tooltip()
+    {
+        var button = new Button { Content = "?" };
+        ToolTip.SetTip(button, "Pomoc");
+
+        Assert.Equal("Pomoc", AutomationProperties.GetName(button));
     }
 
     [Fact]

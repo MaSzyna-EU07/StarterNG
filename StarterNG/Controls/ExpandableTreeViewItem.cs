@@ -1,6 +1,4 @@
 using System;
-using System.Collections.Generic;
-using System.Linq;
 using Avalonia.Automation;
 using Avalonia.Automation.Peers;
 using Avalonia.Automation.Provider;
@@ -28,10 +26,6 @@ public class ExpandableTreeViewItem : TreeViewItem
         : expanded ? ExpandCollapseState.Expanded
         : ExpandCollapseState.Collapsed;
 
-    /// <summary>The entries a reader finds under this one: none while it is closed.</summary>
-    public IReadOnlyList<Control> ReadableChildren =>
-        IsExpanded ? GetRealizedContainers().Where(c => c.IsVisible).ToList() : Array.Empty<Control>();
-
     /// <summary>The entry this one hangs under, or null at the top of the tree.</summary>
     public ExpandableTreeViewItem? ReadableParent => ItemsControlFromItemContainer(this) as ExpandableTreeViewItem;
 
@@ -45,22 +39,14 @@ public class ExpandableTreeViewItem : TreeViewItem
             item.PropertyChanged += (_, e) =>
             {
                 if (e.Property == IsExpandedProperty && e.OldValue is bool was && e.NewValue is bool now)
-                {
-                    InvalidateChildren();
                     RaisePropertyChangedEvent(ExpandCollapsePatternIdentifiers.ExpandCollapseStateProperty,
                                               StateFor(item.ItemCount > 0, was), StateFor(item.ItemCount > 0, now));
-                }
-                else if (e.Property == ItemCountProperty)
-                    InvalidateChildren();
             };
-            item.ContainerPrepared += (_, _) => InvalidateChildren();
-            item.ContainerClearing += (_, _) => InvalidateChildren();
         }
 
-        // The entries under it, straight: its name already says what its header shows.
-        protected override IReadOnlyList<AutomationPeer>? GetChildrenCore() =>
-            _item.ReadableChildren.Select(GetOrCreate).ToList();
-
+        // Only the way up changes: a reader counts the entries over this one to tell its
+        // level. The way down stays the controls on screen, so whatever the mouse points
+        // at still leads up through its entry to the window.
         protected override AutomationPeer? GetParentCore() =>
             _item.ReadableParent is { } parent ? GetOrCreate(parent) : base.GetParentCore();
 

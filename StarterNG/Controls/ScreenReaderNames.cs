@@ -158,8 +158,11 @@ public static class ScreenReaderNames
         AutomationProperties.SetAccessibilityView(panel, name is null ? AccessibilityView.Default : AccessibilityView.Content);
     }
 
+    // A sign such as "?" says nothing read aloud; its tooltip says what it does.
     private static void NameButton(Button button) =>
-        Give(button, button.Content is string ? null : TextOf(ToolTip.GetTip(button)) ?? TextOf(button.Content));
+        Give(button, button.Content is string text && text.Any(char.IsLetterOrDigit)
+            ? null
+            : TextOf(ToolTip.GetTip(button)) ?? TextOf(button.Content));
 
     // The descriptions given here, so a later one replaces it but nothing else.
     private static readonly ConditionalWeakTable<StyledElement, string> Described = new();

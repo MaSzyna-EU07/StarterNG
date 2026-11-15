@@ -41,14 +41,12 @@ public class ExpandableTreeViewItemTests
     }
 
     [Fact]
-    public void An_entry_on_its_own_has_nothing_under_it_and_nothing_over_it()
+    public void An_entry_on_its_own_has_nothing_over_it()
     {
         var item = new ExpandableTreeViewItem { Header = "Całkowo", IsExpanded = true };
         var peer = ControlAutomationPeer.CreatePeerForElement(item);
 
-        Assert.Empty(item.ReadableChildren);
         Assert.Null(item.ReadableParent);
-        Assert.Empty(peer.GetChildren());
         Assert.Null(peer.GetParent());
     }
 }

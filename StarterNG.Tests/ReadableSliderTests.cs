@@ -1,4 +1,5 @@
 using System.Globalization;
+using Avalonia.Automation;
 using Avalonia.Automation.Peers;
 using Avalonia.Automation.Provider;
 using Avalonia.Controls;
@@ -8,6 +9,16 @@ namespace StarterNG.Tests;
 
 public class ReadableSliderTests
 {
+    [Fact]
+    public void The_track_under_the_mouse_says_the_name_and_the_value()
+    {
+        var fog = new ReadableSlider { ValueText = "2,4 km" };
+        Assert.Equal("2,4 km", fog.TrackText);
+
+        AutomationProperties.SetName(fog, "Widoczność ");
+        Assert.Equal("Widoczność: 2,4 km", fog.TrackText);
+    }
+
     [Fact]
     public void A_slider_is_read_as_the_value_shown_beside_it()
     {
