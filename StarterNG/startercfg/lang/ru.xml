@@ -632,9 +632,9 @@
     <String key="WarehouseAppend">Присоединить состав со склада</String>
     <String key="WarehouseImportFile">Добавить составы из файла...</String>
     <String key="StartWithoutSaving">Запустить без сохранения настроек</String>
-    <String key="StartUnsavedMessage">В настройках есть несохранённые изменения. Симулятор запустится с ними, только если их сохранить.</String>
+    <String key="StartUnsavedMessage">В настройках есть несохранённые изменения. Сохранить их перед запуском симулятора?</String>
     <String key="StartUnsavedSave">Сохранить и запустить</String>
-    <String key="StartUnsavedWithout">Запустить без сохранения</String>
+    <String key="StartUnsavedWithout">Отменить изменения и запустить</String>
     <String key="StartMore">Другие способы запуска</String>
     <String key="StartFreeFly">Запустить без транспорта</String>
     <String key="StartEditorShort">Редактор сценария</String>

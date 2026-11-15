@@ -658,9 +658,9 @@
     <String key="WarehouseAppend">Dołącz skład z magazynu</String>
     <String key="WarehouseImportFile">Dodaj składy z pliku...</String>
     <String key="StartWithoutSaving">Uruchom bez zapisu ustawień</String>
-    <String key="StartUnsavedMessage">Ustawienia mają niezapisane zmiany. Symulator uruchomi się z nimi tylko wtedy, gdy zostaną zapisane.</String>
+    <String key="StartUnsavedMessage">Ustawienia mają niezapisane zmiany. Zapisać je przed uruchomieniem symulatora?</String>
     <String key="StartUnsavedSave">Zapisz i uruchom</String>
-    <String key="StartUnsavedWithout">Uruchom bez zapisu</String>
+    <String key="StartUnsavedWithout">Odrzuć zmiany i uruchom</String>
     <String key="StartMore">Inne sposoby uruchomienia</String>
     <String key="StartFreeFly">Uruchom bez pojazdu</String>
     <String key="StartEditorShort">Edytor scenerii</String>

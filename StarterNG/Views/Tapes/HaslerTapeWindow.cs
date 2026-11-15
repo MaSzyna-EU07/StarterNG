@@ -75,6 +75,8 @@ public sealed class HaslerTapeWindow : Window
     private bool _looking;
     // closed: a read already under way when it closed is let go, not kept followed
     private bool _closed;
+    // the file read last, kept by the tapes to be followed even once another is picked or none is shown
+    private string? _read;
 
     /// <summary>A setting went on from here; the settings page's boxes have to follow it.</summary>
     public event Action? LogEnabled;
@@ -230,8 +232,8 @@ public sealed class HaslerTapeWindow : Window
         {
             _closed = true;
             _timer.Stop();
-            if (_shown is { } shown)
-                _tapes.Forget(shown.Path);
+            if (_read is { } read)
+                _tapes.Forget(read);
         };
     }
 
@@ -646,6 +648,7 @@ public sealed class HaslerTapeWindow : Window
         {
             // the same tape grown, as the simulator writes it: only what was added is read
             bool follow = file.Path == _shown?.Path && file.Size >= _shown.Size;
+            _read = file.Path;
             var tape = await Task.Run(() => _tapes.Load(file, follow));
             if (_closed)
             {

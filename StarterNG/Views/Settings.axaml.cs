@@ -316,7 +316,13 @@ public partial class Settings : UserControl, ISettingsCapture
         SelectExeCb.SelectedIndex = index;
     }
 
-    public void ReloadFromSettings() => ApplyToUi();
+    /// <summary>The settings read again from the file: the page shows them, no edit of its own left.</summary>
+    public void ReloadFromSettings()
+    {
+        ApplyToUi();
+        _dirty = false;
+        UpdateSaveState();
+    }
 
     /// <summary>
     /// True while a cab-control binding is waiting for a keypress. The window's own
@@ -1145,7 +1151,10 @@ public partial class Settings : UserControl, ISettingsCapture
         ThumbnailSizeChanged?.Invoke();
     }
 
-    private void ResetButton_OnClick(object? sender, RoutedEventArgs e)
+    private void ResetButton_OnClick(object? sender, RoutedEventArgs e) => DiscardChanges();
+
+    /// <summary>The edits not saved let go, the page and the keys as the files have them: "Przywróć".</summary>
+    public void DiscardChanges()
     {
         AppServices.Current.SettingsStore.Load();
         ApplyToUi();

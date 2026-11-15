@@ -632,9 +632,9 @@
     <String key="WarehouseAppend">Připojit soupravu ze skladu</String>
     <String key="WarehouseImportFile">Přidat soupravy ze souboru...</String>
     <String key="StartWithoutSaving">Spustit bez uložení nastavení</String>
-    <String key="StartUnsavedMessage">Nastavení obsahuje neuložené změny. Simulátor se s nimi spustí, jen pokud budou uloženy.</String>
+    <String key="StartUnsavedMessage">Nastavení obsahuje neuložené změny. Uložit je před spuštěním simulátoru?</String>
     <String key="StartUnsavedSave">Uložit a spustit</String>
-    <String key="StartUnsavedWithout">Spustit bez uložení</String>
+    <String key="StartUnsavedWithout">Zahodit změny a spustit</String>
     <String key="StartMore">Další způsoby spuštění</String>
     <String key="StartFreeFly">Spustit bez vozidla</String>
     <String key="StartEditorShort">Editor scenérie</String>

@@ -610,16 +610,26 @@ public partial class MainWindow : Window
                                        App.Loc["StartNoStaffTitle"], MessageBoxButtons.YesNo))
                 return;
 
-            // edits on the settings page not saved: said before they go to the simulator, or not
+            // edits on the settings page not saved: saved, or let go - kept, the starter would write them when it
+            // closes, perhaps while the simulator reads the file
             if (saveSettings && SettingsView.HasUnsavedChanges)
             {
                 var save = await MessageBox.Choose(this, App.Loc["StartUnsavedMessage"], App.Loc["UnsavedChanges"],
                                                    App.Loc["StartUnsavedSave"], App.Loc["StartUnsavedWithout"]);
                 if (save is null)
                     return;
-                if (save == true)
+                if (save == false)
+                    SettingsView.DiscardChanges();
+                else
+                {
                     SettingsView.Save();
-                saveSettings = save == true;
+                    if (AppServices.Current.SettingsStore.LastSaveFailed)
+                    {
+                        await MessageBox.Show(this, App.Loc["SettingsNotSaved"], App.Loc["UnsavedChanges"],
+                                              MessageBoxButtons.Ok);
+                        return;
+                    }
+                }
             }
 
             LoadingScreen.Prepare(trainset?.Logo, Path.GetFileNameWithoutExtension(scenery.Path));
