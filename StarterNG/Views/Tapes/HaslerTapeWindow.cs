@@ -14,6 +14,7 @@ using Avalonia.Platform.Storage;
 using Avalonia.Threading;
 using Eu07.BlackBox.Views;
 using StarterNG.Application;
+using StarterNG.Controls;
 using StarterNG.Domain.Settings;
 using StarterNG.Domain.Tapes;
 
@@ -418,7 +419,7 @@ public sealed class HaslerTapeWindow : Window
         var name = new TextBlock { Text = title, FontWeight = FontWeight.SemiBold, TextTrimming = TextTrimming.CharacterEllipsis };
         ToolTip.SetTip(name, title);
 
-        var item = new TreeViewItem
+        var item = new ExpandableTreeViewItem
         {
             Header = new StackPanel { Spacing = 1, Children = { name, details } },
             Tag = session,
@@ -442,7 +443,7 @@ public sealed class HaslerTapeWindow : Window
             Opacity = 0.7
         });
         ToolTip.SetTip(text, App.Loc["HaslerBlackBoxTip"]);
-        var item = new TreeViewItem { Header = text, Tag = box };
+        var item = new ExpandableTreeViewItem { Header = text, Tag = box };
         // Also when it is the one picked already, and its window was closed since.
         item.Tapped += async (_, _) => await OpenBlackBoxAsync(box);
         return item;
@@ -592,7 +593,7 @@ public sealed class HaslerTapeWindow : Window
         };
         if (role is not null)
             text.Children.Add(new TextBlock { Text = role, FontSize = 11, Opacity = 0.7 });
-        return new TreeViewItem { Header = text, Tag = file };
+        return new ExpandableTreeViewItem { Header = text, Tag = file };
     }
 
     /// <summary>

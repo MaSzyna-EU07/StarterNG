@@ -1,3 +1,4 @@
+using System.Globalization;
 using Avalonia.Automation;
 using Avalonia.Controls;
 using Avalonia.Controls.Documents;
@@ -147,5 +148,43 @@ public class ScreenReaderNamesTests
         _ = new SettingRow { Content = box };
 
         Assert.Null(AutomationProperties.GetName(box));
+    }
+}
+
+public class PickerNameTests
+{
+    [Fact]
+    public void A_picker_is_read_as_its_label_and_its_value()
+    {
+        Assert.Equal("Godzina: 07:05", ScreenReaderNames.PickerText("Godzina", "07:05"));
+        Assert.Equal("Data", ScreenReaderNames.PickerText("Data", null));
+        Assert.Equal("07:05", ScreenReaderNames.PickerText(null, "07:05"));
+        Assert.Null(ScreenReaderNames.PickerText("", null));
+    }
+
+    [Fact]
+    public void A_date_is_read_in_words_with_the_year_only_when_shown()
+    {
+        var before = CultureInfo.CurrentCulture;
+        CultureInfo.CurrentCulture = CultureInfo.GetCultureInfo("pl-PL");
+        try
+        {
+            var date = new DateTimeOffset(2026, 10, 27, 0, 0, 0, TimeSpan.FromHours(1));
+
+            Assert.Equal("27 października", ScreenReaderNames.DateText(date, withYear: false));
+            Assert.Equal("wtorek, 27 października 2026", ScreenReaderNames.DateText(date, withYear: true));
+            Assert.Null(ScreenReaderNames.DateText(null, withYear: false));
+        }
+        finally
+        {
+            CultureInfo.CurrentCulture = before;
+        }
+    }
+
+    [Fact]
+    public void A_time_is_read_as_hours_and_minutes()
+    {
+        Assert.Equal("07:05", ScreenReaderNames.TimeText(new TimeSpan(7, 5, 30)));
+        Assert.Null(ScreenReaderNames.TimeText(null));
     }
 }

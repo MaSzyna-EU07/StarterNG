@@ -110,11 +110,11 @@
                                        Foreground="{StaticResource CarbonFgDim}"
                                        Text="{Binding [Date], Source={x:Static starterNg:App.Loc}}" />
                             <Grid Grid.Row="0" Grid.Column="2" ColumnDefinitions="150,10,150,10,*">
-                                <DatePicker Grid.Column="0" Name="weatherDate"
+                                <DatePicker Grid.Column="0" Name="weatherDate" AutomationProperties.Name="{Binding [Date], Source={x:Static starterNg:App.Loc}}"
                                             YearVisible="False" MinWidth="0"
                                             VerticalAlignment="Center" HorizontalAlignment="Stretch"
                                             SelectedDateChanged="WeatherDate_OnChanged" />
-                                <ComboBox Grid.Column="2" Name="weatherSeason" Classes="Localized"
+                                <ComboBox Grid.Column="2" Name="weatherSeason" AutomationProperties.Name="{Binding [Season], Source={x:Static starterNg:App.Loc}}" Classes="Localized"
                                           HorizontalAlignment="Stretch" VerticalAlignment="Center"
                                           SelectionChanged="WeatherSeason_OnChanged">
                                     <ComboBoxItem Tag="0" Content="{Binding [SeasonNow], Source={x:Static starterNg:App.Loc}}" />
@@ -132,7 +132,7 @@
                                        Foreground="{StaticResource CarbonFgDim}"
                                        Text="{Binding [Time], Source={x:Static starterNg:App.Loc}}" />
                             <Grid Grid.Row="2" Grid.Column="2" ColumnDefinitions="150,8,*">
-                                <TimePicker Grid.Column="0" Name="weatherTime"
+                                <TimePicker Grid.Column="0" Name="weatherTime" AutomationProperties.Name="{Binding [Time], Source={x:Static starterNg:App.Loc}}"
                                             ClockIdentifier="24HourClock" MinuteIncrement="1"
                                             MinWidth="0" VerticalAlignment="Center"
                                             HorizontalAlignment="Stretch"
@@ -147,7 +147,7 @@
                             <TextBlock Grid.Row="4" Grid.Column="0" VerticalAlignment="Center"
                                        Foreground="{StaticResource CarbonFgDim}"
                                        Text="{Binding [Temperature], Source={x:Static starterNg:App.Loc}}" />
-                            <Slider Grid.Row="4" Grid.Column="2" Name="weatherTemp"
+                            <Slider Grid.Row="4" Grid.Column="2" Name="weatherTemp" AutomationProperties.Name="{Binding [Temperature], Source={x:Static starterNg:App.Loc}}"
                                     Minimum="-50" Maximum="50"
                                     TickFrequency="1" IsSnapToTickEnabled="True"
                                     ValueChanged="Weather_OnSliderChanged" />
@@ -164,7 +164,7 @@
                             <TextBlock Grid.Row="7" Grid.Column="0" VerticalAlignment="Center"
                                        Foreground="{StaticResource CarbonFgDim}"
                                        Text="{Binding [Visibility], Source={x:Static starterNg:App.Loc}}" />
-                            <Slider Grid.Row="7" Grid.Column="2" Name="weatherFog"
+                            <Slider Grid.Row="7" Grid.Column="2" Name="weatherFog" AutomationProperties.Name="{Binding [Visibility], Source={x:Static starterNg:App.Loc}}"
                                     Minimum="0" Maximum="1000"
                                     TickFrequency="1" IsSnapToTickEnabled="True"
                                     ValueChanged="Weather_OnSliderChanged" />
@@ -182,7 +182,7 @@
                             <TextBlock Grid.Row="10" Grid.Column="0" VerticalAlignment="Center"
                                        Foreground="{StaticResource CarbonFgDim}"
                                        Text="{Binding [Overcast], Source={x:Static starterNg:App.Loc}}" />
-                            <ComboBox Grid.Row="10" Grid.Column="2" Name="weatherOvercast" Classes="Localized"
+                            <ComboBox Grid.Row="10" Grid.Column="2" Name="weatherOvercast" AutomationProperties.Name="{Binding [Overcast], Source={x:Static starterNg:App.Loc}}" Classes="Localized"
                                       HorizontalAlignment="Stretch"
                                       SelectionChanged="Weather_OnSelectionChanged">
                                 <ComboBoxItem Tag="random" Content="{Binding [OvercastRandom], Source={x:Static starterNg:App.Loc}}" />

@@ -17,6 +17,7 @@ using Avalonia.Media.Imaging;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
 using StarterNG.Classes;
+using StarterNG.Controls;
 using StarterNG.Domain;
 using StarterNG.Application;
 using StarterNG.Domain.Sceneries;
@@ -101,7 +102,7 @@ public partial class Scenarios : UserControl
 
     private TreeViewItem ToTreeItem(SceneryTreeNode node, bool expandGroups)
     {
-        var item = new TreeViewItem
+        var item = new ExpandableTreeViewItem
         {
             Header = node.IsGroup ? node.Label : SceneryHeader(node.Label, Sceneries[node.SceneryIndex]),
             Tag = node.IsGroup ? null : node.SceneryIndex,

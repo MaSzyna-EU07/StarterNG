@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using Avalonia;
@@ -32,7 +33,54 @@ public static class ScreenReaderNames
 
         ComboBox.PlaceholderTextProperty.Changed.AddClassHandler<ComboBox>((c, _) => Give(c, c.PlaceholderText));
         TextBox.PlaceholderTextProperty.Changed.AddClassHandler<TextBox>((t, _) => Give(t, t.PlaceholderText));
+
+        TemplatedControl.TemplateAppliedEvent.AddClassHandler<DatePicker>((p, e) => KeepPickerButton(p, e));
+        TemplatedControl.TemplateAppliedEvent.AddClassHandler<TimePicker>((p, e) => KeepPickerButton(p, e));
+        DatePicker.SelectedDateProperty.Changed.AddClassHandler<DatePicker>((p, _) => NamePicker(p));
+        TimePicker.SelectedTimeProperty.Changed.AddClassHandler<TimePicker>((p, _) => NamePicker(p));
+        AutomationProperties.NameProperty.Changed.AddClassHandler<DatePicker>((p, _) => NamePicker(p));
+        AutomationProperties.NameProperty.Changed.AddClassHandler<TimePicker>((p, _) => NamePicker(p));
     }
+
+    // A date or time picker is reached through the button inside it, which was read as
+    // "Avalonia.Controls.Grid": its texts are filled in only after the name is looked for.
+    private static readonly ConditionalWeakTable<TemplatedControl, Button> PickerButtons = new();
+
+    private static void KeepPickerButton(TemplatedControl picker, TemplateAppliedEventArgs e)
+    {
+        if (e.NameScope.Find<Button>("PART_FlyoutButton") is not { } button)
+            return;
+
+        PickerButtons.AddOrUpdate(picker, button);
+        NamePicker(picker);
+    }
+
+    private static void NamePicker(TemplatedControl picker)
+    {
+        if (!PickerButtons.TryGetValue(picker, out var button))
+            return;
+
+        string? value = picker switch
+        {
+            DatePicker date => DateText(date.SelectedDate, date.YearVisible),
+            TimePicker time => TimeText(time.SelectedTime),
+            _ => null
+        };
+        AutomationProperties.SetName(button, PickerText(AutomationProperties.GetName(picker), value));
+    }
+
+    /// <summary>The picker's label and what it holds, as the button inside it is read.</summary>
+    public static string? PickerText(string? label, string? value) =>
+        string.IsNullOrEmpty(label) ? value
+        : string.IsNullOrEmpty(value) ? label
+        : $"{label}: {value}";
+
+    /// <summary>Day and month in words, the year too when the picker shows one.</summary>
+    public static string? DateText(DateTimeOffset? date, bool withYear) =>
+        date?.ToString(withYear ? "D" : "M", CultureInfo.CurrentCulture);
+
+    public static string? TimeText(TimeSpan? time) =>
+        time?.ToString(@"hh\:mm", CultureInfo.InvariantCulture);
 
     private static void NameButton(Button button) =>
         Give(button, button.Content is string ? null : TextOf(ToolTip.GetTip(button)) ?? TextOf(button.Content));
