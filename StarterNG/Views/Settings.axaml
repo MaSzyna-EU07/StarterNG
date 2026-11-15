@@ -69,7 +69,7 @@
                                 Click="ExportIniButton_OnClick" />
                     </StackPanel>
 
-                    <ListBox x:Name="CategoryList" AutomationProperties.LandmarkType="Navigation" Classes="SettingsNav" SelectedIndex="0"
+                    <ListBox x:Name="CategoryList" AutomationProperties.LandmarkType="Navigation" AutomationProperties.Name="{Binding [SettingsCategories], Source={x:Static starterNg:App.Loc}}" Classes="SettingsNav" SelectedIndex="0"
                              ItemContainerTheme="{StaticResource SettingsNavItem}"
                              SelectionChanged="CategoryList_OnSelectionChanged">
                         <ListBoxItem Tag="general" Content="{Binding [General], Source={x:Static starterNg:App.Loc}}" />

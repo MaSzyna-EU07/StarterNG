@@ -594,6 +594,8 @@
     <String key="TreeExpanded">rozwinięte</String>
     <String key="TreeCollapsed">zwinięte</String>
     <String key="SceneryImage">Obraz scenerii</String>
+    <String key="PanelSplitter">Rozdzielacz paneli</String>
+    <String key="SettingsCategories">Kategorie ustawień</String>
     <String key="SettingsNotSaved">Nie udało się zapisać ustawień</String>
     <String key="UnsavedChanges">Niezapisane zmiany</String>
 

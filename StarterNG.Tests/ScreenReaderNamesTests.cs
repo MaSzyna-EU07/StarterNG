@@ -6,6 +6,7 @@ using StarterNG.Controls;
 
 namespace StarterNG.Tests;
 
+[Collection(AvaloniaControls.Name)]
 public class ScreenReaderNamesTests
 {
     static ScreenReaderNamesTests() => ScreenReaderNames.Install();
@@ -188,6 +189,7 @@ public class ScreenReaderNamesTests
     }
 }
 
+[Collection(AvaloniaControls.Name)]
 public class PickerNameTests
 {
     [Fact]

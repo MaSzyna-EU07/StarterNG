@@ -568,6 +568,8 @@
     <String key="TreeExpanded">kibontva</String>
     <String key="TreeCollapsed">összecsukva</String>
     <String key="SceneryImage">A pálya képe</String>
+    <String key="PanelSplitter">Panelelválasztó</String>
+    <String key="SettingsCategories">Beállítási kategóriák</String>
     <String key="SettingsNotSaved">A beállításokat nem sikerült elmenteni</String>
     <String key="UnsavedChanges">Nem mentett módosítások</String>
 

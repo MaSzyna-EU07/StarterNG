@@ -5,6 +5,7 @@ using StarterNG.Infrastructure;
 
 namespace StarterNG.Tests;
 
+[Collection(AvaloniaControls.Name)]
 public class MouseReadingTests
 {
     static MouseReadingTests() => ScreenReaderNames.Install();
@@ -18,6 +19,18 @@ public class MouseReadingTests
         ScreenReaderNames.NamePicture(logo);
 
         Assert.Same(button, AutomationProperties.GetLabeledBy(logo));
+    }
+
+    [Fact]
+    public void A_picture_beside_a_caption_is_read_as_the_caption()
+    {
+        var mini = new Image();
+        var caption = new TextBlock { Text = "EU07" };
+        _ = new StackPanel { Children = { mini, new TextBlock { IsVisible = false, Text = "ukryte" }, caption } };
+
+        ScreenReaderNames.NamePicture(mini);
+
+        Assert.Same(caption, AutomationProperties.GetLabeledBy(mini));
     }
 
     [Fact]

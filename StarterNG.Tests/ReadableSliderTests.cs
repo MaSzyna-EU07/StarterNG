@@ -7,6 +7,7 @@ using StarterNG.Controls;
 
 namespace StarterNG.Tests;
 
+[Collection(AvaloniaControls.Name)]
 public class ReadableSliderTests
 {
     [Fact]

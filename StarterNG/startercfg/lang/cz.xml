@@ -568,6 +568,8 @@
     <String key="TreeExpanded">rozbaleno</String>
     <String key="TreeCollapsed">sbaleno</String>
     <String key="SceneryImage">Obrázek scenérie</String>
+    <String key="PanelSplitter">Oddělovač panelů</String>
+    <String key="SettingsCategories">Kategorie nastavení</String>
     <String key="SettingsNotSaved">Nastavení se nepodařilo uložit</String>
     <String key="UnsavedChanges">Neuložené změny</String>
 

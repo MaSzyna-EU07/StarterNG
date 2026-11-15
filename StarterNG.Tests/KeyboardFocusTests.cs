@@ -4,6 +4,7 @@ using StarterNG.Controls;
 
 namespace StarterNG.Tests;
 
+[Collection(AvaloniaControls.Name)]
 public class KeyboardFocusTests
 {
     private readonly Button _window = new();

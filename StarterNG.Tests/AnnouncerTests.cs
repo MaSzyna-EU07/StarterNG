@@ -6,6 +6,7 @@ using StarterNG.Controls;
 
 namespace StarterNG.Tests;
 
+[Collection(AvaloniaControls.Name)]
 public class AnnouncerTests
 {
     private DateTime _now = new(2026, 11, 15, 12, 0, 0, DateTimeKind.Utc);
@@ -81,6 +82,7 @@ public class AnnouncerTests
     }
 }
 
+[Collection(AvaloniaControls.Name)]
 public class NamedGroupTests
 {
     static NamedGroupTests() => ScreenReaderNames.Install();

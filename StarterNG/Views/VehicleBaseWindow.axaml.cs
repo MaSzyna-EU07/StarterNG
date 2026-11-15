@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Avalonia.Automation;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
@@ -180,6 +181,7 @@ public partial class VehicleBaseWindow : Window
         if (row is null)
         {
             preview.Source = null;
+            preview.ClearValue(AutomationProperties.NameProperty);
             detailTitle.Text = "";
             detailText.Text = App.Loc["TextureBasePick"];
             ToolTip.SetTip(detailText, null);
@@ -188,6 +190,7 @@ public partial class VehicleBaseWindow : Window
 
         preview.Source = _minis.Get(_db.ResolveMiniName(row.Texture), PreviewHeight);
         detailTitle.Text = string.Join(" · ", new[] { row.Skin, row.Class, row.Operator }.Where(s => s.Length > 0));
+        AutomationProperties.SetName(preview, detailTitle.Text);
 
         var lines = new[]
             {

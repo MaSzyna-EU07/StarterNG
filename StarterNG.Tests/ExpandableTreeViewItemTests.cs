@@ -5,6 +5,7 @@ using StarterNG.Controls;
 
 namespace StarterNG.Tests;
 
+[Collection(AvaloniaControls.Name)]
 public class ExpandableTreeViewItemTests
 {
     private static IExpandCollapseProvider Peer(ExpandableTreeViewItem item) =>

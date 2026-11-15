@@ -568,6 +568,8 @@
     <String key="TreeExpanded">развёрнуто</String>
     <String key="TreeCollapsed">свёрнуто</String>
     <String key="SceneryImage">Изображение сценерии</String>
+    <String key="PanelSplitter">Разделитель панелей</String>
+    <String key="SettingsCategories">Категории настроек</String>
     <String key="SettingsNotSaved">Не удалось сохранить настройки</String>
     <String key="UnsavedChanges">Несохранённые изменения</String>
 

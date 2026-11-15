@@ -594,6 +594,8 @@
     <String key="TreeExpanded">expanded</String>
     <String key="TreeCollapsed">collapsed</String>
     <String key="SceneryImage">Scenery picture</String>
+    <String key="PanelSplitter">Panel divider</String>
+    <String key="SettingsCategories">Settings categories</String>
     <String key="SettingsNotSaved">Could not save the settings</String>
     <String key="UnsavedChanges">Unsaved changes</String>
 

@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Avalonia;
+using Avalonia.Automation;
 using Avalonia.Controls;
 using Avalonia.Controls.Templates;
 using Avalonia.Input;
@@ -338,6 +339,7 @@ public sealed class VehicleBrowser
 
         Selected = null;
         miniPreview.Source = null;
+        miniPreview.ClearValue(AutomationProperties.NameProperty);
         addVehicleButton.IsEnabled = false;
 
         vehicleListBox.Items.Clear();
@@ -381,10 +383,12 @@ public sealed class VehicleBrowser
 
     public void VehicleListBox_OnSelectionChanged(object? sender, SelectionChangedEventArgs e)
     {
-        if (vehicleListBox.SelectedItem is ListBoxItem { Tag: VehicleTexture texture })
+        if (vehicleListBox.SelectedItem is ListBoxItem { Tag: VehicleTexture texture } row)
         {
             Selected = texture;
             miniPreview.Source = _minis.Get(_db.ResolveMiniName(texture), MiniPreviewHeight);
+            // Under the mouse a reader hears which vehicle the picture shows.
+            AutomationProperties.SetName(miniPreview, ScreenReaderNames.TextOf(row.Content));
             addVehicleButton.IsEnabled = true;
             SyncCombosTo(texture);
 
@@ -397,6 +401,7 @@ public sealed class VehicleBrowser
         {
             Selected = null;
             miniPreview.Source = null;
+            miniPreview.ClearValue(AutomationProperties.NameProperty);
             addVehicleButton.IsEnabled = false;
         }
     }

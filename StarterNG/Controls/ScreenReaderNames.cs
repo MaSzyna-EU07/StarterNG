@@ -166,7 +166,7 @@ public static class ScreenReaderNames
     private const int PictureReach = 3;
 
     /// <summary>
-    /// Names a picture after the button or card it lies in. Under the mouse a reader
+    /// Names a picture after the caption beside it or the button or card it lies in. Under the mouse a reader
     /// hears what lies there, and a bare picture said nothing: a vehicle in the consist,
     /// the logo, an icon on a button.
     /// </summary>
@@ -175,6 +175,14 @@ public static class ScreenReaderNames
         if ((!string.IsNullOrEmpty(AutomationProperties.GetName(picture)) && !Given.TryGetValue(picture, out _))
             || AutomationProperties.GetLabeledBy(picture) is not null)
             return;
+
+        // A caption beside it says what it shows, such as a vehicle class by its picture.
+        if (picture.Parent is Panel row
+            && row.Children.OfType<TextBlock>().FirstOrDefault(t => t.IsVisible && !string.IsNullOrWhiteSpace(t.Text)) is { } caption)
+        {
+            AutomationProperties.SetLabeledBy(picture, caption);
+            return;
+        }
 
         var holder = picture.Parent as Control;
         for (int i = 0; i < PictureReach && holder is not null; i++, holder = holder.Parent as Control)
