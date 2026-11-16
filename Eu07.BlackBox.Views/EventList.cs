@@ -200,8 +200,8 @@ public sealed class EventList : ListBox
         var brakings = recording.SecurityBrakings();
         foreach (var span in recording.SecurityAlarms())
         {
-            // The lamps of all its samples: one buzzer for both, the other may join it before it's acknowledged.
-            var lamps = recording.Cab.Where(c => c.Time >= span.Start && c.Time <= span.End)
+            // The lamps of all its buzzing samples: one buzzer for both, the other may join it before it's acknowledged.
+            var lamps = recording.Cab.Where(c => c.Time >= span.Start && c.Time <= span.End && (c.VigilanceBuzzer || c.CabSignalBuzzer))
                                  .Aggregate(SecurityFlags.None, (all, c) => all | c.Security);
             string who = ProtectionName(lamps);
             var before = recording.CabAt(span.Start);
