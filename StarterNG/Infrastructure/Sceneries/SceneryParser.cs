@@ -20,11 +20,11 @@ public sealed class SceneryParser
         _random = random;
     }
 
-    /// <param name="opensInclude">
-    /// Whether the simulator opens an include, as the include names it; null leaves
-    /// includes unchecked.
+    /// <param name="files">
+    /// What the simulator finds of the files the scenery names; null leaves them
+    /// unchecked.
     /// </param>
-    public Scenery Parse(string path, string content, Func<string, bool>? opensInclude = null)
+    public Scenery Parse(string path, string content, SceneryFileLookup? files = null)
     {
         string original = content;
 
@@ -38,7 +38,7 @@ public sealed class SceneryParser
 
         // Read from the text with its optional includes blanked, which keeps every
         // place where it was, so a fault's line is the line in the file.
-        var syntax = ScenerySyntax.Scan(content, System.IO.Path.GetFileName(path), opensInclude);
+        var syntax = ScenerySyntax.Scan(content, System.IO.Path.GetFileName(path), files);
         var faults = syntax.Faults.ToList();
         var inlined = SceneryIncludes.Ranges(content);
 

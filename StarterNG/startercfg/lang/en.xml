@@ -772,6 +772,8 @@
     <String key="SyntaxVehicleOutsideTrainset">Vehicle {0} stands outside a trainset: header missing?</String>
     <String key="SyntaxNotANumber">{0}: “{1}” instead of a number</String>
     <String key="SyntaxMissingInclude">File {1} not found (include)</String>
+    <String key="SyntaxMissingTerrainFile">Terrain file {1} not found, neither .txtf nor .btf (terrain)</String>
+    <String key="SyntaxTerrainFileBehindSbt">Terrain file {1} ignored: the terrain already comes from the .sbt of the scenery</String>
     <String key="SyntaxIncludeNotClosed">include {1} without end</String>
     <String key="SyntaxTrainsetUnreadable">Trainset {0} could not be read</String>
     <String key="SyntaxVehicleUnreadable">Vehicle {0} could not be read</String>

@@ -742,6 +742,8 @@
     <String key="SyntaxVehicleOutsideTrainset">A(z) {0} jármű szerelvényen kívül áll: hiányzik a trainset fejléc?</String>
     <String key="SyntaxNotANumber">{0}: „{1}” szám helyett</String>
     <String key="SyntaxMissingInclude">A(z) {1} fájl nem található (include)</String>
+    <String key="SyntaxMissingTerrainFile">A(z) {1} terepfájl nem található, sem .txtf, sem .btf (terrain)</String>
+    <String key="SyntaxTerrainFileBehindSbt">A(z) {1} terepfájl kimarad: a terep már a díszlet .sbt fájljából jön</String>
     <String key="SyntaxIncludeNotClosed">include {1} end nélkül</String>
     <String key="SyntaxTrainsetUnreadable">A(z) {0} szerelvényt nem sikerült beolvasni</String>
     <String key="SyntaxVehicleUnreadable">A(z) {0} járművet nem sikerült beolvasni</String>

@@ -61,6 +61,19 @@ public enum SceneryFaultKind
     /// <summary>An include whose file is not there; <see cref="SceneryFault.Token"/> names it.</summary>
     MissingInclude,
 
+    /// <summary>
+    /// A terrain file named by a terrain directive whose text (.txtf) and binary
+    /// file (.btf) are both missing; <see cref="SceneryFault.Token"/> names it.
+    /// </summary>
+    MissingTerrainFile,
+
+    /// <summary>
+    /// A terrain file the simulator passes over: the scenery's terrain comes from its
+    /// .sbt, which something before the directive was already taken from;
+    /// <see cref="SceneryFault.Token"/> names it.
+    /// </summary>
+    TerrainFileBehindSbt,
+
     /// <summary>An include with no <c>end</c>, which swallows what follows it.</summary>
     IncludeNotClosed,
 

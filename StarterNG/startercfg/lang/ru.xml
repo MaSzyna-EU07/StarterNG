@@ -742,6 +742,8 @@
     <String key="SyntaxVehicleOutsideTrainset">Транспорт {0} стоит вне состава: нет заголовка trainset?</String>
     <String key="SyntaxNotANumber">{0}: «{1}» вместо числа</String>
     <String key="SyntaxMissingInclude">Файл {1} не найден (include)</String>
+    <String key="SyntaxMissingTerrainFile">Файл рельефа {1} не найден, ни .txtf, ни .btf (terrain)</String>
+    <String key="SyntaxTerrainFileBehindSbt">Файл рельефа {1} пропущен: рельеф уже берётся из файла .sbt сценария</String>
     <String key="SyntaxIncludeNotClosed">include {1} без end</String>
     <String key="SyntaxTrainsetUnreadable">Не удалось прочитать состав {0}</String>
     <String key="SyntaxVehicleUnreadable">Не удалось прочитать единицу {0}</String>

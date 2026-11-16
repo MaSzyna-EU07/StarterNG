@@ -769,6 +769,8 @@
     <String key="SyntaxVehicleOutsideTrainset">Pojazd {0} stoi poza składem: brak nagłówka trainset?</String>
     <String key="SyntaxNotANumber">{0}: „{1}” zamiast liczby</String>
     <String key="SyntaxMissingInclude">Brak pliku {1} (include)</String>
+    <String key="SyntaxMissingTerrainFile">Brak pliku terenu {1}, ani .txtf, ani .btf (terrain)</String>
+    <String key="SyntaxTerrainFileBehindSbt">Plik terenu {1} pominięty: teren pochodzi już z pliku .sbt scenerii</String>
     <String key="SyntaxIncludeNotClosed">include {1} bez end</String>
     <String key="SyntaxTrainsetUnreadable">Nie udało się odczytać składu {0}</String>
     <String key="SyntaxVehicleUnreadable">Nie udało się odczytać pojazdu {0}</String>
