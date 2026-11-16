@@ -3,6 +3,7 @@ using Eu07.BlackBox.Views;
 
 namespace StarterNG.Tests.BlackBox;
 
+[Collection(AvaloniaControls.Name)]
 public class EventTextsTests
 {
     [Theory]

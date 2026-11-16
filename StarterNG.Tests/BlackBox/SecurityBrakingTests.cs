@@ -4,6 +4,7 @@ using Eu07.BlackBox.Views;
 
 namespace StarterNG.Tests.BlackBox;
 
+[Collection(AvaloniaControls.Name)]
 public class SecurityBrakingTests
 {
     // as the simulator writes them: one acknowledgement for both, so the cab signalling's buzzer is the alerter's too
