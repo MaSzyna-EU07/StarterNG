@@ -79,6 +79,8 @@ public static class Palette
     public static readonly IBrush LampOn = Brush("#4cc46e");
     public static readonly IBrush LampWarning = Brush("#e8c547");
     public static readonly IBrush LampAlarm = Brush("#f0584a");
+    /// <summary>The train protection's buzzer: still to be acknowledged, not braking yet.</summary>
+    public static readonly IBrush Buzzer = Brush("#c77dff");
     public static readonly IBrush LightWhite = Brush("#fff6d8");
     public static readonly IBrush LightRed = Brush("#ff3b30");
     public static readonly IBrush Command = Brush("#8b96a3");

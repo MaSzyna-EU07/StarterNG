@@ -178,14 +178,7 @@ public sealed class EventList : ListBox
         foreach (var horn in recording.UserHornChecks())
             events.Add(new BlackBoxEvent(horn.Request.Time, strings[horn.Sounded ? "EventHornSounded" : "EventHornMissed"],
                                          horn.Sounded ? Palette.HornPoint : Palette.Bad, !horn.Sounded));
-        foreach (var span in recording.SecurityBrakings())
-        {
-            // Which of them was not acknowledged: the lamps blinking when it braked.
-            string who = recording.CabAt(span.Start) is { } s
-                ? s.Has(SecurityFlags.CabSignal) && s.Has(SecurityFlags.Vigilance) ? "CA/SHP" : s.Has(SecurityFlags.CabSignal) ? "SHP" : "CA"
-                : "CA";
-            events.Add(new BlackBoxEvent(span.Start, string.Format(culture, strings["EventSecurityBraking"], who), Palette.Bad, true));
-        }
+        AddSecurity(recording, strings, events, culture);
         AddCameras(recording, strings, events, culture);
         AddCouplings(recording, strings, events, culture);
         AddCabChanges(recording, strings, events, culture);
@@ -197,6 +190,35 @@ public sealed class EventList : ListBox
         // Stable: what happened at the same moment stays in the order of its kind.
         return events.OrderBy(e => e.Time).ToList();
     }
+
+    /// <summary>
+    /// The train protection: its buzzer, acknowledged or not, and the braking apart. A lamp acknowledged before the
+    /// buzzer is the driving as usual, not told.
+    /// </summary>
+    private static void AddSecurity(Recording recording, IBlackBoxStrings strings, List<BlackBoxEvent> events, CultureInfo culture)
+    {
+        var brakings = recording.SecurityBrakings();
+        foreach (var span in recording.SecurityAlarms())
+        {
+            string who = ProtectionName(recording.CabAt(span.Start));
+            string text = brakings.Any(b => b.Start >= span.Start && b.Start <= span.End)
+                ? string.Format(culture, strings["EventSecurityAlarmMissed"], who)
+                // Acknowledged when the sample it ended at buzzes no more: not the end of the recording or a gap in it.
+                : recording.CabAt(span.End) is { } after && !after.VigilanceBuzzer && !after.CabSignalBuzzer
+                    ? string.Format(culture, strings["EventSecurityAlarmAcknowledged"], who, span.End - span.Start)
+                    : string.Format(culture, strings["EventSecurityAlarm"], who);
+            events.Add(new BlackBoxEvent(span.Start, text, Palette.Buzzer, false));
+        }
+        foreach (var span in brakings)
+            events.Add(new BlackBoxEvent(span.Start, string.Format(culture, strings["EventSecurityBraking"],
+                                                                   ProtectionName(recording.CabAt(span.Start))), Palette.Bad, true));
+    }
+
+    /// <summary>Which of them it was: the lamps blinking.</summary>
+    private static string ProtectionName(CabSample? sample) =>
+        sample is not { } s ? "CA"
+        : s.Has(SecurityFlags.CabSignal) && s.Has(SecurityFlags.Vigilance) ? "CA/SHP"
+        : s.Has(SecurityFlags.CabSignal) ? "SHP" : "CA";
 
     private static void AddUserVehicles(Recording recording, IBlackBoxStrings strings, List<BlackBoxEvent> events, CultureInfo culture)
     {

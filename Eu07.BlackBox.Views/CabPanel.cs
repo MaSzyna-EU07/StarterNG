@@ -530,12 +530,12 @@ public sealed class CabPanel : Control
         if (s.Security != SecurityFlags.None || s.CabEnd != 0)
         {
             // A recording which tells them apart.
-            safety.Add((Strings["DevVigilance"], Security(SecurityFlags.VigilanceBeeping, Palette.LampAlarm) ?? Security(SecurityFlags.Vigilance, Palette.Vigilance)));
-            safety.Add((Strings["DevCabSignal"], Security(SecurityFlags.CabSignalBeeping, Palette.LampAlarm) ?? Security(SecurityFlags.CabSignal, Palette.CabSignal)));
-            safety.Add((Strings["DevSecurityBraking"], Security(SecurityFlags.Braking, Palette.LampAlarm)));
+            safety.Add((Strings["DevVigilance"], s.VigilanceBuzzer ? Palette.Buzzer : Security(SecurityFlags.Vigilance, Palette.Vigilance)));
+            safety.Add((Strings["DevCabSignal"], s.CabSignalBuzzer ? Palette.Buzzer : Security(SecurityFlags.CabSignal, Palette.CabSignal)));
+            safety.Add((Strings["DevSecurityBraking"], s.ProtectionBraking ? Palette.LampAlarm : null));
         }
         else
-            safety.Add((Strings["DevAlerter"], (s.Flags & CabFlags.AlerterBeeping) != 0 ? Palette.LampAlarm
+            safety.Add((Strings["DevAlerter"], (s.Flags & CabFlags.AlerterBeeping) != 0 ? Palette.Buzzer
                                                  : (s.Flags & CabFlags.AlerterBlinking) != 0 ? Palette.LampWarning : null));
         safety.Add(Flag("DevWheelSlip", CabFlags.WheelSlip, Palette.LampAlarm));
         safety.Add(On("DevOverloadRelay", CabDevices.OverloadRelay, Palette.LampAlarm));

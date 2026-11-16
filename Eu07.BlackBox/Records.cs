@@ -371,6 +371,21 @@ public readonly record struct CabSample(double Time, int Vehicle, Position Posit
     public bool Has(CabDevices device) => (Devices & device) == device;
     public bool Has(SecurityFlags flag) => (Security & flag) == flag;
 
+    /// <summary>
+    /// The alerter's buzzer: its lamp not acknowledged in time. A protection with one acknowledgement for both tells
+    /// the cab signalling's buzzer as the alerter's too, so the alerter's lamp has to blink with it.
+    /// </summary>
+    public bool VigilanceBuzzer => Has(SecurityFlags.VigilanceBeeping) && Has(SecurityFlags.Vigilance);
+
+    /// <summary>The cab signalling's buzzer: its lamp not acknowledged in time.</summary>
+    public bool CabSignalBuzzer => Has(SecurityFlags.CabSignalBeeping);
+
+    /// <summary>
+    /// The train protection braking for an alarm not acknowledged, its lamp blinking. Braking with no lamp is the
+    /// protection with no power (TSecuritySystem::is_braking), a cab not started or a power cut: no driver's fault.
+    /// </summary>
+    public bool ProtectionBraking => Has(SecurityFlags.Braking) && (Has(SecurityFlags.Vigilance) || Has(SecurityFlags.CabSignal));
+
     public bool AiValid => (Flags & CabFlags.AiValid) != 0;
     public bool InCab => (Flags & CabFlags.InCab) != 0;
     public float AbsSpeedKmh => Math.Abs(SpeedKmh);
