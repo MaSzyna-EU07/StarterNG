@@ -235,9 +235,8 @@ public partial class Settings : UserControl, ISettingsCapture
                                    App.Loc["ProfileSaveAs"], MessageBoxButtons.YesNo))
             return;
 
-        // Written beside the user's own eu07.ini, which stays as it is.
-        CaptureInto(AppServices.Current.Settings);
-        bool saved = AppServices.Current.SettingsStore.ExportTo(path);
+        // Written beside the user's own eu07.ini, which stays as it is; the edits stay the page's, not saved
+        bool saved = AppServices.Current.SettingsStore.ExportTo(path, Trial());
         PopulateProfileCombo();
         int idx = FindComboIndexByContent(ProfileCb, Path.GetFileNameWithoutExtension(path));
         if (idx >= 0) ProfileCb.SelectedIndex = idx;

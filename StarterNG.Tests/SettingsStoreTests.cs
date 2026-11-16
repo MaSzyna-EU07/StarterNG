@@ -1275,6 +1275,22 @@ public class SettingsStoreTests
     }
 
     [Fact]
+    public void A_profile_exported_from_a_pages_edits_leaves_the_settings_held_and_the_ini_alone()
+    {
+        var files = new InMemoryFileSystem().WithFile(UserIni, "fieldofview 45\n");
+        var store = WithHome(files).SettingsStore;
+        store.Load();
+        var edited = store.Settings.Copy();
+        edited.FieldOfView = 60;
+
+        Assert.True(store.ExportTo(Profile, edited));
+
+        Assert.Contains("fieldofview 60", files.ReadAllText(Profile, System.Text.Encoding.UTF8));
+        Assert.Equal(45, store.Settings.FieldOfView);
+        Assert.Contains("fieldofview 45", files.ReadAllText(UserIni, System.Text.Encoding.UTF8));
+    }
+
+    [Fact]
     public void A_missing_profile_leaves_the_settings_as_they_are()
     {
         var installation = WithHome(new InMemoryFileSystem().WithFile(UserIni, "fieldofview 60\n"));

@@ -245,7 +245,8 @@ public sealed class SettingsStore
     /// Writes the settings as a complete eu07.ini somewhere else - this user's file
     /// with the settings applied - leaving the file itself and its state alone.
     /// </summary>
-    public bool ExportTo(string path)
+    /// <param name="settings">What to write, when not the settings held: a page's edits, still not taken in.</param>
+    public bool ExportTo(string path, SimulatorSettings? settings = null)
     {
         if (LoadFailed)
         {
@@ -254,7 +255,7 @@ public sealed class SettingsStore
         }
 
         var copy = ConfigFile.Parse(_config.ToText());
-        ApplyChanges(copy, Changes(Settings));
+        ApplyChanges(copy, Changes(settings ?? Settings));
 
         try
         {
