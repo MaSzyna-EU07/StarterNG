@@ -61,13 +61,6 @@ public enum SceneryFaultKind
     /// <summary>An include whose file is not there; <see cref="SceneryFault.Token"/> names it.</summary>
     MissingInclude,
 
-    /// <summary>
-    /// An include whose file is there only under a name in other letter case: the
-    /// simulator looks for it in lower case, which on Linux misses it. The
-    /// <see cref="SceneryFault.Subject"/> holds the name on disk.
-    /// </summary>
-    IncludeLetterCase,
-
     /// <summary>An include with no <c>end</c>, which swallows what follows it.</summary>
     IncludeNotClosed,
 

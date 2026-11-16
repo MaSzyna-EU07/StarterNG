@@ -56,6 +56,7 @@ public sealed class AppServices
         var missingAssets = new MissingAssetScanner(files, paths);
         SceneryTexts = new SceneryTranslations(files, log);
         Timetables = new TimetableLocator(files);
+        Attachments = new AttachmentLocator(files, paths);
         LoadWeights = new LoadWeightsRepository(files, paths, log);
         Library = new GameLibrary(Vehicles, Sceneries, MiniTextures, Physics, log);
         State = new AppState();
@@ -79,6 +80,9 @@ public sealed class AppServices
     public static AppServices Current =>
         _current ?? throw new InvalidOperationException(
             "AppServices.Current read before Initialize(); the composition root must be built first.");
+
+    /// <summary>The services once built, or null before: for what may run either way, such as a control in a test.</summary>
+    public static AppServices? CurrentOrNull => _current;
 
     public static AppServices Initialize(IGamePaths? paths = null, IFileSystem? files = null, IClock? clock = null,
                                          IEnvironment? environment = null)
@@ -118,6 +122,8 @@ public sealed class AppServices
     public ISceneryTranslations SceneryTexts { get; }
 
     public TimetableLocator Timetables { get; }
+
+    public AttachmentLocator Attachments { get; }
 
     public LoadWeightsRepository LoadWeights { get; }
 

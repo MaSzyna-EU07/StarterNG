@@ -77,6 +77,9 @@ public sealed class TextureRandomizerDialog
             FontSize = 12
         };
 
+        // Each box stands beside the choice it belongs to, which is no label a reader finds.
+        Avalonia.Automation.AutomationProperties.SetName(age, App.Loc["RandomizeTexturesRevDiff"]);
+        Avalonia.Automation.AutomationProperties.SetName(year, App.Loc["RandomizeTexturesVsYear"]);
         revDiff.IsCheckedChanged += (_, _) => age.IsEnabled = revDiff.IsChecked == true;
         vsYear.IsCheckedChanged += (_, _) => year.IsEnabled = vsYear.IsChecked == true;
 
@@ -118,6 +121,8 @@ public sealed class TextureRandomizerDialog
         };
         cancel.Classes.Add("Flat");
         cancel.Click += (_, _) => win.Close(false);
+        ok.IsDefault = true;
+        cancel.IsCancel = true;
 
         win.Content = new StackPanel
         {

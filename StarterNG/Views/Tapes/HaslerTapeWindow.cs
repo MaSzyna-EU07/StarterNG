@@ -14,6 +14,7 @@ using Avalonia.Platform.Storage;
 using Avalonia.Threading;
 using Eu07.BlackBox.Views;
 using StarterNG.Application;
+using StarterNG.Controls;
 using StarterNG.Domain.Settings;
 using StarterNG.Domain.Tapes;
 
@@ -85,6 +86,8 @@ public sealed class HaslerTapeWindow : Window
         MinWidth = 700;
         MinHeight = 420;
         WindowStartupLocation = WindowStartupLocation.CenterOwner;
+        // A window to keep open beside the starter, not a question to answer.
+        DialogKeyboard.SetEscapeCloses(this, false);
 
         _feed.ItemsSource = new[] { App.Loc["HaslerByDistance"], App.Loc["HaslerByTime"] };
         _feed.SelectedIndex = 0;
@@ -285,9 +288,16 @@ public sealed class HaslerTapeWindow : Window
 
     private RecorderKind Recorder => _recorder.SelectedIndex == 1 ? RecorderKind.Electronic : RecorderKind.Hasler;
 
-    private static TapeView NewView(RecorderKind kind) => kind == RecorderKind.Electronic
-        ? new ElectronicTapeView { HorizontalAlignment = HorizontalAlignment.Left, VerticalAlignment = VerticalAlignment.Top }
-        : new HaslerTapeView { HorizontalAlignment = HorizontalAlignment.Left, VerticalAlignment = VerticalAlignment.Top };
+    private static TapeView NewView(RecorderKind kind)
+    {
+        TapeView view = kind == RecorderKind.Electronic
+            ? new ElectronicTapeView { HorizontalAlignment = HorizontalAlignment.Left, VerticalAlignment = VerticalAlignment.Top }
+            : new HaslerTapeView { HorizontalAlignment = HorizontalAlignment.Left, VerticalAlignment = VerticalAlignment.Top };
+        // A picture to the eye; to a screen reader a slider along the trip, read sample by sample.
+        Avalonia.Automation.AutomationProperties.SetName(view, App.Loc["HaslerTapes"]);
+        Avalonia.Automation.AutomationProperties.SetHelpText(view, App.Loc["TapeKeysHelp"]);
+        return view;
+    }
 
     /// <summary>
     /// The same trip drawn the other way. Hasler paper is fed by distance and
@@ -389,7 +399,7 @@ public sealed class HaslerTapeWindow : Window
         _list.SelectedItem = chosen.Tape;
     }
 
-    private TreeViewItem SessionItem(TapeSession session, bool open)
+    private ExpandableTreeViewItem SessionItem(TapeSession session, bool open)
     {
         string title = session.Launch is { } launch
             ? string.Join(" · ", new[] { string.IsNullOrWhiteSpace(launch.SceneryName) ? launch.Scenery : launch.SceneryName, launch.Train }
@@ -418,7 +428,7 @@ public sealed class HaslerTapeWindow : Window
         var name = new TextBlock { Text = title, FontWeight = FontWeight.SemiBold, TextTrimming = TextTrimming.CharacterEllipsis };
         ToolTip.SetTip(name, title);
 
-        var item = new TreeViewItem
+        var item = new ExpandableTreeViewItem
         {
             Header = new StackPanel { Spacing = 1, Children = { name, details } },
             Tag = session,
@@ -431,7 +441,7 @@ public sealed class HaslerTapeWindow : Window
         return item;
     }
 
-    private TreeViewItem BlackBoxItem(BlackBoxRecording box)
+    private ExpandableTreeViewItem BlackBoxItem(BlackBoxRecording box)
     {
         var text = new StackPanel { Spacing = 1 };
         text.Children.Add(new TextBlock { Text = App.Loc["HaslerBlackBox"], FontWeight = FontWeight.SemiBold });
@@ -442,7 +452,7 @@ public sealed class HaslerTapeWindow : Window
             Opacity = 0.7
         });
         ToolTip.SetTip(text, App.Loc["HaslerBlackBoxTip"]);
-        var item = new TreeViewItem { Header = text, Tag = box };
+        var item = new ExpandableTreeViewItem { Header = text, Tag = box };
         // Also when it is the one picked already, and its window was closed since.
         item.Tapped += async (_, _) => await OpenBlackBoxAsync(box);
         return item;
@@ -466,6 +476,8 @@ public sealed class HaslerTapeWindow : Window
             CanOpenFiles = false,
             Live = _liveBlackBoxes.Contains(box.Path)
         };
+        // It stays open beside the tapes, as they stay beside the starter.
+        DialogKeyboard.SetEscapeCloses(window, false);
         _blackBoxes[box.Path] = window;
         if (at is { } first)
             _wantedAt[box.Path] = first;
@@ -573,7 +585,7 @@ public sealed class HaslerTapeWindow : Window
         }
     }
 
-    private static TreeViewItem TapeItem(TapeFile file)
+    private static ExpandableTreeViewItem TapeItem(TapeFile file)
     {
         var text = new StackPanel { Spacing = 1 };
         text.Children.Add(new TextBlock
@@ -592,7 +604,7 @@ public sealed class HaslerTapeWindow : Window
         };
         if (role is not null)
             text.Children.Add(new TextBlock { Text = role, FontSize = 11, Opacity = 0.7 });
-        return new TreeViewItem { Header = text, Tag = file };
+        return new ExpandableTreeViewItem { Header = text, Tag = file };
     }
 
     /// <summary>
@@ -769,6 +781,18 @@ public sealed class HaslerTapeWindow : Window
             _cursor.Text = "";
             return;
         }
+        try
+        {
+            ShowCursorText(s);
+        }
+        finally
+        {
+            _view.Spoken = _cursor.Text;
+        }
+    }
+
+    private void ShowCursorText(TapeSample s)
+    {
         // Only what the record in view shows: a Hasler tape has no brake pipe and
         // marks current as on or off, and the electronic screen draws the current
         // and the vigilance alarm as channels, not values.

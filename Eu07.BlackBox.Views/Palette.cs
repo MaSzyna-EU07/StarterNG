@@ -26,6 +26,8 @@ public static class Palette
     public static readonly IBrush AccentFill = Brush("#177F00");
     public static readonly IBrush AccentFillHover = Brush("#1E9000");
     public static readonly IBrush AccentText = Brush("#FFFFFF");
+    /// <summary>The ring round a drawn control that has the keyboard, in the green of the starter's own.</summary>
+    public static readonly IPen FocusPen = new Pen(Accent, 2);
     public static readonly IBrush Good = Brush("#4cc46e");
 
     /// <summary>A delay: green on time, yellow a little late, red late, blue early.</summary>
@@ -79,6 +81,8 @@ public static class Palette
     public static readonly IBrush LampOn = Brush("#4cc46e");
     public static readonly IBrush LampWarning = Brush("#e8c547");
     public static readonly IBrush LampAlarm = Brush("#f0584a");
+    /// <summary>The train protection's buzzer: still to be acknowledged, not braking yet.</summary>
+    public static readonly IBrush Buzzer = Brush("#c77dff");
     public static readonly IBrush LightWhite = Brush("#fff6d8");
     public static readonly IBrush LightRed = Brush("#ff3b30");
     public static readonly IBrush Command = Brush("#8b96a3");

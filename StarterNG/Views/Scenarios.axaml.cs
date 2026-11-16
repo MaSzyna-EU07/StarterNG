@@ -8,6 +8,7 @@ using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Avalonia;
+using Avalonia.Automation;
 using Avalonia.Animation;
 using Avalonia.Controls;
 using Avalonia.Input;
@@ -17,6 +18,7 @@ using Avalonia.Media.Imaging;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
 using StarterNG.Classes;
+using StarterNG.Controls;
 using StarterNG.Domain;
 using StarterNG.Application;
 using StarterNG.Domain.Sceneries;
@@ -99,9 +101,9 @@ public partial class Scenarios : UserControl
             sceneryList.Items.Add(ToTreeItem(node, expandGroups));
     }
 
-    private TreeViewItem ToTreeItem(SceneryTreeNode node, bool expandGroups)
+    private ExpandableTreeViewItem ToTreeItem(SceneryTreeNode node, bool expandGroups)
     {
-        var item = new TreeViewItem
+        var item = new ExpandableTreeViewItem
         {
             Header = node.IsGroup ? node.Label : SceneryHeader(node.Label, Sceneries[node.SceneryIndex]),
             Tag = node.IsGroup ? null : node.SceneryIndex,
@@ -409,6 +411,8 @@ public partial class Scenarios : UserControl
         sceneryDescription.Text = scenery.LocalizedDescription(AppServices.Current.SceneryTexts);
 
         string? imagePath = AppServices.Current.SceneryImages.Resolve(scenery);
+        // Under the mouse a reader hears what the picture is of.
+        AutomationProperties.SetName(sceneryImage, $"{App.Loc["SceneryImage"]}: {scenery.Name}");
         if (imagePath is not null)
         {
             try
@@ -492,20 +496,18 @@ public partial class Scenarios : UserControl
             btn.Classes.Add("Flat");
             ToolTip.SetTip(btn, att.FilePath);
             // A button that does nothing is no way to say the file is not there.
-            btn.IsEnabled = File.Exists(Path.GetFullPath(att.FilePath));
+            btn.IsEnabled = AppServices.Current.Attachments.Resolve(att) is not null;
             ToolTip.SetShowOnDisabled(btn, true);
-            btn.Click += (_, _) => OpenAttachment(att.FilePath);
+            btn.Click += (_, _) => OpenAttachment(att);
             attachmentsPanel.Children.Add(btn);
         }
     }
 
-    private static void OpenAttachment(string relativePath)
+    private static void OpenAttachment(SceneryAttachment attachment)
     {
-        string full = Path.GetFullPath(relativePath);
-        if (!File.Exists(full))
-            full = Path.GetFullPath(Path.Combine(Directory.GetCurrentDirectory(), relativePath));
-        if (!File.Exists(full))
+        if (AppServices.Current.Attachments.Resolve(attachment) is not { } found)
             return;
+        string full = Path.GetFullPath(found);
         try
         {
             Process.Start(new ProcessStartInfo(full) { UseShellExecute = true });
@@ -761,6 +763,8 @@ public partial class Scenarios : UserControl
     {
         weatherTempLabel.Text = $"{(int)weatherTemp.Value} °C";
         weatherFogLabel.Text = FogScale2(FogScale.ToMetres(weatherFog.Value));
+        weatherTemp.ValueText = weatherTempLabel.Text;
+        weatherFog.ValueText = weatherFogLabel.Text;
         weatherDayDate.Text = string.Format(LanguageCulture, App.Loc["DayOfYear"], SelectedDayOfYear());
 
         weatherRestore.IsEnabled = _currentScenery?.Weather.Changed ?? false;
@@ -833,6 +837,7 @@ public partial class Scenarios : UserControl
     {
         var now = DateTime.Now;
         weatherTime.SelectedTime = new TimeSpan(now.Hour, now.Minute, 0);
+        Announcer.Say(this, ScreenReaderNames.PickerText(App.Loc["Time"], ScreenReaderNames.TimeText(weatherTime.SelectedTime)));
     }
 
     private void WeatherRestore_OnClick(object? sender, RoutedEventArgs e)
@@ -840,7 +845,17 @@ public partial class Scenarios : UserControl
         if (_currentScenery is null) return;
         _currentScenery.Weather.Restore();
         ShowWeather(_currentScenery);
+        Announcer.Say(this, WeatherSummary());
     }
+
+    /// <summary>The weather as a reader hears it once put back: every field and its value.</summary>
+    private string WeatherSummary() => string.Join(", ",
+        ScreenReaderNames.PickerText(App.Loc["Date"], ScreenReaderNames.DateText(weatherDate.SelectedDate, weatherDate.YearVisible)),
+        ScreenReaderNames.PickerText(App.Loc["Season"], ScreenReaderNames.TextOf(weatherSeason.SelectedItem)),
+        ScreenReaderNames.PickerText(App.Loc["Time"], ScreenReaderNames.TimeText(weatherTime.SelectedTime)),
+        ScreenReaderNames.PickerText(App.Loc["Temperature"], weatherTempLabel.Text),
+        ScreenReaderNames.PickerText(App.Loc["Visibility"], weatherFogLabel.Text),
+        ScreenReaderNames.PickerText(App.Loc["Overcast"], ScreenReaderNames.TextOf(weatherOvercast.SelectedItem)));
 
     private static TimeSpan? ParseTime(string? text)
     {

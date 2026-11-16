@@ -34,6 +34,7 @@ public sealed class LogAndToolsWindow : Window
         WindowStartupLocation = WindowStartupLocation.CenterOwner;
 
         var tabs = new TabControl();
+        Avalonia.Automation.AutomationProperties.SetName(tabs, App.Loc["LogAndTools"]);
         tabs.Items.Add(new TabItem { Header = App.Loc["AdvLogPage"], Content = BuildLogPage() });
         tabs.Items.Add(new TabItem { Header = App.Loc["Tools"], Content = BuildToolsPage() });
 
@@ -47,6 +48,7 @@ public sealed class LogAndToolsWindow : Window
         };
         close.Classes.Add("Accent");
         close.Click += (_, _) => Close();
+        close.IsCancel = true;
 
         var root = new DockPanel { Margin = new Avalonia.Thickness(10) };
         DockPanel.SetDock(close, Dock.Bottom);

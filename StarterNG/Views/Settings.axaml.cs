@@ -105,6 +105,13 @@ public partial class Settings : UserControl, ISettingsCapture
 
         FeedbackCb.SelectionChanged += FeedbackCb_OnSelectionChanged;
         SelectExeCb.SelectionChanged += (_, _) => UpdateIdleNotes();
+        // Coming to the page or to the list is when a new build is looked for.
+        SelectExeCb.GotFocus += (_, _) => RefreshExecutables();
+        PropertyChanged += (_, e) =>
+        {
+            if (e.Property == IsVisibleProperty && IsVisible)
+                RefreshExecutables();
+        };
         FullscreenWindowedCb.IsCheckedChanged += (_, _) => UpdateIdleNotes();
         App.Loc.LanguageChanged += UpdateIdleNotes;
         App.Loc.LanguageChanged += UpdateGpuNote;
@@ -246,16 +253,33 @@ public partial class Settings : UserControl, ISettingsCapture
 
     private void PopulateExeCombo()
     {
-        string? current = (SelectExeCb.SelectedItem as ComboBoxItem)?.Content?.ToString();
+        int index = SelectExeCb.SelectedIndex;
+        string? chosen = index > 0 ? (SelectExeCb.SelectedItem as ComboBoxItem)?.Content?.ToString() : null;
+        var (entries, at) = ExecutableList.Refreshed(AppServices.Current.Executables.ListCandidates(), chosen);
+
+        // The same files as shown: left alone, so a reader on the list hears nothing change.
+        var shown = SelectExeCb.Items.Skip(1).Select(item => (item as ComboBoxItem)?.Content?.ToString() ?? "");
+        if (SelectExeCb.Items.Count > 0 && shown.SequenceEqual(entries, StringComparer.Ordinal))
+            return;
+
         SelectExeCb.Items.Clear();
         SelectExeCb.Items.Add(new ComboBoxItem { Content = App.Loc["SelectEXEAuto"] });
-        foreach (string exe in AppServices.Current.Executables.ListCandidates())
+        foreach (string exe in entries)
             SelectExeCb.Items.Add(new ComboBoxItem { Content = exe });
-        if (current is not null)
-        {
-            int idx = FindComboIndexByContent(SelectExeCb, current);
-            SelectExeCb.SelectedIndex = idx >= 0 ? idx : 0;
-        }
+        if (index >= 0)
+            SelectExeCb.SelectedIndex = at >= 0 ? at + 1 : 0;
+    }
+
+    /// <summary>
+    /// Looks at the simulator folder again, so a build copied in while the starter runs is
+    /// on the list without reopening anything. The choice stays as it was and is no edit:
+    /// nothing waits for Save after it. Not while the list is open under the user's hand.
+    /// </summary>
+    public void RefreshExecutables()
+    {
+        if (SelectExeCb.IsDropDownOpen)
+            return;
+        WhileLoading(PopulateExeCombo);
     }
 
     private async void BrowseExeButton_OnClick(object? sender, RoutedEventArgs e) =>
@@ -580,6 +604,7 @@ public partial class Settings : UserControl, ISettingsCapture
         // Chosen as a whole, its values are choices, not ones the screen could not show.
         ForgetShown(applied.ChosenKeys);
         UpdatePresetMarks();
+        Announcer.Say(this, ScreenReaderNames.PickerText(App.Loc["GfxColPresets"], App.Loc[preset.NameKey]));
     }
 
     /// <summary>Puts one part at a level, as edits waiting for Save.</summary>
@@ -747,6 +772,7 @@ public partial class Settings : UserControl, ISettingsCapture
 
         // Put back by hand, a value is a choice like any other.
         ForgetShown(keys);
+        Announcer.Say(this, ScreenReaderNames.PickerText(ScreenReaderNames.TextOf(section.Header), App.Loc["DefaultsRestored"]));
     }
 
     // ── Values the screen shows otherwise than the file has them ─────────────
@@ -1147,6 +1173,7 @@ public partial class Settings : UserControl, ISettingsCapture
         _keyBindings.Reload();
         _dirty = false;
         UpdateSaveState();
+        Announcer.Say(this, App.Loc["SettingsRestored"]);
     }
 
     /// <summary>The list as <see cref="ResolutionChoices"/> has it for the monitors there are now, with the size selected.</summary>
@@ -1323,7 +1350,14 @@ public partial class Settings : UserControl, ISettingsCapture
             return;
 
         ApplyFilter();
+        _searchResults ??= new SearchResultsTeller(SettingsSearch, () => _shownCount);
+        _searchResults.Changed();
     }
+
+    private SearchResultsTeller? _searchResults;
+
+    // How many settings - or key bindings - the last filter left on the screen.
+    private int _shownCount;
 
     /// <summary>
     /// Single owner of what is on screen. With an empty query it shows the selected
@@ -1347,11 +1381,13 @@ public partial class Settings : UserControl, ISettingsCapture
         if (bindings)
         {
             _keyBindings.RebuildList();
+            _shownCount = _keyBindings.ShownCount;
             foreach (var entry in CategoryList.Items.OfType<ListBoxItem>())
                 entry.Classes.Set("NoHits", false);
             return;
         }
 
+        _shownCount = 0;
         foreach (var panel in SettingsStack.Children.OfType<StackPanel>())
         {
             bool anyRow = false;
@@ -1366,6 +1402,8 @@ public partial class Settings : UserControl, ISettingsCapture
                                    (!searching || TextMatch.Contains(RowSearchText(row), query));
                     row.IsVisible = visible;
                     anyInSection |= visible;
+                    if (visible && searching)
+                        _shownCount++;
                 }
 
                 section.IsVisible = anyInSection;

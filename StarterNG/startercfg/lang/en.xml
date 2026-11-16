@@ -589,6 +589,47 @@
     <String key="Save">Save</String>
     <String key="Reset">Reset</String>
     <String key="SettingsSaved">Settings saved</String>
+    <String key="DefaultsRestored">Defaults restored</String>
+    <String key="SettingsRestored">Saved settings restored</String>
+    <String key="TreeExpanded">expanded</String>
+    <String key="TreeCollapsed">collapsed</String>
+    <String key="DepotConsistSources">Consist sources</String>
+    <String key="DepotVehicleInfo">Vehicle information</String>
+    <String key="DepotVehicleEdit">Vehicle settings</String>
+    <String key="ScenarioDetails">Scenario details</String>
+    <String key="SectionLevel">Section level</String>
+    <String key="SearchFound">{0} found</String>
+    <String key="SpinUp">Increase</String>
+    <String key="SpinDown">Decrease</String>
+    <String key="ChromeMinimize">Minimize</String>
+    <String key="ChromeMaximize">Maximize</String>
+    <String key="ChromeRestore">Restore</String>
+    <String key="ChromeClose">Close</String>
+    <String key="ScrollLineUp">Line up</String>
+    <String key="ScrollLineDown">Line down</String>
+    <String key="ScrollPageUp">Page up</String>
+    <String key="ScrollPageDown">Page down</String>
+    <String key="ScrollColumnLeft">Column left</String>
+    <String key="ScrollColumnRight">Column right</String>
+    <String key="ScrollPageLeft">Page left</String>
+    <String key="ScrollPageRight">Page right</String>
+    <String key="ScrollPosition">Position</String>
+    <String key="TapeKeysHelp">Left and Right arrows step along the tape, Ctrl with them steps ten times further, Home and End go to its ends, Enter takes the black box to that moment.</String>
+    <String key="ConsistSaidEmpty">Consist empty</String>
+    <String key="ConsistSaidAdded">Added {0} at position {1} of {2}</String>
+    <String key="ConsistSaidRemoved">Removed {0}, {1} vehicles left</String>
+    <String key="ConsistSaidTurned">{0} reversed</String>
+    <String key="ConsistSaidUnturned">{0} turned back</String>
+    <String key="ConsistSaidTurnedMany">{0} vehicles turned</String>
+    <String key="ConsistSaidMoved">{0} moved to position {1} of {2}</String>
+    <String key="ConsistSaidReordered">Order changed</String>
+    <String key="ConsistSaidReplaced">{0} replaced with {1}</String>
+    <String key="ConsistSaidChangedMany">{0} vehicles changed, {1} in the consist</String>
+    <String key="ConsistSaidUndone">Undone. {0}</String>
+    <String key="ConsistSaidRedone">Redone. {0}</String>
+    <String key="SceneryImage">Scenery picture</String>
+    <String key="PanelSplitter">Panel divider</String>
+    <String key="SettingsCategories">Settings categories</String>
     <String key="SettingsNotSaved">Could not save the settings</String>
     <String key="UnsavedChanges">Unsaved changes</String>
 
@@ -618,8 +659,10 @@
     <String key="About">About</String>
     <String key="Close">Close</String>
     <String key="CpuNoAvx2Title">Processor without AVX2</String>
-    <String key="CpuNoAvx2">This processor has no AVX2 and the official simulator needs it: it will not start.&#10;&#10;You can build the simulator without AVX2 (CMake -DENABLE_AVX2=OFF). Instructions:&#10;{0}</String>
+    <String key="CpuNoAvx2">This processor has no AVX2 and the official simulator needs it: it will not start.&#10;&#10;There is a simulator build without AVX2 - its file name ends in _noavx2. Put it in the game folder and the starter will use it. You can also build the simulator yourself (CMake -DENABLE_AVX2=OFF). Instructions:&#10;{0}</String>
     <String key="CpuNoAvx2Open">Open the instructions</String>
+    <String key="CpuNoAvx2Chosen">This processor has no AVX2 and the chosen simulator {0} needs it: it will not start.&#10;&#10;The game folder has a build without AVX2: {1}. The automatic choice takes that one.</String>
+    <String key="CpuNoAvx2UseIt">Choose automatically</String>
     <String key="DontShowAgain">Don't show again</String>
     <String key="SettingsPath">Settings loaded from:</String>
 
@@ -772,7 +815,6 @@
     <String key="SyntaxVehicleOutsideTrainset">Vehicle {0} stands outside a trainset: header missing?</String>
     <String key="SyntaxNotANumber">{0}: “{1}” instead of a number</String>
     <String key="SyntaxMissingInclude">File {1} not found (include)</String>
-    <String key="SyntaxIncludeLetterCase">File {1} is on disk as {0}: the Linux eu07 will not load it</String>
     <String key="SyntaxIncludeNotClosed">include {1} without end</String>
     <String key="SyntaxTrainsetUnreadable">Trainset {0} could not be read</String>
     <String key="SyntaxVehicleUnreadable">Vehicle {0} could not be read</String>
@@ -859,8 +901,8 @@
     <String key="Cmd.trainbrakecharging">train brake valve: overcharge the brake pipe</String>
     <String key="Cmd.trainbrakerelease">train brake valve: running position</String>
     <String key="Cmd.trainbrakefirstservice">train brake valve: first braking step</String>
-    <String key="Cmd.trainbrakeservice">train brake valve: full service</String>
-    <String key="Cmd.trainbrakefullservice">train brake valve: supplementary braking</String>
+    <String key="Cmd.trainbrakeservice">train brake valve: service braking</String>
+    <String key="Cmd.trainbrakefullservice">train brake valve: full service</String>
     <String key="Cmd.trainbrakehandleoff">train brake valve: lap position</String>
     <String key="Cmd.trainbrakeemergency">emergency braking</String>
     <String key="Cmd.trainbrakebasepressureincrease">raise the brake pipe pressure level</String>
@@ -970,7 +1012,7 @@
     <String key="Cmd.interiorlightdimtoggle">toggle cab light dimming</String>
     <String key="Cmd.compartmentlightstoggle">toggle the compartment lights</String>
     <String key="Cmd.instrumentlighttoggle">toggle the instrument lights</String>
-    <String key="Cmd.dashboardlighttoggle">toggle the desk lights</String>
+    <String key="Cmd.dashboardlighttoggle">toggle the dashboard light</String>
     <String key="Cmd.timetablelighttoggle">toggle the timetable light</String>
     <String key="Cmd.generictoggle0">generic switch 0</String>
     <String key="Cmd.generictoggle1">generic switch 1</String>

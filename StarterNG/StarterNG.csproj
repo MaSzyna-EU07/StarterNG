@@ -12,7 +12,7 @@
         <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
         <!-- Major and minor only: CI adds the patch, the number of commits, so every
              build of main is a higher version without anyone bumping it. -->
-        <VersionPrefix>1.5</VersionPrefix>
+        <VersionPrefix>1.6</VersionPrefix>
         <AssemblyName>Starter</AssemblyName>
         <Company>eu07.pl</Company>
     </PropertyGroup>
@@ -41,6 +41,10 @@
         <!-- The black box of the simulator: its reader and the window it is played back in. -->
         <ProjectReference Include="..\Eu07.BlackBox\Eu07.BlackBox.csproj" />
         <ProjectReference Include="..\Eu07.BlackBox.Views\Eu07.BlackBox.Views.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <InternalsVisibleTo Include="StarterNG.Tests" />
     </ItemGroup>
 
     <ItemGroup>

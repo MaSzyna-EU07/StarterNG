@@ -22,7 +22,7 @@
                                TextTrimming="LeadingCharacterEllipsis" />
                 </DockPanel>
                 <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="12" HorizontalAlignment="Right">
-                    <TextBlock x:Name="SaveStatus" VerticalAlignment="Center" Opacity="0.8" Text="" />
+                    <TextBlock x:Name="SaveStatus" ctl:Announcer.Changes="True" VerticalAlignment="Center" Opacity="0.8" Text="" />
                     <Button x:Name="ChangesButton" Classes="Flat" Click="ChangesButton_OnClick"
                             Content="{Binding [IniChangesButton], Source={x:Static starterNg:App.Loc}}" />
                     <Button x:Name="ResetButton" Classes="Flat" Click="ResetButton_OnClick"
@@ -40,14 +40,15 @@
             <Border Grid.Column="0" Background="{StaticResource CarbonPanelBg}"
                     BorderBrush="{StaticResource CarbonBorderLight}" BorderThickness="0,0,1,0">
                 <DockPanel Margin="8,10,8,10">
-                    <TextBox x:Name="SettingsSearch" DockPanel.Dock="Top" Margin="0,0,0,10"
+                    <TextBox x:Name="SettingsSearch" AutomationProperties.LandmarkType="Search" DockPanel.Dock="Top" Margin="0,0,0,10"
                              PlaceholderText="{Binding [Search], Source={x:Static starterNg:App.Loc}}"
                              TextChanged="SettingsSearch_OnTextChanged" />
 
                     <StackPanel DockPanel.Dock="Bottom" Spacing="6" Margin="0,14,0,0">
                         <TextBlock Classes="FieldLabel"
                                    Text="{Binding [SettingsProfile], Source={x:Static starterNg:App.Loc}}" />
-                        <ComboBox x:Name="ProfileCb" HorizontalAlignment="Stretch" />
+                        <ComboBox x:Name="ProfileCb" HorizontalAlignment="Stretch"
+                                  AutomationProperties.Name="{Binding [ProfilePick], Source={x:Static starterNg:App.Loc}}" />
                         <Button x:Name="ProfileApplyBtn" Classes="Flat" HorizontalAlignment="Stretch"
                                 HorizontalContentAlignment="Center"
                                 Content="{Binding [ProfileApply], Source={x:Static starterNg:App.Loc}}"
@@ -68,7 +69,7 @@
                                 Click="ExportIniButton_OnClick" />
                     </StackPanel>
 
-                    <ListBox x:Name="CategoryList" Classes="SettingsNav" SelectedIndex="0"
+                    <ListBox x:Name="CategoryList" AutomationProperties.LandmarkType="Navigation" AutomationProperties.Name="{Binding [SettingsCategories], Source={x:Static starterNg:App.Loc}}" Classes="SettingsNav" SelectedIndex="0"
                              ItemContainerTheme="{StaticResource SettingsNavItem}"
                              SelectionChanged="CategoryList_OnSelectionChanged">
                         <ListBoxItem Tag="general" Content="{Binding [General], Source={x:Static starterNg:App.Loc}}" />
@@ -93,7 +94,7 @@
                             <TextBlock VerticalAlignment="Center" FontWeight="Bold"
                                        Text="{Binding [GfxColPresets], Source={x:Static starterNg:App.Loc}}" />
                             <StackPanel x:Name="PresetButtons" Grid.Column="1" Orientation="Horizontal" Spacing="6" />
-                            <TextBlock x:Name="PresetStateText" Grid.Column="2" VerticalAlignment="Center" FontSize="12"
+                            <TextBlock x:Name="PresetStateText" ctl:Announcer.Changes="True" Grid.Column="2" VerticalAlignment="Center" FontSize="12"
                                        Foreground="{StaticResource CarbonFgDim}" />
                         </Grid>
                         <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
@@ -141,7 +142,7 @@
                                     </ctl:SettingRow>
                                     <ctl:SettingRow ConfigKey="mousescale" x:Name="CursorSensitivityRow"
                                                     Label="{Binding [CursorSensitivity], Source={x:Static starterNg:App.Loc}}">
-                                        <Slider x:Name="CursorSensitivitySlider" Minimum="1" Maximum="5" TickFrequency="1"
+                                        <ctl:ReadableSlider x:Name="CursorSensitivitySlider" Minimum="1" Maximum="5" TickFrequency="1"
                                                 IsSnapToTickEnabled="True" Value="3"
                                                 ValueChanged="QualitySlider_OnValueChanged" />
                                     </ctl:SettingRow>
@@ -258,13 +259,13 @@
                                                     Label="{Binding [BufforResolution], Source={x:Static starterNg:App.Loc}}"
                                                     Description="{Binding [BufforResolutionDesc], Source={x:Static starterNg:App.Loc}}"
                                                     ValueText="{Binding #bufferScale.Value, StringFormat='{}{0:0}%'}">
-                                        <Slider Name="bufferScale" Minimum="25" Maximum="200" TickFrequency="1"
+                                        <ctl:ReadableSlider Name="bufferScale" Minimum="25" Maximum="200" TickFrequency="1"
                                                 IsSnapToTickEnabled="True" Value="100" />
                                     </ctl:SettingRow>
                                     <ctl:SettingRow ConfigKey="fieldofview" Label="{Binding [FieldOfView], Source={x:Static starterNg:App.Loc}}"
                                                     Description="{Binding [FieldOfViewDesc], Source={x:Static starterNg:App.Loc}}"
                                                     ValueText="{Binding #fovSlider.Value, StringFormat='{}{0:0}°'}">
-                                        <Slider Name="fovSlider" Minimum="10" Maximum="75" TickFrequency="5"
+                                        <ctl:ReadableSlider Name="fovSlider" Minimum="10" Maximum="75" TickFrequency="5"
                                                 IsSnapToTickEnabled="True" Value="45" />
                                     </ctl:SettingRow>
                                     <ctl:SettingRow ConfigKey="gfx.antialiasing, multisampling"
@@ -296,7 +297,7 @@
                                                     Description="{Binding [FpsLimitDesc], Source={x:Static starterNg:App.Loc}}">
                                         <StackPanel Spacing="4">
                                             <!-- Moves through no limit and Steps.FrameRateLimits; see SliderSteps. -->
-                                            <Slider x:Name="FpsLimitSlider" ValueChanged="QualitySlider_OnValueChanged" />
+                                            <ctl:ReadableSlider x:Name="FpsLimitSlider" ValueChanged="QualitySlider_OnValueChanged" />
                                             <!-- The screens found, each with a button to match the limit to it. -->
                                             <WrapPanel x:Name="MonitorRates" IsVisible="False" />
                                         </StackPanel>
@@ -312,14 +313,14 @@
                                                     Label="{Binding [RenderRange], Source={x:Static starterNg:App.Loc}}"
                                                     Description="{Binding [RenderRangeDesc], Source={x:Static starterNg:App.Loc}}">
                                         <!-- Moves through Steps.DrawRangeFactors; see SliderSteps. -->
-                                        <Slider x:Name="RenderRangeSlider"
+                                        <ctl:ReadableSlider x:Name="RenderRangeSlider"
                                                 ValueChanged="QualitySlider_OnValueChanged" />
                                     </ctl:SettingRow>
                                     <ctl:KeySlot Key="sleeperdistance" />
                                     <ctl:SettingRow ConfigKey="splinefidelity" x:Name="TrackCurvesRow"
                                                     Label="{Binding [TrackCurvesQuality], Source={x:Static starterNg:App.Loc}}"
                                                     Description="{Binding [TrackCurvesQualityDesc], Source={x:Static starterNg:App.Loc}}">
-                                        <Slider x:Name="TrackCurvesSlider" Minimum="1" Maximum="4" TickFrequency="1"
+                                        <ctl:ReadableSlider x:Name="TrackCurvesSlider" Minimum="1" Maximum="4" TickFrequency="1"
                                                 IsSnapToTickEnabled="True" Value="4"
                                                 ValueChanged="QualitySlider_OnValueChanged" />
                                     </ctl:SettingRow>
@@ -330,13 +331,13 @@
                                 <StackPanel>
                                     <ctl:SettingRow ConfigKey="maxtexturesize" x:Name="TexResolutionRow"
                                                     Label="{Binding [MaxTexResolution], Source={x:Static starterNg:App.Loc}}">
-                                        <Slider Name="textureResolutionSlider" Minimum="6" Maximum="13" TickFrequency="1"
+                                        <ctl:ReadableSlider Name="textureResolutionSlider" Minimum="6" Maximum="13" TickFrequency="1"
                                                 IsSnapToTickEnabled="True" Value="12"
                                                 ValueChanged="TextureResolutionSlider_OnValueChanged" />
                                     </ctl:SettingRow>
                                     <ctl:SettingRow ConfigKey="maxcabtexturesize" x:Name="CabTexResolutionRow"
                                                     Label="{Binding [MaxTexCabResolution], Source={x:Static starterNg:App.Loc}}">
-                                        <Slider Name="cabTextureResolutionSlider" Minimum="9" Maximum="13" TickFrequency="1"
+                                        <ctl:ReadableSlider Name="cabTextureResolutionSlider" Minimum="9" Maximum="13" TickFrequency="1"
                                                 IsSnapToTickEnabled="True" Value="12"
                                                 ValueChanged="CabTextureResolutionSlider_OnValueChanged" />
                                     </ctl:SettingRow>
@@ -344,7 +345,7 @@
                                                     Label="{Binding [TexFilteringQuality], Source={x:Static starterNg:App.Loc}}"
                                                     Description="{Binding [TexFilteringQualityDesc], Source={x:Static starterNg:App.Loc}}">
                                         <!-- Moves through Steps.Anisotropy; see SliderSteps. -->
-                                        <Slider x:Name="TexFilteringSlider"
+                                        <ctl:ReadableSlider x:Name="TexFilteringSlider"
                                                 ValueChanged="QualitySlider_OnValueChanged" />
                                     </ctl:SettingRow>
                                     <ctl:KeySlot Key="gfx.textures.streaming" />
@@ -397,7 +398,7 @@
                                     </ctl:SettingRow>
                                     <ctl:SettingRow ConfigKey="shadowtune" x:Name="ShadowResolutionRow"
                                                     Label="{Binding [ShadowsResolution], Source={x:Static starterNg:App.Loc}}">
-                                        <Slider Name="shaderResolutionSlider" Minimum="9" Maximum="13" TickFrequency="1"
+                                        <ctl:ReadableSlider Name="shaderResolutionSlider" Minimum="9" Maximum="13" TickFrequency="1"
                                                 IsSnapToTickEnabled="True" Value="12"
                                                 ValueChanged="shaderResolutionSlider_OnValueChanged" />
                                     </ctl:SettingRow>
@@ -405,14 +406,14 @@
                                                     Label="{Binding [ShaderRange], Source={x:Static starterNg:App.Loc}}"
                                                     Description="{Binding [ShaderRangeDesc], Source={x:Static starterNg:App.Loc}}">
                                         <!-- The simulator's floor follows the map size: see shaderResolutionSlider_OnValueChanged. -->
-                                        <Slider Name="shaderRange" Minimum="75" Maximum="600" TickFrequency="5"
+                                        <ctl:ReadableSlider Name="shaderRange" Minimum="75" Maximum="600" TickFrequency="5"
                                                 IsSnapToTickEnabled="True" Value="150"
                                                 ValueChanged="QualitySlider_OnValueChanged" />
                                     </ctl:SettingRow>
                                     <ctl:SettingRow ConfigKey="gfx.shadows.cab.range" x:Name="CabShadowRangeRow"
                                                     Label="{Binding [CabShadowsRange], Source={x:Static starterNg:App.Loc}}"
                                                     Description="{Binding [CabShadowsRangeDesc], Source={x:Static starterNg:App.Loc}}">
-                                        <Slider Name="cabShaderSourceRange" Minimum="0" Maximum="100" TickFrequency="10"
+                                        <ctl:ReadableSlider Name="cabShaderSourceRange" Minimum="0" Maximum="100" TickFrequency="10"
                                                 IsSnapToTickEnabled="True" Value="30"
                                                 ValueChanged="QualitySlider_OnValueChanged" />
                                     </ctl:SettingRow>
@@ -420,7 +421,7 @@
                                                     Label="{Binding [ShadowAngleLimit], Source={x:Static starterNg:App.Loc}}"
                                                     Description="{Binding [ShadowAngleLimitDesc], Source={x:Static starterNg:App.Loc}}">
                                         <StackPanel>
-                                            <Slider x:Name="ShadowAngleLimitSlider" Minimum="0.2" Maximum="1.0"
+                                            <ctl:ReadableSlider x:Name="ShadowAngleLimitSlider" Minimum="0.2" Maximum="1.0"
                                                     TickFrequency="0.05" IsSnapToTickEnabled="True" Value="0.2" HorizontalAlignment="Stretch"
                                                     ValueChanged="QualitySlider_OnValueChanged" />
                                             <DockPanel>
@@ -438,7 +439,7 @@
                                 <StackPanel>
                                     <ctl:SettingRow x:Name="DynamicLightsRow" Description="{Binding [DynamicLightsDesc], Source={x:Static starterNg:App.Loc}}" ConfigKey="dynamiclights" Label="{Binding [DynamicLights], Source={x:Static starterNg:App.Loc}}"
                                                     ValueText="{Binding #DynamicLightsSlider.Value, StringFormat='{}{0:0}'}">
-                                        <Slider x:Name="DynamicLightsSlider" Minimum="0" Maximum="7" TickFrequency="1"
+                                        <ctl:ReadableSlider x:Name="DynamicLightsSlider" Minimum="0" Maximum="7" TickFrequency="1"
                                                 IsSnapToTickEnabled="True" Value="7" />
                                     </ctl:SettingRow>
                                 </StackPanel>
@@ -462,7 +463,7 @@
                                                         Label="{Binding [ReflectionsFramerate], Source={x:Static starterNg:App.Loc}}"
                                                         Description="{Binding [ReflectionsFramerateDesc], Source={x:Static starterNg:App.Loc}}">
                                             <!-- Moves through Steps.ReflectionUpdates; see SliderSteps. -->
-                                            <Slider Name="reflectionsFramerate"
+                                            <ctl:ReadableSlider Name="reflectionsFramerate"
                                                     ValueChanged="QualitySlider_OnValueChanged" />
                                         </ctl:SettingRow>
                                         <ctl:KeySlot Key="gfx.reflections.range_instances" />
@@ -491,7 +492,7 @@
                                     <ctl:SettingRow ConfigKey="gfx.smoke.fidelity" x:Name="SmokeParticlesRow"
                                                     Label="{Binding [SmokeParticlesMultiplier], Source={x:Static starterNg:App.Loc}}"
                                                     IsEnabled="{Binding #SmokeDisplayCb.IsChecked}">
-                                        <Slider x:Name="SmokeParticlesSlider" Minimum="1" Maximum="4" TickFrequency="1"
+                                        <ctl:ReadableSlider x:Name="SmokeParticlesSlider" Minimum="1" Maximum="4" TickFrequency="1"
                                                 IsSnapToTickEnabled="True" Value="2"
                                                 ValueChanged="QualitySlider_OnValueChanged" />
                                     </ctl:SettingRow>
@@ -511,27 +512,27 @@
                                 <StackPanel IsEnabled="{Binding #EnableSoundsCb.IsChecked}">
                                     <ctl:SettingRow ConfigKey="sound.volume" Label="{Binding [Volume], Source={x:Static starterNg:App.Loc}}"
                                                     ValueText="{Binding #VolumeSlider.Value, StringFormat='{}{0:0}%'}">
-                                        <Slider x:Name="VolumeSlider" Minimum="0" Maximum="100" TickFrequency="5"
+                                        <ctl:ReadableSlider x:Name="VolumeSlider" Minimum="0" Maximum="100" TickFrequency="5"
                                                 IsSnapToTickEnabled="True" Value="100" />
                                     </ctl:SettingRow>
                                     <ctl:SettingRow ConfigKey="sound.volume.radio" Label="{Binding [RadiophoneVolume], Source={x:Static starterNg:App.Loc}}"
                                                     ValueText="{Binding #RadioVolumeSlider.Value, StringFormat='{}{0:0}%'}">
-                                        <Slider x:Name="RadioVolumeSlider" Minimum="0" Maximum="100" TickFrequency="5"
+                                        <ctl:ReadableSlider x:Name="RadioVolumeSlider" Minimum="0" Maximum="100" TickFrequency="5"
                                                 IsSnapToTickEnabled="True" Value="100" />
                                     </ctl:SettingRow>
                                     <ctl:SettingRow ConfigKey="sound.volume.vehicle" Label="{Binding [VehiclesVolume], Source={x:Static starterNg:App.Loc}}"
                                                     ValueText="{Binding #VehiclesVolumeSlider.Value, StringFormat='{}{0:0}%'}">
-                                        <Slider x:Name="VehiclesVolumeSlider" Minimum="0" Maximum="100" TickFrequency="5"
+                                        <ctl:ReadableSlider x:Name="VehiclesVolumeSlider" Minimum="0" Maximum="100" TickFrequency="5"
                                                 IsSnapToTickEnabled="True" Value="100" />
                                     </ctl:SettingRow>
                                     <ctl:SettingRow ConfigKey="sound.volume.positional" Label="{Binding [PositionedSoundsVolume], Source={x:Static starterNg:App.Loc}}"
                                                     ValueText="{Binding #PositionalVolumeSlider.Value, StringFormat='{}{0:0}%'}">
-                                        <Slider x:Name="PositionalVolumeSlider" Minimum="0" Maximum="100" TickFrequency="5"
+                                        <ctl:ReadableSlider x:Name="PositionalVolumeSlider" Minimum="0" Maximum="100" TickFrequency="5"
                                                 IsSnapToTickEnabled="True" Value="100" />
                                     </ctl:SettingRow>
                                     <ctl:SettingRow ConfigKey="sound.volume.ambient" Label="{Binding [AmbientVolume], Source={x:Static starterNg:App.Loc}}"
                                                     ValueText="{Binding #AmbientVolumeSlider.Value, StringFormat='{}{0:0}%'}">
-                                        <Slider x:Name="AmbientVolumeSlider" Minimum="0" Maximum="100" TickFrequency="5"
+                                        <ctl:ReadableSlider x:Name="AmbientVolumeSlider" Minimum="0" Maximum="100" TickFrequency="5"
                                                 IsSnapToTickEnabled="True" Value="100" />
                                     </ctl:SettingRow>
                                 </StackPanel>
@@ -574,17 +575,17 @@
 
                                     <ctl:SettingRow ConfigKey="friction" x:Name="FrictionRow" Label="{Binding [Friction], Source={x:Static starterNg:App.Loc}}"
                                                     Description="{Binding [FrictionDesc], Source={x:Static starterNg:App.Loc}}">
-                                        <Slider x:Name="FrictionSlider" Minimum="0.1" Maximum="3.0" TickFrequency="0.1" Value="1.0"
+                                        <ctl:ReadableSlider x:Name="FrictionSlider" Minimum="0.1" Maximum="3.0" TickFrequency="0.1" Value="1.0"
                                                 ValueChanged="QualitySlider_OnValueChanged" />
                                     </ctl:SettingRow>
                                     <ctl:SettingRow ConfigKey="brakestep" x:Name="BrakeStepRow" Label="{Binding [BrakeStep], Source={x:Static starterNg:App.Loc}}"
                                                     Description="{Binding [BrakeStepDesc], Source={x:Static starterNg:App.Loc}}">
-                                        <Slider x:Name="BrakeStepSlider" Minimum="0.4" Maximum="3.0" TickFrequency="0.1" Value="1.0"
+                                        <ctl:ReadableSlider x:Name="BrakeStepSlider" Minimum="0.4" Maximum="3.0" TickFrequency="0.1" Value="1.0"
                                                 ValueChanged="QualitySlider_OnValueChanged" />
                                     </ctl:SettingRow>
                                     <ctl:SettingRow ConfigKey="brakespeed" x:Name="BrakeSpeedRow" Label="{Binding [BrakeSpeed], Source={x:Static starterNg:App.Loc}}"
                                                     Description="{Binding [BrakeSpeedDesc], Source={x:Static starterNg:App.Loc}}">
-                                        <Slider x:Name="BrakeSpeedSlider" Minimum="0.4" Maximum="3.0" TickFrequency="0.1" Value="1.0"
+                                        <ctl:ReadableSlider x:Name="BrakeSpeedSlider" Minimum="0.4" Maximum="3.0" TickFrequency="0.1" Value="1.0"
                                                 ValueChanged="QualitySlider_OnValueChanged" />
                                     </ctl:SettingRow>
                                 </StackPanel>
@@ -699,7 +700,7 @@
                                     <ctl:SettingRow ConfigKey="async.trainThreads" x:Name="TrainThreadsRow"
                                                     Label="{Binding [TrainPhysicsThreads], Source={x:Static starterNg:App.Loc}}"
                                                     Description="{Binding [TrainPhysicsThreadsDesc], Source={x:Static starterNg:App.Loc}}">
-                                        <Slider x:Name="TrainThreadsSlider" Minimum="0" Maximum="16" TickFrequency="1"
+                                        <ctl:ReadableSlider x:Name="TrainThreadsSlider" Minimum="0" Maximum="16" TickFrequency="1"
                                                 IsSnapToTickEnabled="True" ValueChanged="QualitySlider_OnValueChanged" />
                                     </ctl:SettingRow>
                                     <ctl:SettingRow ConfigKey="starter.ignoreirrelevant" Description="{Binding [IgnoreIrrelevantTrainsDesc], Source={x:Static starterNg:App.Loc}}">
@@ -774,7 +775,7 @@
                                     <ctl:SettingRow x:Name="RayTracingRangeRow" ConfigKey="gfx.raytracing.range"
                                                     Label="{Binding [RayTracingRange], Source={x:Static starterNg:App.Loc}}"
                                                     ValueText="{Binding #RayTracingRangeSlider.Value, StringFormat='{}{0:0} m'}">
-                                        <Slider x:Name="RayTracingRangeSlider" Minimum="50" Maximum="2000" TickFrequency="50" IsSnapToTickEnabled="True" Value="500" />
+                                        <ctl:ReadableSlider x:Name="RayTracingRangeSlider" Minimum="50" Maximum="2000" TickFrequency="50" IsSnapToTickEnabled="True" Value="500" />
                                     </ctl:SettingRow>
                                     <ctl:SettingRow ConfigKey="gfx.ssr" Label="{Binding [Ssr], Source={x:Static starterNg:App.Loc}}"
                                                     Description="{Binding [SsrDesc], Source={x:Static starterNg:App.Loc}}">
@@ -851,7 +852,7 @@
                                                     Label="{Binding [CabProbeBounce], Source={x:Static starterNg:App.Loc}}"
                                                     Description="{Binding [CabProbeBounceDesc], Source={x:Static starterNg:App.Loc}}"
                                                     ValueText="{Binding #CabProbeBounceSlider.Value, StringFormat='{}{0:0.0}'}">
-                                        <Slider x:Name="CabProbeBounceSlider" Minimum="0" Maximum="4" TickFrequency="0.1" IsSnapToTickEnabled="True" Value="1" />
+                                        <ctl:ReadableSlider x:Name="CabProbeBounceSlider" Minimum="0" Maximum="4" TickFrequency="0.1" IsSnapToTickEnabled="True" Value="1" />
                                     </ctl:SettingRow>
                                     <ctl:SettingRow x:Name="CabProbeReflectionsRow" ConfigKey="gfx.cabprobe.reflections" Description="{Binding [CabProbeReflectionsDesc], Source={x:Static starterNg:App.Loc}}">
                                         <CheckBox x:Name="CabProbeReflectionsCb" Content="{Binding [CabProbeReflections], Source={x:Static starterNg:App.Loc}}" />
@@ -892,12 +893,12 @@
                                     <ctl:SettingRow x:Name="GrassDistanceRow" ConfigKey="gfx.grass.distance, gfx.grass.fadedistance"
                                                     Label="{Binding [GrassDistance], Source={x:Static starterNg:App.Loc}}"
                                                     ValueText="{Binding #GrassDistanceSlider.Value, StringFormat='{}{0:0} m'}">
-                                        <Slider x:Name="GrassDistanceSlider" Minimum="20" Maximum="300" TickFrequency="10" IsSnapToTickEnabled="True" Value="60" />
+                                        <ctl:ReadableSlider x:Name="GrassDistanceSlider" Minimum="20" Maximum="300" TickFrequency="10" IsSnapToTickEnabled="True" Value="60" />
                                     </ctl:SettingRow>
                                     <ctl:SettingRow x:Name="GrassDensityRow" ConfigKey="gfx.grass.density"
                                                     Label="{Binding [GrassDensity], Source={x:Static starterNg:App.Loc}}"
                                                     ValueText="{Binding #GrassDensitySlider.Value, StringFormat='{}{0:0.00}'}">
-                                        <Slider x:Name="GrassDensitySlider" Minimum="0.25" Maximum="2.0" TickFrequency="0.25" IsSnapToTickEnabled="True" Value="1.0" />
+                                        <ctl:ReadableSlider x:Name="GrassDensitySlider" Minimum="0.25" Maximum="2.0" TickFrequency="0.25" IsSnapToTickEnabled="True" Value="1.0" />
                                     </ctl:SettingRow>
                                     <ctl:SettingRow ConfigKey="gfx.precipitation.particles" Label="{Binding [Precipitation], Source={x:Static starterNg:App.Loc}}"
                                                     Description="{Binding [PrecipitationDesc], Source={x:Static starterNg:App.Loc}}">

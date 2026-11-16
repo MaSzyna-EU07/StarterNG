@@ -595,6 +595,9 @@ public sealed class VehicleDetails
             return Row(content: ready);
         var why = PanelNote(App.Loc["ConsistReadyOverridden"]);
         why.Margin = new Thickness(0);
+        // The reader is told it too, with the box, and not only by a text it may never come to.
+        Avalonia.Automation.AutomationProperties.SetHelpText(ready,
+            $"{App.Loc["ConsistReadyOverridden"]} {App.Loc["ConsistReadyDesc"]}");
         return Row(content: new StackPanel { Spacing = 2, Children = { ready, why } });
     }
 
