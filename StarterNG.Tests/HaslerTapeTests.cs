@@ -6,12 +6,12 @@ namespace StarterNG.Tests;
 
 public class HaslerTapeTests
 {
-    private const string Header =
+    internal const string Header =
         "Time[s] Velocity[m/s] Acceleration[m/ss] Coupler.Dist[m] Coupler.Force[N] TractionForce[kN] FrictionForce[kN] " +
         "BrakeForce[kN] BrakePress[MPa] PipePress[MPa] MotorCurrent[A] MCP SCP BCP LBP Direction Command CVal1 CVal2 " +
         "Security Wheelslip EngineTemp[Deg] OilTemp[Deg] WaterTemp[Deg] WaterAuxTemp[Deg]\r\n";
 
-    private static string Line(double t, double v, double brake, double current, string command = "none",
+    internal static string Line(double t, double v, double brake, double current, string command = "none",
                                int security = 0) =>
         string.Create(CultureInfo.InvariantCulture,
             $"{t:0.0000} {v:0.0000} 0.0000 0.0000 0.0000 0.0000 0.0000 0.0000 {brake:0.0000} 0.5000 {current:0.0000} ") +
@@ -66,6 +66,197 @@ public class HaslerTapeTests
 
         Assert.Equal(2, tape.Samples.Count);
         Assert.Equal(5, tape.DistanceM, 6);
+    }
+
+    [Fact]
+    public void The_security_flag_is_found_where_the_header_puts_it_with_the_vehicle_speed_at_the_end()
+    {
+        // the simulator's log since 2026-10: a column of the vehicle's speed after the temperatures
+        string header = Header.Replace("WaterAuxTemp[Deg]\r\n", "WaterAuxTemp[Deg] VehicleVelocity[km/h]\r\n");
+        static string WithSpeed(string line, double kmh) =>
+            line.Replace("\r\n", string.Create(CultureInfo.InvariantCulture, $" {kmh:0.0000}\r\n"));
+        // the wheels slipping, the alerter quiet: the column before the speed used to be read as the alerter
+        string slipping = Line(0, 36, 0, 0, security: 0).Replace(" 0 0 0.0000 0.0000 0.0000 0.0000\r\n",
+                                                                  " 0 1 0.0000 0.0000 0.0000 0.0000\r\n");
+
+        var tape = HaslerTape.Parse(header + WithSpeed(slipping, 36) + WithSpeed(Line(1, 36, 0, 0, security: 1), 36));
+
+        Assert.Equal(2, tape.Samples.Count);
+        Assert.False(tape.Samples[0].SecurityAlarm);
+        Assert.True(tape.Samples[1].SecurityAlarm);
+    }
+
+    [Fact]
+    public void A_command_named_like_a_heading_is_read_as_a_line_not_as_the_header()
+    {
+        var tape = HaslerTape.Parse(Header + Line(0, 36, 0, 0, command: "Security") + Line(1, 36, 0, 0, security: 1));
+
+        Assert.Equal(2, tape.Samples.Count);
+        Assert.False(tape.Samples[0].SecurityAlarm);
+        Assert.True(tape.Samples[1].SecurityAlarm);
+    }
+
+    [Fact]
+    public void A_gap_in_the_time_is_neither_driving_nor_standing_and_covers_no_distance()
+    {
+        // the player in another vehicle for ten minutes, then back in this one
+        var tape = HaslerTape.Parse(Header + Line(0, 36, 0, 0) + Line(1, 36, 0, 0) + Line(601, 36, 0, 0)
+                                    + Line(602, 36, 0, 0) + Line(603, 0, 0, 0));
+
+        Assert.Equal(603, tape.Duration, 6);
+        Assert.Equal(600, tape.GapTime, 6);
+        Assert.Equal(2, tape.RunningTime, 6);
+        Assert.Equal(1, tape.StandingTime, 6); // the last second, stopping
+        Assert.Equal(10 + 10 + 5, tape.DistanceM, 6);
+        Assert.Equal(25 / 3.0 * 3.6, tape.AverageWithStopsKmh, 6);
+    }
+
+    [Fact]
+    public void A_stall_of_the_simulator_a_little_over_a_second_is_driven_not_a_gap()
+    {
+        // a line every 0.05 s, as at 60 FPS, and one step of 1.017 s: the frame held to a second, and the frame after
+        var text = new System.Text.StringBuilder(Header);
+        double t = 0;
+        for (int i = 0; i < 40; i++, t += 0.05)
+            text.Append(Line(t, 100, 0, 0));
+        t += 1.017 - 0.05;
+        for (int i = 0; i < 40; i++, t += 0.05)
+            text.Append(Line(t, 100, 0, 0));
+
+        var tape = HaslerTape.Parse(text.ToString());
+
+        Assert.Equal(0, tape.GapTime, 6);
+        Assert.Equal(tape.Duration, tape.RunningTime, 6);
+        Assert.Equal(tape.Duration * 100 / 3.6, tape.DistanceM, 6);
+    }
+
+    [Fact]
+    public void A_tape_read_in_pieces_cut_anywhere_is_the_tape_read_whole()
+    {
+        string text = Header + Line(0, 18, 0, 0, command: "Set Velocity") + Line(1, 36, 0.45, 0) + Line(2, 36, 0, 400)
+                      + Line(602, 36, 0, 0, security: 1) + Line(603, 0, 0, 0);
+        var whole = HaslerTape.Parse(text);
+
+        for (int cut = 1; cut < text.Length; cut += 7)
+        {
+            var reader = new HaslerTape.Reader();
+            reader.Feed(text[..cut]);
+            reader.Feed(text[cut..]);
+            Assert.Equal(whole.Samples, reader.Tape(final: true).Samples);
+        }
+    }
+
+    [Fact]
+    public void A_line_not_ended_waits_for_its_end_while_the_tape_is_followed()
+    {
+        var reader = new HaslerTape.Reader();
+        string line = Line(1, 36, 0, 0);
+        reader.Feed(Header + Line(0, 36, 0, 0) + line[..20]);
+
+        Assert.Single(reader.Tape(final: false).Samples);
+        Assert.Single(reader.Tape(final: false).Samples);
+        reader.Feed(line[20..]);
+        Assert.Equal(2, reader.Tape(final: false).Samples.Count);
+    }
+
+    [Fact]
+    public void A_followed_tape_reads_what_was_added_and_one_begun_anew_whole()
+    {
+        string path = TestInstallation.At("physicslog", "EU07-424.dat");
+        var files = new InMemoryFileSystem().WithFile(path, Header + Line(0, 36, 0, 0));
+        var tapes = new TestInstallation(files).Tapes;
+        var file = Assert.Single(tapes.List());
+
+        Assert.Single(tapes.Load(file, follow: false)!.Samples);
+        files.WithFile(path, Header + Line(0, 36, 0, 0) + Line(1, 36, 0, 0) + Line(2, 36, 0, 0));
+        Assert.Equal(3, tapes.Load(file, follow: true)!.Samples.Count);
+
+        // begun anew, and already longer than was read: its time goes back
+        files.WithFile(path, Header + Line(0, 72, 0, 0) + Line(1, 72, 0, 0) + Line(2, 72, 0, 0) + Line(3, 72, 0, 0));
+        var tape = tapes.Load(file, follow: true)!;
+        Assert.Equal(4, tape.Samples.Count);
+        Assert.All(tape.Samples, s => Assert.Equal(72, s.SpeedKmh, 6));
+
+        // begun anew, and shorter
+        files.WithFile(path, Header + Line(0, 18, 0, 0));
+        Assert.Equal(18, Assert.Single(tapes.Load(file, follow: true)!.Samples).SpeedKmh, 6);
+    }
+
+    [Fact]
+    public void A_log_begun_anew_over_the_end_that_was_read_is_read_whole_once_its_time_goes_back()
+    {
+        // the command is free text, here long enough that the end kept of the read part holds no time
+        string command = new('x', 400);
+        string path = TestInstallation.At("physicslog", "EU07-424.dat");
+        var files = new InMemoryFileSystem().WithFile(path, Header + Line(3, 36, 0, 0, command));
+        var tapes = new TestInstallation(files).Tapes;
+        var file = Assert.Single(tapes.List());
+        Assert.Equal(3, Assert.Single(tapes.Load(file, follow: false)!.Samples).Time, 6);
+
+        // begun anew: where the read part ended it reads as it did, but the lines added go back to the start
+        files.WithFile(path, Header + Line(0, 36, 0, 0, command) + Line(1, 36, 0, 0, command) + Line(2, 36, 0, 0, command));
+        var tape = tapes.Load(file, follow: true)!;
+
+        Assert.Equal([0.0, 1.0, 2.0], tape.Samples.Select(s => s.Time));
+    }
+
+    [Fact]
+    public void A_tape_that_cannot_be_read_is_none_and_told_and_is_read_whole_once_it_can()
+    {
+        string path = TestInstallation.At("physicslog", "EU07-424.dat");
+        var files = new InMemoryFileSystem().WithFile(path, Header + Line(0, 36, 0, 0));
+        var installation = new TestInstallation(files);
+        var tapes = installation.Tapes;
+        var file = Assert.Single(tapes.List());
+        tapes.Load(file, follow: false);
+
+        files.FailReading(path);
+        Assert.Null(tapes.Load(file, follow: true));
+        Assert.Contains("EU07-424.dat", installation.Log.Text);
+
+        files.AllowReading(path).WithFile(path, Header + Line(0, 72, 0, 0) + Line(1, 72, 0, 0));
+        Assert.All(tapes.Load(file, follow: true)!.Samples, s => Assert.Equal(72, s.SpeedKmh, 6));
+    }
+
+    [Fact]
+    public void A_file_read_only_forward_is_read_whole_each_time()
+    {
+        string path = TestInstallation.At("physicslog", "EU07-424.dat");
+        var files = new InMemoryFileSystem().WithFile(path, Header + Line(0, 36, 0, 0)).OpenedForwardOnly(path);
+        var tapes = new TestInstallation(files).Tapes;
+        var file = Assert.Single(tapes.List());
+
+        Assert.Single(tapes.Load(file, follow: true)!.Samples);
+        files.WithFile(path, Header + Line(0, 36, 0, 0) + Line(1, 36, 0, 0));
+        Assert.Equal(2, tapes.Load(file, follow: true)!.Samples.Count);
+    }
+
+    [Fact]
+    public void Empty_lines_in_a_log_are_passed_over()
+    {
+        var tape = HaslerTape.Parse(Header + "\r\n" + Line(0, 36, 0, 0) + "   \r\n" + Line(1, 36, 0, 0));
+
+        Assert.Equal(2, tape.Samples.Count);
+    }
+
+    [Fact]
+    public void Forgetting_another_file_keeps_the_followed_tape_and_its_own_lets_it_go()
+    {
+        string Lines(int firstSpeed, int count) =>
+            Header + Line(0, firstSpeed, 0, 0) + string.Concat(Enumerable.Range(1, count).Select(t => Line(t, 36, 0, 0)));
+        string path = TestInstallation.At("physicslog", "EU07-424.dat");
+        var files = new InMemoryFileSystem().WithFile(path, Lines(36, 20));
+        var tapes = new TestInstallation(files).Tapes;
+        var file = Assert.Single(tapes.List());
+        tapes.Load(file, follow: false);
+
+        // the first line changed, as long as it was and far from the end: a tape still followed doesn't read it again
+        files.WithFile(path, Lines(72, 21));
+        tapes.Forget(TestInstallation.At("physicslog", "EU07-111.dat"));
+        Assert.Equal(36, tapes.Load(file, follow: true)!.Samples[0].SpeedKmh, 6);
+
+        tapes.Forget(file.Path);
+        Assert.Equal(72, tapes.Load(file, follow: true)!.Samples[0].SpeedKmh, 6);
     }
 
     [Fact]

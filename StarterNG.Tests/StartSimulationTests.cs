@@ -41,6 +41,18 @@ public class StartSimulationTests
     }
 
     [Fact]
+    public void With_the_black_box_alone_the_launch_is_noted_for_the_tapes_it_writes()
+    {
+        var (start, _, installation) = Rig(files => files.WithExecutable(Build), sceneryClock: "07:52");
+        installation.SettingsStore.Settings.BlackBox = true;
+
+        start.Execute(freeFly: false, saveSettings: false);
+
+        string noted = installation.Files.ReadAllText(TestInstallation.At("physicslog", "starter-launch.txt"));
+        Assert.Contains("clock\t07:52", noted);
+    }
+
+    [Fact]
     public void Without_the_physics_log_nothing_is_noted()
     {
         var (start, _, installation) = Rig(files => files.WithExecutable(Build));

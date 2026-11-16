@@ -109,7 +109,7 @@ internal sealed class BlackBoxFile
                             uint devices = 0x0007, bool extended = true, sbyte cabEnd = 1, byte security = 0,
                             float lateral = 0.2f, ushort lightsHead = 0x15, ushort lightsTail = 0x22, byte? movement = null,
                             short hintHead = -1, short hintTail = -1, ushort? equippedHead = null, ushort? equippedTail = null,
-                            byte? engine = null, float oilTemperature = 70) =>
+                            byte? engine = null, float oilTemperature = 70, float? wheelSpeed = null) =>
         Record(0x20, w =>
         {
             w.Write(time);
@@ -181,6 +181,9 @@ internal sealed class BlackBoxFile
                             w.Write(1.0f);  // clutch
                             w.Write(0.0f);  // torque converter
                             w.Write(2.5f);  // the highest brake cylinder of the train
+                            // the speed of the wheels: a recording made before it ends above
+                            if (wheelSpeed is { } wheels)
+                                w.Write(wheels);
                         }
                     }
                 }

@@ -242,9 +242,8 @@ public partial class Settings : UserControl, ISettingsCapture
                                    App.Loc["ProfileSaveAs"], MessageBoxButtons.YesNo))
             return;
 
-        // Written beside the user's own eu07.ini, which stays as it is.
-        CaptureInto(AppServices.Current.Settings);
-        bool saved = AppServices.Current.SettingsStore.ExportTo(path);
+        // Written beside the user's own eu07.ini, which stays as it is; the edits stay the page's, not saved
+        bool saved = AppServices.Current.SettingsStore.ExportTo(path, Trial());
         PopulateProfileCombo();
         int idx = FindComboIndexByContent(ProfileCb, Path.GetFileNameWithoutExtension(path));
         if (idx >= 0) ProfileCb.SelectedIndex = idx;
@@ -340,7 +339,13 @@ public partial class Settings : UserControl, ISettingsCapture
         SelectExeCb.SelectedIndex = index;
     }
 
-    public void ReloadFromSettings() => ApplyToUi();
+    /// <summary>The settings read again from the file: the page shows them, no edit of its own left.</summary>
+    public void ReloadFromSettings()
+    {
+        ApplyToUi();
+        _dirty = false;
+        UpdateSaveState();
+    }
 
     /// <summary>
     /// True while a cab-control binding is waiting for a keypress. The window's own
@@ -353,6 +358,8 @@ public partial class Settings : UserControl, ISettingsCapture
         WhileLoading(() =>
         {
             SpeedometerTapesCb.IsChecked = AppServices.Current.Settings.PhysicsLog;
+            BlackBoxCb.IsChecked = AppServices.Current.Settings.BlackBox;
+            TrainTapesCb.IsChecked = AppServices.Current.Settings.PhysicsLogTrains;
             SimLogsCb.IsChecked = AppServices.Current.Settings.DebugLog;
         });
 
@@ -465,6 +472,8 @@ public partial class Settings : UserControl, ISettingsCapture
         PantographBreakCb.IsChecked = s.EnableTraction;
         OverheadOnlyCb.IsChecked = s.LiveTraction;
         SpeedometerTapesCb.IsChecked = s.PhysicsLog;
+        BlackBoxCb.IsChecked = s.BlackBox;
+        TrainTapesCb.IsChecked = s.PhysicsLogTrains;
         SimLogsCb.IsChecked = s.DebugLog;
         KeepLogsCb.IsChecked = s.MultipleLogs;
         DisplaySimulationCb.IsChecked = s.DisplaySimulation;
@@ -900,6 +909,8 @@ public partial class Settings : UserControl, ISettingsCapture
         s.EnableTraction = IsChecked(PantographBreakCb);
         s.LiveTraction = IsChecked(OverheadOnlyCb);
         s.PhysicsLog = IsChecked(SpeedometerTapesCb);
+        s.BlackBox = IsChecked(BlackBoxCb);
+        s.PhysicsLogTrains = IsChecked(TrainTapesCb);
         s.DebugLog = IsChecked(SimLogsCb);
         s.MultipleLogs = IsChecked(KeepLogsCb);
         s.DisplaySimulation = IsChecked(DisplaySimulationCb);
@@ -1174,6 +1185,18 @@ public partial class Settings : UserControl, ISettingsCapture
         _dirty = false;
         UpdateSaveState();
         Announcer.Say(this, App.Loc["SettingsRestored"]);
+    }
+
+    /// <summary>
+    /// The page's own edits let go, and the keys': the page shows the settings as held. Not read again from the file
+    /// as "Restore" does - what other pages set and not yet saved (a filter of the depot, the window maximized) stays.
+    /// </summary>
+    public void DiscardEdits()
+    {
+        ApplyToUi();
+        _keyBindings.Reload();
+        _dirty = false;
+        UpdateSaveState();
     }
 
     /// <summary>The list as <see cref="ResolutionChoices"/> has it for the monitors there are now, with the size selected.</summary>
@@ -1514,9 +1537,12 @@ public partial class Settings : UserControl, ISettingsCapture
         UpdateSaveState();
     }
 
+    /// <summary>Edits on the page, or of the keys, not saved yet: what "Niezapisane zmiany" tells.</summary>
+    public bool HasUnsavedChanges => _dirty || KeyboardConfig.Instance.Dirty;
+
     private void UpdateSaveState()
     {
-        bool dirty = _dirty || KeyboardConfig.Instance.Dirty;
+        bool dirty = HasUnsavedChanges;
         SaveButton.Classes.Set("Accent", dirty);
         SaveStatus.Text = dirty ? App.Loc["UnsavedChanges"] : string.Empty;
     }

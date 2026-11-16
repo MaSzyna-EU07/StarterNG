@@ -98,6 +98,7 @@
     <String key="HaslerClockUnknown">godzina nieznana, czas liczony od startu symulacji</String>
     <String key="HaslerUnreadable">Nie udało się odczytać taśmy {0}.</String>
     <String key="HaslerSummary">{0} · zarejestrowano {1} (jazda {2}, postój {3}) · droga {4:0.00} km · Vmax {5:0} km/h · Vśr jazdy {6:0} km/h · Vśr z postojami {7:0} km/h</String>
+    <String key="HaslerGap">nie zarejestrowano {0}</String>
     <String key="HaslerCursor">{0} · {1:0.0} km · {2:0} km/h · cylindry {3:0.0} bar · prąd {4}</String>
     <String key="HaslerTrackCylinders">Cylindry</String>
     <String key="HaslerTrackPipe">PG</String>
@@ -516,8 +517,12 @@
     <String key="BreakingPantographPossibilityDesc">Wyłączenie chroni pantograf przed uszkodzeniem przy błędnej geometrii sieci.</String>
     <String key="PowerOverheadLineOnly">Zasilanie tylko pod siecią trakcyjna</String>
     <String key="PowerOverheadLineOnlyDesc">Gdy wyłączone, podniesiony pantograf zasila pojazd nawet bez kontaktu z drutem.</String>
-    <String key="SaveSpeedometerTapes">Zapisuj log parametrów fizycznych</String>
-    <String key="SaveSpeedometerTapesDesc">Zapisuje szczegółowy log jazdy do folderu physicslog/.</String>
+    <String key="SaveBlackBox">Zapisuj czarną skrzynkę i taśmy prędkościomierza</String>
+    <String key="SaveBlackBoxDesc">Nagrywa przejazd do jednego pliku w folderze physicslog/ i na bieżąco, co 2 s, zapisuje taśmy (.dat) pojazdów, w których jesteś.</String>
+    <String key="SaveTrainTapes">Zapisuj taśmy prędkościomierza wszystkich pociągów</String>
+    <String key="SaveTrainTapesDesc">Na bieżąco, co 2 s, zapisuje taśmy (.dat) każdego pociągu scenerii do folderu physicslog/: jedną na maszynistę pojazdów szynowych, bez pojazdów drogowych i pasażerów. Znacznie mniej plików niż log fizyki każdego pojazdu.</String>
+    <String key="SaveSpeedometerTapes">Zapisuj log parametrów fizycznych wszystkich pojazdów</String>
+    <String key="SaveSpeedometerTapesDesc">Zapisuje log każdego pojazdu scenerii do folderu physicslog/: wiersz co 0,05 s, dopisywany co 2 s. Do diagnostyki: na dużej scenerii to setki plików.</String>
     <String key="SaveSimLogs">Zapisuj log z symulacji</String>
     <String key="KeepPrevLogs">Zachowuj poprzednie logi</String>
     <String key="KeepPrevLogsDesc">Tworzy osobny plik logu dla każdej scenerii zamiast nadpisywać errors.txt.</String>
@@ -696,6 +701,9 @@
     <String key="WarehouseAppend">Dołącz skład z magazynu</String>
     <String key="WarehouseImportFile">Dodaj składy z pliku...</String>
     <String key="StartWithoutSaving">Uruchom bez zapisu ustawień</String>
+    <String key="StartUnsavedMessage">Ustawienia mają niezapisane zmiany. Zapisać je przed uruchomieniem symulatora?</String>
+    <String key="StartUnsavedSave">Zapisz i uruchom</String>
+    <String key="StartUnsavedWithout">Odrzuć zmiany i uruchom</String>
     <String key="StartMore">Inne sposoby uruchomienia</String>
     <String key="StartFreeFly">Uruchom bez pojazdu</String>
     <String key="StartEditorShort">Edytor scenerii</String>

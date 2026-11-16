@@ -98,6 +98,7 @@
     <String key="HaslerClockUnknown">час неизвестен, время считается от начала симуляции</String>
     <String key="HaslerUnreadable">Не удалось прочитать ленту {0}.</String>
     <String key="HaslerSummary">{0} · записано {1} (движение {2}, стоянка {3}) · путь {4:0.00} км · Vmax {5:0} км/ч · средняя в движении {6:0} км/ч · средняя со стоянками {7:0} км/ч</String>
+    <String key="HaslerGap">не записано {0}</String>
     <String key="HaslerCursor">{0} · {1:0.0} км · {2:0} км/ч · цилиндры {3:0.0} бар · ток {4}</String>
     <String key="HaslerTrackCylinders">Цилиндры</String>
     <String key="HaslerTrackPipe">ТМ</String>
@@ -497,7 +498,11 @@
     <String key="PhysicsAccuracyIncreased">Повышенная точность физики</String>
     <String key="BreakingPantographPossibility">Возможность излома пантографа</String>
     <String key="PowerOverheadLineOnly">Питание только под контактной сетью</String>
-    <String key="SaveSpeedometerTapes">Сохранять ленты скоростемера</String>
+    <String key="SaveBlackBox">Записывать чёрный ящик и ленты скоростемера</String>
+    <String key="SaveBlackBoxDesc">Записывает поездку в один файл в папке physicslog/ и по ходу, каждые 2 с, сохраняет ленты (.dat) тех единиц, в которых вы находитесь.</String>
+    <String key="SaveTrainTapes">Записывать ленты скоростемера всех поездов</String>
+    <String key="SaveTrainTapesDesc">По ходу, каждые 2 с, сохраняет ленты (.dat) каждого поезда сценария в папку physicslog/: по одной на машиниста рельсового состава, без автомобилей и пассажиров. Гораздо меньше файлов, чем физический журнал каждой единицы.</String>
+    <String key="SaveSpeedometerTapes">Сохранять физический лог всех единиц</String>
     <String key="SaveSimLogs">Сохранять журнал симуляции</String>
     <String key="KeepPrevLogs">Сохранять предыдущие журналы</String>
     <String key="DisplaySimulation">Показывать симуляцию</String>
@@ -670,6 +675,9 @@
     <String key="WarehouseAppend">Присоединить состав со склада</String>
     <String key="WarehouseImportFile">Добавить составы из файла...</String>
     <String key="StartWithoutSaving">Запустить без сохранения настроек</String>
+    <String key="StartUnsavedMessage">В настройках есть несохранённые изменения. Сохранить их перед запуском симулятора?</String>
+    <String key="StartUnsavedSave">Сохранить и запустить</String>
+    <String key="StartUnsavedWithout">Отменить изменения и запустить</String>
     <String key="StartMore">Другие способы запуска</String>
     <String key="StartFreeFly">Запустить без транспорта</String>
     <String key="StartEditorShort">Редактор сценария</String>

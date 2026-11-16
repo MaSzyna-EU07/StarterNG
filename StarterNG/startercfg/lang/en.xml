@@ -98,6 +98,7 @@
     <String key="HaslerClockUnknown">hour unknown, time counted from the start of the simulation</String>
     <String key="HaslerUnreadable">Could not read the tape {0}.</String>
     <String key="HaslerSummary">{0} · recorded {1} (running {2}, standing {3}) · distance {4:0.00} km · Vmax {5:0} km/h · running average {6:0} km/h · average with stops {7:0} km/h</String>
+    <String key="HaslerGap">not recorded {0}</String>
     <String key="HaslerCursor">{0} · {1:0.0} km · {2:0} km/h · cylinders {3:0.0} bar · current {4}</String>
     <String key="HaslerTrackCylinders">Cylinders</String>
     <String key="HaslerTrackPipe">BP</String>
@@ -516,8 +517,12 @@
     <String key="BreakingPantographPossibilityDesc">Disabling protects the pantograph from breaking on faulty overhead line geometry.</String>
     <String key="PowerOverheadLineOnly">Powered only under overhead line</String>
     <String key="PowerOverheadLineOnlyDesc">When disabled, a raised pantograph can power the vehicle even without touching the wire.</String>
-    <String key="SaveSpeedometerTapes">Save physics parameters log</String>
-    <String key="SaveSpeedometerTapesDesc">Writes a detailed trip log to the physicslog/ folder.</String>
+    <String key="SaveBlackBox">Record the black box and the speedometer tapes</String>
+    <String key="SaveBlackBoxDesc">Records the session to one file in the physicslog/ folder and writes the tapes (.dat) of the vehicles you are in as it goes, every 2 s.</String>
+    <String key="SaveTrainTapes">Record the speedometer tapes of every train</String>
+    <String key="SaveTrainTapesDesc">Writes the tapes (.dat) of every train of the scenery to the physicslog/ folder as it goes, every 2 s: one per driver of rail vehicles, not of road vehicles nor passengers. Far fewer files than the physics log of every vehicle.</String>
+    <String key="SaveSpeedometerTapes">Save the physics log of every vehicle</String>
+    <String key="SaveSpeedometerTapesDesc">Writes the log of every vehicle of the scenery to the physicslog/ folder: a line every 0.05 s, added every 2 s. For diagnostics: on a large scenery that is hundreds of files.</String>
     <String key="SaveSimLogs">Save simulation log</String>
     <String key="KeepPrevLogs">Keep previous logs</String>
     <String key="KeepPrevLogsDesc">Creates a separate log file for each scenery instead of overwriting errors.txt.</String>
@@ -696,6 +701,9 @@
     <String key="WarehouseAppend">Append warehouse consist</String>
     <String key="WarehouseImportFile">Add consists from file...</String>
     <String key="StartWithoutSaving">Start without saving settings</String>
+    <String key="StartUnsavedMessage">The settings have unsaved changes. Save them before starting the simulator?</String>
+    <String key="StartUnsavedSave">Save and start</String>
+    <String key="StartUnsavedWithout">Discard changes and start</String>
     <String key="StartMore">More ways to start</String>
     <String key="StartFreeFly">Start with no vehicle</String>
     <String key="StartEditorShort">Scenery editor</String>

@@ -341,46 +341,18 @@ public abstract class TapeView : Control
     {
         var geometry = new StreamGeometry();
         using var g = geometry.Open();
-        bool begun = false;
-        int column = int.MinValue;
-        double top = 0, bottom = 0, first = 0, last = 0;
-
-        void Flush()
-        {
-            if (column == int.MinValue)
-                return;
-            // Enter where the column started, leave where it ended.
-            var (a, b) = first <= last ? (top, bottom) : (bottom, top);
-            foreach (double v in new[] { first, a, b, last })
-            {
-                var p = new Point(column, v);
-                if (!begun)
-                {
-                    g.BeginFigure(p, false);
-                    begun = true;
-                }
-                else
-                    g.LineTo(p);
-            }
-        }
-
+        var line = new ColumnLine(p => g.BeginFigure(p, false), p => g.LineTo(p), () => g.EndFigure(false));
+        double? before = null;
         foreach (var s in tape.Samples)
         {
-            int c = (int)Math.Round(XOf(s));
-            double value = y(s);
-            if (c != column)
-            {
-                Flush();
-                column = c;
-                top = bottom = first = value;
-            }
-            top = Math.Min(top, value);
-            bottom = Math.Max(bottom, value);
-            last = value;
+            // A gap, the player in another vehicle, is not drawn as if the train drove or stood through it: the
+            // line breaks off there.
+            if (before is { } previous && s.Time - previous > tape.GapSeconds)
+                line.Break();
+            before = s.Time;
+            line.Add((int)Math.Round(XOf(s)), y(s));
         }
-        Flush();
-        if (begun)
-            g.EndFigure(false);
+        line.Break();
         return geometry;
     }
 }

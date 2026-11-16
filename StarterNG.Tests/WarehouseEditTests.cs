@@ -6,6 +6,8 @@ namespace StarterNG.Tests;
 
 // PresetStore keeps the disk of the first test that reaches it, a fake one as every
 // composition root in the tests is built on fakes. So each test has a name to itself.
+// Puts in services of its own: not while the controls read theirs.
+[Collection(AvaloniaControls.Name)]
 public class WarehouseEditTests
 {
     private const string Text =

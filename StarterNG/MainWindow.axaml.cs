@@ -648,6 +648,29 @@ public partial class MainWindow : Window
                                        App.Loc["StartNoStaffTitle"], MessageBoxButtons.YesNo))
                 return;
 
+            // edits on the settings page not saved: saved, or let go - kept, the starter would write them when it
+            // closes, perhaps while the simulator reads the file
+            if (saveSettings && SettingsView.HasUnsavedChanges)
+            {
+                var save = await MessageBox.Choose(this, App.Loc["StartUnsavedMessage"], App.Loc["UnsavedChanges"],
+                                                   App.Loc["StartUnsavedSave"], App.Loc["StartUnsavedWithout"]);
+                if (save is null)
+                    return;
+                if (save == false)
+                    SettingsView.DiscardEdits();
+                else
+                {
+                    SettingsView.Save();
+                    // eu07.ini or the keys' file not written: still there to be saved
+                    if (SettingsView.HasUnsavedChanges)
+                    {
+                        await MessageBox.Show(this, App.Loc["SettingsNotSaved"], App.Loc["UnsavedChanges"],
+                                              MessageBoxButtons.Ok);
+                        return;
+                    }
+                }
+            }
+
             LoadingScreen.Prepare(trainset?.Logo, Path.GetFileNameWithoutExtension(scenery.Path));
 
             await FollowStartAsync(() => AppServices.Current.StartSimulation.Execute(freeFly, saveSettings));
@@ -749,7 +772,8 @@ public partial class MainWindow : Window
     /// </summary>
     private static void FollowLastRun()
     {
-        if (AppServices.Current.Settings.PhysicsLog)
+        var settings = AppServices.Current.Settings;
+        if (settings.PhysicsLog || settings.BlackBox || settings.PhysicsLogTrains)
             _ = Task.Run(AppServices.Current.Tapes.FollowLastRun);
     }
 

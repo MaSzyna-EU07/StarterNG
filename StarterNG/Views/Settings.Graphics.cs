@@ -328,9 +328,8 @@ public partial class Settings
             return;
 
         // The edits on screen go into the export as they would into a save, but the
-        // user's own eu07.ini is not written.
-        CaptureInto(AppServices.Current.Settings);
-        if (!AppServices.Current.SettingsStore.ExportTo(path))
+        // user's own eu07.ini is not written, nor the settings held: the edits stay the page's, not saved.
+        if (!AppServices.Current.SettingsStore.ExportTo(path, Trial()))
         {
             await MessageBox.Show(owner, string.Format(App.Loc["ExportIniFailed"], path), App.Loc["ExportIni"],
                                   MessageBoxButtons.Ok);

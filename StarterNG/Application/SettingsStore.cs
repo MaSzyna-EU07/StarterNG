@@ -113,6 +113,9 @@ public sealed class SettingsStore
 
         _serializer.Read(Settings, _config);
         _synced = Render(Settings);
+        // after the snapshot, so the next save writes it; a profile of before goes the same way as the ini would
+        if (!LoadFailed)
+            SettingsSerializer.MoveToTrainTapes(Settings);
         TouchConfigAge();
     }
 
@@ -233,6 +236,8 @@ public sealed class SettingsStore
         s.WindowMaximized = maximized;
         s.CabLampLight = cabLampLight;
         s.DepthPrepassScene = depthPrepassScene;
+        // an ini of before the tapes of the trains goes the same way as a profile
+        SettingsSerializer.MoveToTrainTapes(s);
         return true;
     }
 
@@ -240,7 +245,8 @@ public sealed class SettingsStore
     /// Writes the settings as a complete eu07.ini somewhere else - this user's file
     /// with the settings applied - leaving the file itself and its state alone.
     /// </summary>
-    public bool ExportTo(string path)
+    /// <param name="settings">What to write, when not the settings held: a page's edits, still not taken in.</param>
+    public bool ExportTo(string path, SimulatorSettings? settings = null)
     {
         if (LoadFailed)
         {
@@ -249,7 +255,7 @@ public sealed class SettingsStore
         }
 
         var copy = ConfigFile.Parse(_config.ToText());
-        ApplyChanges(copy, Changes(Settings));
+        ApplyChanges(copy, Changes(settings ?? Settings));
 
         try
         {

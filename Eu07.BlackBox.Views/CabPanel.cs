@@ -24,6 +24,7 @@ public sealed class CabPanel : Control
     private const double LampRow = 14;
     private const int DoorColumns = 2;
     private const double DriveRow = 34;
+    private const double WheelsApartKmh = 1.0; // the wheels shown when they turn this much faster or slower
 
     private Recording? _recording;
     private double _time;
@@ -174,8 +175,19 @@ public sealed class CabPanel : Control
         var speed = MapView.Text(kmh, SpeedBrush(DrivingSummary.Judge(s)), 36, FontWeight.SemiBold);
         context.DrawText(speed, new Point(Pad, 24));
         Say($"{kmh} km/h");
-        context.DrawText(MapView.Text("km/h", Palette.DimText, 12), new Point(Pad + speed.Width + 4, 24 + speed.Height - 21));
+        var unit = MapView.Text("km/h", Palette.DimText, 12);
+        context.DrawText(unit, new Point(Pad + speed.Width + 4, 24 + speed.Height - 21));
         double gaugeX = Pad + Math.Max(150, width * 0.42);
+        // the wheels, when they turn otherwise: slipping, or locked in a skid. Signed both, so wheels slipping ahead
+        // of a train rolling back show too. Kept off the gauges at the right, as the AI's line is.
+        if (s.WheelSpeedKmh is { } wheels && Math.Abs(wheels - s.SpeedKmh) >= WheelsApartKmh)
+        {
+            double wheelsX = Pad + speed.Width + 4 + unit.Width + 8;
+            string wheelsText = string.Format(culture, Strings["CabWheels"], Math.Abs(wheels));
+            using (context.PushClip(new Rect(wheelsX, 24, Math.Max(0, gaugeX - 8 - wheelsX), 40)))
+                context.DrawText(MapView.Text(wheelsText, Palette.Warn, 12), new Point(wheelsX, 24 + speed.Height - 21));
+            Say(wheelsText);
+        }
         if (s.AiValid)
         {
             using (context.PushClip(new Rect(Pad, 76, gaugeX - Pad - 8, 40)))
@@ -337,7 +349,7 @@ public sealed class CabPanel : Control
     {
         context.DrawText(MapView.Text(Strings["CabGroupDoors"], Palette.DimText, 10, FontWeight.SemiBold), new Point(Pad, top));
         Say(Strings["CabGroupDoors"]);
-        var doors = Doors(s);
+        var doors = Doors(s.AsTheCabSees);
         double doorColumn = width / DoorColumns;
         for (int i = 0; i < doors.Length; i++)
         {

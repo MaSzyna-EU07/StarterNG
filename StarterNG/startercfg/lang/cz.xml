@@ -98,6 +98,7 @@
     <String key="HaslerClockUnknown">hodina neznámá, čas se počítá od startu simulace</String>
     <String key="HaslerUnreadable">Pásku {0} se nepodařilo přečíst.</String>
     <String key="HaslerSummary">{0} · zaznamenáno {1} (jízda {2}, stání {3}) · dráha {4:0.00} km · Vmax {5:0} km/h · průměr za jízdy {6:0} km/h · průměr se zastávkami {7:0} km/h</String>
+    <String key="HaslerGap">nezaznamenáno {0}</String>
     <String key="HaslerCursor">{0} · {1:0.0} km · {2:0} km/h · válce {3:0.0} bar · proud {4}</String>
     <String key="HaslerTrackCylinders">Válce</String>
     <String key="HaslerTrackPipe">HP</String>
@@ -497,7 +498,11 @@
     <String key="PhysicsAccuracyIncreased">Zvýšená přesnost fyziky</String>
     <String key="BreakingPantographPossibility">Možnost zlomení pantografu</String>
     <String key="PowerOverheadLineOnly">Napájení jen pod trolejí</String>
-    <String key="SaveSpeedometerTapes">Ukládat pásky rychloměru</String>
+    <String key="SaveBlackBox">Nahrávat černou skříňku a pásky rychloměru</String>
+    <String key="SaveBlackBoxDesc">Nahrává jízdu do jednoho souboru ve složce physicslog/ a průběžně, každé 2 s, zapisuje pásky (.dat) vozidel, ve kterých jste.</String>
+    <String key="SaveTrainTapes">Nahrávat pásky rychloměru všech vlaků</String>
+    <String key="SaveTrainTapesDesc">Průběžně, každé 2 s, zapisuje pásky (.dat) každého vlaku scenérie do složky physicslog/: jednu na strojvedoucího kolejových vozidel, bez silničních vozidel a cestujících. Mnohem méně souborů než fyzikální log každého vozidla.</String>
+    <String key="SaveSpeedometerTapes">Ukládat fyzikální log všech vozidel</String>
     <String key="SaveSimLogs">Ukládat log simulace</String>
     <String key="KeepPrevLogs">Zachovat předchozí logy</String>
     <String key="DisplaySimulation">Zobrazit simulaci</String>
@@ -670,6 +675,9 @@
     <String key="WarehouseAppend">Připojit soupravu ze skladu</String>
     <String key="WarehouseImportFile">Přidat soupravy ze souboru...</String>
     <String key="StartWithoutSaving">Spustit bez uložení nastavení</String>
+    <String key="StartUnsavedMessage">Nastavení obsahuje neuložené změny. Uložit je před spuštěním simulátoru?</String>
+    <String key="StartUnsavedSave">Uložit a spustit</String>
+    <String key="StartUnsavedWithout">Zahodit změny a spustit</String>
     <String key="StartMore">Další způsoby spuštění</String>
     <String key="StartFreeFly">Spustit bez vozidla</String>
     <String key="StartEditorShort">Editor scenérie</String>

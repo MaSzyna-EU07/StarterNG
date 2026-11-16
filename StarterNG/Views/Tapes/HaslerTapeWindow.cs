@@ -74,6 +74,10 @@ public sealed class HaslerTapeWindow : Window
     private bool _running;
     private bool _loading;
     private bool _looking;
+    // closed: a read already under way when it closed is let go, not kept followed
+    private bool _closed;
+    // the file read last, kept by the tapes to be followed even once another is picked or none is shown
+    private string? _read;
 
     /// <summary>A setting went on from here; the settings page's boxes have to follow it.</summary>
     public event Action? LogEnabled;
@@ -166,7 +170,12 @@ public sealed class HaslerTapeWindow : Window
             Content = _view
         };
 
-        _recordingOff = Strip("HaslerRecordingOff", "HaslerRecordingEnable", settings => settings.PhysicsLog = true);
+        // the black box, with the tapes of the player's vehicles, and the tapes of every train
+        _recordingOff = Strip("HaslerRecordingOff", "HaslerRecordingEnable", settings =>
+        {
+            settings.BlackBox = true;
+            settings.PhysicsLogTrains = true;
+        });
         _logOff = Strip("HaslerLogOff", "HaslerLogEnable", settings => settings.DebugLog = true);
 
         var folder = ToolButton(App.Loc["HaslerOpenFolder"]);
@@ -222,7 +231,13 @@ public sealed class HaslerTapeWindow : Window
             await RefreshListAsync();
         };
         Activated += (_, _) => ShowWhatIsKnown();
-        Closed += (_, _) => _timer.Stop();
+        Closed += (_, _) =>
+        {
+            _closed = true;
+            _timer.Stop();
+            if (_read is { } read)
+                _tapes.Forget(read);
+        };
     }
 
     /// <summary>
@@ -232,10 +247,12 @@ public sealed class HaslerTapeWindow : Window
     private void ShowWhatIsKnown()
     {
         var settings = AppServices.Current.Settings;
-        _recordingOff.IsVisible = !settings.PhysicsLog;
-        _logOff.IsVisible = settings.PhysicsLog && !settings.DebugLog;
+        bool recording = settings.PhysicsLog || settings.BlackBox || settings.PhysicsLogTrains;
+        _recordingOff.IsVisible = !recording;
+        _logOff.IsVisible = recording && !settings.DebugLog;
 
-        bool canFollow = _running && _tapes.DrivenVehicle is not null;
+        // the physics logs and the black box's tapes both grow while the simulator runs, every two seconds
+        bool canFollow = _running && recording && _tapes.DrivenVehicle is not null;
         _live.IsEnabled = canFollow;
         if (!canFollow)
             _live.IsChecked = false;
@@ -641,7 +658,15 @@ public sealed class HaslerTapeWindow : Window
         _loading = true;
         try
         {
-            var tape = await Task.Run(() => _tapes.Load(file));
+            // the same tape grown, as the simulator writes it: only what was added is read
+            bool follow = file.Path == _shown?.Path && file.Size >= _shown.Size;
+            _read = file.Path;
+            var tape = await Task.Run(() => _tapes.Load(file, follow));
+            if (_closed)
+            {
+                _tapes.Forget(file.Path);
+                return;
+            }
             bool another = file.Path != _shown?.Path;
             _shown = file;
             _tapeless = null;
@@ -656,10 +681,13 @@ public sealed class HaslerTapeWindow : Window
 
             _view.Tape = tape;
             ShowMark(scrollTo: another && !scrollToEnd);
-            _summary.Text = string.Format(App.Loc["HaslerSummary"], file.Vehicle, TapeFigures.Clock(tape.Duration),
+            // what was recorded is running and standing; a gap, the player in another vehicle, is neither
+            _summary.Text = string.Format(App.Loc["HaslerSummary"], file.Vehicle, TapeFigures.Clock(tape.Duration - tape.GapTime),
                                           TapeFigures.Clock(tape.RunningTime), TapeFigures.Clock(tape.StandingTime),
                                           tape.DistanceM / 1000.0, tape.MaxSpeedKmh, tape.AverageSpeedKmh,
                                           tape.AverageWithStopsKmh);
+            if (tape.GapTime > 0)
+                _summary.Text += " · " + string.Format(App.Loc["HaslerGap"], TapeFigures.Clock(tape.GapTime));
             if (_context?.Scenery is { } scenery)
                 _summary.Text += " · " + string.Format(App.Loc["HaslerScenario"], scenery);
             if (_context?.Train is { } train)
@@ -693,6 +721,8 @@ public sealed class HaslerTapeWindow : Window
         try
         {
             var sessions = await Task.Run(_tapes.Sessions);
+            if (_closed)
+                return;
             bool live = _live.IsChecked == true;
             bool newDriven = live && DrivenTape(sessions) is { } driven && driven.Path != _followed;
             if (newDriven || Fingerprint(sessions) != _listed)

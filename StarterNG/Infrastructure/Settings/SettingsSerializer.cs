@@ -9,6 +9,21 @@ namespace StarterNG.Infrastructure.Settings;
 
 public sealed class SettingsSerializer
 {
+    /// <summary>
+    /// An ini of before the tapes of the trains, its recording turned on ("blackbox yes", with the physics log of every
+    /// vehicle, hundreds of files on a big scenery): moved to the tapes of the trains, the log of every vehicle off.
+    /// Once: saved, the line of the trains' tapes is in the file, even turned off again before. A change of the
+    /// starter's, after the file is read, so saving writes it.
+    /// </summary>
+    public static void MoveToTrainTapes(SimulatorSettings s)
+    {
+        if (s.PhysicsLogTrainsInIni || !s.BlackBoxInIni || !s.BlackBox)
+            return;
+        s.PhysicsLogTrains = true;
+        s.PhysicsLogTrainsInIni = true;
+        s.PhysicsLog = false;
+    }
+
     private readonly bool _dlssPlatform;
 
     /// <param name="dlssPlatform">Whether the simulator can have DLSS here at all (not on macOS).</param>
@@ -157,6 +172,11 @@ public sealed class SettingsSerializer
         s.EnableTraction = c.GetBool("enabletraction", true);
         s.LiveTraction = c.GetBool("livetraction", true);
         s.PhysicsLog = c.GetBool("physicslog", false);
+        s.PhysicsLogTrainsInIni = c.Has("physicslog.trains");
+        s.PhysicsLogTrains = c.GetBool("physicslog.trains", false);
+        // the simulator records the black box along with the physics logs when the ini says nothing of it
+        s.BlackBoxInIni = c.Has("blackbox");
+        s.BlackBox = s.BlackBoxInIni ? c.GetBool("blackbox", false) : s.PhysicsLog || s.PhysicsLogTrains;
         int debugLog = c.GetInt("debuglog", 3);
         s.DebugLog = (debugLog & 1) != 0;
         s.DebugLogVisible = (debugLog & 2) != 0;
@@ -370,6 +390,13 @@ public sealed class SettingsSerializer
         c.SetBool("enabletraction", s.EnableTraction);
         c.SetBool("livetraction", s.LiveTraction);
         c.SetBool("physicslog", s.PhysicsLog);
+        // written where it says more than the physics logs, or where the file has it already: an ini without it
+        // stays so, and a line written once and no longer saying more goes away on the next save
+        if (s.BlackBoxInIni || s.BlackBox != (s.PhysicsLog || s.PhysicsLogTrains))
+            c.SetBool("blackbox", s.BlackBox);
+        // a simulator before it doesn't know the line: an ini without it stays so while it is off
+        if (s.PhysicsLogTrainsInIni || s.PhysicsLogTrains)
+            c.SetBool("physicslog.trains", s.PhysicsLogTrains);
         c.SetInt("debuglog",
             (s.DebugLog ? 1 : 0) | (s.DebugLogVisible ? 2 : 0) | s.DebugLogExtraBits);
         c.SetBool("multiplelogs", s.MultipleLogs);

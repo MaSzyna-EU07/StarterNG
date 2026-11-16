@@ -51,6 +51,35 @@ public static class MessageBox
     }
 
     /// <summary>
+    /// A question with two answers and a way back: true for the first, false for the second, null when cancelled
+    /// or the window is closed - closing it never picks one of the answers.
+    /// </summary>
+    public static async Task<bool?> Choose(Window owner, string message, string title, string firstText,
+                                           string secondText)
+    {
+        var win = FixedDialog(title, 460);
+
+        bool? answer = null;
+        var first = DialogButton(firstText, "Accent", 80, () => { answer = true; win.Close(); });
+        var second = DialogButton(secondText, "Flat", 80, () => { answer = false; win.Close(); });
+        var cancel = DialogButton(App.Loc["Cancel"], "Flat", 80, () => win.Close());
+
+        win.Content = new StackPanel
+        {
+            Margin = new Avalonia.Thickness(16),
+            Spacing = 16,
+            Children =
+            {
+                new TextBlock { Text = message, TextWrapping = TextWrapping.Wrap },
+                ButtonRow(first, second, cancel)
+            }
+        };
+
+        await win.ShowDialog(owner);
+        return answer;
+    }
+
+    /// <summary>
     /// A notice with one action besides closing it, and a box to stop it coming
     /// back, which counts however the window is closed.
     /// </summary>

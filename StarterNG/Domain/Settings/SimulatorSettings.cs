@@ -133,6 +133,20 @@ public sealed class SimulatorSettings
     public bool EnableTraction = true;
     public bool LiveTraction = true;
     public bool PhysicsLog;
+    /// <summary>
+    /// The black box of the session, and with it the tapes (.dat) of the vehicles the player was in, written when the
+    /// simulator closes: the tapes without the log of every vehicle. With no entry of its own it goes with the physics log.
+    /// </summary>
+    public bool BlackBox;
+    /// <summary>Whether eu07.ini had a line of its own for the black box when read: it is kept saying what is wanted.</summary>
+    public bool BlackBoxInIni;
+    /// <summary>
+    /// The physics logs (.dat) of the trains only, "physicslog.trains": of each driver of rail vehicles, not of the
+    /// passengers nor of the vehicles of the roads. The tapes of every train, far fewer files than the log of every vehicle.
+    /// </summary>
+    public bool PhysicsLogTrains;
+    /// <summary>Whether eu07.ini had a line for the logs of the trains when read: kept, else written only when on.</summary>
+    public bool PhysicsLogTrainsInIni;
     public bool DebugLog = true;
     public bool MultipleLogs;
     public bool DisplaySimulation = true;
