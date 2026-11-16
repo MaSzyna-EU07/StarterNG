@@ -23,7 +23,7 @@ public sealed class SceneryRepository : ISceneryRepository
     private readonly SceneryParser _parser;
 
     /// <summary>The scenery folders' files and folders, listed once per load of them all.</summary>
-    private readonly ConcurrentDictionary<(string, bool), IReadOnlyList<string>> _listings = new();
+    private readonly CaseInsensitivePaths _names;
 
     public SceneryRepository(IFileSystem files, IGamePaths paths, IDiagnosticsLog log, SceneryParser parser)
     {
@@ -31,11 +31,12 @@ public sealed class SceneryRepository : ISceneryRepository
         _paths = paths;
         _log = log;
         _parser = parser;
+        _names = new CaseInsensitivePaths(files, keepListings: true);
     }
 
     public IReadOnlyList<Scenery> LoadAll(IProgress<SceneryLoadProgress>? progress = null)
     {
-        _listings.Clear();
+        _names.Forget();
         var files = SceneryFiles().ToList();
         var loaded = new ConcurrentBag<Scenery>();
         int total = Math.Max(1, files.Count);
@@ -58,7 +59,7 @@ public sealed class SceneryRepository : ISceneryRepository
 
     public Scenery? Load(string path)
     {
-        _listings.Clear();
+        _names.Forget();
         return LoadOne(path);
     }
 
@@ -79,10 +80,8 @@ public sealed class SceneryRepository : ISceneryRepository
             // With its own .sbt the scenery's terrain comes from it, and the simulator
             // passes its terrain includes over without opening them.
             bool binaryTerrain = Opens(Path.GetFileNameWithoutExtension(path) + ".sbt");
-            IncludeLookup FindInclude(string name) =>
-                Opens(name) || (binaryTerrain && SimulatorNames.Lower(name).Contains("_ter.scm"))
-                    ? new IncludeLookup(true)
-                    : new IncludeLookup(false, ResolveInclude(name));
+            bool OpensInclude(string name) =>
+                Opens(name) || (binaryTerrain && SimulatorNames.Lower(name).Contains("_ter.scm"));
 
             (string File, string Text)? ReadInclude(string name)
             {
@@ -99,7 +98,7 @@ public sealed class SceneryRepository : ISceneryRepository
 
             string own = LegacyText.Decode(_files.ReadAllBytes(path), out var ownEncoding);
             string text = SceneryIncludes.Inline(own, ReadInclude);
-            var scenery = _parser.Parse(path, text, FindInclude);
+            var scenery = _parser.Parse(path, text, OpensInclude);
             scenery.HasCompanionTimetable = binaryTerrain;
             scenery.Sources = sources;
             scenery.TextEncoding = ownEncoding;
@@ -114,11 +113,11 @@ public sealed class SceneryRepository : ISceneryRepository
     }
 
     /// <summary>
-    /// Whether the simulator opens a file of the scenery folder named so: by the
-    /// name in lower case, which on Linux has to be how it is named on disk.
+    /// Whether the simulator opens a file of the scenery folder named so: whatever the
+    /// case of its letters, on Linux too. A shade more lenient than eu07 there, which
+    /// folds only the letters A to Z and of two folders named alike takes the first.
     /// </summary>
-    private bool Opens(string name) =>
-        _files.FileExists(Path.Combine(_paths.Scenery, SimulatorNames.Lower(name.Replace('\\', '/'))));
+    private bool Opens(string name) => ResolveInclude(name) is not null;
 
     /// <summary>
     /// An include's file as it is named on disk, from the scenery folder, whatever
@@ -126,44 +125,7 @@ public sealed class SceneryRepository : ISceneryRepository
     /// copy written for a start carries in place of the include, so they come along
     /// on Linux too.
     /// </summary>
-    private string? ResolveInclude(string name)
-    {
-        string relative = name.Replace('\\', '/');
-        if (_files.FileExists(Path.Combine(_paths.Scenery, relative)))
-            return relative;
-
-        string[] parts = relative.Split('/', StringSplitOptions.RemoveEmptyEntries);
-        string directory = _paths.Scenery;
-        var found = new List<string>();
-        for (int i = 0; i < parts.Length; i++)
-        {
-            if (parts[i] is "." or "..")
-            {
-                directory = Path.Combine(directory, parts[i]);
-                found.Add(parts[i]);
-                continue;
-            }
-
-            bool last = i == parts.Length - 1;
-            string? match = Listing(directory, last)
-                .FirstOrDefault(entry => string.Equals(Path.GetFileName(entry), parts[i],
-                                                       StringComparison.OrdinalIgnoreCase));
-            if (match is null)
-                return null;
-            directory = match;
-            found.Add(Path.GetFileName(match));
-        }
-
-        return string.Join('/', found);
-    }
-
-    private IReadOnlyList<string> Listing(string directory, bool files) =>
-        _listings.GetOrAdd((directory, files), key =>
-        {
-            if (!_files.DirectoryExists(key.Item1))
-                return Array.Empty<string>();
-            return key.Item2 ? _files.GetFiles(key.Item1) : _files.GetDirectories(key.Item1);
-        });
+    private string? ResolveInclude(string name) => _names.Resolve(_paths.Scenery, name);
 
     private IEnumerable<string> SceneryFiles() =>
         _files.GetFiles(_paths.Scenery, "*.scn")

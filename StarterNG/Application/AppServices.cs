@@ -56,6 +56,7 @@ public sealed class AppServices
         var missingAssets = new MissingAssetScanner(files, paths);
         SceneryTexts = new SceneryTranslations(files, log);
         Timetables = new TimetableLocator(files);
+        Attachments = new AttachmentLocator(files, paths);
         LoadWeights = new LoadWeightsRepository(files, paths, log);
         Library = new GameLibrary(Vehicles, Sceneries, MiniTextures, Physics, log);
         State = new AppState();
@@ -118,6 +119,8 @@ public sealed class AppServices
     public ISceneryTranslations SceneryTexts { get; }
 
     public TimetableLocator Timetables { get; }
+
+    public AttachmentLocator Attachments { get; }
 
     public LoadWeightsRepository LoadWeights { get; }
 

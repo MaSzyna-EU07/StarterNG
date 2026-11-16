@@ -769,7 +769,6 @@
     <String key="SyntaxVehicleOutsideTrainset">Pojazd {0} stoi poza składem: brak nagłówka trainset?</String>
     <String key="SyntaxNotANumber">{0}: „{1}” zamiast liczby</String>
     <String key="SyntaxMissingInclude">Brak pliku {1} (include)</String>
-    <String key="SyntaxIncludeLetterCase">Plik {1} jest na dysku jako {0}: linuksowy eu07 go nie wczyta</String>
     <String key="SyntaxIncludeNotClosed">include {1} bez end</String>
     <String key="SyntaxTrainsetUnreadable">Nie udało się odczytać składu {0}</String>
     <String key="SyntaxVehicleUnreadable">Nie udało się odczytać pojazdu {0}</String>

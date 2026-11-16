@@ -492,20 +492,18 @@ public partial class Scenarios : UserControl
             btn.Classes.Add("Flat");
             ToolTip.SetTip(btn, att.FilePath);
             // A button that does nothing is no way to say the file is not there.
-            btn.IsEnabled = File.Exists(Path.GetFullPath(att.FilePath));
+            btn.IsEnabled = AppServices.Current.Attachments.Resolve(att) is not null;
             ToolTip.SetShowOnDisabled(btn, true);
-            btn.Click += (_, _) => OpenAttachment(att.FilePath);
+            btn.Click += (_, _) => OpenAttachment(att);
             attachmentsPanel.Children.Add(btn);
         }
     }
 
-    private static void OpenAttachment(string relativePath)
+    private static void OpenAttachment(SceneryAttachment attachment)
     {
-        string full = Path.GetFullPath(relativePath);
-        if (!File.Exists(full))
-            full = Path.GetFullPath(Path.Combine(Directory.GetCurrentDirectory(), relativePath));
-        if (!File.Exists(full))
+        if (AppServices.Current.Attachments.Resolve(attachment) is not { } found)
             return;
+        string full = Path.GetFullPath(found);
         try
         {
             Process.Start(new ProcessStartInfo(full) { UseShellExecute = true });

@@ -742,7 +742,6 @@
     <String key="SyntaxVehicleOutsideTrainset">Транспорт {0} стоит вне состава: нет заголовка trainset?</String>
     <String key="SyntaxNotANumber">{0}: «{1}» вместо числа</String>
     <String key="SyntaxMissingInclude">Файл {1} не найден (include)</String>
-    <String key="SyntaxIncludeLetterCase">Файл {1} на диске назван {0}: eu07 на Linux его не загрузит</String>
     <String key="SyntaxIncludeNotClosed">include {1} без end</String>
     <String key="SyntaxTrainsetUnreadable">Не удалось прочитать состав {0}</String>
     <String key="SyntaxVehicleUnreadable">Не удалось прочитать единицу {0}</String>
