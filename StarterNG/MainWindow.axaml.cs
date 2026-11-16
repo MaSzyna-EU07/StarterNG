@@ -619,11 +619,12 @@ public partial class MainWindow : Window
                 if (save is null)
                     return;
                 if (save == false)
-                    SettingsView.DiscardChanges();
+                    SettingsView.DiscardEdits();
                 else
                 {
                     SettingsView.Save();
-                    if (AppServices.Current.SettingsStore.LastSaveFailed)
+                    // eu07.ini or the keys' file not written: still there to be saved
+                    if (SettingsView.HasUnsavedChanges)
                     {
                         await MessageBox.Show(this, App.Loc["SettingsNotSaved"], App.Loc["UnsavedChanges"],
                                               MessageBoxButtons.Ok);

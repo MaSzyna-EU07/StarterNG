@@ -1151,14 +1151,23 @@ public partial class Settings : UserControl, ISettingsCapture
         ThumbnailSizeChanged?.Invoke();
     }
 
-    private void ResetButton_OnClick(object? sender, RoutedEventArgs e) => DiscardChanges();
-
-    /// <summary>The edits not saved let go, the page and the keys as the files have them: "Przywróć".</summary>
-    public void DiscardChanges()
+    private void ResetButton_OnClick(object? sender, RoutedEventArgs e)
     {
         AppServices.Current.SettingsStore.Load();
         ApplyToUi();
         RedrawThumbnailsIfNeeded();
+        _keyBindings.Reload();
+        _dirty = false;
+        UpdateSaveState();
+    }
+
+    /// <summary>
+    /// The page's own edits let go, and the keys': the page shows the settings as held. Not read again from the file
+    /// as "Restore" does - what other pages set and not yet saved (a filter of the depot, the window maximized) stays.
+    /// </summary>
+    public void DiscardEdits()
+    {
+        ApplyToUi();
         _keyBindings.Reload();
         _dirty = false;
         UpdateSaveState();
