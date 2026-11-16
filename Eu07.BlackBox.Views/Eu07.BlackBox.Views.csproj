@@ -15,6 +15,10 @@
     </ItemGroup>
 
     <ItemGroup>
+        <InternalsVisibleTo Include="StarterNG.Tests" />
+    </ItemGroup>
+
+    <ItemGroup>
         <ProjectReference Include="..\Eu07.BlackBox\Eu07.BlackBox.csproj" />
     </ItemGroup>
 </Project>

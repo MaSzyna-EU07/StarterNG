@@ -7,6 +7,7 @@ using Avalonia.Markup.Xaml;
 using Avalonia.Threading;
 using StarterNG.Application;
 using StarterNG.Classes;
+using StarterNG.Controls;
 using StarterNG.Infrastructure;
 using StarterNG.Services;
 
@@ -24,6 +25,10 @@ public partial class App : Avalonia.Application
 
     public override void Initialize()
     {
+        // Before any control exists: the names are given as controls are filled in.
+        ScreenReaderNames.Install();
+        DialogKeyboard.Install();
+
         AvaloniaXamlLoader.Load(this);
 
         AppServices.Current.SettingsStore.Load();

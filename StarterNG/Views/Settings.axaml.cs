@@ -580,6 +580,7 @@ public partial class Settings : UserControl, ISettingsCapture
         // Chosen as a whole, its values are choices, not ones the screen could not show.
         ForgetShown(applied.ChosenKeys);
         UpdatePresetMarks();
+        Announcer.Say(this, ScreenReaderNames.PickerText(App.Loc["GfxColPresets"], App.Loc[preset.NameKey]));
     }
 
     /// <summary>Puts one part at a level, as edits waiting for Save.</summary>
@@ -747,6 +748,7 @@ public partial class Settings : UserControl, ISettingsCapture
 
         // Put back by hand, a value is a choice like any other.
         ForgetShown(keys);
+        Announcer.Say(this, ScreenReaderNames.PickerText(ScreenReaderNames.TextOf(section.Header), App.Loc["DefaultsRestored"]));
     }
 
     // ── Values the screen shows otherwise than the file has them ─────────────
@@ -1147,6 +1149,7 @@ public partial class Settings : UserControl, ISettingsCapture
         _keyBindings.Reload();
         _dirty = false;
         UpdateSaveState();
+        Announcer.Say(this, App.Loc["SettingsRestored"]);
     }
 
     /// <summary>The list as <see cref="ResolutionChoices"/> has it for the monitors there are now, with the size selected.</summary>
@@ -1323,7 +1326,14 @@ public partial class Settings : UserControl, ISettingsCapture
             return;
 
         ApplyFilter();
+        _searchResults ??= new SearchResultsTeller(SettingsSearch, () => _shownCount);
+        _searchResults.Changed();
     }
+
+    private SearchResultsTeller? _searchResults;
+
+    // How many settings - or key bindings - the last filter left on the screen.
+    private int _shownCount;
 
     /// <summary>
     /// Single owner of what is on screen. With an empty query it shows the selected
@@ -1347,11 +1357,13 @@ public partial class Settings : UserControl, ISettingsCapture
         if (bindings)
         {
             _keyBindings.RebuildList();
+            _shownCount = _keyBindings.ShownCount;
             foreach (var entry in CategoryList.Items.OfType<ListBoxItem>())
                 entry.Classes.Set("NoHits", false);
             return;
         }
 
+        _shownCount = 0;
         foreach (var panel in SettingsStack.Children.OfType<StackPanel>())
         {
             bool anyRow = false;
@@ -1366,6 +1378,8 @@ public partial class Settings : UserControl, ISettingsCapture
                                    (!searching || TextMatch.Contains(RowSearchText(row), query));
                     row.IsVisible = visible;
                     anyInSection |= visible;
+                    if (visible && searching)
+                        _shownCount++;
                 }
 
                 section.IsVisible = anyInSection;

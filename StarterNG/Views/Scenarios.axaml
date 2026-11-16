@@ -4,6 +4,7 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:starterNg="clr-namespace:StarterNG"
              xmlns:infra="clr-namespace:StarterNG.Infrastructure"
+             xmlns:ctl="clr-namespace:StarterNG.Controls"
              xmlns:materialIcons="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
              mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
              x:Class="StarterNG.Views.Scenarios"
@@ -33,6 +34,7 @@
                           IsCheckedChanged="ArchivalSwitch_OnChanged"
                           Content="{Binding [HideArchivalSceneries], Source={x:Static starterNg:App.Loc}}" />
                 <TreeView Name="sceneryList" Classes="Compact"
+                          AutomationProperties.Name="{Binding [Sceneries], Source={x:Static starterNg:App.Loc}}"
                           SelectionChanged="SceneryList_OnSelectionChanged"
                           ContextRequested="SceneryList_OnContextRequested">
                     <TreeView.ContextMenu>
@@ -49,7 +51,7 @@
             </DockPanel>
         </HeaderedContentControl>
 
-        <GridSplitter Grid.Column="1" Grid.Row="0" Width="6"
+        <GridSplitter IsTabStop="False" AutomationProperties.Name="{Binding [PanelSplitter], Source={x:Static starterNg:App.Loc}}" Grid.Column="1" Grid.Row="0" Width="6"
                       Background="Transparent" ResizeDirection="Columns" />
 
         <Grid Grid.Column="2" Grid.Row="0">
@@ -70,13 +72,14 @@
             </HeaderedContentControl.Tag>
 
                 <ListBox Name="vehicleList" Classes="Compact"
+                         AutomationProperties.Name="{Binding [SceneryConsists], Source={x:Static starterNg:App.Loc}}"
                          SelectionChanged="VehicleList_OnSelectionChanged" />
             </HeaderedContentControl>
 
-            <GridSplitter Grid.Row="1" Height="4" HorizontalAlignment="Stretch"
+            <GridSplitter IsTabStop="False" AutomationProperties.Name="{Binding [PanelSplitter], Source={x:Static starterNg:App.Loc}}" Grid.Row="1" Height="4" HorizontalAlignment="Stretch"
                           Background="Transparent" ResizeDirection="Rows" />
 
-            <TabControl Grid.Row="2" Name="infoTabs">
+            <TabControl Grid.Row="2" Name="infoTabs" AutomationProperties.Name="{Binding [ScenarioDetails], Source={x:Static starterNg:App.Loc}}">
                 <TabItem Header="{Binding [TabDescription], Source={x:Static starterNg:App.Loc}}">
                     <Grid RowDefinitions="2*,6,*" Margin="4">
                         <Grid Grid.Row="0" ColumnDefinitions="*,3,225">
@@ -108,11 +111,11 @@
                                        Foreground="{StaticResource CarbonFgDim}"
                                        Text="{Binding [Date], Source={x:Static starterNg:App.Loc}}" />
                             <Grid Grid.Row="0" Grid.Column="2" ColumnDefinitions="150,10,150,10,*">
-                                <DatePicker Grid.Column="0" Name="weatherDate"
+                                <DatePicker Grid.Column="0" Name="weatherDate" AutomationProperties.Name="{Binding [Date], Source={x:Static starterNg:App.Loc}}"
                                             YearVisible="False" MinWidth="0"
                                             VerticalAlignment="Center" HorizontalAlignment="Stretch"
                                             SelectedDateChanged="WeatherDate_OnChanged" />
-                                <ComboBox Grid.Column="2" Name="weatherSeason" Classes="Localized"
+                                <ComboBox Grid.Column="2" Name="weatherSeason" AutomationProperties.Name="{Binding [Season], Source={x:Static starterNg:App.Loc}}" Classes="Localized"
                                           HorizontalAlignment="Stretch" VerticalAlignment="Center"
                                           SelectionChanged="WeatherSeason_OnChanged">
                                     <ComboBoxItem Tag="0" Content="{Binding [SeasonNow], Source={x:Static starterNg:App.Loc}}" />
@@ -130,7 +133,7 @@
                                        Foreground="{StaticResource CarbonFgDim}"
                                        Text="{Binding [Time], Source={x:Static starterNg:App.Loc}}" />
                             <Grid Grid.Row="2" Grid.Column="2" ColumnDefinitions="150,8,*">
-                                <TimePicker Grid.Column="0" Name="weatherTime"
+                                <TimePicker Grid.Column="0" Name="weatherTime" AutomationProperties.Name="{Binding [Time], Source={x:Static starterNg:App.Loc}}"
                                             ClockIdentifier="24HourClock" MinuteIncrement="1"
                                             MinWidth="0" VerticalAlignment="Center"
                                             HorizontalAlignment="Stretch"
@@ -145,7 +148,7 @@
                             <TextBlock Grid.Row="4" Grid.Column="0" VerticalAlignment="Center"
                                        Foreground="{StaticResource CarbonFgDim}"
                                        Text="{Binding [Temperature], Source={x:Static starterNg:App.Loc}}" />
-                            <Slider Grid.Row="4" Grid.Column="2" Name="weatherTemp"
+                            <ctl:ReadableSlider Grid.Row="4" Grid.Column="2" Name="weatherTemp" AutomationProperties.Name="{Binding [Temperature], Source={x:Static starterNg:App.Loc}}"
                                     Minimum="-50" Maximum="50"
                                     TickFrequency="1" IsSnapToTickEnabled="True"
                                     ValueChanged="Weather_OnSliderChanged" />
@@ -162,8 +165,8 @@
                             <TextBlock Grid.Row="7" Grid.Column="0" VerticalAlignment="Center"
                                        Foreground="{StaticResource CarbonFgDim}"
                                        Text="{Binding [Visibility], Source={x:Static starterNg:App.Loc}}" />
-                            <Slider Grid.Row="7" Grid.Column="2" Name="weatherFog"
-                                    Minimum="0" Maximum="1000"
+                            <ctl:ReadableSlider Grid.Row="7" Grid.Column="2" Name="weatherFog" AutomationProperties.Name="{Binding [Visibility], Source={x:Static starterNg:App.Loc}}"
+                                    Minimum="0" Maximum="1000" SmallChange="20" LargeChange="100"
                                     TickFrequency="1" IsSnapToTickEnabled="True"
                                     ValueChanged="Weather_OnSliderChanged" />
                             <TextBlock Grid.Row="7" Grid.Column="4" Name="weatherFogLabel"
@@ -180,7 +183,7 @@
                             <TextBlock Grid.Row="10" Grid.Column="0" VerticalAlignment="Center"
                                        Foreground="{StaticResource CarbonFgDim}"
                                        Text="{Binding [Overcast], Source={x:Static starterNg:App.Loc}}" />
-                            <ComboBox Grid.Row="10" Grid.Column="2" Name="weatherOvercast" Classes="Localized"
+                            <ComboBox Grid.Row="10" Grid.Column="2" Name="weatherOvercast" AutomationProperties.Name="{Binding [Overcast], Source={x:Static starterNg:App.Loc}}" Classes="Localized"
                                       HorizontalAlignment="Stretch"
                                       SelectionChanged="Weather_OnSelectionChanged">
                                 <ComboBoxItem Tag="random" Content="{Binding [OvercastRandom], Source={x:Static starterNg:App.Loc}}" />

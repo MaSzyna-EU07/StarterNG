@@ -13,6 +13,7 @@ using Avalonia.Layout;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
 using StarterNG.Classes;
+using StarterNG.Controls;
 using StarterNG.Infrastructure;
 using StarterNG.Views;
 using StarterNG.Application;
@@ -98,6 +99,7 @@ public partial class MainWindow : Window
         // Tunnelling: the shortcuts are checked before any view sees the key, which is
         // why OnShortcutKey has to be careful about text entry and key capture.
         AddHandler(KeyDownEvent, OnShortcutKey, RoutingStrategies.Tunnel);
+        AddHandler(KeyDownEvent, OnTabWithNothingFocused, RoutingStrategies.Tunnel);
 
         AppServices.Current.State.Changed += UpdateStartButton;
         Opened += (_, _) =>
@@ -235,6 +237,17 @@ public partial class MainWindow : Window
             ScenariosView.RefreshConsistView();
         };
         win.ShowDialog(this);
+    }
+
+    private void OnTabWithNothingFocused(object? sender, KeyEventArgs e)
+    {
+        if (FocusManager is not { } focus)
+            return;
+
+        var next = KeyboardFocus.TabFromNowhere(e.Key, e.KeyModifiers, focus.GetFocusedElement(), this,
+                                                focus.FindFirstFocusableElement, focus.FindLastFocusableElement);
+        if (next is not null && next.Focus(NavigationMethod.Tab))
+            e.Handled = true;
     }
 
     private void OnShortcutKey(object? sender, KeyEventArgs e)

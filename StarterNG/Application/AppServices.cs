@@ -81,6 +81,9 @@ public sealed class AppServices
         _current ?? throw new InvalidOperationException(
             "AppServices.Current read before Initialize(); the composition root must be built first.");
 
+    /// <summary>The services once built, or null before: for what may run either way, such as a control in a test.</summary>
+    public static AppServices? CurrentOrNull => _current;
+
     public static AppServices Initialize(IGamePaths? paths = null, IFileSystem? files = null, IClock? clock = null,
                                          IEnvironment? environment = null)
     {
