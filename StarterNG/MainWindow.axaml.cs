@@ -15,7 +15,6 @@ using Avalonia.VisualTree;
 using StarterNG.Classes;
 using StarterNG.Controls;
 using StarterNG.Infrastructure;
-using StarterNG.Infrastructure.Adapters;
 using StarterNG.Views;
 using StarterNG.Application;
 using StarterNG.Application.Abstractions;
@@ -41,16 +40,9 @@ public partial class MainWindow : Window
     private DateTime _openedUtc = DateTime.UtcNow;
     private DateTime _startedUtc = DateTime.MinValue;
     private bool _starting;
-    // Scenery files: looked at when the system reports a change, once the burst a save makes
-    // has passed; on coming back to the window or from the simulator; and now and then anyway,
-    // for the drives and systems where the reports do not come - often where none come at all.
-    private static readonly TimeSpan SceneryQuiet = TimeSpan.FromMilliseconds(400);
-    private static readonly TimeSpan SceneryLookWatched = TimeSpan.FromSeconds(30);
-    private static readonly TimeSpan SceneryLookUnwatched = TimeSpan.FromSeconds(2);
-    private readonly DispatcherTimer _sceneryQuietTimer = new() { Interval = SceneryQuiet };
-    private readonly DispatcherTimer _sceneryFilesTimer = new() { Interval = SceneryLookUnwatched };
-    private readonly OneAtATime _sceneryLook;
-    private FolderChanges? _sceneryChanges;
+    // Scenery files: looked at when they change, on coming back to the window or from the
+    // simulator, and now and then anyway.
+    private readonly FolderLooks _sceneryLooks;
 
     public MainWindow()
     {
@@ -111,54 +103,28 @@ public partial class MainWindow : Window
         AddHandler(KeyDownEvent, OnTabWithNothingFocused, RoutingStrategies.Tunnel);
 
         AppServices.Current.State.Changed += UpdateStartButton;
-        _sceneryLook = new OneAtATime(LookAtSceneryFilesAsync);
         Opened += (_, _) =>
         {
 
             _openedUtc = DateTime.UtcNow;
             UpdateStartButton();
-            WatchSceneryFiles();
             FollowLastRun();
         };
-        Activated += async (_, _) =>
+        Activated += (_, _) =>
         {
             CheckExternalSettings();
             // Back from a build or a download: a new simulator is on the list already.
             if (SettingsView.IsVisible)
                 SettingsView.RefreshExecutables();
-            await _sceneryLook.RunAsync();
         };
-        _sceneryFilesTimer.Tick += async (_, _) => await _sceneryLook.RunAsync();
-        _sceneryQuietTimer.Tick += async (_, _) =>
-        {
-            _sceneryQuietTimer.Stop();
-            await _sceneryLook.RunAsync();
-        };
-        Closed += (_, _) =>
-        {
-            _sceneryFilesTimer.Stop();
-            _sceneryQuietTimer.Stop();
-            _sceneryChanges?.Dispose();
-        };
-    }
-
-    private void WatchSceneryFiles()
-    {
-        _sceneryChanges = new FolderChanges(AppServices.Current.Paths.Scenery);
-        // Each report puts the look off again, so a save of many files is one look after it.
-        _sceneryChanges.Changed += () => Dispatcher.UIThread.Post(() =>
-        {
-            _sceneryQuietTimer.Stop();
-            _sceneryQuietTimer.Start();
-        });
-        _sceneryFilesTimer.Interval = _sceneryChanges.Watching ? SceneryLookWatched : SceneryLookUnwatched;
-        _sceneryFilesTimer.Start();
+        // After the handlers above: back at the window, the settings are checked first.
+        _sceneryLooks = new FolderLooks(this, () => AppServices.Current.Paths.Scenery, LookAtSceneryFilesAsync);
     }
 
     /// <summary>
     /// Scenery files changed outside the starter are picked up without a reload. Not
     /// with the simulator running: it is left in peace, and what it changes comes in after it.
-    /// Run through <see cref="_sceneryLook"/>, one look at a time.
+    /// Run through <see cref="_sceneryLooks"/>, one look at a time.
     /// </summary>
     private async Task LookAtSceneryFilesAsync()
     {
@@ -773,7 +739,7 @@ public partial class MainWindow : Window
             RestoreFromSimulator();
             ReportIfCrashed(simulator, executable, started);
             // What the simulator or its editor wrote while it ran comes in now.
-            _ = _sceneryLook.RunAsync();
+            _ = _sceneryLooks.LookAsync();
         }), TaskScheduler.Default);
     }
 
