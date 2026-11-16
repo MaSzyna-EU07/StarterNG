@@ -519,8 +519,13 @@ public sealed class Recording
         return false;
     }
 
-    /// <summary>When the train protection braked the user's train: the alerter or the cab signalling not acknowledged.</summary>
-    public IReadOnlyList<TimeSpanRange> SecurityBrakings() => CabSpans(s => s.Has(SecurityFlags.Braking));
+    /// <summary>
+    /// When the train protection braked the user's train: the alerter or the cab signalling not acknowledged, its lamp
+    /// blinking. Braking with neither is the protection with no power (TSecuritySystem::is_braking), a cab not yet
+    /// started or a power cut: no driver's fault, not counted.
+    /// </summary>
+    public IReadOnlyList<TimeSpanRange> SecurityBrakings() =>
+        CabSpans(s => s.Has(SecurityFlags.Braking) && (s.Has(SecurityFlags.Vigilance) || s.Has(SecurityFlags.CabSignal)));
 
     /// <summary>The commands the user gave in a vehicle, presses only.</summary>
     public IEnumerable<CommandEntry> UserCommands() => _commands.Where(c => c.Pressed && c.Vehicle != 0);
