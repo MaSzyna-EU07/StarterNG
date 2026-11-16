@@ -17,10 +17,12 @@ public sealed class TimetableLocator
                                                    RegexOptions.Multiline | RegexOptions.IgnoreCase);
 
     private readonly IFileSystem _files;
+    private readonly CaseInsensitivePaths _names;
 
     public TimetableLocator(IFileSystem files)
     {
         _files = files;
+        _names = new CaseInsensitivePaths(files);
     }
 
     public string? Resolve(Scenery scenery, string? name)
@@ -30,17 +32,19 @@ public sealed class TimetableLocator
 
         string sceneryDir = Path.GetDirectoryName(scenery.Path) ?? ".";
         string root = Path.GetDirectoryName(sceneryDir) ?? ".";
+        name = name.Replace('\\', '/');
 
-        string[] candidates =
+        (string Folder, string Name)[] candidates =
         {
-            Path.Combine(root, "timetables", name + ".txt"),
-            Path.Combine(sceneryDir, name + ".txt"),
-            Path.Combine(root, "scenario", name + ".txt"),
-            Path.Combine(root, "timetables", name),
-            Path.Combine(sceneryDir, name)
+            (root, "timetables/" + name + ".txt"),
+            (sceneryDir, name + ".txt"),
+            (root, "scenario/" + name + ".txt"),
+            (root, "timetables/" + name),
+            (sceneryDir, name)
         };
 
-        return candidates.FirstOrDefault(_files.FileExists);
+        return candidates.Select(candidate => _names.Find(candidate.Folder, candidate.Name))
+                         .FirstOrDefault(found => found is not null);
     }
 
     /// <summary>The number the timetable gives its train; null with no timetable or no such heading in it.</summary>

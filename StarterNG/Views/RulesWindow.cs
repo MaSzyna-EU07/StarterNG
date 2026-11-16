@@ -80,6 +80,7 @@ public sealed class RulesWindow : Window
         };
         cancel.Classes.Add("Flat");
         cancel.Click += (_, _) => Close();
+        cancel.IsCancel = true;
 
         var footer = new StackPanel
         {

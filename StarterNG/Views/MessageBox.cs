@@ -1,5 +1,6 @@
 using System;
 using System.Threading.Tasks;
+using Avalonia.Automation;
 using Avalonia.Controls;
 using Avalonia.Layout;
 using Avalonia.Media;
@@ -26,6 +27,13 @@ public static class MessageBox
                                   "Accent", 80, () => { yes = true; win.Close(); });
         var noBtn = DialogButton(noText ?? App.Loc["No"], "Flat", 80, () => win.Close());
         noBtn.IsVisible = buttons != MessageBoxButtons.Ok;
+        // Enter answers, Esc declines - or only closes, where OK is all there is.
+        yesBtn.IsDefault = true;
+        if (buttons == MessageBoxButtons.Ok)
+            yesBtn.IsCancel = true;
+        else
+            noBtn.IsCancel = true;
+        ReadMessage(win, yesBtn, message);
 
         win.Content = new StackPanel
         {
@@ -85,6 +93,9 @@ public static class MessageBox
         var okBtn = DialogButton(App.Loc["Ok"], "Flat", 80, () => win.Close());
 
         var silence = new CheckBox { Content = silenceText, VerticalAlignment = VerticalAlignment.Center };
+        actBtn.IsDefault = true;
+        okBtn.IsCancel = true;
+        ReadMessage(win, actBtn, message);
 
         win.Content = new StackPanel
         {
@@ -106,6 +117,16 @@ public static class MessageBox
 
         await win.ShowDialog(owner);
         return (act, silence.IsChecked == true);
+    }
+
+    /// <summary>
+    /// The message is told with the window and with the button focus opens on: a
+    /// screen reader said only the title, and the question it asked went unheard.
+    /// </summary>
+    internal static void ReadMessage(Window win, Control first, string message)
+    {
+        AutomationProperties.SetHelpText(win, message);
+        AutomationProperties.SetHelpText(first, message);
     }
 
     /// <summary>A dialog over its owner, as tall as what it holds, not to be resized.</summary>

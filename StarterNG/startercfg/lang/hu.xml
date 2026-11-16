@@ -568,6 +568,47 @@
     <String key="Save">Mentés</String>
     <String key="Reset">Visszaállítás</String>
     <String key="SettingsSaved">A beállítások elmentve</String>
+    <String key="DefaultsRestored">Alapértékek visszaállítva</String>
+    <String key="SettingsRestored">A mentett beállítások visszaállítva</String>
+    <String key="TreeExpanded">kibontva</String>
+    <String key="TreeCollapsed">összecsukva</String>
+    <String key="DepotConsistSources">Szerelvény forrásai</String>
+    <String key="DepotVehicleInfo">Jármű adatai</String>
+    <String key="DepotVehicleEdit">Jármű beállításai</String>
+    <String key="ScenarioDetails">Forgatókönyv részletei</String>
+    <String key="SectionLevel">Szakasz szintje</String>
+    <String key="SearchFound">Találatok: {0}</String>
+    <String key="SpinUp">Növelés</String>
+    <String key="SpinDown">Csökkentés</String>
+    <String key="ChromeMinimize">Kis méret</String>
+    <String key="ChromeMaximize">Teljes méret</String>
+    <String key="ChromeRestore">Előző méret</String>
+    <String key="ChromeClose">Bezárás</String>
+    <String key="ScrollLineUp">Sor fel</String>
+    <String key="ScrollLineDown">Sor le</String>
+    <String key="ScrollPageUp">Oldal fel</String>
+    <String key="ScrollPageDown">Oldal le</String>
+    <String key="ScrollColumnLeft">Oszlop balra</String>
+    <String key="ScrollColumnRight">Oszlop jobbra</String>
+    <String key="ScrollPageLeft">Oldal balra</String>
+    <String key="ScrollPageRight">Oldal jobbra</String>
+    <String key="ScrollPosition">Pozíció</String>
+    <String key="TapeKeysHelp">A bal és jobb nyíl a szalagon lépked, Ctrl-lel tízszer messzebb, a Home és az End a végeire ugrik, az Enter a fekete dobozt ehhez a pillanathoz viszi.</String>
+    <String key="ConsistSaidEmpty">A szerelvény üres</String>
+    <String key="ConsistSaidAdded">{0} hozzáadva, {1}. hely a(z) {2}-ből</String>
+    <String key="ConsistSaidRemoved">{0} eltávolítva, maradt jármű: {1}</String>
+    <String key="ConsistSaidTurned">{0} megfordítva</String>
+    <String key="ConsistSaidUnturned">{0} visszafordítva</String>
+    <String key="ConsistSaidTurnedMany">Megfordított járművek: {0}</String>
+    <String key="ConsistSaidMoved">{0} áthelyezve, {1}. hely a(z) {2}-ből</String>
+    <String key="ConsistSaidReordered">Sorrend megváltozott</String>
+    <String key="ConsistSaidReplaced">{0} helyett {1}</String>
+    <String key="ConsistSaidChangedMany">Megváltozott járművek: {0}, a szerelvényben: {1}</String>
+    <String key="ConsistSaidUndone">Visszavonva. {0}</String>
+    <String key="ConsistSaidRedone">Újra végrehajtva. {0}</String>
+    <String key="SceneryImage">A pálya képe</String>
+    <String key="PanelSplitter">Panelelválasztó</String>
+    <String key="SettingsCategories">Beállítási kategóriák</String>
     <String key="SettingsNotSaved">A beállításokat nem sikerült elmenteni</String>
     <String key="UnsavedChanges">Nem mentett módosítások</String>
 
@@ -597,8 +638,10 @@
     <String key="About">Névjegy</String>
     <String key="Close">Bezárás</String>
     <String key="CpuNoAvx2Title">AVX2 nélküli processzor</String>
-    <String key="CpuNoAvx2">Ez a processzor nem tudja az AVX2-t, a hivatalos szimulátornak pedig kell: nem indul el.&#10;&#10;A szimulátor lefordítható AVX2 nélkül (CMake -DENABLE_AVX2=OFF). Útmutató:&#10;{0}</String>
+    <String key="CpuNoAvx2">Ez a processzor nem tudja az AVX2-t, a hivatalos szimulátornak pedig kell: nem indul el.&#10;&#10;Van AVX2 nélküli szimulátor-változat - a fájl neve _noavx2-re végződik. Tegye a játék mappájába, és az indító magától azt használja. A szimulátor saját maga is lefordítható (CMake -DENABLE_AVX2=OFF). Útmutató:&#10;{0}</String>
     <String key="CpuNoAvx2Open">Útmutató megnyitása</String>
+    <String key="CpuNoAvx2Chosen">Ez a processzor nem tudja az AVX2-t, a kiválasztott {0} szimulátornak pedig kell: nem indul el.&#10;&#10;A játék mappájában van AVX2 nélküli változat: {1}. Az automatikus választás ezt veszi.</String>
+    <String key="CpuNoAvx2UseIt">Automatikus választás</String>
     <String key="DontShowAgain">Ne mutasd többé</String>
     <String key="SettingsPath">Beállítások betöltve innen:</String>
 
@@ -750,7 +793,6 @@
     <String key="SyntaxVehicleOutsideTrainset">A(z) {0} jármű szerelvényen kívül áll: hiányzik a trainset fejléc?</String>
     <String key="SyntaxNotANumber">{0}: „{1}” szám helyett</String>
     <String key="SyntaxMissingInclude">A(z) {1} fájl nem található (include)</String>
-    <String key="SyntaxIncludeLetterCase">A(z) {1} fájl a lemezen {0} néven van: a linuxos eu07 nem tölti be</String>
     <String key="SyntaxIncludeNotClosed">include {1} end nélkül</String>
     <String key="SyntaxTrainsetUnreadable">A(z) {0} szerelvényt nem sikerült beolvasni</String>
     <String key="SyntaxVehicleUnreadable">A(z) {0} járművet nem sikerült beolvasni</String>

@@ -369,6 +369,41 @@ public partial class Depot : UserControl
         // The cards are thrown away and rebuilt on every change, so a keyboard-driven
         // edit has to be handed its card back or focus escapes the strip.
         _cards.FocusSelectedCard(onlyIfRequested: true);
+        TellChange();
+    }
+
+    // The consist as it was last told, and whose it was.
+    private List<ConsistNarration.Unit> _told = new();
+    private Trainset? _toldTrainset;
+
+    // While an undo or a redo loads the consist: the word said before what it changed.
+    private string? _restoreWord;
+
+    /// <summary>
+    /// Says what the change did to the consist: nothing on the strip told a screen
+    /// reader of a vehicle added from the list, removed, turned or of an undo. Another
+    /// consist taken up is not told, its entry on the list says what it is.
+    /// </summary>
+    private void TellChange()
+    {
+        var now = _consist.Select(item => new ConsistNarration.Unit(
+            string.Join(", ", item.Cars.Select(car => TrainsetDisplay.VehicleLabel(car))), item.Flipped)).ToList();
+        var trainset = _consist.EditingTrainset;
+        bool same = trainset is not null && ReferenceEquals(trainset, _toldTrainset);
+        var before = _told;
+        _told = now;
+        _toldTrainset = trainset;
+        if (!same)
+            return;
+
+        // A card moved or turned from the keyboard is focused again, and says its new place itself.
+        if (_restoreWord is null && before.Count == now.Count && consistStack.IsKeyboardFocusWithin)
+            return;
+
+        string? said = ConsistNarration.Describe(before, now, _consist.VehicleCount, key => App.Loc[key]);
+        if (_restoreWord is not null)
+            said = string.Format(App.Loc[_restoreWord], said ?? string.Empty).Trim();
+        Controls.Announcer.Say(this, said);
     }
 
     private void WriteBackToScenery()
@@ -492,11 +527,11 @@ public partial class Depot : UserControl
         redoButton.IsEnabled = editing is not null && _history.CanRedo(editing);
     }
 
-    public void Undo() => Restore(_history.Undo);
+    public void Undo() => Restore(_history.Undo, "ConsistSaidUndone");
 
-    public void Redo() => Restore(_history.Redo);
+    public void Redo() => Restore(_history.Redo, "ConsistSaidRedone");
 
-    private void Restore(Func<Trainset, int, ConsistHistory.State?> step)
+    private void Restore(Func<Trainset, int, ConsistHistory.State?> step, string word)
     {
         if (_consist.EditingTrainset is not { } trainset ||
             step(trainset, SelectedIndex()) is not { } state)
@@ -504,6 +539,7 @@ public partial class Depot : UserControl
 
         trainset.Vehicles = state.Vehicles.ToList();
         _restoring = true;
+        _restoreWord = word;
         try
         {
             _consist.LoadFrom(trainset, state.Selected);
@@ -511,6 +547,7 @@ public partial class Depot : UserControl
         finally
         {
             _restoring = false;
+            _restoreWord = null;
         }
     }
 
@@ -682,6 +719,8 @@ public partial class Depot : UserControl
             Foreground = new SolidColorBrush(Color.Parse("#E0A030"))
         };
         ToolTip.SetTip(dot, App.Loc["ConsistUnsaved"]);
+        // Read as its meaning in the entry's name, not as "black circle".
+        Avalonia.Automation.AutomationProperties.SetName(dot, App.Loc["ConsistUnsaved"]);
         var row = new DockPanel();
         DockPanel.SetDock(dot, Dock.Left);
         row.Children.Add(dot);

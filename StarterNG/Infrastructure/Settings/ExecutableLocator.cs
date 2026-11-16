@@ -22,14 +22,36 @@ public sealed class ExecutableLocator
     private string? _wine;
     private bool _wineLookedUp;
     private string? _missingPickLogged;
+    private readonly bool _lacksAvx2;
 
-    public ExecutableLocator(IFileSystem files, IGamePaths paths, IEnvironment environment, IDiagnosticsLog log)
+    /// <param name="lacksAvx2">Whether this processor runs no AVX2; asked of it when left out.</param>
+    public ExecutableLocator(IFileSystem files, IGamePaths paths, IEnvironment environment, IDiagnosticsLog log,
+                             bool? lacksAvx2 = null)
     {
         _files = files;
         _paths = paths;
         _environment = environment;
         _log = log;
+        _lacksAvx2 = lacksAvx2 ?? CpuFeatures.LacksAvx2;
     }
+
+    /// <summary>
+    /// The end of the name of a simulator built without AVX2, last before any extension:
+    /// eu07-x64_2026-11-15_abc1234_noavx2.exe, eu07_noavx2. It runs on any x86-64 processor.
+    /// </summary>
+    public const string NoAvx2Suffix = "_noavx2";
+
+    public static bool IsNoAvx2(string path) =>
+        Path.GetFileNameWithoutExtension(path).EndsWith(NoAvx2Suffix, StringComparison.OrdinalIgnoreCase);
+
+    /// <summary>
+    /// Whether <paramref name="executable"/> stops at its first instruction here: a build
+    /// with AVX2 on a processor without it. Such a processor is told so before a start.
+    /// </summary>
+    public bool WillNotRunHere(string executable) => _lacksAvx2 && !IsNoAvx2(executable);
+
+    /// <summary>The newest build without AVX2 in the installation, or null where there is none.</summary>
+    public string? NewestNoAvx2() => ListCandidates().FirstOrDefault(IsNoAvx2);
 
     public string CanonicalName => _environment.IsWindows ? "eu07.exe" : "eu07";
 
@@ -71,7 +93,8 @@ public sealed class ExecutableLocator
         {
             var candidates = _files.GetFiles(_paths.Root, "eu07*")
                 .Where(IsCandidate)
-                .OrderBy(path => IsExeOnLinux(path) ? 1 : 0)
+                .OrderBy(Rank)
+                .ThenByDescending(path => _lacksAvx2 && IsNoAvx2(path) ? _files.GetLastWriteTimeUtc(path) : DateTime.MinValue)
                 .ThenBy(path => string.Equals(Path.GetFileName(path), CanonicalName,
                                               StringComparison.OrdinalIgnoreCase) ? 0 : 1)
                 .ThenBy(path => Path.GetFileName(path).Length);
@@ -99,6 +122,18 @@ public sealed class ExecutableLocator
 
         problem = ExeProblem.NotFound;
         return CanonicalName;
+    }
+
+    /// <summary>
+    /// The order of the search. Without AVX2 a build without it comes first, the newest of
+    /// them, even through Wine: the others stop at once. With AVX2 one is the last resort,
+    /// as the build made for the processor runs faster; native before Wine either way.
+    /// </summary>
+    private int Rank(string path)
+    {
+        int wine = IsExeOnLinux(path) ? 1 : 0;
+        int noAvx2 = IsNoAvx2(path) ? 1 : 0;
+        return _lacksAvx2 ? (1 - noAvx2) * 2 + wine : wine * 2 + noAvx2;
     }
 
     public List<string> ListCandidates(string? directory = null)

@@ -1,3 +1,5 @@
+using System;
+using System.Globalization;
 using Eu07.BlackBox.Views;
 
 namespace StarterNG.Views.Tapes;
@@ -15,7 +17,14 @@ internal sealed class StarterBlackBoxStrings : IBlackBoxStrings
         get
         {
             string text = App.Loc.Opt("BlackBox" + key);
-            return text.Length > 0 ? text : _own[key];
+            if (text.Length > 0)
+                return text;
+            // The commands in a language of the old starter's key descriptions, as the keys tab names them; in Polish
+            // and English the window's own.
+            if (key.StartsWith(DefaultBlackBoxStrings.CommandPrefix, StringComparison.Ordinal) && App.Loc.CurrentLangCode is not ("pl" or "en")
+                && App.Loc.Opt(key) is { Length: > 0 } described)
+                return char.ToUpper(described[0], CultureInfo.CurrentCulture) + described[1..];
+            return _own[key];
         }
     }
 }

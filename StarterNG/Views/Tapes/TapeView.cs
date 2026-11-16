@@ -1,5 +1,8 @@
 using System;
 using Avalonia;
+using Avalonia.Automation;
+using Avalonia.Automation.Peers;
+using Avalonia.Automation.Provider;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Media;
@@ -46,6 +49,118 @@ public abstract class TapeView : Control
     {
         AffectsMeasure<TapeView>(TapeProperty, ByDistanceProperty, ScaleProperty);
         AffectsRender<TapeView>(TapeProperty, ByDistanceProperty, ScaleProperty, StartClockProperty, MarkProperty);
+    }
+
+    private static readonly IPen FocusPen = new Pen(new SolidColorBrush(Color.Parse("#41C400")), 2);
+
+    protected TapeView()
+    {
+        // Read from the keyboard as well as with the pointer: the arrows move the read-out along the trip.
+        Focusable = true;
+    }
+
+    // The sample the keyboard stands at, -1 before it has moved.
+    private int _keyIndex = -1;
+    private string? _spoken;
+
+    /// <summary>
+    /// The read-out of the sample under the cursor as words - time, kilometre, speed -
+    /// the value a screen reader reads, again whenever it changes.
+    /// </summary>
+    public string? Spoken
+    {
+        get => _spoken;
+        set
+        {
+            string? before = _spoken;
+            _spoken = value;
+            if (before != value && ControlAutomationPeer.FromElement(this) is Peer peer)
+                peer.Told(before, value);
+        }
+    }
+
+    /// <summary>How far an arrow moves the read-out: metres by distance, seconds by time; Ctrl ten times as far.</summary>
+    public const double DistanceStep = 100, TimeStep = 10, CtrlTimes = 10;
+
+    protected override void OnKeyDown(KeyEventArgs e)
+    {
+        base.OnKeyDown(e);
+        var tape = Tape;
+        if (tape is null || tape.IsEmpty)
+            return;
+
+        int at = _keyIndex >= 0 && _keyIndex < tape.Samples.Count ? _keyIndex : -1;
+        var here = at >= 0 ? tape.Samples[at] : tape.Samples[0];
+        if (e.Key == Key.Enter && at >= 0)
+        {
+            Picked?.Invoke(here);
+            e.Handled = true;
+            return;
+        }
+
+        double step = (ByDistance ? DistanceStep : TimeStep) * (e.KeyModifiers.HasFlag(KeyModifiers.Control) ? CtrlTimes : 1);
+        double position = ByDistance ? here.DistanceM : here.Time;
+        int? to = e.Key switch
+        {
+            Key.Right when at < 0 => 0,
+            Key.Left when at < 0 => 0,
+            Key.Right => Math.Max(at + 1, tape.IndexAt(position + step, ByDistance)),
+            Key.Left => Math.Min(at - 1, tape.IndexAt(position - step, ByDistance)),
+            Key.Home => 0,
+            Key.End => tape.Samples.Count - 1,
+            _ => null
+        };
+        if (to is not { } index)
+            return;
+
+        _keyIndex = Math.Clamp(index, 0, tape.Samples.Count - 1);
+        var sample = tape.Samples[_keyIndex];
+        double x = XOf(sample);
+        CursorX = x;
+        InvalidateVisual();
+        this.BringIntoView(new Rect(Math.Max(0, x - 80), 0, 160, TapeHeight));
+        Hovered?.Invoke(sample);
+        e.Handled = true;
+    }
+
+    protected override void OnGotFocus(FocusChangedEventArgs e)
+    {
+        base.OnGotFocus(e);
+        InvalidateVisual();
+    }
+
+    protected override void OnLostFocus(FocusChangedEventArgs e)
+    {
+        base.OnLostFocus(e);
+        InvalidateVisual();
+    }
+
+    protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
+    {
+        base.OnPropertyChanged(change);
+        if (change.Property == TapeProperty)
+            _keyIndex = -1;
+    }
+
+    protected override AutomationPeer OnCreateAutomationPeer() => new Peer(this);
+
+    /// <summary>The trip as a screen reader is told it: a slider whose value is the read-out at the cursor.</summary>
+    private sealed class Peer(TapeView owner) : ControlAutomationPeer(owner), IValueProvider
+    {
+        public void Told(string? before, string? now) =>
+            RaisePropertyChangedEvent(ValuePatternIdentifiers.ValueProperty, before, now);
+
+        protected override AutomationControlType GetAutomationControlTypeCore() => AutomationControlType.Slider;
+
+        protected override bool IsContentElementCore() => true;
+
+        protected override bool IsControlElementCore() => true;
+
+        string? IValueProvider.Value => owner.Spoken;
+
+        bool IValueProvider.IsReadOnly => true;
+
+        void IValueProvider.SetValue(string? value) => throw new InvalidOperationException("The value is read only.");
     }
 
     public HaslerTape? Tape
@@ -148,6 +263,8 @@ public abstract class TapeView : Control
         DrawTape(context, tape);
         DrawMark(context);
         DrawCursor(context);
+        if (IsFocused)
+            context.DrawRectangle(null, FocusPen, new Rect(Bounds.Size).Deflate(1));
     }
 
     /// <summary>What is there with no trip on it.</summary>

@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using StarterNG.Application.Abstractions;
 using StarterNG.Domain.Sceneries;
 
@@ -8,11 +9,13 @@ namespace StarterNG.Infrastructure.Sceneries;
 public sealed class SceneryImageLocator
 {
     private readonly IFileSystem _files;
+    private readonly CaseInsensitivePaths _names;
     private readonly Dictionary<string, string?> _cache = new();
 
     public SceneryImageLocator(IFileSystem files)
     {
         _files = files;
+        _names = new CaseInsensitivePaths(files);
     }
 
     public string? Resolve(Scenery scenery)
@@ -34,22 +37,23 @@ public sealed class SceneryImageLocator
             return null;
 
         string name = scenery.ImageName.Replace('\\', '/').Trim();
+        if (Path.IsPathFullyQualified(name))
+            return _names.Find("", name);
+        if (_files.FileExists(name))
+            return name;
+
         string sceneryDir = Path.GetDirectoryName(scenery.Path) ?? ".";
         string root = Path.GetDirectoryName(sceneryDir) ?? ".";
 
-        string[] candidates =
+        (string Folder, string Name)[] candidates =
         {
-            name,
-            Path.Combine(root, name),
-            Path.Combine(sceneryDir, name),
-            Path.Combine(sceneryDir, "images", name),
-            Path.Combine(root, "scenery", "images", name)
+            (root, name),
+            (sceneryDir, name),
+            (sceneryDir, "images/" + name),
+            (root, "scenery/images/" + name)
         };
 
-        foreach (string candidate in candidates)
-            if (_files.FileExists(candidate))
-                return candidate;
-
-        return null;
+        return candidates.Select(candidate => _names.Find(candidate.Folder, candidate.Name))
+                         .FirstOrDefault(found => found is not null);
     }
 }

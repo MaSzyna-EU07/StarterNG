@@ -1,5 +1,8 @@
 using System;
 using Avalonia;
+using Avalonia.Automation;
+using Avalonia.Automation.Peers;
+using Avalonia.Automation.Provider;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
 using Avalonia.Layout;
@@ -235,10 +238,13 @@ internal static class UiKit
             BorderBrush = Palette.CardBorder;
             BorderThickness = new Thickness(0, 0, 0, 1);
             Child = _row;
+            // Read as the tabs they are, which of them is picked.
+            AutomationProperties.SetControlTypeOverride(_row, AutomationControlType.Tab);
+            AutomationProperties.SetAccessibilityView(_row, AccessibilityView.Content);
             for (int i = 0; i < choices.Length; i++)
             {
                 int index = i;
-                var button = new Button
+                var button = new SegmentButton
                 {
                     Content = choices[i],
                     Padding = new Thickness(14, 3),
@@ -267,8 +273,9 @@ internal static class UiKit
                 _selected = value;
                 for (int i = 0; i < _row.Children.Count; i++)
                 {
-                    var button = (Button)_row.Children[i];
+                    var button = (SegmentButton)_row.Children[i];
                     bool on = i == value;
+                    button.IsOn = on;
                     var line = on ? Palette.Accent : Brushes.Transparent;
                     button.Background = on ? Palette.Panel : Brushes.Transparent;
                     button.BorderBrush = line;
@@ -277,6 +284,53 @@ internal static class UiKit
                     button.Foreground = on ? Palette.Text : Palette.DimText;
                 }
                 SelectedChanged?.Invoke(value);
+            }
+        }
+    }
+
+    /// <summary>
+    /// A choice of <see cref="Segmented"/>: a button to look at, a tab to a screen reader,
+    /// which says whether it is the one picked.
+    /// </summary>
+    private sealed class SegmentButton : Button
+    {
+        private bool _on;
+
+        protected override Type StyleKeyOverride => typeof(Button);
+
+        public bool IsOn
+        {
+            get => _on;
+            set
+            {
+                if (_on == value)
+                    return;
+                _on = value;
+                (ControlAutomationPeer.FromElement(this) as Peer)?.Told(!value, value);
+            }
+        }
+
+        public void Pick() => OnClick();
+
+        protected override AutomationPeer OnCreateAutomationPeer() => new Peer(this);
+
+        private sealed class Peer(SegmentButton owner) : ButtonAutomationPeer(owner), ISelectionItemProvider
+        {
+            public void Told(bool before, bool now) =>
+                RaisePropertyChangedEvent(SelectionItemPatternIdentifiers.IsSelectedProperty, before, now);
+
+            protected override AutomationControlType GetAutomationControlTypeCore() => AutomationControlType.TabItem;
+
+            public bool IsSelected => owner.IsOn;
+
+            public ISelectionProvider? SelectionContainer => null;
+
+            public void Select() => owner.Pick();
+
+            public void AddToSelection() => owner.Pick();
+
+            public void RemoveFromSelection()
+            {
             }
         }
     }

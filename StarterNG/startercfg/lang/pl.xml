@@ -594,6 +594,47 @@
     <String key="Save">Zapisz</String>
     <String key="Reset">Przywróć</String>
     <String key="SettingsSaved">Zapisano ustawienia</String>
+    <String key="DefaultsRestored">Przywrócono domyślne</String>
+    <String key="SettingsRestored">Przywrócono zapisane ustawienia</String>
+    <String key="TreeExpanded">rozwinięte</String>
+    <String key="TreeCollapsed">zwinięte</String>
+    <String key="DepotConsistSources">Źródła zestawienia</String>
+    <String key="DepotVehicleInfo">Informacje o pojeździe</String>
+    <String key="DepotVehicleEdit">Ustawienia pojazdu</String>
+    <String key="ScenarioDetails">Szczegóły scenariusza</String>
+    <String key="SectionLevel">Poziom sekcji</String>
+    <String key="SearchFound">Znaleziono: {0}</String>
+    <String key="SpinUp">Zwiększ</String>
+    <String key="SpinDown">Zmniejsz</String>
+    <String key="ChromeMinimize">Minimalizuj</String>
+    <String key="ChromeMaximize">Maksymalizuj</String>
+    <String key="ChromeRestore">Przywróć</String>
+    <String key="ChromeClose">Zamknij</String>
+    <String key="ScrollLineUp">Wiersz w górę</String>
+    <String key="ScrollLineDown">Wiersz w dół</String>
+    <String key="ScrollPageUp">Strona w górę</String>
+    <String key="ScrollPageDown">Strona w dół</String>
+    <String key="ScrollColumnLeft">Kolumna w lewo</String>
+    <String key="ScrollColumnRight">Kolumna w prawo</String>
+    <String key="ScrollPageLeft">Strona w lewo</String>
+    <String key="ScrollPageRight">Strona w prawo</String>
+    <String key="ScrollPosition">Położenie</String>
+    <String key="TapeKeysHelp">Strzałki w lewo i w prawo przesuwają po taśmie, z Ctrl dziesięć razy dalej, Home i End idą na jej końce, Enter przenosi czarną skrzynkę do tej chwili.</String>
+    <String key="ConsistSaidEmpty">Zestawienie puste</String>
+    <String key="ConsistSaidAdded">Dodano {0} na pozycji {1} z {2}</String>
+    <String key="ConsistSaidRemoved">Usunięto {0}, zostało pojazdów: {1}</String>
+    <String key="ConsistSaidTurned">{0} obrócony</String>
+    <String key="ConsistSaidUnturned">{0} obrócony z powrotem</String>
+    <String key="ConsistSaidTurnedMany">Obrócono pojazdów: {0}</String>
+    <String key="ConsistSaidMoved">{0} przesunięty na pozycję {1} z {2}</String>
+    <String key="ConsistSaidReordered">Zmieniono kolejność</String>
+    <String key="ConsistSaidReplaced">{0} zastąpiony przez {1}</String>
+    <String key="ConsistSaidChangedMany">Zmieniono pojazdów: {0}, w zestawieniu: {1}</String>
+    <String key="ConsistSaidUndone">Cofnięto. {0}</String>
+    <String key="ConsistSaidRedone">Przywrócono. {0}</String>
+    <String key="SceneryImage">Obraz scenerii</String>
+    <String key="PanelSplitter">Rozdzielacz paneli</String>
+    <String key="SettingsCategories">Kategorie ustawień</String>
     <String key="SettingsNotSaved">Nie udało się zapisać ustawień</String>
     <String key="UnsavedChanges">Niezapisane zmiany</String>
 
@@ -623,8 +664,10 @@
     <String key="About">O programie</String>
     <String key="Close">Zamknij</String>
     <String key="CpuNoAvx2Title">Procesor bez AVX2</String>
-    <String key="CpuNoAvx2">Ten procesor nie ma AVX2, a oficjalny symulator go wymaga: nie uruchomi się.&#10;&#10;Można zbudować symulator bez AVX2 (CMake -DENABLE_AVX2=OFF). Instrukcja:&#10;{0}</String>
+    <String key="CpuNoAvx2">Ten procesor nie ma AVX2, a oficjalny symulator go wymaga: nie uruchomi się.&#10;&#10;Istnieje wersja symulatora bez AVX2 - nazwa jej pliku kończy się na _noavx2. Umieść ją w folderze gry, a starter sam jej użyje. Można też zbudować symulator samemu (CMake -DENABLE_AVX2=OFF). Instrukcja:&#10;{0}</String>
     <String key="CpuNoAvx2Open">Otwórz instrukcję</String>
+    <String key="CpuNoAvx2Chosen">Ten procesor nie ma AVX2, a wybrany symulator {0} go wymaga: nie uruchomi się.&#10;&#10;W folderze gry jest wersja bez AVX2: {1}. Wybór automatyczny weźmie właśnie ją.</String>
+    <String key="CpuNoAvx2UseIt">Wybieraj automatycznie</String>
     <String key="DontShowAgain">Nie pokazuj więcej</String>
     <String key="SettingsPath">Lokalizacja wczytanych ustawień:</String>
 
@@ -777,7 +820,6 @@
     <String key="SyntaxVehicleOutsideTrainset">Pojazd {0} stoi poza składem: brak nagłówka trainset?</String>
     <String key="SyntaxNotANumber">{0}: „{1}” zamiast liczby</String>
     <String key="SyntaxMissingInclude">Brak pliku {1} (include)</String>
-    <String key="SyntaxIncludeLetterCase">Plik {1} jest na dysku jako {0}: linuksowy eu07 go nie wczyta</String>
     <String key="SyntaxIncludeNotClosed">include {1} bez end</String>
     <String key="SyntaxTrainsetUnreadable">Nie udało się odczytać składu {0}</String>
     <String key="SyntaxVehicleUnreadable">Nie udało się odczytać pojazdu {0}</String>

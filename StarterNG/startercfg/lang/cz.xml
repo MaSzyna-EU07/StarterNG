@@ -568,6 +568,47 @@
     <String key="Save">Uložit</String>
     <String key="Reset">Obnovit</String>
     <String key="SettingsSaved">Nastavení uloženo</String>
+    <String key="DefaultsRestored">Výchozí hodnoty obnoveny</String>
+    <String key="SettingsRestored">Uložené nastavení obnoveno</String>
+    <String key="TreeExpanded">rozbaleno</String>
+    <String key="TreeCollapsed">sbaleno</String>
+    <String key="DepotConsistSources">Zdroje soupravy</String>
+    <String key="DepotVehicleInfo">Informace o vozidle</String>
+    <String key="DepotVehicleEdit">Nastavení vozidla</String>
+    <String key="ScenarioDetails">Podrobnosti scénáře</String>
+    <String key="SectionLevel">Úroveň sekce</String>
+    <String key="SearchFound">Nalezeno: {0}</String>
+    <String key="SpinUp">Zvýšit</String>
+    <String key="SpinDown">Snížit</String>
+    <String key="ChromeMinimize">Minimalizovat</String>
+    <String key="ChromeMaximize">Maximalizovat</String>
+    <String key="ChromeRestore">Obnovit</String>
+    <String key="ChromeClose">Zavřít</String>
+    <String key="ScrollLineUp">Řádek nahoru</String>
+    <String key="ScrollLineDown">Řádek dolů</String>
+    <String key="ScrollPageUp">Stránka nahoru</String>
+    <String key="ScrollPageDown">Stránka dolů</String>
+    <String key="ScrollColumnLeft">Sloupec vlevo</String>
+    <String key="ScrollColumnRight">Sloupec vpravo</String>
+    <String key="ScrollPageLeft">Stránka vlevo</String>
+    <String key="ScrollPageRight">Stránka vpravo</String>
+    <String key="ScrollPosition">Poloha</String>
+    <String key="TapeKeysHelp">Šipky vlevo a vpravo posouvají po pásce, s Ctrl desetkrát dál, Home a End jdou na její konce, Enter přenese černou skříňku do tohoto okamžiku.</String>
+    <String key="ConsistSaidEmpty">Souprava prázdná</String>
+    <String key="ConsistSaidAdded">Přidáno {0} na pozici {1} z {2}</String>
+    <String key="ConsistSaidRemoved">Odebráno {0}, zbývá vozidel: {1}</String>
+    <String key="ConsistSaidTurned">{0} otočeno</String>
+    <String key="ConsistSaidUnturned">{0} otočeno zpět</String>
+    <String key="ConsistSaidTurnedMany">Otočeno vozidel: {0}</String>
+    <String key="ConsistSaidMoved">{0} přesunuto na pozici {1} z {2}</String>
+    <String key="ConsistSaidReordered">Pořadí změněno</String>
+    <String key="ConsistSaidReplaced">{0} nahrazeno za {1}</String>
+    <String key="ConsistSaidChangedMany">Změněno vozidel: {0}, v soupravě: {1}</String>
+    <String key="ConsistSaidUndone">Vráceno zpět. {0}</String>
+    <String key="ConsistSaidRedone">Znovu provedeno. {0}</String>
+    <String key="SceneryImage">Obrázek scenérie</String>
+    <String key="PanelSplitter">Oddělovač panelů</String>
+    <String key="SettingsCategories">Kategorie nastavení</String>
     <String key="SettingsNotSaved">Nastavení se nepodařilo uložit</String>
     <String key="UnsavedChanges">Neuložené změny</String>
 
@@ -597,8 +638,10 @@
     <String key="About">O programu</String>
     <String key="Close">Zavřít</String>
     <String key="CpuNoAvx2Title">Procesor bez AVX2</String>
-    <String key="CpuNoAvx2">Tento procesor nemá AVX2 a oficiální simulátor ho vyžaduje: nespustí se.&#10;&#10;Simulátor lze sestavit bez AVX2 (CMake -DENABLE_AVX2=OFF). Návod:&#10;{0}</String>
+    <String key="CpuNoAvx2">Tento procesor nemá AVX2 a oficiální simulátor ho vyžaduje: nespustí se.&#10;&#10;Existuje verze simulátoru bez AVX2 - název jejího souboru končí na _noavx2. Vložte ji do složky hry a starter ji sám použije. Simulátor lze také sestavit sám (CMake -DENABLE_AVX2=OFF). Návod:&#10;{0}</String>
     <String key="CpuNoAvx2Open">Otevřít návod</String>
+    <String key="CpuNoAvx2Chosen">Tento procesor nemá AVX2 a zvolený simulátor {0} ho vyžaduje: nespustí se.&#10;&#10;Ve složce hry je verze bez AVX2: {1}. Automatická volba vezme právě ji.</String>
+    <String key="CpuNoAvx2UseIt">Volit automaticky</String>
     <String key="DontShowAgain">Znovu nezobrazovat</String>
     <String key="SettingsPath">Nastavení načteno z:</String>
 
@@ -750,7 +793,6 @@
     <String key="SyntaxVehicleOutsideTrainset">Vozidlo {0} stojí mimo soupravu: chybí záhlaví trainset?</String>
     <String key="SyntaxNotANumber">{0}: „{1}“ místo čísla</String>
     <String key="SyntaxMissingInclude">Soubor {1} nenalezen (include)</String>
-    <String key="SyntaxIncludeLetterCase">Soubor {1} je na disku jako {0}: linuxový eu07 ho nenačte</String>
     <String key="SyntaxIncludeNotClosed">include {1} bez end</String>
     <String key="SyntaxTrainsetUnreadable">Soupravu {0} se nepodařilo načíst</String>
     <String key="SyntaxVehicleUnreadable">Vozidlo {0} se nepodařilo načíst</String>

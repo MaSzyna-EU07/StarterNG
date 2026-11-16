@@ -13,6 +13,7 @@ using Avalonia.Layout;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
 using StarterNG.Classes;
+using StarterNG.Controls;
 using StarterNG.Infrastructure;
 using StarterNG.Views;
 using StarterNG.Application;
@@ -98,6 +99,7 @@ public partial class MainWindow : Window
         // Tunnelling: the shortcuts are checked before any view sees the key, which is
         // why OnShortcutKey has to be careful about text entry and key capture.
         AddHandler(KeyDownEvent, OnShortcutKey, RoutingStrategies.Tunnel);
+        AddHandler(KeyDownEvent, OnTabWithNothingFocused, RoutingStrategies.Tunnel);
 
         AppServices.Current.State.Changed += UpdateStartButton;
         Opened += (_, _) =>
@@ -108,7 +110,13 @@ public partial class MainWindow : Window
             _sceneryFilesTimer.Start();
             FollowLastRun();
         };
-        Activated += (_, _) => CheckExternalSettings();
+        Activated += (_, _) =>
+        {
+            CheckExternalSettings();
+            // Back from a build or a download: a new simulator is on the list already.
+            if (SettingsView.IsVisible)
+                SettingsView.RefreshExecutables();
+        };
         _sceneryFilesTimer.Tick += async (_, _) => await LookAtSceneryFilesAsync();
         Closed += (_, _) => _sceneryFilesTimer.Stop();
     }
@@ -235,6 +243,17 @@ public partial class MainWindow : Window
             ScenariosView.RefreshConsistView();
         };
         win.ShowDialog(this);
+    }
+
+    private void OnTabWithNothingFocused(object? sender, KeyEventArgs e)
+    {
+        if (FocusManager is not { } focus)
+            return;
+
+        var next = KeyboardFocus.TabFromNowhere(e.Key, e.KeyModifiers, focus.GetFocusedElement(), this,
+                                                focus.FindFirstFocusableElement, focus.FindLastFocusableElement);
+        if (next is not null && next.Focus(NavigationMethod.Tab))
+            e.Handled = true;
     }
 
     private void OnShortcutKey(object? sender, KeyEventArgs e)
@@ -508,11 +527,34 @@ public partial class MainWindow : Window
     private const string SimulatorBuildGuide = "https://github.com/MaSzyna-EU07/maszyna#getting-started";
 
     /// <summary>
-    /// Tells a user whose processor lacks AVX2 that the published simulator will
-    /// not run, and where the instructions for a build of their own are.
+    /// Tells a user whose processor lacks AVX2 that the simulator that would start will
+    /// not run. With a build without AVX2 in the folder, chosen away from by hand, the
+    /// notice offers to go back to the automatic choice, which takes it; with none, it
+    /// says what such a build is called and where the instructions for one's own are.
     /// </summary>
-    public async Task ShowCpuNoticeAsync()
+    public async Task ShowCpuNoticeAsync(string executable)
     {
+        var services = AppServices.Current;
+        if (services.Executables.NewestNoAvx2() is { } noAvx2)
+        {
+            var (useIt, quiet) = await MessageBox.ShowNotice(
+                this, string.Format(App.Loc["CpuNoAvx2Chosen"], Path.GetFileName(executable), noAvx2),
+                App.Loc["CpuNoAvx2Title"], App.Loc["CpuNoAvx2UseIt"], App.Loc["DontShowAgain"]);
+            if (useIt)
+            {
+                services.Settings.SelectExeAutomatically = true;
+                services.SettingsStore.Save();
+                SettingsView.ReloadFromSettings();
+                UpdateStartButton();
+            }
+            if (quiet)
+            {
+                services.Settings.CpuNotice = false;
+                services.SettingsStore.Save();
+            }
+            return;
+        }
+
         var (open, silence) = await MessageBox.ShowNotice(
             this, string.Format(App.Loc["CpuNoAvx2"], SimulatorBuildGuide), App.Loc["CpuNoAvx2Title"],
             App.Loc["CpuNoAvx2Open"], App.Loc["DontShowAgain"]);

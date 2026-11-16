@@ -61,8 +61,10 @@
                              with no label hides PART_Label, and without this the
                              column would collapse onto the key and every
                              explanation would start at a different place again. -->
+                        <!-- Selectable for copying, but no stop for Tab: a reader found
+                             nothing there to say between one setting and the next. -->
                         <SelectableTextBlock Name="PART_ConfigKey"
-                                             Grid.Row="1" Grid.Column="0"
+                                             Grid.Row="1" Grid.Column="0" IsTabStop="False"
                                              Text="{TemplateBinding ConfigKey}"
                                              FontFamily="Consolas, DejaVu Sans Mono, Liberation Mono, Menlo, Courier New"
                                              FontSize="11"

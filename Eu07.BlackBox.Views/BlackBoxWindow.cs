@@ -6,6 +6,7 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using Avalonia;
+using Avalonia.Automation;
 using Avalonia.Controls;
 using Avalonia.Layout;
 using Avalonia.Media;
@@ -106,6 +107,13 @@ public sealed class BlackBoxWindow : Window
         _play.Click += (_, _) => Playing = !Playing;
         _speed.ItemsSource = Speeds.Select(s => $"×{s.ToString(CultureInfo.InvariantCulture)}").ToArray();
         _speed.SelectedIndex = 3;
+        // What a screen reader calls the parts that have no label of their own on the screen.
+        AutomationProperties.SetName(_speed, _strings["PlaySpeed"]);
+        AutomationProperties.SetName(_timeline, _strings["PanelTimeline"]);
+        AutomationProperties.SetName(_timetable, _strings["TabTimetable"]);
+        AutomationProperties.SetName(_cab, _strings["Cab"]);
+        AutomationProperties.SetName(_map, _strings["PanelMap"]);
+        AutomationProperties.SetHelpText(_map, _strings["MapHelp"]);
 
         var titles = new StackPanel { VerticalAlignment = VerticalAlignment.Center, Children = { _title, _subtitle } };
         var transport = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 10, VerticalAlignment = VerticalAlignment.Center, Children = { _play, _clock, _speed, _delayText } };
@@ -455,6 +463,7 @@ public sealed class BlackBoxWindow : Window
         _clock.Text = recording.ClockAt(_time).ToString(@"hh\:mm\:ss", CultureInfo.InvariantCulture);
         _events.ShowTime(_time);
         ShowReadout(null);
+        _timeline.Spoken = _readout.Text;
         ShowDelay(recording);
         TimeChanged?.Invoke(_time);
     }

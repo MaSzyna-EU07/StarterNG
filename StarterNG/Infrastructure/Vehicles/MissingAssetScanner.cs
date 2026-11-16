@@ -10,44 +10,53 @@ public sealed class MissingAssetScanner
     private static readonly string[] TextureExtensions = { ".mat", ".bmp" };
     private static readonly string[] ModelExtensions = { ".t3d", ".e3d" };
 
-    private readonly IFileSystem _files;
     private readonly IGamePaths _paths;
+    private readonly CaseInsensitivePaths _names;
 
     public MissingAssetScanner(IFileSystem files, IGamePaths paths)
     {
-        _files = files;
         _paths = paths;
+        _names = new CaseInsensitivePaths(files, keepListings: true);
     }
 
     public List<string> Scan(VehicleCatalog catalog)
     {
         var lines = new List<string>();
-
-        foreach (var texture in catalog.Textures)
+        try
         {
-            string directory = Path.Combine(
-                _paths.Dynamic,
-                texture.Directory.Replace('/', Path.DirectorySeparatorChar).TrimEnd('\\', '/'));
+            foreach (var texture in catalog.Textures)
+            {
+                string directory = texture.Directory.Replace('\\', '/').TrimEnd('/');
 
-            if (!string.IsNullOrEmpty(texture.Skinfile) &&
-                !ExistsWithAnyExtension(Path.Combine(directory, texture.Skinfile), TextureExtensions))
-                lines.Add($"# no file: {texture.Directory}{texture.Skinfile}");
+                if (!string.IsNullOrEmpty(texture.Skinfile) &&
+                    !ExistsWithAnyExtension(Under(directory, texture.Skinfile), TextureExtensions))
+                    lines.Add($"# no file: {texture.Directory}{texture.Skinfile}");
 
-            if (!string.IsNullOrEmpty(texture.Model) &&
-                !ExistsWithAnyExtension(Path.Combine(directory, texture.Model), ModelExtensions))
-                lines.Add($"# no model: {texture.Directory}{texture.Model}");
+                if (!string.IsNullOrEmpty(texture.Model) &&
+                    !ExistsWithAnyExtension(Under(directory, texture.Model), ModelExtensions))
+                    lines.Add($"# no model: {texture.Directory}{texture.Model}");
+            }
+        }
+        finally
+        {
+            // The folders are listed once for the whole catalog, and not kept past it.
+            _names.Forget();
         }
 
         return lines;
     }
 
-    private bool ExistsWithAnyExtension(string path, string[] extensions)
+    private static string Under(string directory, string name) =>
+        directory.Length == 0 ? name : directory + "/" + name;
+
+    /// <summary>Whether the file is under dynamic as named, or with one of the extensions, in any letter case.</summary>
+    private bool ExistsWithAnyExtension(string name, string[] extensions)
     {
-        if (_files.FileExists(path))
+        if (_names.Resolve(_paths.Dynamic, name) is not null)
             return true;
 
         foreach (string extension in extensions)
-            if (_files.FileExists(Path.ChangeExtension(path, extension)))
+            if (_names.Resolve(_paths.Dynamic, Path.ChangeExtension(name, extension)) is not null)
                 return true;
 
         return false;

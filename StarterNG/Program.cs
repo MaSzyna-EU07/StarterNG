@@ -10,12 +10,22 @@ namespace StarterNG;
 static class Program
 {
 
+    private static bool _softwareRender;
+
     [STAThread]
     public static void Main(string[] args)
     {
+        // Ahead of everything that could draw: what lies beside the starter is the simulator's.
+        var graphics = SystemGraphicsLibraries.TakeOnWindows();
+        graphics?.ServeTo(typeof(Win32PlatformOptions).Assembly);
+
+        _softwareRender = SoftwareRender.AskedIn(args);
+
         // Composition root first: everything below, including the crash handlers,
         // resolves its collaborators from this graph.
         AppServices.Initialize();
+        if (graphics?.Note is { } note)
+            Diagnostics.Log(note);
 
         AppDomain.CurrentDomain.UnhandledException += (_, e) =>
         {
@@ -63,9 +73,13 @@ static class Program
         };
     }
 
+    private static AppBuilder WithSoftwareRenderIfAsked(this AppBuilder builder) =>
+        _softwareRender ? SoftwareRender.ApplyTo(builder) : builder;
+
     public static AppBuilder BuildAvaloniaApp()
         => AppBuilder.Configure<App>()
             .UsePlatformDetect()
+            .WithSoftwareRenderIfAsked()
             .WithInterFont()
             .WithDiagnosticsLogging()
             .AfterSetup(_ => LogUiExceptions());

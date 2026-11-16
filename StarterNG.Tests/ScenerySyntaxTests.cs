@@ -273,7 +273,7 @@ public class ScenerySyntaxTests
             include koniec.scm
             """;
 
-        var scenery = TestScenery.Parser().Parse("scenery/x.scn", scn, _ => new IncludeLookup(true));
+        var scenery = TestScenery.Parser().Parse("scenery/x.scn", scn, _ => true);
 
         Assert.Empty(scenery.Faults);
         Assert.Equal("td/rozklad", Assert.Single(scenery.Trainsets).Name);
@@ -326,7 +326,7 @@ public class ScenerySyntaxTests
             endoptional
             """;
 
-        var faults = TestScenery.Parser().Parse("scenery/x.scn", scn, name => new IncludeLookup(name is "tory.scm" or "budynek.inc")).Faults;
+        var faults = TestScenery.Parser().Parse("scenery/x.scn", scn, name => name is "tory.scm" or "budynek.inc").Faults;
 
         Assert.Equal((SceneryFaultKind.MissingInclude, "x.scn", 2, null, "brak.scm"), Seen(Assert.Single(faults)));
     }
@@ -347,9 +347,9 @@ public class ScenerySyntaxTests
     }
 
     [Fact]
-    public void An_include_on_disk_only_in_other_letter_case_is_what_linux_misses()
+    public void An_include_on_disk_in_other_letter_case_is_no_fault()
     {
-        // The simulator folds the name to lower case and opens it so.
+        // The simulator finds the file whatever the case of its letters, on Linux too.
         var files = new InMemoryFileSystem(caseSensitive: true)
             .WithLegacyFile("game/scenery/braniewo_szeroki.scn",
                             "include braniewo/base.ctr end\ninclude Braniewo/Tory.SCM end\n")
@@ -357,21 +357,20 @@ public class ScenerySyntaxTests
             .WithFile("game/scenery/braniewo/tory.scm", "");
         var repository = TestScenery.Repository(files);
 
-        var faults = repository.Load("game/scenery/braniewo_szeroki.scn")!.Faults;
-
-        Assert.Equal((SceneryFaultKind.IncludeLetterCase, "braniewo_szeroki.scn", 1, "Braniewo/Base.ctr", "braniewo/base.ctr"),
-                     Seen(Assert.Single(faults)));
+        Assert.Empty(repository.Load("game/scenery/braniewo_szeroki.scn")!.Faults);
     }
 
     [Theory]
-    [InlineData(true)]
-    [InlineData(false)]
-    public void A_missing_terrain_file_is_no_fault_while_the_scenery_has_its_own_sbt(bool sbt)
+    [InlineData(null)]
+    [InlineData("lk2_sandbox.sbt")]
+    [InlineData("Lk2_Sandbox.SBT")]
+    public void A_missing_terrain_file_is_no_fault_while_the_scenery_has_its_own_sbt(string? sbtOnDisk)
     {
+        bool sbt = sbtOnDisk is not null;
         var files = new InMemoryFileSystem(caseSensitive: true)
             .WithLegacyFile("game/scenery/Lk2_Sandbox.scn", "include nmt/nmt100_mazowieckie_ter.scm end\nFirstInit\n");
         if (sbt)
-            files.WithFile("game/scenery/lk2_sandbox.sbt", "EU07");
+            files.WithFile("game/scenery/" + sbtOnDisk, "EU07");
         var repository = TestScenery.Repository(files);
 
         var scenery = repository.Load("game/scenery/Lk2_Sandbox.scn")!;
