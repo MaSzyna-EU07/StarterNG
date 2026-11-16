@@ -309,16 +309,16 @@ public sealed class TimelineView : Control
             rows[2].Add(x0, x1, s.BrakeCylinder > 0.2f ? BrakeShade(s.BrakeCylinder) : null, BandHeight);
             if (s.Security != SecurityFlags.None || s.CabEnd != 0)
             {
-                // The alerter and the cab signalling apart, red when not acknowledged in time.
-                rows[3].Add(x0, x1, s.Has(SecurityFlags.VigilanceBeeping) ? Palette.LampAlarm
+                // The alerter and the cab signalling apart: the lamp, then its buzzer, red when it braked.
+                rows[3].Add(x0, x1, s.VigilanceBuzzer ? Palette.Buzzer
                                     : s.Has(SecurityFlags.Vigilance) ? Palette.Vigilance : null, BandHeight);
-                rows[4].Add(x0, x1, s.Has(SecurityFlags.CabSignalBeeping) ? Palette.LampAlarm
+                rows[4].Add(x0, x1, s.CabSignalBuzzer ? Palette.Buzzer
                                     : s.Has(SecurityFlags.CabSignal) ? Palette.CabSignal : null, BandHeight);
-                if (s.Has(SecurityFlags.Braking))
+                if (s.ProtectionBraking)
                     rows[s.Has(SecurityFlags.CabSignal) && !s.Has(SecurityFlags.Vigilance) ? 4 : 3].Add(x0, x1, Palette.Bad, BandHeight);
             }
             else
-                rows[3].Add(x0, x1, (s.Flags & CabFlags.AlerterBeeping) != 0 ? Palette.LampAlarm
+                rows[3].Add(x0, x1, (s.Flags & CabFlags.AlerterBeeping) != 0 ? Palette.Buzzer
                                     : (s.Flags & CabFlags.AlerterBlinking) != 0 ? Palette.Vigilance : null, BandHeight);
             // Where the user looked from: the samples go on in time, and so does the camera.
             while (camera + 1 < cameras.Count && cameras[camera + 1].Time <= s.Time)
@@ -590,7 +590,8 @@ public sealed class TimelineView : Control
             foreach (var d in recording.DriverChanges)
                 Consider(d.Time, () => Strings[d.Driving == Driver.Ai ? "TlAutopilotOn" : "TlAutopilotOff"]);
             foreach (var c in recording.UserCommands())
-                Consider(c.Time, () => string.Format(culture, Strings["TlCommand"], c.Name));
+                Consider(c.Time, () => string.Format(culture, Strings["TlCommand"],
+                                                     Strings[DefaultBlackBoxStrings.CommandPrefix + c.Name]));
         }
         return found;
     }

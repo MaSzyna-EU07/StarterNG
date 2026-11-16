@@ -901,8 +901,8 @@
     <String key="Cmd.trainbrakecharging">train brake valve: overcharge the brake pipe</String>
     <String key="Cmd.trainbrakerelease">train brake valve: running position</String>
     <String key="Cmd.trainbrakefirstservice">train brake valve: first braking step</String>
-    <String key="Cmd.trainbrakeservice">train brake valve: full service</String>
-    <String key="Cmd.trainbrakefullservice">train brake valve: supplementary braking</String>
+    <String key="Cmd.trainbrakeservice">train brake valve: service braking</String>
+    <String key="Cmd.trainbrakefullservice">train brake valve: full service</String>
     <String key="Cmd.trainbrakehandleoff">train brake valve: lap position</String>
     <String key="Cmd.trainbrakeemergency">emergency braking</String>
     <String key="Cmd.trainbrakebasepressureincrease">raise the brake pipe pressure level</String>
@@ -1012,7 +1012,7 @@
     <String key="Cmd.interiorlightdimtoggle">toggle cab light dimming</String>
     <String key="Cmd.compartmentlightstoggle">toggle the compartment lights</String>
     <String key="Cmd.instrumentlighttoggle">toggle the instrument lights</String>
-    <String key="Cmd.dashboardlighttoggle">toggle the desk lights</String>
+    <String key="Cmd.dashboardlighttoggle">toggle the dashboard light</String>
     <String key="Cmd.timetablelighttoggle">toggle the timetable light</String>
     <String key="Cmd.generictoggle0">generic switch 0</String>
     <String key="Cmd.generictoggle1">generic switch 1</String>

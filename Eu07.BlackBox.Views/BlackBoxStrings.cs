@@ -185,6 +185,9 @@ public sealed class DefaultBlackBoxStrings : IBlackBoxStrings
         ["EventHornMissed"] = "W6: NO HORN",
         ["EventCab"] = "Cab {0} of {1}",
         ["EventSecurityBraking"] = "BRAKING BY {0}",
+        ["EventSecurityAlarm"] = "{0} buzzer",
+        ["EventSecurityAlarmAcknowledged"] = "{0} buzzer, acknowledged after {1:0.0} s",
+        ["EventSecurityAlarmMissed"] = "{0} buzzer, not acknowledged",
         ["EventTimetable"] = "Timetable {0}, {1}",
         ["CabSpeed"] = "Speed",
         ["CabAiTarget"] = "AI {0:0} km/h",
@@ -460,6 +463,9 @@ public sealed class DefaultBlackBoxStrings : IBlackBoxStrings
         ["EventHornMissed"] = "W6: BEZ TRĄBIENIA",
         ["EventCab"] = "Kabina {0} w {1}",
         ["EventSecurityBraking"] = "HAMOWANIE PRZEZ {0}",
+        ["EventSecurityAlarm"] = "Brzęczyk {0}",
+        ["EventSecurityAlarmAcknowledged"] = "Brzęczyk {0}, potwierdzony po {1:0.0} s",
+        ["EventSecurityAlarmMissed"] = "Brzęczyk {0}, bez potwierdzenia",
         ["EventTimetable"] = "Rozkład {0}, {1}",
         ["CabSpeed"] = "Prędkość",
         ["CabAiTarget"] = "AI {0:0} km/h",
@@ -564,7 +570,11 @@ public sealed class DefaultBlackBoxStrings : IBlackBoxStrings
         ["FileFilter"] = "Czarna skrzynka"
     };
 
+    /// <summary>The key of the text of a simulator's command: <see cref="CommandPrefix"/> and its name.</summary>
+    public const string CommandPrefix = "Cmd.";
+
     private readonly Dictionary<string, string> _texts;
+    private readonly string _languageCode;
 
     public DefaultBlackBoxStrings() : this(CultureInfo.CurrentUICulture)
     {
@@ -577,11 +587,15 @@ public sealed class DefaultBlackBoxStrings : IBlackBoxStrings
     /// <summary>Polish for "pl", English for any other language.</summary>
     public DefaultBlackBoxStrings(string languageCode)
     {
+        _languageCode = languageCode;
         _texts = languageCode == "pl" ? Polish : English;
     }
 
     /// <summary>The keys there are texts for, for a translation to give them all.</summary>
     public static IEnumerable<string> Keys => English.Keys;
 
-    public string this[string key] => _texts.TryGetValue(key, out var text) ? text : English.GetValueOrDefault(key, key);
+    /// <summary>A key of <see cref="CommandPrefix"/> gives what the command does (<see cref="CommandTexts"/>).</summary>
+    public string this[string key] =>
+        key.StartsWith(CommandPrefix, System.StringComparison.Ordinal) ? CommandTexts.Of(key[CommandPrefix.Length..], _languageCode)
+        : _texts.TryGetValue(key, out var text) ? text : English.GetValueOrDefault(key, key);
 }
