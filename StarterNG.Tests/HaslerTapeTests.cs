@@ -6,12 +6,12 @@ namespace StarterNG.Tests;
 
 public class HaslerTapeTests
 {
-    private const string Header =
+    internal const string Header =
         "Time[s] Velocity[m/s] Acceleration[m/ss] Coupler.Dist[m] Coupler.Force[N] TractionForce[kN] FrictionForce[kN] " +
         "BrakeForce[kN] BrakePress[MPa] PipePress[MPa] MotorCurrent[A] MCP SCP BCP LBP Direction Command CVal1 CVal2 " +
         "Security Wheelslip EngineTemp[Deg] OilTemp[Deg] WaterTemp[Deg] WaterAuxTemp[Deg]\r\n";
 
-    private static string Line(double t, double v, double brake, double current, string command = "none",
+    internal static string Line(double t, double v, double brake, double current, string command = "none",
                                int security = 0) =>
         string.Create(CultureInfo.InvariantCulture,
             $"{t:0.0000} {v:0.0000} 0.0000 0.0000 0.0000 0.0000 0.0000 0.0000 {brake:0.0000} 0.5000 {current:0.0000} ") +
@@ -180,6 +180,63 @@ public class HaslerTapeTests
         // begun anew, and shorter
         files.WithFile(path, Header + Line(0, 18, 0, 0));
         Assert.Equal(18, Assert.Single(tapes.Load(file, follow: true)!.Samples).SpeedKmh, 6);
+    }
+
+    [Fact]
+    public void A_log_begun_anew_over_the_end_that_was_read_is_read_whole_once_its_time_goes_back()
+    {
+        // the command is free text, here long enough that the end kept of the read part holds no time
+        string command = new('x', 400);
+        string path = TestInstallation.At("physicslog", "EU07-424.dat");
+        var files = new InMemoryFileSystem().WithFile(path, Header + Line(3, 36, 0, 0, command));
+        var tapes = new TestInstallation(files).Tapes;
+        var file = Assert.Single(tapes.List());
+        Assert.Equal(3, Assert.Single(tapes.Load(file, follow: false)!.Samples).Time, 6);
+
+        // begun anew: where the read part ended it reads as it did, but the lines added go back to the start
+        files.WithFile(path, Header + Line(0, 36, 0, 0, command) + Line(1, 36, 0, 0, command) + Line(2, 36, 0, 0, command));
+        var tape = tapes.Load(file, follow: true)!;
+
+        Assert.Equal([0.0, 1.0, 2.0], tape.Samples.Select(s => s.Time));
+    }
+
+    [Fact]
+    public void A_tape_that_cannot_be_read_is_none_and_told_and_is_read_whole_once_it_can()
+    {
+        string path = TestInstallation.At("physicslog", "EU07-424.dat");
+        var files = new InMemoryFileSystem().WithFile(path, Header + Line(0, 36, 0, 0));
+        var installation = new TestInstallation(files);
+        var tapes = installation.Tapes;
+        var file = Assert.Single(tapes.List());
+        tapes.Load(file, follow: false);
+
+        files.FailReading(path);
+        Assert.Null(tapes.Load(file, follow: true));
+        Assert.Contains("EU07-424.dat", installation.Log.Text);
+
+        files.AllowReading(path).WithFile(path, Header + Line(0, 72, 0, 0) + Line(1, 72, 0, 0));
+        Assert.All(tapes.Load(file, follow: true)!.Samples, s => Assert.Equal(72, s.SpeedKmh, 6));
+    }
+
+    [Fact]
+    public void A_file_read_only_forward_is_read_whole_each_time()
+    {
+        string path = TestInstallation.At("physicslog", "EU07-424.dat");
+        var files = new InMemoryFileSystem().WithFile(path, Header + Line(0, 36, 0, 0)).OpenedForwardOnly(path);
+        var tapes = new TestInstallation(files).Tapes;
+        var file = Assert.Single(tapes.List());
+
+        Assert.Single(tapes.Load(file, follow: true)!.Samples);
+        files.WithFile(path, Header + Line(0, 36, 0, 0) + Line(1, 36, 0, 0));
+        Assert.Equal(2, tapes.Load(file, follow: true)!.Samples.Count);
+    }
+
+    [Fact]
+    public void Empty_lines_in_a_log_are_passed_over()
+    {
+        var tape = HaslerTape.Parse(Header + "\r\n" + Line(0, 36, 0, 0) + "   \r\n" + Line(1, 36, 0, 0));
+
+        Assert.Equal(2, tape.Samples.Count);
     }
 
     [Fact]

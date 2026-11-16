@@ -223,6 +223,34 @@ public class BlackBoxViewsTests
     }
 
     [Fact]
+    public void Wheels_turning_apart_from_the_train_are_said_beside_its_speed()
+    {
+        var f = new BlackBoxFile().Info()
+            .Vehicle(Head, "EU07-005", "ROJ1")
+            .User(0, Head, true, 1);
+        // slipping for the first ten seconds, then the wheels as fast as the train, give or take the rounding
+        for (double t = 0; t <= 20; t += 0.5)
+            f.Cab(t, Head, 1150 + t * 10, 40, movement: 1, equippedHead: 0x15, equippedTail: 0x22, engine: 1,
+                  wheelSpeed: t < 10 ? 55.4f : 40.3f);
+        var cab = new CabPanel
+        {
+            Recording = BlackBoxReader.Read(f.End(20).Stream()),
+            Strings = new DefaultBlackBoxStrings("en"),
+            Time = 5
+        };
+        Controls.Lay(cab, 600, 900);
+
+        Controls.Draw(cab);
+        Assert.Contains("40 km/h", cab.Said);
+        Assert.Contains("wheels 55", cab.Said);
+
+        cab.Time = 15;
+        Controls.Draw(cab);
+        Assert.Contains("40 km/h", cab.Said);
+        Assert.DoesNotContain("wheels", cab.Said);
+    }
+
+    [Fact]
     public void The_cab_stopped_under_the_brakes_and_out_of_the_recording()
     {
         var cab = new CabPanel { Recording = Journey(), Time = 60 };

@@ -20,6 +20,7 @@ public sealed class InMemoryFileSystem : IFileSystem
     private readonly HashSet<string> _executable;
     private readonly Dictionary<string, string> _links;
     private readonly HashSet<string> _unreadable;
+    private readonly HashSet<string> _unseekable;
     private readonly HashSet<string> _unlistable;
     private readonly Dictionary<string, DateTime> _written;
 
@@ -32,6 +33,7 @@ public sealed class InMemoryFileSystem : IFileSystem
         _executable = new HashSet<string>(comparer);
         _links = new Dictionary<string, string>(comparer);
         _unreadable = new HashSet<string>(comparer);
+        _unseekable = new HashSet<string>(comparer);
         _unlistable = new HashSet<string>(comparer);
         _written = new Dictionary<string, DateTime>(comparer);
     }
@@ -48,6 +50,13 @@ public sealed class InMemoryFileSystem : IFileSystem
     public InMemoryFileSystem FailReading(string path)
     {
         _unreadable.Add(Normalize(path));
+        return this;
+    }
+
+    /// <summary>The file opens as a stream read only forward, as a pipe or some network shares give it.</summary>
+    public InMemoryFileSystem OpenedForwardOnly(string path)
+    {
+        _unseekable.Add(Normalize(path));
         return this;
     }
 
@@ -115,7 +124,11 @@ public sealed class InMemoryFileSystem : IFileSystem
 
     public byte[] ReadAllBytes(string path) => Bytes(path);
 
-    public Stream OpenRead(string path) => new MemoryStream(Bytes(path), writable: false);
+    public Stream OpenRead(string path)
+    {
+        var stream = new MemoryStream(Bytes(path), writable: false);
+        return _unseekable.Contains(Normalize(path)) ? new ForwardOnlyStream(stream) : stream;
+    }
 
     public void WriteAllText(string path, string contents) => WithFile(path, contents);
 

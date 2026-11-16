@@ -1,7 +1,10 @@
 using Eu07.BlackBox;
+using Eu07.BlackBox.Views;
 
 namespace StarterNG.Tests.BlackBox;
 
+// The events are coloured with the views' brushes.
+[Collection(AvaloniaControls.Name)]
 public class CabDoorsTests
 {
     private static CabSample Sample(sbyte cab, CabDevices devices) =>
@@ -27,5 +30,20 @@ public class CabDoorsTests
         var sample = Sample(cab, CabDevices.DoorsLeft | CabDevices.DoorPermitRight);
 
         Assert.Equal(sample, sample.AsTheCabSees);
+    }
+
+    [Fact]
+    public void Going_to_the_other_cab_tells_nothing_of_the_doors_and_still_tells_the_switches()
+    {
+        var f = new BlackBoxFile().Info().Vehicle(1, "EN57-1001").User(0, 1, true);
+        // the left doors permitted from the front cab; in the rear one the permit is still on, and the radio turned off
+        f.Cab(0, 1, 1000, 0, cabEnd: 1, devices: 0x0007 | (uint)(CabDevices.DoorPermitLeft | CabDevices.Radio));
+        f.Cab(1, 1, 1000, 0, cabEnd: -1, devices: 0x0007 | (uint)CabDevices.DoorPermitLeft);
+
+        var events = EventList.Collect(BlackBoxReader.Read(f.End(1).Stream()), new DefaultBlackBoxStrings("en"))
+                              .Select(e => e.Text).ToList();
+
+        Assert.Contains("Radio: off", events);
+        Assert.DoesNotContain(events, e => e.Contains("doors permitted"));
     }
 }
