@@ -54,6 +54,26 @@ public class SecurityBrakingTests
     }
 
     [Fact]
+    public void A_buzzer_cut_by_the_power_is_not_acknowledged()
+    {
+        var recording = Drive(t => t is >= 2 and < 4 ? CabSignalBuzzing : t is >= 4 and < 8 ? NoPower : (byte)0);
+
+        var events = Events(recording);
+
+        Assert.Contains("Brzęczyk SHP", events);
+        Assert.DoesNotContain(events, e => e.Contains("potwierdzony", System.StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void A_buzzer_the_other_joins_is_named_by_both()
+    {
+        // the alerter's buzzer, then a magnet passed before it's acknowledged
+        var recording = Drive(t => t is >= 2 and < 4 ? (byte)0x05 : t is >= 4 and < 5 ? (byte)0x0f : (byte)0);
+
+        Assert.Contains("Brzęczyk CA/SHP, potwierdzony po 3.0 s", Events(recording));
+    }
+
+    [Fact]
     public void A_buzzer_not_acknowledged_is_followed_by_the_braking()
     {
         // the cab signalling at the start: the buzzer at once, braking when not acknowledged
