@@ -155,7 +155,9 @@ public sealed class EventList : ListBox
         var culture = CultureInfo.CurrentCulture;
         var events = new List<BlackBoxEvent>();
         foreach (var c in recording.UserCommands())
-            events.Add(new BlackBoxEvent(c.Time, string.Format(culture, strings["EventCommand"], c.Name), Palette.Command, false));
+            events.Add(new BlackBoxEvent(c.Time, string.Format(culture, strings["EventCommand"],
+                                                               strings[DefaultBlackBoxStrings.CommandPrefix + c.Name]),
+                                         Palette.Command, false));
         foreach (var d in recording.DriverChanges)
         {
             if (recording.CabAt(d.Time + 0.5) is not { } s || s.Vehicle != d.Vehicle)

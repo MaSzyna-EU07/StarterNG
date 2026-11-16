@@ -526,7 +526,8 @@ public sealed class TimelineView : Control
             foreach (var d in recording.DriverChanges)
                 Consider(d.Time, () => Strings[d.Driving == Driver.Ai ? "TlAutopilotOn" : "TlAutopilotOff"]);
             foreach (var c in recording.UserCommands())
-                Consider(c.Time, () => string.Format(culture, Strings["TlCommand"], c.Name));
+                Consider(c.Time, () => string.Format(culture, Strings["TlCommand"],
+                                                     Strings[DefaultBlackBoxStrings.CommandPrefix + c.Name]));
         }
         return found;
     }
