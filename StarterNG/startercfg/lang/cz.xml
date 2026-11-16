@@ -633,8 +633,10 @@
     <String key="About">O programu</String>
     <String key="Close">Zavřít</String>
     <String key="CpuNoAvx2Title">Procesor bez AVX2</String>
-    <String key="CpuNoAvx2">Tento procesor nemá AVX2 a oficiální simulátor ho vyžaduje: nespustí se.&#10;&#10;Simulátor lze sestavit bez AVX2 (CMake -DENABLE_AVX2=OFF). Návod:&#10;{0}</String>
+    <String key="CpuNoAvx2">Tento procesor nemá AVX2 a oficiální simulátor ho vyžaduje: nespustí se.&#10;&#10;Existuje verze simulátoru bez AVX2 - název jejího souboru končí na _noavx2. Vložte ji do složky hry a starter ji sám použije. Simulátor lze také sestavit sám (CMake -DENABLE_AVX2=OFF). Návod:&#10;{0}</String>
     <String key="CpuNoAvx2Open">Otevřít návod</String>
+    <String key="CpuNoAvx2Chosen">Tento procesor nemá AVX2 a zvolený simulátor {0} ho vyžaduje: nespustí se.&#10;&#10;Ve složce hry je verze bez AVX2: {1}. Automatická volba vezme právě ji.</String>
+    <String key="CpuNoAvx2UseIt">Volit automaticky</String>
     <String key="DontShowAgain">Znovu nezobrazovat</String>
     <String key="SettingsPath">Nastavení načteno z:</String>
 

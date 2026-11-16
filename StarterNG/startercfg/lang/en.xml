@@ -659,8 +659,10 @@
     <String key="About">About</String>
     <String key="Close">Close</String>
     <String key="CpuNoAvx2Title">Processor without AVX2</String>
-    <String key="CpuNoAvx2">This processor has no AVX2 and the official simulator needs it: it will not start.&#10;&#10;You can build the simulator without AVX2 (CMake -DENABLE_AVX2=OFF). Instructions:&#10;{0}</String>
+    <String key="CpuNoAvx2">This processor has no AVX2 and the official simulator needs it: it will not start.&#10;&#10;There is a simulator build without AVX2 - its file name ends in _noavx2. Put it in the game folder and the starter will use it. You can also build the simulator yourself (CMake -DENABLE_AVX2=OFF). Instructions:&#10;{0}</String>
     <String key="CpuNoAvx2Open">Open the instructions</String>
+    <String key="CpuNoAvx2Chosen">This processor has no AVX2 and the chosen simulator {0} needs it: it will not start.&#10;&#10;The game folder has a build without AVX2: {1}. The automatic choice takes that one.</String>
+    <String key="CpuNoAvx2UseIt">Choose automatically</String>
     <String key="DontShowAgain">Don't show again</String>
     <String key="SettingsPath">Settings loaded from:</String>
 

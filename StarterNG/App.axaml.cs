@@ -207,8 +207,12 @@ public partial class App : Avalonia.Application
                     if (check.ExecutableMissing())
                         await main.OfferExecutablePickAsync();
 
-                    if (CpuFeatures.LacksAvx2 && AppServices.Current.Settings.CpuNotice)
-                        await main.ShowCpuNoticeAsync();
+                    // A build without AVX2 in the folder is started instead, and needs no notice.
+                    var services = AppServices.Current;
+                    if (services.Settings.CpuNotice
+                        && services.Executables.Resolve(services.Settings, out _) is var executable
+                        && services.Executables.WillNotRunHere(executable))
+                        await main.ShowCpuNoticeAsync(executable);
                 });
             });
         }
