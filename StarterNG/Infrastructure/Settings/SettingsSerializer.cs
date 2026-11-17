@@ -194,6 +194,7 @@ public sealed class SettingsSerializer
         s.VehiclesVolume = Clamp((int)Math.Round(c.GetDouble("sound.volume.vehicle", 1.0) * 100), 0, 100);
         s.PositionalVolume = Clamp((int)Math.Round(c.GetDouble("sound.volume.positional", 1.0) * 100), 0, 100);
         s.AmbientVolume = Clamp((int)Math.Round(c.GetDouble("sound.volume.ambient", 1.0) * 100), 0, 100);
+        ReadAudioDevice(c, s);
         s.SkipPipeline = c.GetBool("gfx.skippipeline", false);
         s.PythonScreenUpdateRate = c.Has("python.updatetime")
             ? Clamp(c.GetInt("python.updatetime", 200), 0, 10000)
@@ -412,6 +413,7 @@ public sealed class SettingsSerializer
         c.SetDouble("sound.volume.vehicle", s.VehiclesVolume / 100.0);
         c.SetDouble("sound.volume.positional", s.PositionalVolume / 100.0);
         c.SetDouble("sound.volume.ambient", s.AmbientVolume / 100.0);
+        WriteAudioDevice(c, s);
         c.SetBool("gfx.skippipeline", s.SkipPipeline);
         c.SetInt("python.updatetime", s.PythonScreenUpdateRate);
 
@@ -455,6 +457,65 @@ public sealed class SettingsSerializer
 
         double value = c.GetDouble("gfx.buffer.percent", 100);
         return Clamp((int)Math.Round(value > 4 ? value : value * 100), 25, 200);
+    }
+
+    // The OpenAL Soft options. The names (devices, HRTF data sets, resamplers) can hold spaces, so
+    // the simulator takes them in quotes.
+    private static void ReadAudioDevice(ConfigFile c, SimulatorSettings s)
+    {
+        s.AudioDevice = Unquoted(c.GetString("sound.openal.renderer", ""));
+        s.AudioOutputMode = FirstTokenOr(c, "sound.outputmode", "auto");
+        s.AudioHrtf = FirstTokenOr(c, "sound.hrtf", "auto");
+        s.AudioHrtfProfile = Unquoted(c.GetString("sound.hrtf.profile", ""));
+        s.AudioResampler = Unquoted(c.GetString("sound.resampler", ""));
+        s.AudioLimiter = FirstTokenOr(c, "sound.limiter", "auto");
+        s.AudioFrequency = Clamp(c.GetInt("sound.frequency", 0), 0, 192000);
+        s.AudioDoppler = Math.Clamp(c.GetDouble("sound.doppler", 0.25), 0.0, 10.0);
+        s.AudioLowpass = c.GetBool("sound.efx.lowpass", false);
+        s.AudioAirAbsorption = Math.Clamp(c.GetDouble("sound.efx.airabsorption", 0.0), 0.0, 10.0);
+    }
+
+    // A key the file lacks is written only when the value differs from the simulator's default, so
+    // saving with these left alone adds nothing an older simulator would not know.
+    private static void WriteAudioDevice(ConfigFile c, SimulatorSettings s)
+    {
+        SetName(c, "sound.openal.renderer", s.AudioDevice);
+        SetUnlessDefault(c, "sound.outputmode", s.AudioOutputMode, "auto");
+        SetUnlessDefault(c, "sound.hrtf", s.AudioHrtf, "auto");
+        SetName(c, "sound.hrtf.profile", s.AudioHrtfProfile);
+        SetName(c, "sound.resampler", s.AudioResampler);
+        SetUnlessDefault(c, "sound.limiter", s.AudioLimiter, "auto");
+        if (c.Has("sound.frequency") || s.AudioFrequency != 0) c.SetInt("sound.frequency", s.AudioFrequency);
+        if (c.Has("sound.doppler") || Math.Abs(s.AudioDoppler - 0.25) > 1e-9) c.SetDouble("sound.doppler", s.AudioDoppler);
+        if (c.Has("sound.efx.lowpass") || s.AudioLowpass) c.SetBool("sound.efx.lowpass", s.AudioLowpass);
+        if (c.Has("sound.efx.airabsorption") || s.AudioAirAbsorption != 0.0) c.SetDouble("sound.efx.airabsorption", s.AudioAirAbsorption);
+    }
+
+    private static void SetUnlessDefault(ConfigFile c, string key, string value, string fallback)
+    {
+        if (c.Has(key) || value != fallback)
+            c.Set(key, value);
+    }
+
+    // An empty name is the library's choice: the line goes, rather than staying with a name in it.
+    private static void SetName(ConfigFile c, string key, string name)
+    {
+        if (name.Length > 0)
+            c.Set(key, name.Contains(' ') ? $"\"{name}\"" : name);
+        else if (c.Has(key))
+            c.Remove(key);
+    }
+
+    private static string Unquoted(string value)
+    {
+        value = value.Trim();
+        return value.Length >= 2 && value[0] == '"' && value[^1] == '"' ? value[1..^1] : value;
+    }
+
+    private static string FirstTokenOr(ConfigFile c, string key, string fallback)
+    {
+        string token = FirstToken(c, key);
+        return token.Length > 0 ? token : fallback;
     }
 
     private static string FirstToken(ConfigFile c, string key)

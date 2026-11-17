@@ -1520,4 +1520,75 @@ public class SettingsStoreTests
 
         Assert.Null(LineFor(installation, "blackbox"));
     }
+
+    [Fact]
+    public void The_sound_device_options_left_alone_add_nothing_to_the_file()
+    {
+        var installation = WithHome(new InMemoryFileSystem().WithFile(UserIni, "width 1920\n"));
+        installation.SettingsStore.Load();
+
+        installation.SettingsStore.Save();
+
+        string saved = SavedLines(installation);
+        foreach (var key in new[] { "sound.openal.renderer", "sound.outputmode", "sound.hrtf", "sound.hrtf.profile",
+                                     "sound.resampler", "sound.limiter", "sound.frequency", "sound.maxsources",
+                                     "sound.doppler", "sound.efx.lowpass", "sound.efx.airabsorption" })
+            Assert.Null(LineFor(installation, key));
+        Assert.Contains("width 1920\n", saved);
+    }
+
+    [Fact]
+    public void The_sound_device_options_survive_a_round_trip_with_names_in_quotes()
+    {
+        var installation = WithHome();
+        installation.SettingsStore.Load();
+        var s = installation.SettingsStore.Settings;
+        s.AudioDevice = "OpenAL Soft on Speakers (Realtek(R) Audio)";
+        s.AudioOutputMode = "headphones";
+        s.AudioHrtf = "on";
+        s.AudioHrtfProfile = "Built-In HRTF";
+        s.AudioResampler = "Cubic";
+        s.AudioLimiter = "off";
+        s.AudioFrequency = 48000;
+        s.AudioDoppler = 0.5;
+        s.AudioLowpass = true;
+        s.AudioAirAbsorption = 1.0;
+
+        installation.SettingsStore.Save();
+
+        Assert.Equal("sound.openal.renderer \"OpenAL Soft on Speakers (Realtek(R) Audio)\"",
+                     LineFor(installation, "sound.openal.renderer"));
+        Assert.Equal("sound.resampler Cubic", LineFor(installation, "sound.resampler"));
+        Assert.Empty(BareSimulatorKeys(installation));
+
+        var again = WithHome(new InMemoryFileSystem().WithFile(UserIni, installation.Files.ReadAllText(UserIni)));
+        again.SettingsStore.Load();
+        var read = again.SettingsStore.Settings;
+        Assert.Equal(s.AudioDevice, read.AudioDevice);
+        Assert.Equal("headphones", read.AudioOutputMode);
+        Assert.Equal("on", read.AudioHrtf);
+        Assert.Equal("Built-In HRTF", read.AudioHrtfProfile);
+        Assert.Equal("Cubic", read.AudioResampler);
+        Assert.Equal("off", read.AudioLimiter);
+        Assert.Equal(48000, read.AudioFrequency);
+        Assert.Equal(0.5, read.AudioDoppler, 6);
+        Assert.True(read.AudioLowpass);
+        Assert.Equal(1.0, read.AudioAirAbsorption, 6);
+    }
+
+    [Fact]
+    public void A_sound_name_set_back_to_the_librarys_choice_takes_its_line_out()
+    {
+        var installation = WithHome(new InMemoryFileSystem()
+            .WithFile(UserIni, "sound.openal.renderer \"Old Device\"\nsound.resampler Cubic\n"));
+        installation.SettingsStore.Load();
+        Assert.Equal("Old Device", installation.SettingsStore.Settings.AudioDevice);
+
+        installation.SettingsStore.Settings.AudioDevice = "";
+        installation.SettingsStore.Settings.AudioResampler = "";
+        installation.SettingsStore.Save();
+
+        Assert.Null(LineFor(installation, "sound.openal.renderer"));
+        Assert.Null(LineFor(installation, "sound.resampler"));
+    }
 }

@@ -537,6 +537,86 @@
                                     </ctl:SettingRow>
                                 </StackPanel>
                             </ctl:SettingsSection>
+                            <ctl:SettingsSection Header="{Binding [SoundDevice], Source={x:Static starterNg:App.Loc}}">
+                                <StackPanel IsEnabled="{Binding #EnableSoundsCb.IsChecked}">
+                                    <ctl:SettingRow ConfigKey="sound.openal.renderer" Label="{Binding [SoundOutputDevice], Source={x:Static starterNg:App.Loc}}"
+                                                    Description="{Binding [SoundOutputDeviceDesc], Source={x:Static starterNg:App.Loc}}">
+                                        <ComboBox x:Name="AudioDeviceCb" HorizontalAlignment="Stretch">
+                                            <ComboBoxItem Tag="" Content="{Binding [SoundSystemDefault], Source={x:Static starterNg:App.Loc}}" />
+                                        </ComboBox>
+                                    </ctl:SettingRow>
+                                    <ctl:SettingRow ConfigKey="sound.outputmode" Label="{Binding [SoundOutputMode], Source={x:Static starterNg:App.Loc}}"
+                                                    Description="{Binding [SoundOutputModeDesc], Source={x:Static starterNg:App.Loc}}">
+                                        <ComboBox x:Name="AudioOutputModeCb" Classes="Localized" SelectedIndex="0">
+                                            <ComboBoxItem Tag="auto" Content="{Binding [SoundAutomatic], Source={x:Static starterNg:App.Loc}}" />
+                                            <ComboBoxItem Tag="mono" Content="Mono" />
+                                            <ComboBoxItem Tag="stereo" Content="Stereo" />
+                                            <ComboBoxItem Tag="stereo-basic" Content="{Binding [SoundStereoBasic], Source={x:Static starterNg:App.Loc}}" />
+                                            <ComboBoxItem Tag="uhj" Content="{Binding [SoundStereoUhj], Source={x:Static starterNg:App.Loc}}" />
+                                            <ComboBoxItem Tag="headphones" Content="{Binding [SoundHeadphones], Source={x:Static starterNg:App.Loc}}" />
+                                            <ComboBoxItem Tag="quad" Content="Quad" />
+                                            <ComboBoxItem Tag="5.1" Content="5.1" />
+                                            <ComboBoxItem Tag="6.1" Content="6.1" />
+                                            <ComboBoxItem Tag="7.1" Content="7.1" />
+                                        </ComboBox>
+                                    </ctl:SettingRow>
+                                    <ctl:SettingRow ConfigKey="sound.hrtf" Label="HRTF"
+                                                    Description="{Binding [SoundHrtfDesc], Source={x:Static starterNg:App.Loc}}">
+                                        <ComboBox x:Name="AudioHrtfCb" Classes="Localized" SelectedIndex="0">
+                                            <ComboBoxItem Tag="auto" Content="{Binding [SoundAutomatic], Source={x:Static starterNg:App.Loc}}" />
+                                            <ComboBoxItem Tag="on" Content="{Binding [SoundOn], Source={x:Static starterNg:App.Loc}}" />
+                                            <ComboBoxItem Tag="off" Content="{Binding [SoundOff], Source={x:Static starterNg:App.Loc}}" />
+                                        </ComboBox>
+                                    </ctl:SettingRow>
+                                    <ctl:SettingRow ConfigKey="sound.hrtf.profile" Label="{Binding [SoundHrtfProfile], Source={x:Static starterNg:App.Loc}}"
+                                                    Description="{Binding [SoundHrtfProfileDesc], Source={x:Static starterNg:App.Loc}}">
+                                        <ComboBox x:Name="AudioHrtfProfileCb" HorizontalAlignment="Stretch">
+                                            <ComboBoxItem Tag="" Content="{Binding [SoundLibraryChoice], Source={x:Static starterNg:App.Loc}}" />
+                                        </ComboBox>
+                                    </ctl:SettingRow>
+                                    <ctl:SettingRow ConfigKey="sound.resampler" Label="{Binding [SoundResampler], Source={x:Static starterNg:App.Loc}}"
+                                                    Description="{Binding [SoundResamplerDesc], Source={x:Static starterNg:App.Loc}}">
+                                        <ComboBox x:Name="AudioResamplerCb" HorizontalAlignment="Stretch">
+                                            <ComboBoxItem Tag="" Content="{Binding [SoundLibraryDefault], Source={x:Static starterNg:App.Loc}}" />
+                                        </ComboBox>
+                                    </ctl:SettingRow>
+                                    <ctl:SettingRow ConfigKey="sound.limiter" Label="{Binding [SoundLimiter], Source={x:Static starterNg:App.Loc}}"
+                                                    Description="{Binding [SoundLimiterDesc], Source={x:Static starterNg:App.Loc}}">
+                                        <ComboBox x:Name="AudioLimiterCb" Classes="Localized" SelectedIndex="0">
+                                            <ComboBoxItem Tag="auto" Content="{Binding [SoundAutomatic], Source={x:Static starterNg:App.Loc}}" />
+                                            <ComboBoxItem Tag="on" Content="{Binding [SoundOn], Source={x:Static starterNg:App.Loc}}" />
+                                            <ComboBoxItem Tag="off" Content="{Binding [SoundOff], Source={x:Static starterNg:App.Loc}}" />
+                                        </ComboBox>
+                                    </ctl:SettingRow>
+                                    <ctl:SettingRow ConfigKey="sound.frequency" Label="{Binding [SoundFrequency], Source={x:Static starterNg:App.Loc}}"
+                                                    Description="{Binding [SoundFrequencyDesc], Source={x:Static starterNg:App.Loc}}">
+                                        <ComboBox x:Name="AudioFrequencyCb" Classes="Localized" SelectedIndex="0">
+                                            <ComboBoxItem Tag="0" Content="{Binding [SoundDeviceRate], Source={x:Static starterNg:App.Loc}}" />
+                                            <ComboBoxItem Tag="22050" Content="22050 Hz" />
+                                            <ComboBoxItem Tag="32000" Content="32000 Hz" />
+                                            <ComboBoxItem Tag="44100" Content="44100 Hz" />
+                                            <ComboBoxItem Tag="48000" Content="48000 Hz" />
+                                            <ComboBoxItem Tag="96000" Content="96000 Hz" />
+                                        </ComboBox>
+                                    </ctl:SettingRow>
+                                    <ctl:SettingRow ConfigKey="sound.doppler" Label="{Binding [SoundDoppler], Source={x:Static starterNg:App.Loc}}"
+                                                    Description="{Binding [SoundDopplerDesc], Source={x:Static starterNg:App.Loc}}"
+                                                    ValueText="{Binding #AudioDopplerSlider.Value, StringFormat='{}{0:0.00}'}">
+                                        <ctl:ReadableSlider x:Name="AudioDopplerSlider" Minimum="0" Maximum="1" TickFrequency="0.05"
+                                                IsSnapToTickEnabled="True" Value="0.25" />
+                                    </ctl:SettingRow>
+                                    <ctl:SettingRow ConfigKey="sound.efx.lowpass" Label="{Binding [SoundLowpass], Source={x:Static starterNg:App.Loc}}"
+                                                    Description="{Binding [SoundLowpassDesc], Source={x:Static starterNg:App.Loc}}">
+                                        <CheckBox x:Name="AudioLowpassCb" />
+                                    </ctl:SettingRow>
+                                    <ctl:SettingRow ConfigKey="sound.efx.airabsorption" Label="{Binding [SoundAirAbsorption], Source={x:Static starterNg:App.Loc}}"
+                                                    Description="{Binding [SoundAirAbsorptionDesc], Source={x:Static starterNg:App.Loc}}"
+                                                    ValueText="{Binding #AudioAirAbsorptionSlider.Value, StringFormat='{}{0:0.0}'}">
+                                        <ctl:ReadableSlider x:Name="AudioAirAbsorptionSlider" Minimum="0" Maximum="10" TickFrequency="0.5"
+                                                IsSnapToTickEnabled="True" Value="0" />
+                                    </ctl:SettingRow>
+                                </StackPanel>
+                            </ctl:SettingsSection>
                         </StackPanel>
 
                         <!-- ============================ PHYSICS ============================ -->
