@@ -966,11 +966,11 @@ public partial class Settings : UserControl, ISettingsCapture
             OnControlChanged();
         };
         UartEnabledCb.IsCheckedChanged += (_, _) => ValidateUart();
-        UartTuneBox.TextChanged += (_, _) =>
+        OnTextEdited(UartTuneBox, () =>
         {
             ValidateUart();
             OnControlChanged();
-        };
+        });
         App.Loc.LanguageChanged += UpdateUartTexts;
         UpdateUartTexts();
     }
@@ -1511,7 +1511,7 @@ public partial class Settings : UserControl, ISettingsCapture
                     nud.ValueChanged += (_, _) => OnControlChanged();
                     break;
                 case TextBox box when ReferenceEquals(box, VulkanDeviceTb):
-                    box.TextChanged += (_, _) => OnControlChanged();
+                    OnTextEdited(box, OnControlChanged);
                     break;
             }
         }
@@ -1520,6 +1520,18 @@ public partial class Settings : UserControl, ISettingsCapture
             if (section.Toggle is CheckBox toggle)
                 toggle.IsCheckedChanged += (_, _) => OnControlChanged();
     }
+
+    /// <summary>
+    /// The text as it changes, not TextChanged: that one comes later, from the
+    /// dispatcher, so the text the page itself put there while loading came back
+    /// as an edit once the window was shown - the first start asked to save.
+    /// </summary>
+    private static void OnTextEdited(TextBox box, Action edited) =>
+        box.PropertyChanged += (_, e) =>
+        {
+            if (e.Property == TextBox.TextProperty)
+                edited();
+        };
 
     private void OnControlChanged()
     {
@@ -1533,8 +1545,7 @@ public partial class Settings : UserControl, ISettingsCapture
         if (_loading || _dirty)
             return;
 
-        _dirty = true;
-        UpdateSaveState();
+        _dirty = true;        UpdateSaveState();
     }
 
     /// <summary>Edits on the page, or of the keys, not saved yet: what "Niezapisane zmiany" tells.</summary>

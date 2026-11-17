@@ -165,6 +165,39 @@ public partial class Scenarios : UserControl
         favoriteMenuItem.Header = App.Loc[scenery is not null && AppServices.Current.Favorites.Contains(scenery)
             ? "FavoriteRemove"
             : "FavoriteAdd"];
+        deleteSbtMenuItem.IsEnabled = scenery is not null
+                                      && !AppServices.Current.State.SimulatorRunning
+                                      && AppServices.Current.BinaryTerrain.Of(scenery.Path) is not null;
+    }
+
+    // Only a file the simulator can make again from the scenery's text goes: one
+    // standing in for terrain files the installation lacks takes the terrain with it.
+    private async void DeleteSbt_OnClick(object? sender, RoutedEventArgs e)
+    {
+        if (SelectedScenery is not { } scenery || TopLevel.GetTopLevel(this) is not Window owner)
+            return;
+
+        var sbt = AppServices.Current.BinaryTerrain;
+        if (sbt.Of(scenery.Path) is not { } file)
+            return;
+
+        string name = Path.GetFileName(file);
+        string title = App.Loc["DeleteSbt"];
+        if (await Task.Run(() => sbt.MissingOriginal(scenery.Path)) is { } missing)
+        {
+            await MessageBox.Show(owner, string.Format(App.Loc["DeleteSbtNoOriginal"], name, missing), title,
+                                  MessageBoxButtons.Ok);
+            return;
+        }
+
+        long megabytes = AppServices.Current.Files.GetFileSize(file) / (1024 * 1024);
+        if (!await MessageBox.Show(owner, string.Format(App.Loc["DeleteSbtConfirm"], name, megabytes), title,
+                                   MessageBoxButtons.YesNo))
+            return;
+
+        // Gone, the scenery follows by the watch on its files, as it would after any other change.
+        if (!await Task.Run(() => sbt.Delete(scenery.Path)))
+            await MessageBox.Show(owner, string.Format(App.Loc["DeleteSbtFailed"], name), title, MessageBoxButtons.Ok);
     }
 
     private void ToggleFavorite_OnClick(object? sender, RoutedEventArgs e)

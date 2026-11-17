@@ -79,7 +79,12 @@ public sealed class SceneryRepository : ISceneryRepository
 
             // With its own .sbt the scenery's terrain comes from it, and the simulator
             // passes its terrain includes over without opening them.
-            bool binaryTerrain = Opens(Path.GetFileNameWithoutExtension(path) + ".sbt");
+            // Watched with the text: made by the simulator on a load, or removed, it changes the scenery too.
+            string sbtName = Path.GetFileNameWithoutExtension(path) + ".sbt";
+            string? sbt = ResolveInclude(sbtName);
+            bool binaryTerrain = sbt is not null;
+            string sbtPath = Path.Combine(_paths.Scenery, sbt ?? sbtName);
+            sources[sbtPath] = FileStamp.Of(_files, sbtPath);
             bool OpensInclude(string name) =>
                 Opens(name) || (binaryTerrain && SimulatorNames.Lower(name).Contains("_ter.scm"));
 

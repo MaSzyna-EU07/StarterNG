@@ -69,6 +69,10 @@
     <String key="FavoriteAdd">Add to favourites</String>
     <String key="FavoriteRemove">Remove from favourites</String>
     <String key="OpenSceneryFolder">Open folder</String>
+    <String key="DeleteSbt">Delete SBT</String>
+    <String key="DeleteSbtConfirm">Delete {0} ({1} MB)? The simulator makes it again from the scenery files on its next load, which takes longer.</String>
+    <String key="DeleteSbtNoOriginal">{0} stays: nothing is there to make it again, {1} is missing. Without it the scenery would lose its terrain.</String>
+    <String key="DeleteSbtFailed">Could not delete {0}. The simulator may be using it, or the folder is read-only.</String>
     <String key="OptionalIncludes">Optional elements</String>
     <String key="OpenTextureFolder">Open texture folder</String>
     <String key="CopyTextureName">Copy name</String>
