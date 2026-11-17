@@ -105,10 +105,18 @@ public sealed class BinaryTerrainFiles
         string code = SceneryCode.Mask(text, out _);
 
         bool includeNext = false;
+        bool terrainDirective = false;
         for (var word = Word.Match(code); word.Success; word = word.NextMatch())
         {
             string token = word.Value;
-            if (includeNext)
+            if (terrainDirective)
+            {
+                if (token.Equals("endterrain", StringComparison.OrdinalIgnoreCase))
+                    terrainDirective = false;
+                else if (TerrainFileMissing(token, names) is { } missing)
+                    return missing;
+            }
+            else if (includeNext)
             {
                 includeNext = false;
                 bool terrain = SimulatorNames.Lower(token).Contains("_ter.scm");
@@ -123,10 +131,34 @@ public sealed class BinaryTerrainFiles
             else if (token.Equals("include", StringComparison.OrdinalIgnoreCase))
                 includeNext = true;
             else if (token.Equals("terrain", StringComparison.OrdinalIgnoreCase))
-                return token;
+                terrainDirective = true;
         }
 
         return null;
+    }
+
+    /// <summary>
+    /// One file named by a terrain directive. An .sbt named there holds the geometry
+    /// of the whole scenery and nothing makes it again, so the scenery's own goes
+    /// only without one. A terrain file (.txtf) has its geometry in itself or in its
+    /// binary copy (.btf) beside it: with either one there, the scenery's .sbt only
+    /// keeps that terrain from being used, and the simulator asks for it to go.
+    /// </summary>
+    private string? TerrainFileMissing(string token, CaseInsensitivePaths names)
+    {
+        string extension = Path.GetExtension(token);
+        if (extension.Equals(Extension, StringComparison.OrdinalIgnoreCase))
+            return "terrain " + token;
+
+        if (!extension.Equals(".txtf", StringComparison.OrdinalIgnoreCase)
+            && !extension.Equals(".btf", StringComparison.OrdinalIgnoreCase))
+            return null;
+
+        string stem = token[..^extension.Length];
+        return names.Resolve(_paths.Scenery, stem + ".txtf") is null
+               && names.Resolve(_paths.Scenery, stem + ".btf") is null
+            ? stem + ".txtf"
+            : null;
     }
 
     /// <summary>Removes the scenery's .sbt; false when it has none or it could not go.</summary>

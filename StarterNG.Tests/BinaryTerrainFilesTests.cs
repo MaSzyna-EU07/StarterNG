@@ -91,6 +91,46 @@ public class BinaryTerrainFilesTests
         Assert.Equal("td.sbt", Assert.Single(Build(files).CleanUpOnce(1)!.Kept).File);
     }
 
+    [Theory]
+    [InlineData("td/teren.txtf")]
+    [InlineData("td/Teren.btf")]
+    public void An_sbt_in_the_way_of_terrain_files_that_are_there_goes(string onDisk)
+    {
+        var files = new InMemoryFileSystem(caseSensitive: true)
+            .WithLegacyFile(Scenery("td.scn"), "terrain td/teren.txtf endterrain\nFirstInit\n")
+            .WithFile(Scenery(onDisk), "x")
+            .WithFile(Scenery("td.sbt"), "EU07SBT2");
+
+        Assert.Single(Build(files).CleanUpOnce(1)!.Deleted);
+        Assert.False(files.FileExists(Scenery("td.sbt")));
+    }
+
+    [Fact]
+    public void An_sbt_standing_in_for_a_missing_terrain_file_stays()
+    {
+        var files = new InMemoryFileSystem()
+            .WithLegacyFile(Scenery("td.scn"), "terrain td/a.txtf td/b.txtf endterrain\nFirstInit\n")
+            .WithFile(Scenery("td/a.txtf"), "x")
+            .WithFile(Scenery("td.sbt"), "EU07SBT2");
+
+        Assert.Equal(("td.sbt", "td/b.txtf"), Assert.Single(Build(files).CleanUpOnce(1)!.Kept));
+    }
+
+    [Fact]
+    public void An_sbt_named_beside_terrain_files_keeps_the_scenery_s_own()
+    {
+        var files = new InMemoryFileSystem()
+            .WithLegacyFile(Scenery("td.scn"), "terrain td/a.txtf wspolny.sbt endterrain\nFirstInit\n")
+            .WithFile(Scenery("td/a.txtf"), "x")
+            .WithFile(Scenery("wspolny.sbt"), "EU07SBT2")
+            .WithFile(Scenery("td.sbt"), "EU07SBT2");
+
+        var cleanup = Build(files).CleanUpOnce(1)!;
+
+        Assert.Empty(cleanup.Deleted);
+        Assert.Contains(("td.sbt", "terrain wspolny.sbt"), cleanup.Kept);
+    }
+
     [Fact]
     public void An_sbt_of_no_scenery_stays()
     {
