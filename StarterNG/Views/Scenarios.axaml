@@ -45,6 +45,8 @@
                                       Header="{Binding [ReloadSceneries], Source={x:Static starterNg:App.Loc}}" />
                             <MenuItem Click="OpenSceneryDir_OnClick"
                                       Header="{Binding [OpenSceneryFolder], Source={x:Static starterNg:App.Loc}}" />
+                            <MenuItem Name="deleteSbtMenuItem" Click="DeleteSbt_OnClick"
+                                      Header="{Binding [DeleteSbt], Source={x:Static starterNg:App.Loc}}" />
                         </ContextMenu>
                     </TreeView.ContextMenu>
                 </TreeView>
