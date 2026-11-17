@@ -100,6 +100,7 @@ public partial class Settings : UserControl, ISettingsCapture
         BuildPresetButtons();
         BuildMonitorRates();
         ReadGraphicsCards();
+        ReadAudioChoices();
         App.Loc.LanguageChanged += UpdateCardText;
         App.Loc.LanguageChanged += _keyRows.UpdateTexts;
 
@@ -436,6 +437,7 @@ public partial class Settings : UserControl, ISettingsCapture
         LogMissingVehicleFilesCb.IsChecked = s.LogMissingVehicleFiles;
 
         ShowGraphics(s);
+        ShowSound(s);
         GpuCb.SelectedIndex = s.Gpu == GpuPreference.System ? 1 : 0;
         SelectResolution(s.Width, s.Height);
         bufferScale.Value = s.BufferScalePercent;
@@ -869,6 +871,7 @@ public partial class Settings : UserControl, ISettingsCapture
         s.LogMissingVehicleFiles = IsChecked(LogMissingVehicleFilesCb);
 
         CaptureGraphics(s);
+        CaptureSound(s);
         s.Gpu = SelectedGpu();
         ReadResolution(s);
         s.BufferScalePercent = (int)bufferScale.Value;

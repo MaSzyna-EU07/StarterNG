@@ -518,6 +518,26 @@
     <String key="VehiclesVolume">Járművek hangereje</String>
     <String key="PositionedSoundsVolume">Térbeli hangok hangereje</String>
     <String key="AmbientVolume">Környezeti hangok hangereje</String>
+    <String key="SoundDevice">Hangeszköz és effektek</String>
+    <String key="SoundOutputDevice">Kimeneti eszköz</String>
+    <String key="SoundSystemDefault">Rendszer alapértelmezése</String>
+    <String key="SoundOutputMode">Hangszóró-elrendezés</String>
+    <String key="SoundAutomatic">Automatikus</String>
+    <String key="SoundStereoBasic">Sztereó (egyszerű panoráma)</String>
+    <String key="SoundStereoUhj">Sztereó (UHJ, szélesebb)</String>
+    <String key="SoundHeadphones">Fejhallgató (HRTF)</String>
+    <String key="SoundOn">Be</String>
+    <String key="SoundOff">Ki</String>
+    <String key="SoundHrtfProfile">HRTF-adatkészlet</String>
+    <String key="SoundLibraryChoice">A könyvtár választása</String>
+    <String key="SoundResampler">Újramintavételezés</String>
+    <String key="SoundLibraryDefault">A könyvtár alapértelmezése</String>
+    <String key="SoundLimiter">Kimeneti limiter</String>
+    <String key="SoundFrequency">Keverési mintavételi frekvencia</String>
+    <String key="SoundDeviceRate">Az eszköz frekvenciája</String>
+    <String key="SoundDoppler">Doppler-hatás</String>
+    <String key="SoundLowpass">Tompított hangok a fülkén kívülről</String>
+    <String key="SoundAirAbsorption">Levegő általi elnyelés</String>
 
     <String key="Advanced">Speciális</String>
     <String key="CompressTextures">TGA textúrák tömörítése</String>

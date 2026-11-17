@@ -6,6 +6,8 @@
         <IsAotCompatible>true</IsAotCompatible>
         <TargetFramework>net9.0</TargetFramework>
         <Nullable>enable</Nullable>
+        <!-- function pointers into the OpenAL library of the simulator (Infrastructure/OpenAlProbe.cs) -->
+        <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
         <BuiltInComInteropSupport>true</BuiltInComInteropSupport>
         <ApplicationManifest>app.manifest</ApplicationManifest>
         <ApplicationIcon>Assets\starter.ico</ApplicationIcon>

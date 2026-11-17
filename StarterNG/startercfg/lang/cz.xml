@@ -518,6 +518,26 @@
     <String key="VehiclesVolume">Hlasitost vozidel</String>
     <String key="PositionedSoundsVolume">Hlasitost prostorových zvuků</String>
     <String key="AmbientVolume">Hlasitost okolí</String>
+    <String key="SoundDevice">Zvukové zařízení a efekty</String>
+    <String key="SoundOutputDevice">Výstupní zařízení</String>
+    <String key="SoundSystemDefault">Výchozí systémové</String>
+    <String key="SoundOutputMode">Rozložení reproduktorů</String>
+    <String key="SoundAutomatic">Automaticky</String>
+    <String key="SoundStereoBasic">Stereo (jednoduché panorama)</String>
+    <String key="SoundStereoUhj">Stereo (UHJ, širší)</String>
+    <String key="SoundHeadphones">Sluchátka (HRTF)</String>
+    <String key="SoundOn">Zapnuto</String>
+    <String key="SoundOff">Vypnuto</String>
+    <String key="SoundHrtfProfile">Sada dat HRTF</String>
+    <String key="SoundLibraryChoice">Volba knihovny</String>
+    <String key="SoundResampler">Převzorkování</String>
+    <String key="SoundLibraryDefault">Výchozí knihovny</String>
+    <String key="SoundLimiter">Omezovač výstupu</String>
+    <String key="SoundFrequency">Vzorkovací frekvence mixu</String>
+    <String key="SoundDeviceRate">Frekvence zařízení</String>
+    <String key="SoundDoppler">Dopplerův jev</String>
+    <String key="SoundLowpass">Tlumené zvuky mimo kabinu</String>
+    <String key="SoundAirAbsorption">Pohlcování vzduchem</String>
 
     <String key="Advanced">Pokročilé</String>
     <String key="CompressTextures">Komprimovat textury TGA</String>

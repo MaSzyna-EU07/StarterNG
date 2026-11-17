@@ -518,6 +518,26 @@
     <String key="VehiclesVolume">Громкость подвижного состава</String>
     <String key="PositionedSoundsVolume">Громкость позиционных звуков</String>
     <String key="AmbientVolume">Громкость окружения</String>
+    <String key="SoundDevice">Звуковое устройство и эффекты</String>
+    <String key="SoundOutputDevice">Устройство вывода</String>
+    <String key="SoundSystemDefault">Системное по умолчанию</String>
+    <String key="SoundOutputMode">Конфигурация динамиков</String>
+    <String key="SoundAutomatic">Автоматически</String>
+    <String key="SoundStereoBasic">Стерео (простое панорамирование)</String>
+    <String key="SoundStereoUhj">Стерео (UHJ, шире)</String>
+    <String key="SoundHeadphones">Наушники (HRTF)</String>
+    <String key="SoundOn">Вкл.</String>
+    <String key="SoundOff">Выкл.</String>
+    <String key="SoundHrtfProfile">Набор данных HRTF</String>
+    <String key="SoundLibraryChoice">Выбор библиотеки</String>
+    <String key="SoundResampler">Передискретизация</String>
+    <String key="SoundLibraryDefault">По умолчанию библиотеки</String>
+    <String key="SoundLimiter">Ограничитель выхода</String>
+    <String key="SoundFrequency">Частота микширования</String>
+    <String key="SoundDeviceRate">Частота устройства</String>
+    <String key="SoundDoppler">Эффект Доплера</String>
+    <String key="SoundLowpass">Приглушённые звуки вне кабины</String>
+    <String key="SoundAirAbsorption">Поглощение воздухом</String>
 
     <String key="Advanced">Дополнительно</String>
     <String key="CompressTextures">Сжимать текстуры TGA</String>

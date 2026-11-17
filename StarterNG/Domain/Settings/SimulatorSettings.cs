@@ -161,6 +161,29 @@ public sealed class SimulatorSettings
     public int VehiclesVolume = 100;
     public int PositionalVolume = 100;
     public int AmbientVolume = 100;
+
+    // OpenAL Soft options of the simulator; the defaults leave the choice to the library, as the
+    // simulator did before it had these keys.
+    /// <summary>sound.openal.renderer: the output device, empty for the system's default.</summary>
+    public string AudioDevice = "";
+    /// <summary>sound.outputmode: auto, mono, stereo, stereo-basic, uhj, headphones, quad, 5.1, 6.1, 7.1.</summary>
+    public string AudioOutputMode = "auto";
+    /// <summary>sound.hrtf: auto, on, off.</summary>
+    public string AudioHrtf = "auto";
+    /// <summary>sound.hrtf.profile: the HRTF data set, empty for the library's choice.</summary>
+    public string AudioHrtfProfile = "";
+    /// <summary>sound.resampler: empty for the library's default.</summary>
+    public string AudioResampler = "";
+    /// <summary>sound.limiter: auto, on, off.</summary>
+    public string AudioLimiter = "auto";
+    /// <summary>sound.frequency: the mixing rate in Hz, 0 for the device's.</summary>
+    public int AudioFrequency;
+    /// <summary>sound.doppler: the strength of the Doppler effect.</summary>
+    public double AudioDoppler = 0.25;
+    /// <summary>sound.efx.lowpass: soundproofing also muffles the high frequencies.</summary>
+    public bool AudioLowpass;
+    /// <summary>sound.efx.airabsorption: 0-10, the high frequencies fade with distance.</summary>
+    public double AudioAirAbsorption;
     public bool SkipPipeline;
     public int PythonScreenUpdateRate = 200;
     public bool DebugLogVisible;
