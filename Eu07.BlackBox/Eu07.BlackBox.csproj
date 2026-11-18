@@ -3,7 +3,7 @@
          base library: the starter, the viewer and any other program can use it, and
          it goes through NativeAOT and trimming as they do. -->
     <PropertyGroup>
-        <TargetFramework>net9.0</TargetFramework>
+        <TargetFramework>net10.0</TargetFramework>
         <Nullable>enable</Nullable>
         <IsAotCompatible>true</IsAotCompatible>
         <IsTrimmable>true</IsTrimmable>
