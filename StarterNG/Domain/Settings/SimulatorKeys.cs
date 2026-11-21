@@ -13,6 +13,11 @@ public enum SimulatorKeyKind { Toggle, Number, Text }
 /// is the simulator's own, from Globals.h, used while the file does not carry
 /// the key.
 /// </summary>
+/// <param name="FallbackLabel">
+/// The label to show where the language has none of its own: set for the keys the
+/// simulator describes itself (<see cref="WeatherSchema"/>), whose texts the starter
+/// may not have yet. The keys the starter knows by name go by the translations alone.
+/// </param>
 public sealed record SimulatorKey(
     string Key,
     SimulatorKeyKind Kind,
@@ -24,7 +29,8 @@ public sealed record SimulatorKey(
     double Step = 1,
     string Unit = "",
     bool ZeroIsOff = false,
-    int Repeat = 1)
+    int Repeat = 1,
+    string? FallbackLabel = null)
 {
     /// <summary>The label's translation key; the explanation's adds "Desc".</summary>
     public string LabelKey => "Ini." + Key;
@@ -83,7 +89,7 @@ public static class SimulatorKeys
 
     public static SimulatorKey Named(string key) => All.First(k => k.Key == key);
 
-    public static IReadOnlyList<SimulatorKey> All { get; } = new[]
+    private static readonly SimulatorKey[] BuiltIn =
     {
         Number("ui.scale", 1, General, "IniSectionInterface", 0.5, 3, 0.05, "×"),
         Number("ui.fontsize", 13, General, "IniSectionInterface", 8, 32, 1, " px"),
@@ -125,4 +131,26 @@ public static class SimulatorKeys
 
         Toggle("showsystemconsole", false, Advanced, "IniSectionConsole"),
     };
+
+    private static IReadOnlyList<SimulatorKey> _all = BuiltIn;
+
+    /// <summary>
+    /// Every key with a row of its own: those above, then the ones the simulator describes
+    /// (<see cref="Register"/>). Everything that reads, writes or shows the keys goes through this list.
+    /// </summary>
+    public static IReadOnlyList<SimulatorKey> All => _all;
+
+    /// <summary>
+    /// Sets the keys a simulator describes itself, after the built-in ones, replacing those set before: the
+    /// description is read once, as the starter starts. A key that is built in, or listed twice, is kept once.
+    /// </summary>
+    public static void Register(IEnumerable<SimulatorKey> described)
+    {
+        var known = new HashSet<string>(BuiltIn.Select(key => key.Key), StringComparer.OrdinalIgnoreCase);
+        var all = new List<SimulatorKey>(BuiltIn);
+        foreach (var key in described)
+            if (known.Add(key.Key))
+                all.Add(key);
+        _all = all;
+    }
 }

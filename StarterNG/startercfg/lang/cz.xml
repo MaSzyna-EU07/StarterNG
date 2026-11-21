@@ -751,6 +751,11 @@
     <String key="IniSectionAudio">Zvukový engine</String>
     <String key="IniSectionPhysics">Další možnosti simulace</String>
     <String key="IniSectionConsole">Konzole</String>
+    <String key="IniSectionWeather.main">Počasí ve fyzice vozidel</String>
+    <String key="IniSectionWeather.adhesion">Počasí: adheze kolejnic</String>
+    <String key="IniSectionWeather.brakes">Počasí: brzdy</String>
+    <String key="IniSectionWeather.wind">Počasí: vítr</String>
+    <String key="IniSectionWeather.wires">Počasí: trolejové vedení a sběrače</String>
     <String key="ReplaceVehicle">Nahradit</String>
     <String key="TipReplaceVehicle">Nahradit vozidlo v soupravě tímto (dvojklik)</String>
     <String key="ReplaceWithBrowser">Nahradit vozidlem vybraným v prohlížeči</String>

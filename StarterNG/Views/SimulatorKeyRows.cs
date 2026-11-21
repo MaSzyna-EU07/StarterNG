@@ -143,11 +143,11 @@ internal sealed class SimulatorKeyRows
     public void UpdateTexts()
     {
         foreach (var (section, headerKey) in _sections)
-            section.Header = App.Loc[headerKey];
+            section.Header = HeaderOf(headerKey);
 
         foreach (var row in _rows)
         {
-            string label = App.Loc[row.Key.LabelKey];
+            string label = LabelOf(row.Key);
             row.Setting.Description = App.Loc[row.Key.DescriptionKey];
 
             switch (row.Input)
@@ -165,6 +165,37 @@ internal sealed class SimulatorKeyRows
                     break;
             }
         }
+    }
+
+    /// <summary>
+    /// The label of a key in the current language. A key the simulator describes itself has the label of its
+    /// description to fall back on, in English, so a new parameter of the simulator shows at once, whatever
+    /// the texts of the starter have of it yet; the others have all theirs.
+    /// </summary>
+    private static string LabelOf(SimulatorKey key)
+    {
+        if (key.FallbackLabel is not { } fallback)
+            return App.Loc[key.LabelKey];
+
+        string own = App.Loc.OptOrEnglish(key.LabelKey);
+        return own.Length > 0 ? own : fallback;
+    }
+
+    /// <summary>
+    /// The title of a section. One of the simulator's weather groups that the starter has no title for (a group the
+    /// simulator has added) is titled by its name, capitalised, rather than by the key of a translation that is not there.
+    /// </summary>
+    private static string HeaderOf(string headerKey)
+    {
+        if (!headerKey.StartsWith(WeatherSchema.SectionPrefix, StringComparison.Ordinal))
+            return App.Loc[headerKey];
+
+        string own = App.Loc.OptOrEnglish(headerKey);
+        if (own.Length > 0)
+            return own;
+
+        string group = headerKey[WeatherSchema.SectionPrefix.Length..].Replace('_', ' ');
+        return group.Length == 0 ? headerKey : char.ToUpperInvariant(group[0]) + group[1..];
     }
 
     public void Apply(SimulatorSettings settings)
