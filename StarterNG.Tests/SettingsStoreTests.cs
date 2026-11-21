@@ -492,7 +492,7 @@ public class SettingsStoreTests
     [InlineData("mousescale 1.5 0.5", false, true, "mousescale 1.5 -0.5")]
     [InlineData("mousescale 1.5 0.5", true, false, "mousescale -1.5 0.5")]
     [InlineData("mousescale -1.5 -0.5", false, false, "mousescale 1.5 0.5")]
-    [InlineData("mousescale 2.5 0.123456", false, true, "mousescale 2.5 -0.123456")]
+    [InlineData("mousescale 2.5 0.5", false, true, "mousescale 2.5 -0.5")]
     // Further than the slider goes.
     [InlineData("mousescale 12 0.5", true, false, "mousescale -12 0.5")]
     public void A_mouse_scale_keeps_its_numbers_when_an_axis_is_inverted(
@@ -540,7 +540,35 @@ public class SettingsStoreTests
 
         installation.SettingsStore.Save();
 
-        Assert.Equal("mousescale 2 0.2", LineFor(installation, "mousescale"));
+        Assert.Equal("mousescale 2 0.5", LineFor(installation, "mousescale"));
+    }
+
+    [Theory]
+    // The second number is always 0.5, as the old starter wrote it; its sign is the inversion.
+    [InlineData("mousescale 1.5 0.23", "mousescale 1.5 0.5")]
+    [InlineData("mousescale 1.5 -0.23", "mousescale 1.5 -0.5")]
+    [InlineData("mousescale 1.5 -2", "mousescale 1.5 -0.5")]
+    // A zero locks that axis in the simulator: the camera turns only left/right.
+    // X goes back to the default.
+    [InlineData("mousescale 0.5 0", "mousescale 0.5 0.5")]
+    [InlineData("mousescale 0.5 -0", "mousescale 0.5 0.5")]
+    [InlineData("mousescale 0 0.5", "mousescale 2 0.5")]
+    [InlineData("mousescale 0 0", "mousescale 2 0.5")]
+    [InlineData("mousescale 1.5 NaN", "mousescale 1.5 0.5")]
+    [InlineData("mousescale Infinity -0.5", "mousescale 2 -0.5")]
+    // One number: the simulator takes the next word of the file ("mousecontrol") for Y, and reads it as 0.
+    [InlineData("mousescale 1.5", "mousescale 1.5 0.5")]
+    [InlineData("mousescale 0.5\t// (3.2 0.5) komentarz", "mousescale 0.5 0.5\t// (3.2 0.5) komentarz")]
+    // A decimal comma: the simulator reads "0,2" as 0.
+    [InlineData("mousescale 0.5 0,2", "mousescale 0.5 0.5")]
+    public void A_mouse_scale_axis_that_would_not_move_gets_the_default(string line, string written)
+    {
+        var installation = WithHome(new InMemoryFileSystem().WithFile(UserIni, line + "\n"));
+        installation.SettingsStore.Load();
+
+        installation.SettingsStore.Save();
+
+        Assert.Equal(written, LineFor(installation, "mousescale"));
     }
 
     // ── A file that could not be read ────────────────────────────────────────
@@ -885,12 +913,8 @@ public class SettingsStoreTests
     [InlineData("default")]
     [InlineData("simpleshader")]
     [InlineData("off")]
-    [InlineData("opengl")]
-    [InlineData("gl46")]
-    [InlineData("vulkan14")]
     [InlineData("legacy")]
     [InlineData("simple")]
-    [InlineData("experimental")]
     public void A_renderer_word_the_simulator_reads_as_another_stays_until_changed(string word)
     {
         var installation = WithHome(new InMemoryFileSystem().WithFile(UserIni, $"gfxrenderer {word}\n"));
@@ -901,16 +925,33 @@ public class SettingsStoreTests
         Assert.Contains($"gfxrenderer {word}\n", SavedLines(installation));
     }
 
+    // Words master does not know start the full renderer with a line in its log, and the
+    // experimental renderer is not in a player's build: a save puts "default" in their place.
     [Theory]
-    [InlineData(0, "full")]
+    [InlineData("full")]
+    [InlineData("opengl")]
+    [InlineData("gl46")]
+    [InlineData("vulkan14")]
+    [InlineData("experimental")]
+    [InlineData("null")]
+    public void A_renderer_word_master_does_not_run_is_saved_as_default(string word)
+    {
+        var installation = WithHome(new InMemoryFileSystem().WithFile(UserIni, $"gfxrenderer {word}\n"));
+        installation.SettingsStore.Load();
+
+        installation.SettingsStore.Save();
+
+        Assert.Contains("gfxrenderer default\n", SavedLines(installation));
+    }
+
+    [Theory]
+    [InlineData(0, "default")]
     [InlineData(1, "legacy")]
     [InlineData(2, "simple")]
-    [InlineData(3, "experimental")]
-    [InlineData(4, "vulkan")]
     public void A_chosen_renderer_is_saved_as_the_simulator_reads_it(int engine, string saved)
     {
-        // application.cpp knows full (or default), experimental and simple; every
-        // other word - "simpleshader" and "off" from older starters - is legacy.
+        // application.cpp on master knows default, legacy and simple; "simpleshader" and "off"
+        // from older starters are legacy, and any other word gets the full renderer.
         var installation = WithHome(new InMemoryFileSystem().WithFile(UserIni, "gfxrenderer simpleshader\n"));
         installation.SettingsStore.Load();
         installation.SettingsStore.Settings.RenderEngine = engine == 1 ? 0 : engine;
@@ -926,8 +967,10 @@ public class SettingsStoreTests
     [InlineData("full", 0)]
     [InlineData("gl46", 0)]
     [InlineData("opengl", 0)]
-    [InlineData("vulkan", 4)]
-    [InlineData("VULKAN14", 4)]
+    [InlineData("vulkan", 0)]
+    [InlineData("VULKAN14", 0)]
+    [InlineData("whatever", 0)]
+    [InlineData("experimental", 0)]
     [InlineData("simpleshader", 1)]
     public void A_renderer_word_stands_where_the_simulator_reads_it(string word, int engine)
     {
@@ -935,7 +978,7 @@ public class SettingsStoreTests
     }
 
     [Fact]
-    public void The_buffer_is_written_for_old_and_new_simulators()
+    public void The_buffer_is_written_as_the_framebuffer_master_reads()
     {
         var installation = WithHome(new InMemoryFileSystem().WithFile(UserIni, "width 1000\nheight 500\n"));
         installation.SettingsStore.Load();
@@ -944,55 +987,26 @@ public class SettingsStoreTests
         installation.SettingsStore.Save();
 
         string saved = SavedLines(installation);
-        Assert.Contains("gfx.buffer.percent 50\n", saved);
+        Assert.DoesNotContain("gfx.buffer.percent", saved);
         Assert.Contains("gfx.framebuffer.width 500\n", saved);
         Assert.Contains("gfx.framebuffer.height 250\n", saved);
     }
 
     [Theory]
-    [InlineData("gfx.buffer.percent 0.5\n", 50)]
-    [InlineData("gfx.buffer.percent 75\n", 75)]
-    [InlineData("gfx.buffer.percent 10\n", 25)]
-    [InlineData("gfx.buffer.percent 300\n", 200)]
+    [InlineData("width 1000\ngfx.framebuffer.width 500\n", 50)]
+    [InlineData("width 1000\ngfx.framebuffer.width 100\n", 25)]
+    [InlineData("width 1000\ngfx.framebuffer.width 3000\n", 100)]
+    [InlineData("gfx.framebuffer.width 500\n", 100)]
     [InlineData("starter.bufferscale 60\n", 60)]
-    [InlineData("starter.bufferscale 60\ngfx.buffer.percent 80\n", 80)]
-    public void The_buffer_is_read_from_the_key_the_new_simulator_goes_by(string ini, int percent)
+    [InlineData("starter.bufferscale 60\nwidth 1000\ngfx.framebuffer.width 800\n", 60)]
+    [InlineData("gfx.buffer.percent 0.5\n", 100)]
+    public void The_buffer_is_read_from_the_starters_key_or_the_framebuffer(string ini, int percent)
     {
         var installation = WithHome(new InMemoryFileSystem().WithFile(UserIni, ini));
 
         installation.SettingsStore.Load();
 
         Assert.Equal(percent, installation.SettingsStore.Settings.BufferScalePercent);
-    }
-
-    [Fact]
-    public void The_two_anti_aliasing_keys_untouched_keep_their_order()
-    {
-        // Moving them would change which of the two the simulator goes by.
-        const string ini = "gfx.antialiasing taa\nwidth 800\nmultisampling 2\n";
-        var installation = WithHome(new InMemoryFileSystem().WithFile(UserIni, ini));
-        installation.SettingsStore.Load();
-
-        installation.SettingsStore.Save();
-
-        string saved = SavedLines(installation);
-        Assert.True(saved.IndexOf("gfx.antialiasing taa", StringComparison.Ordinal) < saved.IndexOf("multisampling 2", StringComparison.Ordinal), saved);
-    }
-
-    [Fact]
-    public void A_chosen_anti_aliasing_is_saved_below_multisampling_for_the_later_line_to_count()
-    {
-        var installation = WithHome(new InMemoryFileSystem().WithFile(UserIni, "gfx.antialiasing msaax4\nwidth 800\nmultisampling 2\n"));
-        installation.SettingsStore.Load();
-
-        installation.SettingsStore.Settings.AntiAliasing = AntiAliasingMode.Taa;
-        installation.SettingsStore.Save();
-
-        string saved = SavedLines(installation);
-        Assert.True(saved.IndexOf("multisampling ", StringComparison.Ordinal) < saved.IndexOf("gfx.antialiasing taa", StringComparison.Ordinal), saved);
-        var again = WithHome(installation.Files);
-        again.SettingsStore.Load();
-        Assert.Equal(AntiAliasingMode.Taa, again.SettingsStore.Settings.AntiAliasing);
     }
 
     [Fact]

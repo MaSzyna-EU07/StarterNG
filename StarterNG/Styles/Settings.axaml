@@ -81,15 +81,13 @@
                                    TextWrapping="Wrap"
                                    Margin="0,3,0,0" />
 
-                        <!-- Why the chosen simulator would ignore the setting. Under
-                             the explanation, at full strength while the rest dims. -->
-                        <TextBlock Name="PART_IdleNote"
+                        <!-- A value of eu07.ini the starter cannot read: amber, as the other warnings. -->
+                        <TextBlock Name="PART_Unknown"
                                    Grid.Row="2" Grid.Column="1" Grid.ColumnSpan="2"
-                                   Text="{TemplateBinding IdleNote}"
+                                   Text="{TemplateBinding UnknownValue}"
                                    IsVisible="False"
                                    FontSize="12"
-                                   FontStyle="Italic"
-                                   Foreground="{StaticResource CarbonFg}"
+                                   Foreground="#D9A43A"
                                    TextWrapping="Wrap"
                                    Margin="0,3,0,0" />
 
@@ -103,6 +101,13 @@
             <Style Selector="^:no-key /template/ SelectableTextBlock#PART_ConfigKey">
                 <Setter Property="IsVisible" Value="False" />
             </Style>
+            <!-- The standard mode: the eu07.ini key means nothing to a player. -->
+            <Style Selector="^.HideKey /template/ SelectableTextBlock#PART_ConfigKey">
+                <Setter Property="IsVisible" Value="False" />
+            </Style>
+            <Style Selector="^:unknown /template/ TextBlock#PART_Unknown">
+                <Setter Property="IsVisible" Value="True" />
+            </Style>
             <Style Selector="^:no-value /template/ TextBlock#PART_Value">
                 <Setter Property="IsVisible" Value="False" />
             </Style>
@@ -112,24 +117,6 @@
             <Style Selector="^:no-content /template/ TextBlock#PART_Value">
                 <Setter Property="Grid.Column" Value="1" />
                 <Setter Property="Grid.ColumnSpan" Value="2" />
-            </Style>
-            <Style Selector="^:idle /template/ TextBlock#PART_IdleNote">
-                <Setter Property="IsVisible" Value="True" />
-            </Style>
-            <Style Selector="^:idle /template/ TextBlock#PART_Label">
-                <Setter Property="Opacity" Value="0.45" />
-            </Style>
-            <Style Selector="^:idle /template/ ContentPresenter#PART_Content">
-                <Setter Property="Opacity" Value="0.45" />
-            </Style>
-            <Style Selector="^:idle /template/ TextBlock#PART_Value">
-                <Setter Property="Opacity" Value="0.45" />
-            </Style>
-            <Style Selector="^:idle /template/ TextBlock#PART_Description">
-                <Setter Property="Opacity" Value="0.45" />
-            </Style>
-            <Style Selector="^:idle /template/ SelectableTextBlock#PART_ConfigKey">
-                <Setter Property="Opacity" Value="0.45" />
             </Style>
             <!-- A checkbox is its own label, so let it take the label column too.
                  Alignment stays Stretch: a bare slider in a labelless row still

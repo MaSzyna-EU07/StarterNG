@@ -51,6 +51,69 @@ public static class MessageBox
     }
 
     /// <summary>
+    /// A warning to read before saying yes: the yes button counts down and only then
+    /// takes a click. Enter and Esc both decline, so nothing is agreed to by habit.
+    /// </summary>
+    public static async Task<bool> ShowDelayed(Window owner, string message, string title, string yesText,
+                                               int seconds)
+    {
+        var win = FixedDialog(title, 520);
+
+        bool yes = false;
+        var yesBtn = DialogButton($"{yesText} ({seconds})", "Accent", 120, () => { yes = true; win.Close(); });
+        var noBtn = DialogButton(App.Loc["Cancel"], "Flat", 80, () => win.Close());
+        yesBtn.IsEnabled = false;
+        noBtn.IsDefault = true;
+        noBtn.IsCancel = true;
+        ReadMessage(win, noBtn, message);
+
+        int left = seconds;
+        var timer = new Avalonia.Threading.DispatcherTimer { Interval = TimeSpan.FromSeconds(1) };
+        timer.Tick += (_, _) =>
+        {
+            // Only time spent with the warning in front of the player counts: the window active and all of it on a screen.
+            if (!win.IsActive || win.WindowState == WindowState.Minimized || !WhollyOnScreen(win))
+                return;
+            left--;
+            if (left > 0)
+            {
+                yesBtn.Content = $"{yesText} ({left})";
+                return;
+            }
+            timer.Stop();
+            yesBtn.Content = yesText;
+            yesBtn.IsEnabled = true;
+        };
+        win.Closed += (_, _) => timer.Stop();
+
+        win.Content = new StackPanel
+        {
+            Margin = new Avalonia.Thickness(16),
+            Spacing = 16,
+            Children =
+            {
+                new SelectableTextBlock { Text = message, TextWrapping = TextWrapping.Wrap },
+                ButtonRow(yesBtn, noBtn)
+            }
+        };
+
+        timer.Start();
+        await win.ShowDialog(owner);
+        return yes;
+    }
+
+    /// <summary>Whether the whole window, frame and all, lies within the working area of one screen.</summary>
+    internal static bool WhollyOnScreen(Window win)
+    {
+        var size = win.FrameSize ?? win.ClientSize;
+        var rect = new Avalonia.PixelRect(win.Position, Avalonia.PixelSize.FromSize(size, win.RenderScaling));
+        foreach (var screen in win.Screens.All)
+            if (screen.WorkingArea.Contains(rect))
+                return true;
+        return false;
+    }
+
+    /// <summary>
     /// A question with two answers and a way back: true for the first, false for the second, null when cancelled
     /// or the window is closed - closing it never picks one of the answers.
     /// </summary>

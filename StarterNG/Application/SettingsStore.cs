@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -75,6 +76,9 @@ public sealed class SettingsStore
 
     public string SavePath => _savePath;
 
+    /// <summary>The last save found eu07.ini changed by something else and kept those changes: what is held was read again.</summary>
+    public bool LastSaveMerged { get; private set; }
+
     public void RegisterCapture(ISettingsCapture capture) => _capture = capture;
 
     public void Load()
@@ -92,7 +96,28 @@ public sealed class SettingsStore
             return;
 
         GraphicsPreset.High.ApplyTo(Settings);
+        // Nothing of an older starter to bring over: the settings start in the standard mode.
+        Settings.MovedToStandard = true;
         Save();
+    }
+
+    /// <summary>
+    /// A copy of eu07.ini beside it, the file name and <paramref name="suffix"/>, before
+    /// something changes many keys at once; one already there is left as it is.
+    /// </summary>
+    public void KeepCopy(string suffix)
+    {
+        string path = string.IsNullOrEmpty(_savePath) ? _paths.UserConfigPath() : _savePath;
+        string copy = path + suffix;
+        try
+        {
+            if (_files.FileExists(path) && !_files.FileExists(copy))
+                _files.CopyFile(path, copy, overwrite: false);
+        }
+        catch (Exception e)
+        {
+            _log.Log($"{copy} could not be made: {e.Message}");
+        }
     }
 
     public void LoadFrom(string path)
@@ -160,8 +185,30 @@ public sealed class SettingsStore
             return;
         }
 
+        // Edited by other hands since it was read or written here: their file is what the changes
+        // go onto, so a key the player left alone keeps what was put there meanwhile.
+        bool merged = false;
+        if (string.Equals(path, _savePath, StringComparison.Ordinal) && IsConfigNewerOnDisk())
+        {
+            try
+            {
+                _config = ConfigFile.Parse(_files.ReadAllText(path, _encoding));
+                merged = true;
+            }
+            catch (Exception ex)
+            {
+                _log.Log($"re-reading {path} before saving", ex);
+            }
+        }
+
         ApplyChanges(_config, Changes(Settings));
+        if (merged)
+        {
+            // What is held follows the file: the player's changes and the others' together.
+            _serializer.Read(Settings, _config);
+        }
         _synced = Render(Settings);
+        LastSaveMerged = merged;
 
         try
         {
@@ -188,15 +235,7 @@ public sealed class SettingsStore
             else
                 config.Set(change.Key, change.After);
         }
-
-        // Each sets the mode as the simulator reads it, so the new one has to come later to count.
-        // Untouched, the two keep their order: moving them would change which one decides.
-        if (changes.Any(change => change.Key is "gfx.antialiasing" or "multisampling"))
-            config.MoveAfter("gfx.antialiasing", "multisampling");
     }
-
-    /// <summary>Whether the simulator can have DLSS on this platform at all.</summary>
-    public bool DlssPlatform => _serializer.DlssPlatform;
 
     /// <summary>
     /// Takes the settings of another eu07.ini (a backup, a file from another machine)
@@ -223,9 +262,6 @@ public sealed class SettingsStore
         var gpu = s.Gpu;
         string lastScenery = s.LastScenery;
         bool maximized = s.WindowMaximized;
-        // Only read for the dependencies and never written, so they stay as this user's file has them.
-        bool cabLampLight = s.CabLampLight;
-        bool depthPrepassScene = s.DepthPrepassScene;
 
         _serializer.Read(s, imported);
 
@@ -234,8 +270,6 @@ public sealed class SettingsStore
         s.Gpu = gpu;
         s.LastScenery = lastScenery;
         s.WindowMaximized = maximized;
-        s.CabLampLight = cabLampLight;
-        s.DepthPrepassScene = depthPrepassScene;
         // an ini of before the tapes of the trains goes the same way as a profile
         SettingsSerializer.MoveToTrainTapes(s);
         return true;
@@ -285,6 +319,86 @@ public sealed class SettingsStore
     }
 
     /// <summary>
+    /// The keys the starter knows that the file gives a value it cannot read, with that value:
+    /// the setting shows its default, while the file keeps its own until the setting is changed.
+    /// A value read another way (tak, 1.0, a clamped number) is no unknown one.
+    /// </summary>
+    public IReadOnlyDictionary<string, string> UnreadableValues()
+    {
+        var unreadable = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        var defaults = Render(WithFile(new ConfigFile()));
+        var read = Render(WithFile(_config));
+        var overCap = SettingsSerializer.OverCapKeys(_config);
+        foreach (var (key, fallback) in defaults)
+        {
+            // Read, only brought down to the cap.
+            if (NotReadAlone.Contains(key) || overCap.Contains(key))
+                continue;
+            if (_config.IsPastEnd(key) || _config.GetRaw(key) is not { Length: > 0 } raw)
+                continue;
+            if (read.TryGetValue(key, out string? shown) && shown == fallback && !SameValue(raw, shown))
+                unreadable[key] = raw;
+        }
+
+        foreach (var key in SimulatorKeys.All)
+        {
+            if (_config.IsPastEnd(key.Key) || _config.GetRaw(key.Key) is not { Length: > 0 } raw)
+                continue;
+            string first = raw.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries)[0];
+            bool readable = key.Kind switch
+            {
+                SimulatorKeyKind.Toggle => Bool(first) is not null,
+                SimulatorKeyKind.Number => double.TryParse(first, NumberStyles.Float, CultureInfo.InvariantCulture, out _),
+                _ => true
+            };
+            if (!readable)
+                unreadable[key.Key] = raw;
+        }
+        return unreadable;
+    }
+
+    // Written from other keys, or rewritten on purpose whatever they say: what they hold is no setting of their own.
+    private static readonly HashSet<string> NotReadAlone = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "mousescale", "gfxrenderer", "gfx.shadowmap.enabled", "gfx.framebuffer.width", "gfx.framebuffer.height"
+    };
+
+    private SimulatorSettings WithFile(ConfigFile config)
+    {
+        var s = new SimulatorSettings();
+        _serializer.Read(s, config);
+        return s;
+    }
+
+    // The same value in other words: yes and tak, 45 and 45.0.
+    private static bool SameValue(string raw, string shown)
+    {
+        var a = raw.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries);
+        var b = shown.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries);
+        if (a.Length != b.Length)
+            return false;
+        for (int i = 0; i < a.Length; i++)
+        {
+            if (string.Equals(a[i], b[i], StringComparison.OrdinalIgnoreCase))
+                continue;
+            if (double.TryParse(a[i], NumberStyles.Float, CultureInfo.InvariantCulture, out double x) &&
+                double.TryParse(b[i], NumberStyles.Float, CultureInfo.InvariantCulture, out double y) && x == y)
+                continue;
+            if (Bool(a[i]) is { } p && p == Bool(b[i]))
+                continue;
+            return false;
+        }
+        return true;
+    }
+
+    private static bool? Bool(string word) => word.ToLowerInvariant() switch
+    {
+        "yes" or "true" or "1" or "tak" => true,
+        "no" or "false" or "0" or "nie" => false,
+        _ => null
+    };
+
+    /// <summary>
     /// What saving <paramref name="settings"/> would change in the file: the keys
     /// changed since it was read, those it lacks, and the ones no simulator reads.
     /// A key the screen shows otherwise than the file has it is left alone until
@@ -296,6 +410,8 @@ public sealed class SettingsStore
         var shown = _capture?.ShownUnlikeSettings ?? new Dictionary<string, ShownValue>();
         var changes = new List<IniChange>();
         var listed = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        // Above the starter's caps the file is brought down, though nothing on screen moved.
+        var overCap = SettingsSerializer.OverCapKeys(_config);
 
         foreach (string key in SettingsSerializer.ObsoleteKeys)
             Add(key, null);
@@ -322,6 +438,14 @@ public sealed class SettingsStore
                 return Uart.FeaturesStand(_config.GetRaw(key), value);
             if (SettingsSerializer.FixedLengthKeys.Contains(key, StringComparer.OrdinalIgnoreCase))
                 return _config.GetRaw(key) == value;
+            if (string.Equals(key, "gfxrenderer", StringComparison.OrdinalIgnoreCase) &&
+                !SimulatorSettings.KeptRendererWord(_config.GetRaw(key)))
+                return false;
+            if (string.Equals(key, "mousescale", StringComparison.OrdinalIgnoreCase) &&
+                !SettingsSerializer.MouseScaleStands(_config.GetRaw(key)))
+                return false;
+            if (overCap.Contains(key))
+                return false;
             string? synced = _synced.GetValueOrDefault(key);
             if (shown.TryGetValue(key, out var onScreen) && onScreen.Shown == value && onScreen.Held == synced)
                 return true;

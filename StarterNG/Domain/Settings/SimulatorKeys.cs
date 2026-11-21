@@ -63,6 +63,12 @@ public sealed record SimulatorKey(
 
 public static class SimulatorKeys
 {
+    /// <summary>
+    /// The keys a player sees in the standard mode, which has what the old starter had. It had
+    /// none of these: they are all for the advanced mode.
+    /// </summary>
+    public static readonly IReadOnlySet<string> Standard = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
     public const string General = "general";
     public const string Graphics = "graphics";
     public const string Sound = "sound";
@@ -94,13 +100,12 @@ public static class SimulatorKeys
         Toggle("loadinglog", false, General, "IniSectionInterface"),
         Toggle("captureonstart", true, General, "IniSectionInterface"),
         Toggle("mousecontrol", true, General, "IniSectionInterface"),
-        Text("fullscreenmonitor", General, "IniSectionInterface"),
         Text("screenshotsdir", General, "IniSectionInterface"),
 
         Number("basedrawrange", 2500, Graphics, "IniSectionRanges", 500, 10000, 250, " m"),
         Number("heightbase", 1, Graphics, "IniSectionRanges", 0.5, 3, 0.05, "×"),
         Number("targetfps", 0, Graphics, "IniSectionRanges", 0, 240, 5, " FPS", zeroIsOff: true),
-        Number("sleeperdistance", 250, Graphics, "IniSectionRanges", 0, 5000, 50, " m", zeroIsOff: true),
+        Number("sleeperdistance", 250, Graphics, "IniSectionRanges", 0, 1000, 50, " m", zeroIsOff: true),
         Number("gfx.reflections.range_instances", 750, Graphics, "IniSectionRanges", 0, 3000, 50, " m"),
         Number("gfx.reflections.range_vehicles", 250, Graphics, "IniSectionRanges", 0, 2000, 50, " m"),
         Toggle("gfx.textures.streaming", false, Graphics, "IniSectionRanges"),

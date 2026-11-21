@@ -45,6 +45,7 @@ public partial class Scenarios : UserControl
     {
         InitializeComponent();
         SyncConsistRowHeight();
+        Settings.AdvancedModeChanged += OnAdvancedModeChanged;
 
         Sceneries = AppServices.Current.Library.Sceneries;
 
@@ -86,6 +87,43 @@ public partial class Scenarios : UserControl
             state.StartingVehicleName = vehicle;
     }
 
+    private void OnAdvancedModeChanged()
+    {
+        RefreshVehicleList();
+        RefreshFaultMarks(sceneryList.Items);
+        if (SelectedScenery is { } scenery)
+            PopulateFaults(scenery);
+    }
+
+    /// <summary>
+    /// The scenery files' mistakes - written wrong, or vehicles the simulator will not
+    /// find - are for those who mend sceneries: shown in the advanced mode only.
+    /// </summary>
+    private static bool ShowsFaults => AppServices.Current.Settings.AdvancedSettings;
+
+    // The tree's marks put on or taken off where they stand, the selection and what is
+    // unfolded kept.
+    private void RefreshFaultMarks(ItemCollection items)
+    {
+        foreach (var obj in items)
+        {
+            if (obj is not TreeViewItem node)
+                continue;
+            if (node.Tag is int index && index < Sceneries.Count)
+            {
+                string? label = node.Header switch
+                {
+                    string text => text,
+                    StackPanel { Children: [TextBlock name, ..] } => name.Text,
+                    _ => null
+                };
+                if (label is not null)
+                    node.Header = SceneryHeader(label, Sceneries[index]);
+            }
+            RefreshFaultMarks(node.Items);
+        }
+    }
+
     private void BuildSceneryTree()
     {
         sceneryList.Items.Clear();
@@ -119,7 +157,7 @@ public partial class Scenarios : UserControl
     /// <summary>The scenery's name, marked when its files hold mistakes.</summary>
     private object SceneryHeader(string label, Scenery scenery)
     {
-        if (scenery.Faults.Count == 0)
+        if (!ShowsFaults || scenery.Faults.Count == 0)
             return label;
 
         var mark = new Material.Icons.Avalonia.MaterialIcon
@@ -263,8 +301,7 @@ public partial class Scenarios : UserControl
     {
         vehicleList.Items.Clear();
 
-        bool showAi = AppServices.Current.Settings.ShowAiVehicles;
-        bool drivableOnly = AppServices.Current.Settings.DrivableOnly;
+        var settings = AppServices.Current.Settings;
         var current = AppServices.Current.State.CurrentTrainset;
         ListBoxItem? currentRow = null;
 
@@ -272,7 +309,7 @@ public partial class Scenarios : UserControl
         {
             var trainset = scn.Trainsets[i];
 
-            if (!TrainsetDisplay.ListedIn(trainset, showAi, drivableOnly, current)) continue;
+            if (!TrainsetDisplay.ListedIn(trainset, settings, current)) continue;
 
             var listItem = new ListBoxItem
             {
@@ -435,8 +472,9 @@ public partial class Scenarios : UserControl
     private void PopulateFaults(Scenery scenery)
     {
         var faults = scenery.Faults;
-        faultsTab.IsVisible = faults.Count > 0;
-        if (faults.Count == 0)
+        bool shown = ShowsFaults && faults.Count > 0;
+        faultsTab.IsVisible = shown;
+        if (!shown)
         {
             if (infoTabs.SelectedItem == faultsTab)
                 infoTabs.SelectedIndex = 0;
@@ -1009,6 +1047,11 @@ public partial class Scenarios : UserControl
             });
 
         var db = AppServices.Current.Library.Vehicles;
+        // The start goes by the vehicle's name, so of several named alike only the first is the one marked.
+        string? picked = AppServices.Current.State.StartingVehicleName;
+        var pickedVehicle = string.IsNullOrEmpty(picked)
+            ? null
+            : trainset.Vehicles.FirstOrDefault(v => string.Equals(v.Name, picked, StringComparison.OrdinalIgnoreCase));
         foreach (var train in trainset.Vehicles)
         {
 
@@ -1030,9 +1073,7 @@ public partial class Scenarios : UserControl
                 })
                 : MiniTextures.MissingVisual(train.SkinFile, thumbH);
 
-            bool selected = !string.IsNullOrEmpty(train.Name) &&
-                string.Equals(train.Name, AppServices.Current.State.StartingVehicleName,
-                              StringComparison.OrdinalIgnoreCase);
+            bool selected = ReferenceEquals(train, pickedVehicle);
             // The vehicle started in gets a frame over its picture as well as the lines above and below:
             // two thin lines alone were hard to see. Drawn over the picture, it moves no vehicle aside.
             if (selected)

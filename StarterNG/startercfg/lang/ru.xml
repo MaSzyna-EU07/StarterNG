@@ -61,6 +61,8 @@
     <String key="StartNoScenery">Выберите сценерию</String>
     <String key="StartNoTrain">Выберите состав</String>
     <String key="StartNoStaff">Нет бригады / пассажира</String>
+    <String key="StartDecor">Декоративный состав</String>
+    <String key="StartAi">Состав ИИ</String>
     <String key="StartNoStaffTitle">Состав без бригады</String>
     <String key="StartNoStaffConfirm">В этом составе нет ни бригады, ни пассажира — управлять будет нечем. Всё равно запустить?</String>
     <String key="RestoreWeather">Восстановить погоду</String>
@@ -355,8 +357,8 @@
     <String key="General">Общие</String>
 
     <String key="Language">Язык</String>
+    <String key="UnknownIniValue">Неизвестное значение в eu07.ini: «{0}». Оно останется в файле, пока вы его не измените.</String>
     <String key="LanguageSimMissing">В симуляторе нет перевода на этот язык, он запустится на английском.</String>
-    <String key="Fullscreen">Полный экран</String>
     <String key="PauseSimInactive">Приостанавливать симуляцию при неактивном окне</String>
     <String key="PauseSimStart">Пауза при запуске</String>
     <String key="CursorSensitivity">Чувствительность курсора</String>
@@ -366,6 +368,7 @@
     <String key="Communication">Связь</String>
 
     <String key="GamepadSignalIgnore">Игнорировать ввод с геймпада</String>
+    <String key="ConfirmGamepadUse">Рекомендуется и по умолчанию геймпад игнорируется. Включение его поддержки часто вызывает проблемы с управлением. Меняйте, только если действительно управляете геймпадом. Изменить?</String>
 
     <String key="Feedback">Обратная связь</String>
     <String key="FeedbackOff">Выкл.</String>
@@ -407,8 +410,8 @@
 
     <String key="Graphic">Графика</String>
     <String key="RenderEngine">Движок отрисовки</String>
-    <String key="RenderEngineDesc">Полный работает с любым exe. Старый, Упрощённый и Экспериментальный только со старыми, новый вместо них запустит Полный.</String>
-    <String key="REExperimentalWarning">Внимание: экспериментальный рендерер может работать нестабильно, не показывать части сцены или не запускаться на некоторых видеокартах. Если симулятор не запускается или выглядит неправильно, вернитесь к рендереру «Полный».</String>
+    <String key="ConfirmRenderingChange">Изменение «{0}» может помешать запуску симулятора или испортить изображение. Изменить?</String>
+    <String key="RenderEngineDesc">Полный — рекомендуемый рендерер симулятора. Старый и Упрощённый рисуют классическим рендерером и не рекомендуются, если Полный работает, — они для видеокарт, с которыми у Полного проблемы.</String>
     <String key="GpuChoice">Видеокарта (Linux)</String>
     <String key="GpuDiscrete">Мощнее (дискретная)</String>
     <String key="GpuSystem">Как решит система</String>
@@ -418,16 +421,9 @@
     <String key="GpuNotePlayer">Найдено: {0}. Карту выбирают переменные среды ({1}); стартер их не меняет.</String>
     <String key="GpuNoteOne">Одна карта: {0} – выбирать не из чего.</String>
     <String key="GpuNoteUnread">Не удалось прочитать видеокарты из /sys/class/drm.</String>
-    <String key="IdleWindowsBuildOnly">Работает только в версии симулятора для Windows.</String>
-    <String key="IdleLegacyRendererOnly">Это читает только рендерер legacy, а выбран другой.</String>
-    <String key="IdleNeedsFrameRateTarget">Работает только с целевой частотой кадров (targetfps).</String>
-    <String key="IdleOpenGlRenderersOnly">Экспериментальный рендерер это не читает.</String>
-    <String key="IdleModernRendererOnly">Это читает только полный рендерер, а выбран другой.</String>
-    <String key="IdleNeedsNetworkServer">Пауза в фоне требует сетевого сервера (network.server).</String>
 
     <String key="Resolution">Разрешение</String>
     <String key="ResolutionOnMonitor">{0} (монитор)</String>
-    <String key="IdleMonitorMode">Не работает при автоматическом разрешении.</String>
     <String key="BufforResolution">Разрешение буфера</String>
     <String key="MaxTexResolution">Максимальное разрешение текстур</String>
     <String key="MaxTexCabResolution">Максимальное разрешение текстур кабины</String>
@@ -456,7 +452,14 @@
     <String key="FpsLimitDesc">Меньше кадров: холоднее и тише компьютер. С V-Sync лимит выше частоты обновления ничего не даёт.</String>
     <String key="ShadowAngleLimit">Ограничение длины теней</String>
     <String key="ShadowLimitShort">Укороченные</String>
-    <String key="FullscreenWindowed">Автоматическое разрешение (полный экран без рамки)</String>
+    <String key="DisplayMode">Режим отображения</String>
+    <String key="DisplayModeFullscreen">Полный экран</String>
+    <String key="DisplayModeBorderless">Полный экран без рамки</String>
+    <String key="DisplayModeWindow">Окно</String>
+    <String key="DisplayModeDesc">Полный экран без рамки берёт разрешение монитора и быстрее переключается на другие программы.</String>
+    <String key="FullscreenMonitor">Монитор</String>
+    <String key="FullscreenMonitorDesc">На каком мониторе симулятор откроется в полноэкранном режиме.</String>
+    <String key="MonitorPrimary">Основной</String>
     <String key="VSync">VSync</String>
     <String key="SmokeDisplay">Отображение дыма</String>
     <String key="SmokeParticlesMultiplier">Множитель частиц дыма</String>
@@ -520,6 +523,12 @@
     <String key="AmbientVolume">Громкость окружения</String>
 
     <String key="Advanced">Дополнительно</String>
+    <String key="AdvancedMode">Расширенный режим</String>
+    <String key="AdvancedModeMenu">Расширенный режим…</String>
+    <String key="AdvancedModeOff">Выключить расширенный режим</String>
+    <String key="AdvancedModeOffConfirm">Выключение расширенного режима вернёт значения по умолчанию для всех настроек, доступных только в нём, и сохранит настройки этой страницы. Выключить?</String>
+    <String key="AdvancedModeOn">Включить</String>
+    <String key="AdvancedModeWarning">Расширенный режим показывает все настройки симулятора и стартера, в том числе те, после изменения которых симулятор может не запуститься, работать нестабильно или показывать плохую картинку. Он также позволяет менять экипажи составов, составы ИИ и декорации, поэтому сценарий может работать не так, как задумал автор.&#10;&#10;Меняйте эти настройки, только если знаете, что они делают. Проблемы из-за них — не ошибки симулятора: прежде чем сообщить об ошибке, выключите расширенный режим и восстановите настройки по умолчанию.&#10;&#10;Прочитайте внимательно. Кнопка включения заработает через 20 секунд.</String>
     <String key="CompressTextures">Сжимать текстуры TGA</String>
     <String key="ScaleSpeculars">Масштабировать блики (совместимость со старыми моделями)</String>
     <String key="ScaleSpecularsDesc">Ослабляет блеск моделей, сделанных для старых рендереров.</String>
@@ -569,6 +578,7 @@
     <String key="Reset">Сбросить</String>
     <String key="SettingsSaved">Настройки сохранены</String>
     <String key="DefaultsRestored">Восстановлены значения по умолчанию</String>
+    <String key="AllDefaultsConfirm">Все настройки вернутся к значениям по умолчанию. Останутся: язык, выбранный симулятор, порт UART и клавиши управления.&#10;&#10;Изменения ещё нужно сохранить.</String>
     <String key="SettingsRestored">Восстановлены сохранённые настройки</String>
     <String key="TreeExpanded">развёрнуто</String>
     <String key="TreeCollapsed">свёрнуто</String>
@@ -796,6 +806,7 @@
     <String key="SyntaxIncludeNotClosed">include {1} без end</String>
     <String key="SyntaxTrainsetUnreadable">Не удалось прочитать состав {0}</String>
     <String key="SyntaxVehicleUnreadable">Не удалось прочитать единицу {0}</String>
+    <String key="SyntaxVehicleMissing">Единица {0} отсутствует: нет файла dynamic/{1} - симулятор её пропустит, состав будет короче</String>
     <String key="WarehouseUseInScenery">Вставить в выбранный состав сценерии</String>
     <String key="WarehouseAppendToScenery">Добавить к выбранному составу сценерии</String>
     <String key="ShortcutUndo">Отменить изменение состава</String>
@@ -810,7 +821,6 @@
     <String key="Ini.loadinglog">Показывать журнал во время загрузки</String>
     <String key="Ini.captureonstart">После запуска мышь вращает камеру</String>
     <String key="Ini.mousecontrol">Нажатие органов управления в кабине мышью</String>
-    <String key="Ini.fullscreenmonitor">Монитор для полноэкранного режима</String>
     <String key="Ini.screenshotsdir">Папка снимков экрана</String>
     <String key="Ini.basedrawrange">Базовая дальность прорисовки</String>
     <String key="Ini.targetfps">Целевая частота кадров</String>
@@ -849,8 +859,8 @@
     <String key="PresetHigh">Высокое</String>
     <String key="PresetCustom">Своё</String>
     <String key="MonitorRate">Монитор: {0} Гц</String>
-    <String key="MonitorRateNamed">Экран {0}: до {1} Гц</String>
     <String key="MonitorRateUse">Задать {0} FPS</String>
+    <String key="FpsVSyncNote">С VSync кадров не будет больше, чем Гц монитора, поэтому ограничение на этом уровне или выше ничего не меняет.</String>
     <String key="GfxPresetDesc">Наведите на уровень, чтобы увидеть значения.</String>
     <String key="TextureBaseDateHint">ГГГГ-ММ-ДД</String>
     <String key="LanguageStarterMissing">Нет перевода стартера: останется английский. Симулятор получит этот язык.</String>
@@ -908,73 +918,12 @@
     <String key="WarehouseSaved">На складе: {0}</String>
     <String key="WarehouseNothingToAdd">Выберите состав с транспортом</String>
     <String key="GfxGroupLevelTip">Уровень только для этой части графики</String>
-    <String key="REVulkan">Vulkan 1.4</String>
-    <String key="IdleVulkanOnly">Работает только с Vulkan.</String>
-    <String key="DlssPreset">Пресет DLSS</String>
-    <String key="FrameGeneration">Генерация кадров</String>
-    <String key="Reflex">NVIDIA Reflex</String>
-    <String key="RayTracing">Отражения с трассировкой лучей</String>
-    <String key="RayTracingRange">Дальность трассировки лучей</String>
-    <String key="VulkanDevice">Видеокарта (Vulkan)</String>
-    <String key="Ssr">Отражения в экранном пространстве (SSR)</String>
-    <String key="AmbientOcclusion">Фоновое затенение</String>
-    <String key="AmbientOcclusionQuality">Качество затенения</String>
-    <String key="AoLighting">Затенение в фоновом свете</String>
-    <String key="LightsClustered">Кластерное освещение</String>
-    <String key="LightShadows">Тени ламп и прожекторов</String>
-    <String key="ContactShadows">Контактные тени</String>
-    <String key="ShadowSdsm">Каскады теней по сцене (SDSM)</String>
-    <String key="CabProbe">Зонд кабины</String>
-    <String key="CabProbeInterval">Обновление зонда каждые N кадров</String>
-    <String key="CabProbeReflections">Кабина отражает себя</String>
-    <String key="CabProbeBounce">Отражённый свет лампы в кабине</String>
-    <String key="FogQuality">Качество тумана</String>
-    <String key="Clouds">Объёмные облака</String>
-    <String key="CloudShadows">Тени облаков на земле</String>
-    <String key="Grass">Трава</String>
-    <String key="GrassDistance">Дальность травы</String>
-    <String key="GrassDensity">Густота травы</String>
-    <String key="Precipitation">Осадки (частицы)</String>
-    <String key="Bloom">Свечение ярких мест (bloom)</String>
-    <String key="AutoExposure">Автоматическая экспозиция</String>
-    <String key="LevelOff">Выкл.</String>
-    <String key="LevelLow">Низкое</String>
-    <String key="LevelMedium">Среднее</String>
-    <String key="LevelHigh">Высокое</String>
-    <String key="LevelUltra">Ультра</String>
-    <String key="ReflexOn">Вкл.</String>
-    <String key="ReflexBoost">Вкл. + boost</String>
-    <String key="AaTaa">TAA</String>
-    <String key="AaDlss">DLSS (масштабирование)</String>
-    <String key="AaDlaa">DLAA (родное разрешение)</String>
-    <String key="DlssPresetDefault">Автоматически</String>
-    <String key="DlssPresetK">K: лучшее качество</String>
-    <String key="DlssPresetJ">J: меньше размытия</String>
-    <String key="DlssPresetM">M: для режима Производительность</String>
-    <String key="DlssPresetL">L: для Ультра производительность</String>
     <String key="Effects">Эффекты</String>
     <String key="GfxColImage">Разрешение и сглаживание</String>
     <String key="GfxColLights">Освещение</String>
     <String key="GfxColPostFx">Постобработка</String>
     <String key="GfxColNature">Дым</String>
     <String key="AntiAliasing">Сглаживание</String>
-    <String key="VolumetricFog">Объёмный туман</String>
-    <String key="REOpenGLNote">DLSS, генерация кадров, Reflex и трассировка лучей только с Vulkan.</String>
-    <String key="REVulkanNote">Нужен exe с Vulkan и карта с его поддержкой. Иначе симулятор запустит Полный или Старый.</String>
-    <String key="VulkanDeviceAuto">автоматически</String>
-    <String key="DlssPresetInfoDefault">K для DLAA, «Качества» и «Баланса», M для «Производительности», L для «Ультрапроизводительности». Драйвер может изменить это при обновлении.</String>
-    <String key="DlssPresetInfoK">Модель transformer с лучшим качеством изображения, но самая затратная. По умолчанию для DLAA, «Качества» и «Баланса».</String>
-    <String key="DlssPresetInfoJ">Похожа на K: чуть меньше шлейфов за движущимися объектами ценой большего мерцания. NVIDIA скорее рекомендует K.</String>
-    <String key="DlssPresetInfoM">Модель для режима «Производительность» (масштаб около 50%), в нём по умолчанию. Сама вычисляет экспозицию.</String>
-    <String key="DlssPresetInfoL">Модель для режима «Ультрапроизводительность» (масштаб около 33%), в нём по умолчанию. Сама вычисляет экспозицию.</String>
-    <String key="DlssMissingLibraryNote">Рядом с симулятором нет {0}: без этой библиотеки симулятор не использует эту функцию DLSS.</String>
-    <String key="DlssNoPlatformNote">На macOS DLSS недоступен.</String>
-    <String key="FrameGenerationNeedsDlssNote">Генерация кадров работает только с DLSS или DLAA.</String>
-    <String key="ReflexForcedNote">Генерация кадров сама включает Reflex, что бы здесь ни было выбрано.</String>
-    <String key="AoLightingPrepassNote">Нужна глубина всей сцены до цвета; без SSR и контактных теней это лишний проход (нагрузка на ЦП в OpenGL).</String>
-    <String key="AoNeedsPipelineNote">Если постобработка пропущена, AO не работает.</String>
-    <String key="CabProbeReflectionsOnlyNote">Без кластерного освещения и лампы кабины как источника света (gfx.lights.cab) зонд даёт только отражения.</String>
-    <String key="TemporalNeedsPipelineNote">TAA и DLSS работают в постобработке: если её пропустить, края не сгладятся.</String>
     <String key="SettingsFile">Файл eu07.ini</String>
     <String key="ImportIni">Импорт…</String>
     <String key="ImportIniTitle">Импорт настроек из eu07.ini</String>
@@ -987,9 +936,8 @@
 {0}</String>
     <String key="ExportIniDone">Экспортировано в {0}</String>
     <String key="REFull">Полный</String>
-    <String key="REOld">Старый</String>
-    <String key="RESimp">Упрощённый</String>
-    <String key="REExperimental">Экспериментальный</String>
+    <String key="REOld">Старый (не рекомендуется, если Полный работает)</String>
+    <String key="RESimp">Упрощённый (не рекомендуется, если Полный работает)</String>
     <String key="RenderAngleVulkan">Использовать рендерер ANGLE Vulkan</String>
     <String key="RenderVBO">Отрисовка VBO</String>
     <String key="CabShadowsRange">Дальность источников теней в кабине</String>
@@ -997,6 +945,4 @@
     <String key="UseGLESDesc">OpenGL ES вместо OpenGL. Не работает с рендерером legacy.</String>
     <String key="GpuCard">{0}, {1} ГБ</String>
     <String key="GpuCardShared">{0}, общая память</String>
-    <String key="GfxColNewRenderer">Новое в OpenGL 4.6 / Vulkan</String>
-    <String key="GfxNewRendererNote">Работает только с новым exe. Старый exe пропускает эти настройки.</String>
 </Language>

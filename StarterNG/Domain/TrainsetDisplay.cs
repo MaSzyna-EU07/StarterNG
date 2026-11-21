@@ -8,6 +8,7 @@ using StarterNG.Classes;
 using StarterNG.Domain.Sceneries;
 using StarterNG.Domain.Vehicles;
 using StarterNG.Application;
+using StarterNG.Domain.Settings;
 
 namespace StarterNG.Domain;
 
@@ -30,9 +31,26 @@ public static class TrainsetDisplay
         !string.IsNullOrEmpty(trainset.Description) &&
         trainset.Description.TrimStart().StartsWith("-", StringComparison.Ordinal);
 
-    /// <summary>Whether a list of the scenery's consists shows it, under the two filters those lists have.</summary>
+    /// <summary>Whether a list of the scenery's consists shows it, under the filters those lists have.</summary>
     public static bool ListedIn(Trainset trainset, bool showAi, bool drivableOnly, Trainset? current) =>
         (showAi || !IsAi(trainset)) && (!drivableOnly || ListedAsDrivable(trainset, current));
+
+    /// <summary>
+    /// Whether a list of the scenery's consists shows it: in the advanced mode under the filters
+    /// the settings hold; in the standard mode, which has no filters, every consist with vehicles
+    /// on it, and one emptied here, so it can be filled again or saved.
+    /// </summary>
+    public static bool ListedIn(Trainset trainset, SimulatorSettings settings, Trainset? current) =>
+        settings.AdvancedSettings
+            ? ListedIn(trainset, settings.ShowAiVehicles, settings.DrivableOnly, current)
+            : !IsEmpty(trainset) || SceneryTrainsetText.IsModified(trainset);
+
+    /// <summary>
+    /// Whether the simulator may start with the player in it: in the standard mode not in one
+    /// the simulator drives itself nor in a decoration, which the scenario keeps as they are.
+    /// </summary>
+    public static bool StartableIn(Trainset trainset, SimulatorSettings settings) =>
+        settings.AdvancedSettings || (!IsAi(trainset) && !trainset.Decor);
 
     /// <summary>The consist's row in those lists: what it is made of, or the track of one with nothing on it.</summary>
     public static string ListLabel(Trainset trainset) =>

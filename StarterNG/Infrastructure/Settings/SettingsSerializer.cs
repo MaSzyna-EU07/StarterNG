@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Text;
@@ -24,16 +25,6 @@ public sealed class SettingsSerializer
         s.PhysicsLog = false;
     }
 
-    private readonly bool _dlssPlatform;
-
-    /// <param name="dlssPlatform">Whether the simulator can have DLSS here at all (not on macOS).</param>
-    public SettingsSerializer(bool dlssPlatform = true)
-    {
-        _dlssPlatform = dlssPlatform;
-    }
-
-    public bool DlssPlatform => _dlssPlatform;
-
     public void Read(SimulatorSettings s, ConfigFile c)
     {
         s.LanguageWasSet = c.Has("lang");
@@ -45,20 +36,21 @@ public sealed class SettingsSerializer
         s.FpsAverage = c.GetDouble("fpsaverage", 0);
         s.PauseOnStart = c.GetBool("pause", false);
 
+        // A zero (or NaN/Infinity) scale locks that axis in the simulator: the
+        // camera then turns only one way. Nothing in the starter writes such a
+        // number on purpose, so X takes the default. Of Y only the sign is read:
+        // it is written 0.5 or -0.5, as the old starter always wrote it.
         var mouse = c.GetTokens("mousescale");
-        if (mouse.Length >= 1 && double.TryParse(mouse[0], NumberStyles.Float, CultureInfo.InvariantCulture, out double mx))
+        if (mouse.Length >= 1 && TryParseMouseScale(mouse[0], out double mx))
         {
             s.InvertMouseHorizontal = mx < 0;
             s.MouseScaleXMagnitude = Math.Abs(mx);
             s.CursorSensitivity = SensitivityStep(mx);
         }
-        if (mouse.Length >= 2 && double.TryParse(mouse[1], NumberStyles.Float, CultureInfo.InvariantCulture, out double my))
-        {
-            s.InvertMouseVertical = my < 0;
-            s.MouseScaleYMagnitude = Math.Abs(my);
-        }
+        if (mouse.Length >= 1)
+            s.InvertMouseVertical = mouse.Length >= 2 && TryParseMouseScale(mouse[1], out double my) && my < 0;
 
-        s.IgnoreGamepad = !c.GetBool("input.gamepad", true);
+        s.IgnoreGamepad = !c.GetBool("input.gamepad", false);
         s.FeedbackMode = Clamp(c.GetInt("feedbackmode", 1), 0, 5);
         s.FeedbackPort = c.GetInt("feedbackport", 888);
         s.UartEnabled = c.Has("uart");
@@ -91,8 +83,7 @@ public sealed class SettingsSerializer
         s.VirtualShunting = c.GetBool("ai.trainman", true);
         s.LogMissingVehicleFiles = c.GetBool("starter.logmissingvehicles", false);
 
-        s.RenderEngine = SimulatorSettings.RenderEngineOf(c.GetString("gfxrenderer", "full"));
-        s.VulkanDevice = c.GetString("gfx.vulkan.device", "");
+        s.RenderEngine = SimulatorSettings.RenderEngineOf(c.GetString("gfxrenderer", "default"));
         s.Width = c.GetInt("width", 1280);
         s.Height = c.GetInt("height", 720);
         s.BufferScalePercent = ReadBufferScale(c);
@@ -100,9 +91,6 @@ public sealed class SettingsSerializer
         s.MaxCabTextureSize = c.GetInt("maxcabtexturesize", 4096);
         s.TextureFiltering = Math.Max(1, c.GetDouble("anisotropicfiltering", 8));
         s.AntiAliasing = ReadAntiAliasing(c);
-        s.DlssPreset = c.GetString("gfx.dlss.preset", "default").ToLowerInvariant();
-        s.FrameGeneration = ParseFrameGeneration(FirstToken(c, "gfx.framegeneration"));
-        s.Reflex = ParseReflex(FirstToken(c, "gfx.reflex"));
         s.DynamicLights = Clamp(c.GetInt("dynamiclights", 7), 0, 7);
         s.DrawRangeFactor = c.GetDouble("gfx.drawrange.factor.max", 3.0);
         s.VSync = c.GetBool("vsync", false);
@@ -114,34 +102,6 @@ public sealed class SettingsSerializer
         s.EnvMap = c.GetBool("gfx.envmap.enabled", true);
         s.UseVbo = c.GetBool("usevbo", true);
         s.RenderShadows = c.GetBool("shadows", true);
-        s.ShadowSdsm = c.GetBool("gfx.shadow.sdsm", false);
-        s.LightShadows = ParseLevel(FirstToken(c, "gfx.lights.shadows"), 2, 3);
-        s.ContactShadows = ParseLevel(FirstToken(c, "gfx.contactshadows"), 0, 3);
-        s.LightsClustered = c.GetBool("gfx.lights.clustered", true);
-        s.AmbientOcclusion = ParseAmbientOcclusion(FirstToken(c, "gfx.postfx.ao"));
-        var aoQuality = c.GetTokens("gfx.postfx.ao.quality");
-        s.AoSlices = aoQuality.Length >= 1 ? ParseInt(aoQuality[0], 3) : 3;
-        s.AoSteps = aoQuality.Length >= 2 ? ParseInt(aoQuality[1], 4) : 4;
-        s.AoLighting = c.GetBool("gfx.postfx.ao.lighting", true);
-        s.CabProbe = ParseCabProbe(FirstToken(c, "gfx.cabprobe"));
-        s.CabProbeInterval = c.GetInt("gfx.cabprobe.interval", 4);
-        s.CabProbeBounce = c.GetDouble("gfx.cabprobe.bounce", 1.0);
-        s.CabProbeReflections = c.GetBool("gfx.cabprobe.reflections", true);
-        s.CabLampLight = c.GetBool("gfx.lights.cab", true);
-        s.DepthPrepassScene = c.GetBool("gfx.depthprepass.scene", false);
-        s.Ssr = ParseLevel(FirstToken(c, "gfx.ssr"), 2, 3);
-        s.RayTracing = c.GetBool("gfx.raytracing", false);
-        s.RayTracingRange = (int)Math.Round(c.GetDouble("gfx.raytracing.range", 500));
-        s.VolumetricFog = ParseVolumetricFog(FirstToken(c, "gfx.fog"));
-        s.FogQuality = ParseFogQuality(FirstToken(c, "gfx.fog.quality"));
-        s.Clouds = ParseLevel(FirstToken(c, "gfx.clouds"), 2, 4);
-        s.CloudShadows = c.GetBool("gfx.clouds.shadows", true);
-        s.Grass = c.GetBool("gfx.grass", true);
-        s.GrassDistance = (int)Math.Round(c.GetDouble("gfx.grass.distance", 60));
-        s.GrassDensity = c.GetDouble("gfx.grass.density", 1.0);
-        s.PrecipitationParticles = c.GetInt("gfx.precipitation.particles", 65536);
-        s.Bloom = c.GetBool("gfx.postfx.bloom", true);
-        s.AutoExposure = c.GetBool("gfx.postfx.autoexposure", true);
         // A negative rate counts as its size; none at all, as never.
         double reflections = Math.Abs(c.GetDouble("gfx.reflections.framerate", 1 / 300.0));
         s.ReflectionsFramerate = reflections > 0 ? reflections : 1 / 300.0;
@@ -165,6 +125,7 @@ public sealed class SettingsSerializer
         if (s.FpsLimitEnabled) s.FpsLimit = fpsLimit;
         s.ShadowAngleLimit = c.GetDouble("gfx.shadow.angle.min", 0.2);
         s.FullscreenWindowed = c.GetBool("fullscreenwindowed", false);
+        s.FullscreenMonitor = c.GetString("fullscreenmonitor", "").Trim();
         s.RenderAngleVulkan = string.Equals(c.GetString("gfx.angleplatform", ""), "vulkan", StringComparison.OrdinalIgnoreCase);
 
         s.SplineFidelity = Clamp(c.GetInt("splinefidelity", 1), 1, 4);
@@ -213,6 +174,8 @@ public sealed class SettingsSerializer
         s.AutoCloseStarter = c.GetBool("starter.autoclose", false);
         s.LargeThumbnails = c.GetBool("starter.largethumbnails", false);
         s.AutoExpandSceneryTree = c.GetBool("starter.expandtree", false);
+        s.AdvancedSettings = c.GetBool("starter.settings.advanced", false);
+        s.MovedToStandard = c.GetBool("starter.settings.standard", false);
         s.CpuNotice = c.GetBool("starter.cpunotice", true);
         s.Gpu = string.Equals(c.GetString("starter.gpu", "discrete"), "system", StringComparison.OrdinalIgnoreCase)
             ? GpuPreference.System
@@ -237,7 +200,7 @@ public sealed class SettingsSerializer
             if (c.Has(key.Key))
                 s.Extra[key.Key] = c.GetRaw(key.Key) ?? string.Empty;
 
-        GraphicsRules.Normalize(s, _dlssPlatform);
+        GraphicsRules.Normalize(s);
     }
 
     /// <summary>
@@ -248,13 +211,20 @@ public sealed class SettingsSerializer
     public static readonly string[] FixedLengthKeys = { "uart", "uarttune", "uartfeature" };
 
     /// <summary>Keys written only when they say something, besides those of <see cref="SimulatorKeys"/>.</summary>
-    public static readonly string[] OptionalKeys = { "fpslimit", "gfx.angleplatform", "gfx.vulkan.device" };
+    public static readonly string[] OptionalKeys = { "fpslimit", "gfx.angleplatform", "fullscreenmonitor" };
 
     /// <summary>Keys no simulator reads any more, taken out of the file on a save.</summary>
     public static readonly string[] ObsoleteKeys =
     {
         "gfx.postfx.tonemapping",
         "starter.developertools",
+        // The OpenGL 4.6 and Vulkan renderers', which the simulator's master does not have.
+        "gfx.antialiasing", "gfx.buffer.percent", "gfx.vulkan.device", "gfx.dlss.preset", "gfx.framegeneration",
+        "gfx.reflex", "gfx.raytracing", "gfx.raytracing.range", "gfx.ssr", "gfx.lights.clustered", "gfx.lights.shadows",
+        "gfx.contactshadows", "gfx.shadow.sdsm", "gfx.postfx.ao", "gfx.postfx.ao.lighting", "gfx.postfx.ao.quality",
+        "gfx.cabprobe", "gfx.cabprobe.interval", "gfx.cabprobe.bounce", "gfx.cabprobe.reflections", "gfx.fog",
+        "gfx.fog.quality", "gfx.clouds", "gfx.clouds.shadows", "gfx.postfx.bloom", "gfx.postfx.autoexposure",
+        "gfx.grass", "gfx.grass.distance", "gfx.grass.fadedistance", "gfx.grass.density", "gfx.precipitation.particles",
     };
 
     /// <summary>
@@ -264,7 +234,7 @@ public sealed class SettingsSerializer
     public void Write(SimulatorSettings settings, ConfigFile c)
     {
         var s = settings.Copy();
-        GraphicsRules.Normalize(s, _dlssPlatform);
+        GraphicsRules.Normalize(s);
 
         c.Set("lang", string.IsNullOrWhiteSpace(s.LanguageCode)
             ? "en"
@@ -277,7 +247,7 @@ public sealed class SettingsSerializer
             ? s.MouseScaleXMagnitude
             : s.CursorSensitivity;
         double mx = magnitude * (s.InvertMouseHorizontal ? -1 : 1);
-        double my = s.MouseScaleYMagnitude * (s.InvertMouseVertical ? -1 : 1);
+        double my = SimulatorSettings.MouseScaleY * (s.InvertMouseVertical ? -1 : 1);
         c.Set("mousescale",
             $"{mx.ToString("R", CultureInfo.InvariantCulture)} " +
             $"{my.ToString("R", CultureInfo.InvariantCulture)}");
@@ -312,26 +282,16 @@ public sealed class SettingsSerializer
         c.SetBool("starter.logmissingvehicles", s.LogMissingVehicleFiles);
 
         c.Set("gfxrenderer", SimulatorSettings.RenderEngines[Clamp(s.RenderEngine, 0, SimulatorSettings.RenderEngines.Length - 1)]);
-        if (!string.IsNullOrWhiteSpace(s.VulkanDevice)) c.Set("gfx.vulkan.device", s.VulkanDevice.Trim());
         c.SetInt("width", s.Width);
         c.SetInt("height", s.Height);
         c.SetInt("starter.bufferscale", s.BufferScalePercent);
-        int fbw = (int)Math.Round(s.Width * s.BufferScalePercent / 100.0);
-        int fbh = (int)Math.Round(s.Height * s.BufferScalePercent / 100.0);
-        // The size for the simulators before gfx.buffer.percent, which pass that one over and the other way round.
-        c.SetInt("gfx.framebuffer.width", fbw);
-        c.SetInt("gfx.framebuffer.height", fbh);
-        c.SetInt("gfx.buffer.percent", s.BufferScalePercent);
+        // The simulator draws into a buffer of this size and stretches it to the window.
+        c.SetInt("gfx.framebuffer.width", (int)Math.Round(s.Width * s.BufferScalePercent / 100.0));
+        c.SetInt("gfx.framebuffer.height", (int)Math.Round(s.Height * s.BufferScalePercent / 100.0));
         c.SetInt("maxtexturesize", s.MaxTextureSize);
         c.SetInt("maxcabtexturesize", s.MaxCabTextureSize);
         c.SetDouble("anisotropicfiltering", s.TextureFiltering);
-        // multisampling is what older simulators read; gfx.antialiasing overrides it in the new ones, but only from
-        // a later line, since each key sets the mode as it is read.
         c.SetInt("multisampling", MultisamplingLevel(s.AntiAliasing));
-        c.Set("gfx.antialiasing", AntiAliasingToken(s.AntiAliasing));
-        c.Set("gfx.dlss.preset", s.DlssPreset);
-        c.Set("gfx.framegeneration", s.FrameGeneration > 1 ? $"x{s.FrameGeneration}" : "off");
-        c.Set("gfx.reflex", s.Reflex switch { 1 => "on", 2 => "boost", _ => "off" });
         c.SetInt("dynamiclights", s.DynamicLights);
         c.SetDouble("gfx.drawrange.factor.max", s.DrawRangeFactor);
         c.SetBool("vsync", s.VSync);
@@ -344,32 +304,6 @@ public sealed class SettingsSerializer
         c.SetBool("usevbo", s.UseVbo);
         c.SetBool("shadows", s.RenderShadows);
         c.SetBool("gfx.shadowmap.enabled", s.RenderShadows);
-        c.SetBool("gfx.shadow.sdsm", s.ShadowSdsm);
-        c.Set("gfx.lights.shadows", LevelToken(s.LightShadows));
-        c.Set("gfx.contactshadows", LevelToken(s.ContactShadows));
-        c.SetBool("gfx.lights.clustered", s.LightsClustered);
-        c.Set("gfx.postfx.ao", s.AmbientOcclusion switch { 1 => "ssao", 2 => "gtao", _ => "no" });
-        c.Set("gfx.postfx.ao.quality", $"{s.AoSlices} {s.AoSteps}");
-        c.SetBool("gfx.postfx.ao.lighting", s.AoLighting);
-        c.Set("gfx.cabprobe", LevelToken(s.CabProbe));
-        c.SetInt("gfx.cabprobe.interval", s.CabProbeInterval);
-        c.SetDouble("gfx.cabprobe.bounce", s.CabProbeBounce);
-        c.SetBool("gfx.cabprobe.reflections", s.CabProbeReflections);
-        c.Set("gfx.ssr", LevelToken(s.Ssr));
-        c.SetBool("gfx.raytracing", s.RayTracing);
-        c.SetInt("gfx.raytracing.range", s.RayTracingRange);
-        c.Set("gfx.fog", s.VolumetricFog ? "yes" : "analytic");
-        c.Set("gfx.fog.quality", LevelToken(s.FogQuality));
-        c.Set("gfx.clouds", LevelToken(s.Clouds));
-        c.SetBool("gfx.clouds.shadows", s.CloudShadows);
-        c.SetBool("gfx.grass", s.Grass);
-        c.SetInt("gfx.grass.distance", s.GrassDistance);
-        // The grass thins out past its distance; the simulator's own default keeps a sixth of it for that.
-        c.SetInt("gfx.grass.fadedistance", Math.Min(600, s.GrassDistance + Math.Max(10, s.GrassDistance / 6)));
-        c.SetDouble("gfx.grass.density", s.GrassDensity);
-        c.SetInt("gfx.precipitation.particles", s.PrecipitationParticles);
-        c.SetBool("gfx.postfx.bloom", s.Bloom);
-        c.SetBool("gfx.postfx.autoexposure", s.AutoExposure);
         c.Set("gfx.reflections.framerate", s.ReflectionsFramerate.ToString("0.######", CultureInfo.InvariantCulture));
         c.Set("shadowtune",
             $"{s.ShadowMapResolution} {s.ShadowTuneUnused[0]} " +
@@ -383,6 +317,7 @@ public sealed class SettingsSerializer
         if (s.FpsLimitEnabled) c.SetDouble("fpslimit", s.FpsLimit);
         c.SetDouble("gfx.shadow.angle.min", s.ShadowAngleLimit);
         c.SetBool("fullscreenwindowed", s.FullscreenWindowed);
+        if (!string.IsNullOrWhiteSpace(s.FullscreenMonitor)) c.Set("fullscreenmonitor", s.FullscreenMonitor.Trim());
         if (s.RenderAngleVulkan) c.Set("gfx.angleplatform", "vulkan");
 
         c.SetInt("splinefidelity", s.SplineFidelity);
@@ -429,6 +364,8 @@ public sealed class SettingsSerializer
         c.SetBool("starter.autoclose", s.AutoCloseStarter);
         c.SetBool("starter.largethumbnails", s.LargeThumbnails);
         c.SetBool("starter.expandtree", s.AutoExpandSceneryTree);
+        c.SetBool("starter.settings.advanced", s.AdvancedSettings);
+        c.SetBool("starter.settings.standard", s.MovedToStandard);
         c.SetBool("starter.cpunotice", s.CpuNotice);
         c.Set("starter.gpu", s.Gpu == GpuPreference.System ? "system" : "discrete");
         c.SetInt("starter.batterydefault", (int)s.ReadyOverride);
@@ -447,60 +384,42 @@ public sealed class SettingsSerializer
                 c.Set(key.Key, value.Trim());
     }
 
-    // What the simulator goes by: up to 4 a part of the window, above it percents.
-    private static int ReadBufferScale(ConfigFile c)
-    {
-        if (!c.Has("gfx.buffer.percent"))
-            return Clamp(c.GetInt("starter.bufferscale", 100), 25, 200);
+    private static int ReadBufferScale(ConfigFile c) =>
+        Clamp(BufferScaleIn(c), 25, GraphicsRules.MaxBufferScale);
 
-        double value = c.GetDouble("gfx.buffer.percent", 100);
-        return Clamp((int)Math.Round(value > 4 ? value : value * 100), 25, 200);
+    // The starter's own percent, or the framebuffer the file sets against its window.
+    private static int BufferScaleIn(ConfigFile c)
+    {
+        if (c.Has("starter.bufferscale"))
+            return c.GetInt("starter.bufferscale", 100);
+        int width = c.GetInt("width", 0);
+        int framebuffer = c.GetInt("gfx.framebuffer.width", 0);
+        return width > 0 && framebuffer > 0 ? (int)Math.Round(framebuffer * 100.0 / width) : 100;
     }
 
-    private static string FirstToken(ConfigFile c, string key)
+    /// <summary>
+    /// The keys of <paramref name="c"/> set above what the starter lets them go to
+    /// (<see cref="GraphicsRules"/>): the next save brings them down.
+    /// </summary>
+    public static IReadOnlySet<string> OverCapKeys(ConfigFile c)
     {
-        var tokens = c.GetTokens(key);
-        return tokens.Length > 0 ? tokens[0].ToLowerInvariant() : string.Empty;
+        var keys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        if (c.GetInt("maxcabtexturesize", 0) > GraphicsRules.MaxCabTextureSize)
+            keys.Add("maxcabtexturesize");
+        var shadowTune = c.GetTokens("shadowtune");
+        if (shadowTune.Length >= 3 && ParseDouble(shadowTune[2], 0) > GraphicsRules.MaxShadowRange)
+            keys.Add("shadowtune");
+        if (BufferScaleIn(c) > GraphicsRules.MaxBufferScale)
+            keys.UnionWith(new[] { "starter.bufferscale", "gfx.framebuffer.width", "gfx.framebuffer.height" });
+        return keys;
     }
 
-    // The names the simulator takes for Vulkan; every other word is OpenGL to the screen, and stays in the file until changed.
-    // Whichever of the two keys comes later in the file decides, as each sets the mode when the simulator reads it.
-    private static AntiAliasingMode ReadAntiAliasing(ConfigFile c)
+    private static AntiAliasingMode ReadAntiAliasing(ConfigFile c) => c.GetInt("multisampling", 2) switch
     {
-        var fromMultisampling = c.GetInt("multisampling", 2) switch
-        {
-            <= 0 => AntiAliasingMode.Off,
-            1 => AntiAliasingMode.Msaa2,
-            2 => AntiAliasingMode.Msaa4,
-            _ => AntiAliasingMode.Msaa8
-        };
-
-        if (!c.Has("gfx.antialiasing") ||
-            (c.Has("multisampling") && c.LineOf("multisampling") > c.LineOf("gfx.antialiasing")))
-            return fromMultisampling;
-
-        return FirstToken(c, "gfx.antialiasing") switch
-        {
-            "off" or "no" or "none" or "0" => AntiAliasingMode.Off,
-            "msaax2" => AntiAliasingMode.Msaa2,
-            "msaax4" => AntiAliasingMode.Msaa4,
-            "msaax8" or "msaax16" => AntiAliasingMode.Msaa8,
-            "taa" => AntiAliasingMode.Taa,
-            "dlss" => AntiAliasingMode.Dlss,
-            "dlaa" => AntiAliasingMode.Dlaa,
-            _ => fromMultisampling
-        };
-    }
-
-    private static string AntiAliasingToken(AntiAliasingMode mode) => mode switch
-    {
-        AntiAliasingMode.Msaa2 => "msaax2",
-        AntiAliasingMode.Msaa4 => "msaax4",
-        AntiAliasingMode.Msaa8 => "msaax8",
-        AntiAliasingMode.Taa => "taa",
-        AntiAliasingMode.Dlss => "dlss",
-        AntiAliasingMode.Dlaa => "dlaa",
-        _ => "off"
+        <= 0 => AntiAliasingMode.Off,
+        1 => AntiAliasingMode.Msaa2,
+        2 => AntiAliasingMode.Msaa4,
+        _ => AntiAliasingMode.Msaa8
     };
 
     private static int MultisamplingLevel(AntiAliasingMode mode) => mode switch
@@ -511,79 +430,28 @@ public sealed class SettingsSerializer
         _ => 0
     };
 
-    private static int ParseFrameGeneration(string value) => value switch
-    {
-        "x2" or "on" or "yes" or "2" => 2,
-        "x3" or "3" => 3,
-        "x4" or "4" => 4,
-        _ => 1
-    };
+    private static int Clamp(int v, int lo, int hi) => v < lo ? lo : (v > hi ? hi : v);
 
-    private static int ParseReflex(string value) => value switch
+    /// <summary>
+    /// Whether the file's own mousescale can stay as it is: a first number neither
+    /// zero nor NaN/Infinity, and 0.5 or -0.5 after it. Otherwise a save writes the
+    /// one the starter holds.
+    /// </summary>
+    public static bool MouseScaleStands(string? raw)
     {
-        "on" or "yes" or "1" => 1,
-        "boost" or "2" => 2,
-        _ => 0
-    };
-
-    // no/low/medium/high(/ultra) or the number of the level; an absent key keeps the simulator's default.
-    private static int ParseLevel(string value, int fallback, int max)
-    {
-        if (value.Length == 0)
-            return fallback;
-        int level = value switch
-        {
-            "low" or "1" => 1,
-            "medium" or "yes" or "true" or "2" => 2,
-            "high" or "3" => 3,
-            "ultra" or "4" => 4,
-            _ => 0
-        };
-        return Math.Min(level, max);
+        string[] tokens = (raw ?? "").Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries);
+        return tokens.Length >= 2 &&
+               TryParseMouseScale(tokens[0], out _) &&
+               TryParseMouseScale(tokens[1], out double y) &&
+               Math.Abs(y) == SimulatorSettings.MouseScaleY;
     }
 
-    private static string LevelToken(int level) => level switch
-    {
-        1 => "low",
-        2 => "medium",
-        3 => "high",
-        4 => "ultra",
-        _ => "no"
-    };
-
-    // As the simulator reads it, but a value it does not know keeps its default (medium) rather than turning the probe off.
-    private static int ParseCabProbe(string value) => value switch
-    {
-        "no" or "false" or "off" or "0" => 0,
-        "low" or "1" => 1,
-        "high" or "3" => 3,
-        _ => 2
-    };
-
-    private static int ParseAmbientOcclusion(string value) => value switch
-    {
-        "" => 2,
-        "yes" or "true" or "1" or "gtao" => 2,
-        "ssao" => 1,
-        _ => 0
-    };
-
-    private static bool ParseVolumetricFog(string value) =>
-        value is not ("analytic" or "old" or "no" or "false" or "0");
-
-    private static int ParseFogQuality(string value) => value switch
-    {
-        "low" or "1" => 1,
-        "high" or "3" => 3,
-        "ultra" or "4" => 4,
-        _ => 2
-    };
-
-    private static int Clamp(int v, int lo, int hi) => v < lo ? lo : (v > hi ? hi : v);
+    private static bool TryParseMouseScale(string token, out double scale) =>
+        double.TryParse(token, NumberStyles.Float, CultureInfo.InvariantCulture, out scale) &&
+        double.IsFinite(scale) && scale != 0;
 
     private static int SensitivityStep(double mouseScale) =>
         (int)Math.Clamp(Math.Round(Math.Abs(mouseScale)), 1, 5);
-
     private static double ParseDouble(string s, double fallback) =>
         double.TryParse(s, NumberStyles.Float, CultureInfo.InvariantCulture, out double d) ? d : fallback;
 

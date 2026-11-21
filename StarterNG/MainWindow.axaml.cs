@@ -18,6 +18,7 @@ using StarterNG.Infrastructure;
 using StarterNG.Views;
 using StarterNG.Application;
 using StarterNG.Application.Abstractions;
+using StarterNG.Domain;
 using StarterNG.Domain.Settings;
 
 namespace StarterNG;
@@ -103,6 +104,9 @@ public partial class MainWindow : Window
         AddHandler(KeyDownEvent, OnTabWithNothingFocused, RoutingStrategies.Tunnel);
 
         AppServices.Current.State.Changed += UpdateStartButton;
+        Views.Settings.AdvancedModeChanged += UpdateStartButton;
+        // Settings an older starter left are brought into the standard mode, once.
+        SettingsView.MoveToStandardOnce();
         Opened += (_, _) =>
         {
 
@@ -507,6 +511,15 @@ public partial class MainWindow : Window
             return;
         }
 
+        // The standard mode edits every consist but starts only in one the player drives.
+        if (!TrainsetDisplay.StartableIn(trainset, AppServices.Current.Settings))
+        {
+            startButton.Content = App.Loc[trainset.Decor ? "StartDecor" : "StartAi"];
+            ToolTip.SetTip(startButton, null);
+            startButton.IsEnabled = false;
+            return;
+        }
+
         bool staffed = HasStartableVehicle(trainset);
         startButton.Content = staffed ? App.Loc["Start"] : App.Loc["StartNoStaff"];
         ToolTip.SetTip(startButton, staffed ? null : App.Loc["StartNoStaffConfirm"]);
@@ -632,6 +645,9 @@ public partial class MainWindow : Window
         // A second press while the first is still on its way, or right after it,
         // would start a second simulator.
         if (_starting || DateTime.UtcNow - _startedUtc < StartCooldown)
+            return;
+        // A shortcut starts the same way the button does, and only where the button may.
+        if (!freeFly && !startButton.IsEnabled)
             return;
 
         _starting = true;

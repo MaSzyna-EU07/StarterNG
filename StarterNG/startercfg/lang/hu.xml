@@ -61,6 +61,8 @@
     <String key="StartNoScenery">Válasszon pályát</String>
     <String key="StartNoTrain">Válasszon szerelvényt</String>
     <String key="StartNoStaff">Nincs személyzet / utas</String>
+    <String key="StartDecor">Díszlet szerelvény</String>
+    <String key="StartAi">AI-szerelvény</String>
     <String key="StartNoStaffTitle">Szerelvény személyzet nélkül</String>
     <String key="StartNoStaffConfirm">Ebben a szerelvényben nincs személyzet és utas sem — nem lesz mit vezetni. Mégis elindítja?</String>
     <String key="RestoreWeather">Időjárás visszaállítása</String>
@@ -355,8 +357,8 @@
     <String key="General">Általános</String>
 
     <String key="Language">Nyelv</String>
+    <String key="UnknownIniValue">Ismeretlen érték az eu07.ini-ben: „{0}”. A fájlban marad, amíg meg nem változtatja.</String>
     <String key="LanguageSimMissing">A szimulátornak nincs fordítása erre a nyelvre, angolul fog futni.</String>
-    <String key="Fullscreen">Teljes képernyő</String>
     <String key="PauseSimInactive">Szimuláció szüneteltetése inaktív ablaknál</String>
     <String key="PauseSimStart">Szüneteltetés indításkor</String>
     <String key="CursorSensitivity">Kurzorérzékenység</String>
@@ -366,6 +368,7 @@
     <String key="Communication">Kommunikáció</String>
 
     <String key="GamepadSignalIgnore">Gamepad bemenet mellőzése</String>
+    <String key="ConfirmGamepadUse">Az ajánlott és alapértelmezett beállítás a gamepad figyelmen kívül hagyása. A támogatás bekapcsolása gyakran okoz gondot az irányításban. Csak akkor módosítsa, ha valóban gamepaddel vezet. Módosítja?</String>
 
     <String key="Feedback">Visszajelzés</String>
     <String key="FeedbackOff">Ki</String>
@@ -407,8 +410,8 @@
 
     <String key="Graphic">Grafika</String>
     <String key="RenderEngine">Megjelenítő motor</String>
-    <String key="RenderEngineDesc">A Teljes minden exe-vel működik. A Régi, az Egyszerűsített és a Kísérleti csak a régebbiekkel, az új helyettük a Teljeset indítja.</String>
-    <String key="REExperimentalWarning">Figyelem: a kísérleti renderelő instabil lehet, a jelenet egyes részei hiányozhatnak, vagy egyes videokártyákon el sem indul. Ha a szimulátor nem indul el vagy hibásan jelenik meg, válts vissza a „Teljes” renderelőre.</String>
+    <String key="ConfirmRenderingChange">A(z) „{0}” módosítása miatt a szimulátor nem indulhat el, vagy rossz lehet a kép. Módosítja?</String>
+    <String key="RenderEngineDesc">A Teljes a szimulátor ajánlott renderelője. A Régi és az Egyszerűsített a klasszikus renderelővel rajzol, és nem ajánlott, ha a Teljes működik – azokhoz a videokártyákhoz valók, amelyekkel a Teljesnek gondja van.</String>
     <String key="GpuChoice">Videokártya (Linux)</String>
     <String key="GpuDiscrete">Erősebb (dedikált)</String>
     <String key="GpuSystem">Ahogy a rendszer dönt</String>
@@ -418,16 +421,9 @@
     <String key="GpuNotePlayer">Találat: {0}. A kártyát környezeti változók választják ({1}); az indító nem módosítja őket.</String>
     <String key="GpuNoteOne">Egy kártya: {0} – nincs miből választani.</String>
     <String key="GpuNoteUnread">Nem sikerült beolvasni a videokártyákat a /sys/class/drm alól.</String>
-    <String key="IdleWindowsBuildOnly">Csak a szimulátor Windowsos változata használja.</String>
-    <String key="IdleLegacyRendererOnly">Ezt csak a legacy renderelő olvassa, de más van kiválasztva.</String>
-    <String key="IdleNeedsFrameRateTarget">Csak cél képkockaszámmal működik (targetfps).</String>
-    <String key="IdleOpenGlRenderersOnly">A kísérleti renderelő ezt nem olvassa.</String>
-    <String key="IdleModernRendererOnly">Ezt csak a teljes renderelő olvassa, de más van kiválasztva.</String>
-    <String key="IdleNeedsNetworkServer">A háttérben szüneteléshez hálózati szerver kell (network.server).</String>
 
     <String key="Resolution">Felbontás</String>
     <String key="ResolutionOnMonitor">{0} (monitor)</String>
-    <String key="IdleMonitorMode">Automatikus felbontásnál nincs hatása.</String>
     <String key="BufforResolution">Puffer felbontása</String>
     <String key="MaxTexResolution">Textúrák legnagyobb felbontása</String>
     <String key="MaxTexCabResolution">Vezetőállás-textúrák legnagyobb felbontása</String>
@@ -456,7 +452,14 @@
     <String key="FpsLimitDesc">Kevesebb képkocka: hűvösebb, csendesebb gép. V-Sync mellett a frissítés feletti korlát hatástalan.</String>
     <String key="ShadowAngleLimit">Árnyékhossz korlátozása</String>
     <String key="ShadowLimitShort">Rövidített</String>
-    <String key="FullscreenWindowed">Automatikus felbontás (keret nélküli teljes képernyő)</String>
+    <String key="DisplayMode">Megjelenítési mód</String>
+    <String key="DisplayModeFullscreen">Teljes képernyő</String>
+    <String key="DisplayModeBorderless">Keret nélküli teljes képernyő</String>
+    <String key="DisplayModeWindow">Ablak</String>
+    <String key="DisplayModeDesc">A keret nélküli teljes képernyő a monitor felbontását használja, és gyorsabban vált más programokra.</String>
+    <String key="FullscreenMonitor">Monitor</String>
+    <String key="FullscreenMonitorDesc">Melyik monitoron nyíljon meg a szimulátor teljes képernyőn.</String>
+    <String key="MonitorPrimary">Elsődleges</String>
     <String key="VSync">VSync</String>
     <String key="SmokeDisplay">Füst megjelenítése</String>
     <String key="SmokeParticlesMultiplier">Füstrészecskék szorzója</String>
@@ -520,6 +523,12 @@
     <String key="AmbientVolume">Környezeti hangok hangereje</String>
 
     <String key="Advanced">Speciális</String>
+    <String key="AdvancedMode">Haladó mód</String>
+    <String key="AdvancedModeMenu">Haladó mód…</String>
+    <String key="AdvancedModeOff">Haladó mód kikapcsolása</String>
+    <String key="AdvancedModeOffConfirm">A haladó mód kikapcsolása visszaállítja az alapértéket minden csak benne elérhető beállításnál, és menti az oldal beállításait. Kikapcsolja?</String>
+    <String key="AdvancedModeOn">Bekapcsolom</String>
+    <String key="AdvancedModeWarning">A haladó mód a szimulátor és az indító minden beállítását megmutatja, azokat is, amelyek módosítása után a szimulátor nem indulhat el, instabil lehet, vagy rossz lehet a kép. A szerelvények személyzetét, az AI-szerelvényeket és a díszleteket is módosíthatja, így a forgatókönyv nem úgy működhet, ahogy a szerzője tervezte.&#10;&#10;Csak akkor módosítsa ezeket, ha tudja, mit csinálnak. Az ebből eredő gondok nem a szimulátor hibái: hibabejelentés előtt kapcsolja ki a haladó módot, és állítsa vissza az alapbeállításokat.&#10;&#10;Olvassa el figyelmesen. A bekapcsoló gomb 20 másodperc múlva működik.</String>
     <String key="CompressTextures">TGA textúrák tömörítése</String>
     <String key="ScaleSpeculars">Csillanások skálázása (régi modellek kompatibilitása)</String>
     <String key="ScaleSpecularsDesc">Csökkenti a régebbi megjelenítőkhöz készült modellek csillogását.</String>
@@ -569,6 +578,7 @@
     <String key="Reset">Visszaállítás</String>
     <String key="SettingsSaved">A beállítások elmentve</String>
     <String key="DefaultsRestored">Alapértékek visszaállítva</String>
+    <String key="AllDefaultsConfirm">Minden beállítás visszaáll az alapértékre. Megmarad: a nyelv, a kiválasztott szimulátor, az UART-port és a billentyűk.&#10;&#10;A változásokat még menteni kell.</String>
     <String key="SettingsRestored">A mentett beállítások visszaállítva</String>
     <String key="TreeExpanded">kibontva</String>
     <String key="TreeCollapsed">összecsukva</String>
@@ -796,6 +806,7 @@
     <String key="SyntaxIncludeNotClosed">include {1} end nélkül</String>
     <String key="SyntaxTrainsetUnreadable">A(z) {0} szerelvényt nem sikerült beolvasni</String>
     <String key="SyntaxVehicleUnreadable">A(z) {0} járművet nem sikerült beolvasni</String>
+    <String key="SyntaxVehicleMissing">A(z) {0} jármű hiányzik: nincs dynamic/{1} fájl - a szimulátor kihagyja, a szerelvény rövidebb lesz</String>
     <String key="WarehouseUseInScenery">Beillesztés a kijelölt pályaszerelvénybe</String>
     <String key="WarehouseAppendToScenery">Hozzáfűzés a kijelölt pályaszerelvényhez</String>
     <String key="ShortcutUndo">Szerelvénymódosítás visszavonása</String>
@@ -810,7 +821,6 @@
     <String key="Ini.loadinglog">Napló megjelenítése betöltés közben</String>
     <String key="Ini.captureonstart">Induláskor az egér a kamerát forgatja</String>
     <String key="Ini.mousecontrol">Vezetőfülke kezelőszerveinek kattintása egérrel</String>
-    <String key="Ini.fullscreenmonitor">Teljes képernyős monitor</String>
     <String key="Ini.screenshotsdir">Képernyőképek mappája</String>
     <String key="Ini.basedrawrange">Alap megjelenítési távolság</String>
     <String key="Ini.targetfps">Cél képkockasebesség</String>
@@ -849,8 +859,8 @@
     <String key="PresetHigh">Magas</String>
     <String key="PresetCustom">Egyéni</String>
     <String key="MonitorRate">Monitor: {0} Hz</String>
-    <String key="MonitorRateNamed">{0} kijelző: legfeljebb {1} Hz</String>
     <String key="MonitorRateUse">{0} FPS beállítása</String>
+    <String key="FpsVSyncNote">VSync mellett nem lesz több képkocka, mint a monitor Hz-e, így ennyi vagy nagyobb korlát semmit sem változtat.</String>
     <String key="GfxPresetDesc">Vidd az egeret a szintre az értékekhez.</String>
     <String key="TextureBaseDateHint">ÉÉÉÉ-HH-NN</String>
     <String key="LanguageStarterMissing">Nincs fordítás az indítóhoz: angol marad. A szimulátor ezt a nyelvet kapja.</String>
@@ -908,73 +918,12 @@
     <String key="WarehouseSaved">A raktárban: {0}</String>
     <String key="WarehouseNothingToAdd">Válassz járműveket tartalmazó szerelvényt</String>
     <String key="GfxGroupLevelTip">Csak a grafika ezen részének szintje</String>
-    <String key="REVulkan">Vulkan 1.4</String>
-    <String key="IdleVulkanOnly">Csak Vulkannal működik.</String>
-    <String key="DlssPreset">DLSS előbeállítás</String>
-    <String key="FrameGeneration">Képkocka-generálás</String>
-    <String key="Reflex">NVIDIA Reflex</String>
-    <String key="RayTracing">Sugárkövetéses tükröződés</String>
-    <String key="RayTracingRange">Sugárkövetés hatótávja</String>
-    <String key="VulkanDevice">Videokártya (Vulkan)</String>
-    <String key="Ssr">Képernyőtéri tükröződés (SSR)</String>
-    <String key="AmbientOcclusion">Környezeti kitakarás</String>
-    <String key="AmbientOcclusionQuality">Kitakarás minősége</String>
-    <String key="AoLighting">Kitakarás a környezeti fényben</String>
-    <String key="LightsClustered">Klaszteres megvilágítás</String>
-    <String key="LightShadows">Lámpák és fényszórók árnyéka</String>
-    <String key="ContactShadows">Kontaktárnyékok</String>
-    <String key="ShadowSdsm">Jelenethez igazított árnyékkaszkádok (SDSM)</String>
-    <String key="CabProbe">Fülkeszonda</String>
-    <String key="CabProbeInterval">Szonda frissítése N képkockánként</String>
-    <String key="CabProbeReflections">A fülke önmagát tükrözi</String>
-    <String key="CabProbeBounce">A fülkelámpa visszavert fénye</String>
-    <String key="FogQuality">Köd minősége</String>
-    <String key="Clouds">Térfogati felhők</String>
-    <String key="CloudShadows">Felhők árnyéka a talajon</String>
-    <String key="Grass">Fű</String>
-    <String key="GrassDistance">Fű hatótávja</String>
-    <String key="GrassDensity">Fű sűrűsége</String>
-    <String key="Precipitation">Csapadék (részecskék)</String>
-    <String key="Bloom">Világos részek ragyogása (bloom)</String>
-    <String key="AutoExposure">Automatikus expozíció</String>
-    <String key="LevelOff">Ki</String>
-    <String key="LevelLow">Alacsony</String>
-    <String key="LevelMedium">Közepes</String>
-    <String key="LevelHigh">Magas</String>
-    <String key="LevelUltra">Ultra</String>
-    <String key="ReflexOn">Be</String>
-    <String key="ReflexBoost">Be + boost</String>
-    <String key="AaTaa">TAA</String>
-    <String key="AaDlss">DLSS (felskálázás)</String>
-    <String key="AaDlaa">DLAA (natív felbontás)</String>
-    <String key="DlssPresetDefault">Automatikus</String>
-    <String key="DlssPresetK">K: legjobb minőség</String>
-    <String key="DlssPresetJ">J: kevesebb elmosódás</String>
-    <String key="DlssPresetM">M: Teljesítmény módhoz</String>
-    <String key="DlssPresetL">L: Ultra teljesítményhez</String>
     <String key="Effects">Effektek</String>
     <String key="GfxColImage">Felbontás és élsimítás</String>
     <String key="GfxColLights">Világítás</String>
     <String key="GfxColPostFx">Utófeldolgozás</String>
     <String key="GfxColNature">Füst</String>
     <String key="AntiAliasing">Élsimítás</String>
-    <String key="VolumetricFog">Térfogati köd</String>
-    <String key="REOpenGLNote">A DLSS, a képkocka-generálás, a Reflex és a ray tracing csak Vulkannal működik.</String>
-    <String key="REVulkanNote">Vulkanos exe és azt támogató kártya kell hozzá. Különben a szimulátor a Teljeset vagy a Régit indítja.</String>
-    <String key="VulkanDeviceAuto">automatikus</String>
-    <String key="DlssPresetInfoDefault">K a DLAA, a Minőség és a Kiegyensúlyozott módhoz, M a Teljesítményhez, L az Ultra teljesítményhez. Az illesztőprogram frissítéskor módosíthatja.</String>
-    <String key="DlssPresetInfoK">A legjobb képminőségű transformer modell, de a legdrágább. Alapértelmezett a DLAA, a Minőség és a Kiegyensúlyozott módhoz.</String>
-    <String key="DlssPresetInfoJ">A K-hoz hasonló: kevesebb szellemkép a mozgó tárgyak mögött, több villogással. Az NVIDIA inkább a K-t ajánlja.</String>
-    <String key="DlssPresetInfoM">A Teljesítmény módhoz (kb. 50%-os méretezés) való modell, ott alapértelmezett. A kép expozícióját maga számolja.</String>
-    <String key="DlssPresetInfoL">Az Ultra teljesítmény módhoz (kb. 33%-os méretezés) való modell, ott alapértelmezett. A kép expozícióját maga számolja.</String>
-    <String key="DlssMissingLibraryNote">A szimulátor mellett nincs {0}: e könyvtár nélkül a szimulátor nem használja ezt a DLSS-funkciót.</String>
-    <String key="DlssNoPlatformNote">macOS-en a DLSS nem érhető el.</String>
-    <String key="FrameGenerationNeedsDlssNote">A képkocka-generálás csak DLSS-sel vagy DLAA-val működik.</String>
-    <String key="ReflexForcedNote">A képkocka-generálás magától bekapcsolja a Reflexet, bármi van itt kiválasztva.</String>
-    <String key="AoLightingPrepassNote">A teljes jelenet mélysége kell a szín előtt; SSR és kontaktárnyékok nélkül ez egy külön menet (CPU-terhelés OpenGL-ben).</String>
-    <String key="AoNeedsPipelineNote">Kihagyott utófeldolgozásnál az AO nem működik.</String>
-    <String key="CabProbeReflectionsOnlyNote">Klaszteres megvilágítás és a fülkelámpa mint fény (gfx.lights.cab) nélkül a szonda csak tükröződést ad.</String>
-    <String key="TemporalNeedsPipelineNote">A TAA és a DLSS az utófeldolgozásban fut: ha kihagyod, az élek nem simulnak ki.</String>
     <String key="SettingsFile">eu07.ini fájl</String>
     <String key="ImportIni">Importálás…</String>
     <String key="ImportIniTitle">Beállítások importálása az eu07.ini fájlból</String>
@@ -987,9 +936,8 @@
 {0}</String>
     <String key="ExportIniDone">Exportálva ide: {0}</String>
     <String key="REFull">Teljes</String>
-    <String key="REOld">Régi</String>
-    <String key="RESimp">Egyszerűsített</String>
-    <String key="REExperimental">Kísérleti</String>
+    <String key="REOld">Régi (nem ajánlott, ha a Teljes működik)</String>
+    <String key="RESimp">Egyszerűsített (nem ajánlott, ha a Teljes működik)</String>
     <String key="RenderAngleVulkan">ANGLE Vulkan megjelenítő használata</String>
     <String key="RenderVBO">VBO megjelenítés</String>
     <String key="CabShadowsRange">Vezetőállás árnyékforrásainak hatótávolsága</String>
@@ -997,6 +945,4 @@
     <String key="UseGLESDesc">OpenGL ES az OpenGL helyett. A legacy megjelenítővel nem működik.</String>
     <String key="GpuCard">{0}, {1} GB</String>
     <String key="GpuCardShared">{0}, megosztott memória</String>
-    <String key="GfxColNewRenderer">OpenGL 4.6 / Vulkan újdonságok</String>
-    <String key="GfxNewRendererNote">Csak az új exe-vel működnek. A régebbi exe kihagyja ezeket a beállításokat.</String>
 </Language>

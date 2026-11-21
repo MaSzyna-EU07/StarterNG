@@ -8,11 +8,8 @@ public enum ConsistReadyOverride { Scenery = 0, AlwaysCold = 1, AlwaysReady = 2 
 
 public enum ExeProblem { None, NotFound, NotExecutable, WrongPlatform, NotAProgram }
 
-// gfxrenderer: the OpenGL renderer ("full", read by every build) or the Vulkan 1.4 one.
-public enum GraphicsBackend { OpenGL = 0, Vulkan = 1 }
-
-// gfx.antialiasing. Dlss and Dlaa are the Vulkan renderer's only; the simulator falls back to TAA elsewhere.
-public enum AntiAliasingMode { Off, Msaa2, Msaa4, Msaa8, Taa, Dlss, Dlaa }
+// multisampling: 0 off, then 2, 4 and 8 samples.
+public enum AntiAliasingMode { Off, Msaa2, Msaa4, Msaa8 }
 
 public sealed class SimulatorSettings
 {
@@ -34,7 +31,8 @@ public sealed class SimulatorSettings
     public bool InvertMouseHorizontal;
     public bool InvertMouseVertical;
 
-    public bool IgnoreGamepad;
+    /// <summary>input.gamepad no: the recommended setting, so the starter's default, though the simulator's own is yes.</summary>
+    public bool IgnoreGamepad = true;
     public int FeedbackMode = 1;
     public int FeedbackPort = 888;
     public bool UartEnabled;
@@ -55,8 +53,6 @@ public sealed class SimulatorSettings
     public bool LogMissingVehicleFiles;
 
     public int RenderEngine;
-    public GraphicsBackend Backend => RenderEngine == VulkanEngine ? GraphicsBackend.Vulkan : GraphicsBackend.OpenGL;
-    public string VulkanDevice = "";
     public int Width = 1280;
     public int Height = 720;
     public int BufferScalePercent = 100;
@@ -64,9 +60,6 @@ public sealed class SimulatorSettings
     public int MaxCabTextureSize = 4096;
     public double TextureFiltering = 8;
     public AntiAliasingMode AntiAliasing = AntiAliasingMode.Msaa4;
-    public string DlssPreset = "default";
-    public int FrameGeneration = 1;
-    public int Reflex;
     public int DynamicLights = 7;
     public double DrawRangeFactor = 3.0;
     public bool VSync;
@@ -77,37 +70,8 @@ public sealed class SimulatorSettings
     public bool ExtraEffects = true;
     public bool EnvMap = true;
     public bool RenderShadows = true;
-    public bool ShadowSdsm;
-    public int LightShadows = 2;
-    public int ContactShadows;
-    public bool LightsClustered = true;
-    public int AmbientOcclusion = 2;
-    public int AoSlices = 3;
-    public int AoSteps = 4;
-    public bool AoLighting = true;
-    public int CabProbe = 2;
-    public int CabProbeInterval = 4;
-    public double CabProbeBounce = 1.0;
-    public bool CabProbeReflections = true;
 
-    // Read from eu07.ini only, for the dependencies shown: the starter offers no switch for them.
-    public bool CabLampLight { get; internal set; } = true;
-    public bool DepthPrepassScene { get; internal set; }
-    public int Ssr = 2;
-    public bool RayTracing;
-    public int RayTracingRange = 500;
-    public bool VolumetricFog = true;
-    public int FogQuality = 2;
-    public int Clouds = 2;
-    public bool CloudShadows = true;
-    public bool Grass = true;
-    public int GrassDistance = 60;
-    public double GrassDensity = 1.0;
-    public int PrecipitationParticles = 65536;
-    public bool Bloom = true;
-    public bool AutoExposure = true;
-
-    // Only the older simulators read these.
+    // Only the legacy renderer, or only Windows builds, read these.
     public bool UseVbo = true;
     public bool RenderAngleVulkan;
     public bool UseGLES;
@@ -127,6 +91,8 @@ public sealed class SimulatorSettings
     public double FpsLimit = 30;
     public double ShadowAngleLimit = 0.2;
     public bool FullscreenWindowed;
+    /// <summary>fullscreenmonitor: the monitor a full screen opens on, as "name:x,y"; empty for the primary one.</summary>
+    public string FullscreenMonitor = "";
 
     public int SplineFidelity = 1;
     public bool FullPhysics = true;
@@ -180,6 +146,18 @@ public sealed class SimulatorSettings
     public bool LargeThumbnails;
     public bool AutoExpandSceneryTree;
 
+    /// <summary>
+    /// Every setting on show, the ones a player can break the game with too. Off, the standard
+    /// mode keeps the settings, the consists and the scenario to what a driver needs.
+    /// </summary>
+    public bool AdvancedSettings;
+
+    /// <summary>
+    /// The settings were brought into the standard mode once, on the first start of this
+    /// starter: the advanced ones to their defaults, the sliders into their ranges.
+    /// </summary>
+    public bool MovedToStandard;
+
     /// <summary>Warn at start when the processor cannot run the official simulator builds.</summary>
     public bool CpuNotice = true;
 
@@ -212,25 +190,26 @@ public sealed class SimulatorSettings
     }
 
     /// <summary>
-    /// The gfxrenderer words the simulator tells apart (application.cpp): every
-    /// other word - the "simpleshader" and "off" older starters offered among them -
-    /// gets the legacy renderer. A simulator with the OpenGL 4.6 and Vulkan 1.4
-    /// renderers runs everything but "vulkan" as the first, and "vulkan" too when
-    /// it was built without it or the card cannot run it.
+    /// The gfxrenderer words the starter offers. "default" is the full renderer, the one to use
+    /// wherever it runs; the other two draw with the legacy one. The experimental renderer is
+    /// not offered: the simulator a player has is built without it.
     /// </summary>
-    public static readonly string[] RenderEngines = { "full", "legacy", "simple", "experimental", "vulkan" };
+    public static readonly string[] RenderEngines = { "default", "legacy", "simple" };
 
-    /// <summary>Where "vulkan" stands among <see cref="RenderEngines"/>.</summary>
-    public const int VulkanEngine = 4;
+    /// <summary>
+    /// The words of the file that stay as they are while the choice stands: those application.cpp
+    /// on master knows, but "experimental". Any other word starts the full renderer with a line in
+    /// the log, so a save puts "default" in its place.
+    /// </summary>
+    public static bool KeptRendererWord(string? word) =>
+        word?.Trim().ToLowerInvariant() is "default" or "legacy" or "simple" or "simpleshader" or "off";
 
     /// <summary>Where <paramref name="word"/> stands among <see cref="RenderEngines"/>, as the simulator reads it.</summary>
     public static int RenderEngineOf(string word) => word.Trim().ToLowerInvariant() switch
     {
-        "full" or "default" or "opengl" or "gl46" => 0,
+        "legacy" or "simpleshader" or "off" => 1,
         "simple" => 2,
-        "experimental" => 3,
-        "vulkan" or "vulkan14" => 4,
-        _ => 1
+        _ => 0
     };
 
     /// <summary>
@@ -256,7 +235,12 @@ public sealed class SimulatorSettings
     /// </summary>
     internal double MouseScaleXMagnitude { get; set; } = 2;
 
-    internal double MouseScaleYMagnitude { get; set; } = 0.2;
+    /// <summary>
+    /// The second mousescale number, as the old starter always wrote it: 0.5, or
+    /// -0.5 with <see cref="InvertMouseVertical"/>. Whatever else the file has there
+    /// goes on the next save.
+    /// </summary>
+    internal const double MouseScaleY = 0.5;
 
     /// <summary>The numbers of shadowtune the simulator skips, kept as the file has them.</summary>
     internal string[] ShadowTuneUnused { get; set; } = { "250", "300" };
