@@ -370,6 +370,10 @@ public sealed class SettingsStore
         return s;
     }
 
+    // Two numbers written apart that the file and the screen mean alike: 45 and 45.0, 0.1 and 1e-1.
+    private static bool SameNumber(double x, double y) =>
+        Math.Abs(x - y) <= 1e-9 * Math.Max(1, Math.Max(Math.Abs(x), Math.Abs(y)));
+
     // The same value in other words: yes and tak, 45 and 45.0.
     private static bool SameValue(string raw, string shown)
     {
@@ -382,7 +386,7 @@ public sealed class SettingsStore
             if (string.Equals(a[i], b[i], StringComparison.OrdinalIgnoreCase))
                 continue;
             if (double.TryParse(a[i], NumberStyles.Float, CultureInfo.InvariantCulture, out double x) &&
-                double.TryParse(b[i], NumberStyles.Float, CultureInfo.InvariantCulture, out double y) && x.Equals(y))
+                double.TryParse(b[i], NumberStyles.Float, CultureInfo.InvariantCulture, out double y) && SameNumber(x, y))
                 continue;
             if (Bool(a[i]) is { } p && p == Bool(b[i]))
                 continue;

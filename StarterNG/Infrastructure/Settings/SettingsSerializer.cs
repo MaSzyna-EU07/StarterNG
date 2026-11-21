@@ -443,7 +443,7 @@ public sealed class SettingsSerializer
         return tokens.Length >= 2 &&
                TryParseMouseScale(tokens[0], out _) &&
                TryParseMouseScale(tokens[1], out double y) &&
-               Math.Abs(y).Equals(SimulatorSettings.MouseScaleY);
+               Math.Abs(Math.Abs(y) - SimulatorSettings.MouseScaleY) < 1e-9;
     }
 
     private static bool TryParseMouseScale(string token, out double scale) =>
