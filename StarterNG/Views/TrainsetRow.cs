@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using Avalonia;
 using Avalonia.Automation;
@@ -84,7 +85,7 @@ internal static class TrainsetRow
         scroller.ScrollChanged += (_, _) =>
         {
             double below = scroller.Extent.Width > scroller.Viewport.Width + 0.5 ? ScrollBarLane : 0;
-            if (strip.Margin.Bottom != below)
+            if (Math.Abs(strip.Margin.Bottom - below) > 0.1)
                 strip.Margin = new Thickness(0, 0, 0, below);
         };
         return scroller;

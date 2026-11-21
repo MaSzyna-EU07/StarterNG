@@ -382,7 +382,7 @@ public sealed class SettingsStore
             if (string.Equals(a[i], b[i], StringComparison.OrdinalIgnoreCase))
                 continue;
             if (double.TryParse(a[i], NumberStyles.Float, CultureInfo.InvariantCulture, out double x) &&
-                double.TryParse(b[i], NumberStyles.Float, CultureInfo.InvariantCulture, out double y) && x == y)
+                double.TryParse(b[i], NumberStyles.Float, CultureInfo.InvariantCulture, out double y) && x.Equals(y))
                 continue;
             if (Bool(a[i]) is { } p && p == Bool(b[i]))
                 continue;

@@ -138,15 +138,24 @@ public static class Monitors
 
     // ── Linux: the connected RandR outputs, as x11_monitor.c of GLFW names them ──
 
+    // A line of xrandr is short; one that takes longer than this to match is no report of monitors.
+    private static readonly TimeSpan MatchTimeout = TimeSpan.FromSeconds(1);
+
     private static readonly Regex Output = new(
-        @"^(\S+) connected (primary )?(\d+)x(\d+)\+(\d+)\+(\d+)", RegexOptions.CultureInvariant);
+        @"^(\S+) connected (primary )?(\d+)x(\d+)\+(\d+)\+(\d+)", RegexOptions.CultureInvariant, MatchTimeout);
 
     // A mode line under an output: the rate in use is the one marked with a star.
-    private static readonly Regex CurrentRate = new(@"^\s+\S+.*?\s(\d+(?:\.\d+)?)\*", RegexOptions.CultureInvariant);
+    private static readonly Regex CurrentRate = new(@"^\s+\S+.*?\s(\d+(?:\.\d+)?)\*", RegexOptions.CultureInvariant, MatchTimeout);
+
+    // Where distributions put xrandr: run from there, not from whatever PATH finds first.
+    private static readonly string[] XrandrPlaces = { "/usr/bin/xrandr", "/usr/local/bin/xrandr", "/bin/xrandr" };
 
     private static IReadOnlyList<DisplayMonitor> FromXrandr()
     {
-        using var process = Process.Start(new ProcessStartInfo("xrandr", "--query")
+        string? xrandr = Array.Find(XrandrPlaces, System.IO.File.Exists);
+        if (xrandr is null)
+            return Array.Empty<DisplayMonitor>();
+        using var process = Process.Start(new ProcessStartInfo(xrandr, "--query")
         {
             RedirectStandardOutput = true,
             RedirectStandardError = true,
