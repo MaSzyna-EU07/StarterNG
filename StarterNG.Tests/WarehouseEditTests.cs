@@ -99,6 +99,23 @@ public class WarehouseEditTests
     }
 
     [Fact]
+    public void A_write_tells_the_list_the_name_and_the_entry_and_no_write_tells_nothing()
+    {
+        var told = new List<(string Name, string Entry)>();
+        _edit.Saved += (name, entry) => told.Add((name, entry));
+        var trainset = _edit.Open(Preset("edit-told"));
+
+        _edit.Save();
+        Assert.Empty(told);
+
+        trainset.Vehicles.Add(trainset.Vehicles[0].Clone());
+        _edit.Save();
+
+        Assert.Equal([("edit-told", ConsistText.Serialize(trainset))], told);
+        PresetStore.Delete("edit-told");
+    }
+
+    [Fact]
     public void Nothing_is_written_with_nothing_open()
     {
         var trainset = _edit.Open(Preset("edit-closed"));

@@ -257,13 +257,7 @@ public partial class Scenarios : UserControl
     }
 
     /// <summary>A consist's label in a list of them, here and on the depot page.</summary>
-    internal static TextBlock TrainsetListContent(Trainset trainset) =>
-        new Avalonia.Controls.TextBlock
-        {
-            Text = TrainsetDisplay.ListLabel(trainset),
-            TextTrimming = Avalonia.Media.TextTrimming.CharacterEllipsis,
-            TextWrapping = Avalonia.Media.TextWrapping.NoWrap
-        };
+    internal static Control TrainsetListContent(Trainset trainset) => TrainsetRow.Build(trainset);
 
     private void PopulateVehicleList(Scenery scn)
     {

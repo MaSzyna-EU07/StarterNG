@@ -77,6 +77,7 @@ public partial class Depot : UserControl
                 EditWarehouseSelection();
         };
         _warehouse.Renamed += _warehouseEdit.Renamed;
+        _warehouseEdit.Saved += _warehouse.RefreshEntry;
 
         _browser = new VehicleBrowser(categoryCombo, classCombo, vehicleListBox, searchBox,
             hideArchivalCheck, miniPreview, addVehicleButton, _db, _minis, OpenVehicleBase)
