@@ -15,9 +15,10 @@ namespace StarterNG.Domain.Sceneries;
 /// include, so they are not loaded twice.
 /// </summary>
 /// <remarks>
-/// Only the plain <c>include path end</c> form: an include with parameters needs
-/// them put in, and one whose <c>end</c> is not on its line is read by the
-/// simulator in ways not worth guessing. One marked <c>$optional</c> stays too:
+/// Only the plain <c>include path end</c> form, or <c>include path</c> as the last
+/// thing in the file, where the simulator runs out of words before it would
+/// look for an <c>end</c>: an include with parameters needs them put in, and one
+/// whose <c>end</c> is not on its line is read by the simulator in ways not worth guessing. One marked <c>$optional</c> stays too:
 /// whether it is loaded is the player's to choose. Each inlined file is wrapped in
 /// marker comments, which is how a trainset is told to belong to it.
 /// </remarks>
@@ -29,7 +30,8 @@ public static class SceneryIncludes
     private static readonly Regex FirstInit = new(@"\bFirstInit\b", RegexOptions.IgnoreCase);
 
     private static readonly Regex Include = new(
-        @"^[ \t]*include[ \t]+(\S+)[ \t]+end\b[^\r\n]*", RegexOptions.Multiline | RegexOptions.IgnoreCase);
+        @"^[ \t]*include[ \t]+(\S+?)(?:[ \t]+end\b[^\r\n]*|[ \t]*(?://[^\r\n]*)?\s*\z)",
+        RegexOptions.Multiline | RegexOptions.IgnoreCase);
 
     private static readonly Regex HasTrainset = new(@"^[ \t]*trainset\b", RegexOptions.Multiline | RegexOptions.IgnoreCase);
 

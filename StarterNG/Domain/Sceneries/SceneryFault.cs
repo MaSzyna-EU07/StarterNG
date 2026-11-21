@@ -64,6 +64,13 @@ public enum SceneryFaultKind
     /// <summary>An include with no <c>end</c>, which swallows what follows it.</summary>
     IncludeNotClosed,
 
+    /// <summary>
+    /// A vehicle whose <c>.fiz</c> is not in its folder under dynamic: the simulator
+    /// leaves it out, and its trainset runs short. <see cref="SceneryFault.Token"/>
+    /// names the file.
+    /// </summary>
+    VehicleMissing,
+
     /// <summary>A trainset the starter could not read, for a reason none of the above names.</summary>
     TrainsetUnreadable,
 
