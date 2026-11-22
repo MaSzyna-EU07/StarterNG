@@ -5,6 +5,7 @@ using System.Linq;
 using System.Text;
 using StarterNG.Classes;
 using StarterNG.Domain.Settings;
+using StarterNG.Infrastructure.Adapters;
 
 namespace StarterNG.Infrastructure.Settings;
 
@@ -123,7 +124,7 @@ public sealed class SettingsSerializer
         if (s.FpsLimitEnabled) s.FpsLimit = fpsLimit;
         s.ShadowAngleLimit = c.GetDouble("gfx.shadow.angle.min", 0.2);
         s.FullscreenWindowed = c.GetBool("fullscreenwindowed", false);
-        s.FullscreenMonitor = c.GetString("fullscreenmonitor", "").Trim();
+        s.FullscreenMonitor = LegacyText.Utf8From1250(c.GetString("fullscreenmonitor", "").Trim());
         s.RenderAngleVulkan = string.Equals(c.GetString("gfx.angleplatform", ""), "vulkan", StringComparison.OrdinalIgnoreCase);
 
         s.SplineFidelity = Clamp(c.GetInt("splinefidelity", 1), 1, 4);
@@ -312,7 +313,9 @@ public sealed class SettingsSerializer
         if (s.FpsLimitEnabled) c.SetDouble("fpslimit", s.FpsLimit);
         c.SetDouble("gfx.shadow.angle.min", s.ShadowAngleLimit);
         c.SetBool("fullscreenwindowed", s.FullscreenWindowed);
-        if (!string.IsNullOrWhiteSpace(s.FullscreenMonitor)) c.Set("fullscreenmonitor", s.FullscreenMonitor.Trim());
+        // The simulator compares the word with GLFW's name of the monitor, which is UTF-8.
+        if (!string.IsNullOrWhiteSpace(s.FullscreenMonitor))
+            c.Set("fullscreenmonitor", LegacyText.Utf8As1250(s.FullscreenMonitor.Trim()));
         if (s.RenderAngleVulkan) c.Set("gfx.angleplatform", "vulkan");
 
         c.SetInt("splinefidelity", s.SplineFidelity);

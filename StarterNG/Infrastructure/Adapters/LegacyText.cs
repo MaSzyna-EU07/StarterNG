@@ -56,6 +56,34 @@ public static class LegacyText
 
     private static readonly byte[] Utf8Bom = { 0xEF, 0xBB, 0xBF };
 
+    /// <summary>
+    /// <paramref name="text"/> as the characters that, written in code page 1250 with the rest
+    /// of the file, give its UTF-8 bytes: for a word the simulator compares with a UTF-8 one
+    /// byte by byte, as fullscreenmonitor with GLFW's name of the monitor. ASCII stays as it is.
+    /// </summary>
+    public static string Utf8As1250(string text) =>
+        IsAscii(text) ? text : CodePage1250.GetString(Encoding.UTF8.GetBytes(text));
+
+    /// <summary>
+    /// The other way: what a word of a code page 1250 file says when its bytes are UTF-8.
+    /// One whose bytes are not UTF-8 was written in the code page itself and stays as read.
+    /// </summary>
+    public static string Utf8From1250(string text)
+    {
+        if (IsAscii(text))
+            return text;
+        byte[] bytes = CodePage1250.GetBytes(text);
+        return Utf8.IsValid(bytes) && CodePage1250.GetString(bytes) == text ? Encoding.UTF8.GetString(bytes) : text;
+    }
+
+    private static bool IsAscii(string text)
+    {
+        foreach (char c in text)
+            if (c > 0x7F)
+                return false;
+        return true;
+    }
+
     private static Encoding Resolve()
     {
         try

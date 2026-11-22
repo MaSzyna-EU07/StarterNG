@@ -481,11 +481,17 @@ public sealed class SettingsStore
                 return false;
             if (overCap.Contains(key))
                 return false;
+            // The simulator goes by it to the letter: the file's own, which it does not find, is no choice to keep.
+            if (AsWritten(key) && _config.GetRaw(key) != value)
+                return false;
             string? synced = _synced.GetValueOrDefault(key);
             if (shown.TryGetValue(key, out var onScreen) && onScreen.Shown == value && onScreen.Held == synced)
                 return true;
             return _config.Has(key) && synced == value;
         }
+
+        bool AsWritten(string key) =>
+            string.Equals(key, "fullscreenmonitor", StringComparison.OrdinalIgnoreCase);
 
         void Add(string key, string? value)
         {
