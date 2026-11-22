@@ -145,6 +145,31 @@ public sealed class SettingsStore
     }
 
     /// <summary>
+    /// What lets some machines run the simulator at all: the card it is put on (offloading
+    /// to the discrete one fails with some drivers) and OpenGL ES where desktop OpenGL does
+    /// not work. The move to the standard mode, done without asking, leaves them as they are.
+    /// </summary>
+    public static readonly IReadOnlySet<string> KeptOnMoveToStandard =
+        new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "starter.gpu", "gfx.usegles" };
+
+    /// <summary>
+    /// The mode is this installation's, like its simulator and its card: another file, a
+    /// backup or a profile of an older starter, says nothing of it. Without this, its
+    /// "starter.settings.standard no" would move the player again on the next start, and its
+    /// "starter.settings.advanced yes" would open the advanced mode past the warning.
+    /// The returned action puts the mode back as it was when this was called.
+    /// </summary>
+    private Action KeepMode()
+    {
+        bool advanced = Settings.AdvancedSettings, moved = Settings.MovedToStandard;
+        return () =>
+        {
+            Settings.AdvancedSettings = advanced;
+            Settings.MovedToStandard = moved;
+        };
+    }
+
+    /// <summary>
     /// Reads a profile into the settings; true when it read cleanly. A read that failed
     /// would leave defaults to be saved over the real settings, so those are read again.
     /// </summary>
@@ -152,9 +177,13 @@ public sealed class SettingsStore
     {
         if (_files.FileExists(path))
         {
+            var mode = KeepMode();
             LoadFrom(path);
             if (!LoadFailed)
+            {
+                mode();
                 return true;
+            }
         }
 
         if (LoadFailed)
@@ -262,6 +291,7 @@ public sealed class SettingsStore
         var gpu = s.Gpu;
         string lastScenery = s.LastScenery;
         bool maximized = s.WindowMaximized;
+        var mode = KeepMode();
 
         _serializer.Read(s, imported);
 
@@ -270,6 +300,7 @@ public sealed class SettingsStore
         s.Gpu = gpu;
         s.LastScenery = lastScenery;
         s.WindowMaximized = maximized;
+        mode();
         // an ini of before the tapes of the trains goes the same way as a profile
         SettingsSerializer.MoveToTrainTapes(s);
         return true;

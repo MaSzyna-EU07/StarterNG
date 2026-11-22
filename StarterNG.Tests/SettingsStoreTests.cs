@@ -1466,6 +1466,57 @@ public class SettingsStoreTests
         Assert.False(installation.SettingsStore.Settings.PhysicsLogTrains);
     }
 
+    // An older file says "standard no": taken in, it would move the player again on the next
+    // start, and its "advanced yes" would open the advanced mode past the warning.
+    private const string OlderModeLines = "starter.settings.standard no\nstarter.settings.advanced yes\nfieldofview 50\n";
+
+    [Fact]
+    public void An_imported_ini_leaves_the_mode_as_this_installation_has_it()
+    {
+        string backup = Path.Combine("/home/kolejarz", "backup", "eu07.ini");
+        var files = new InMemoryFileSystem()
+            .WithFile(UserIni, "starter.settings.standard yes\nstarter.settings.advanced no\n")
+            .WithFile(backup, OlderModeLines);
+        var store = WithHome(files).SettingsStore;
+        store.Load();
+
+        Assert.True(store.ImportFrom(backup));
+        store.Save();
+
+        Assert.Equal(50, store.Settings.FieldOfView);
+        Assert.True(store.Settings.MovedToStandard);
+        Assert.False(store.Settings.AdvancedSettings);
+        string written = files.ReadAllText(UserIni, System.Text.Encoding.UTF8);
+        Assert.Contains("starter.settings.standard yes", written);
+        Assert.Contains("starter.settings.advanced no", written);
+    }
+
+    [Fact]
+    public void A_profile_leaves_the_mode_as_this_installation_has_it()
+    {
+        var files = new InMemoryFileSystem()
+            .WithFile(UserIni, "starter.settings.standard yes\nstarter.settings.advanced no\n")
+            .WithFile(Profile, OlderModeLines);
+        var store = WithHome(files).SettingsStore;
+        store.Load();
+
+        Assert.True(store.TryLoadProfile(Profile));
+        store.Save();
+
+        Assert.Equal(50, store.Settings.FieldOfView);
+        Assert.True(store.Settings.MovedToStandard);
+        Assert.False(store.Settings.AdvancedSettings);
+        string written = files.ReadAllText(UserIni, System.Text.Encoding.UTF8);
+        Assert.Contains("starter.settings.standard yes", written);
+        Assert.Contains("starter.settings.advanced no", written);
+    }
+
+    [Theory]
+    [InlineData("starter.gpu")]
+    [InlineData("gfx.usegles")]
+    public void The_move_to_the_standard_mode_keeps_what_lets_a_machine_run_the_simulator(string key) =>
+        Assert.Contains(key, StarterNG.Application.SettingsStore.KeptOnMoveToStandard);
+
     [Fact]
     public void An_imported_ini_from_before_the_tapes_of_the_trains_is_moved_as_a_profile_is()
     {

@@ -1419,10 +1419,12 @@ public partial class Settings : UserControl, ISettingsCapture
             return;
 
         store.KeepCopy(".before-standard");
+        var moved = AdvancedKeys();
+        moved.ExceptWith(SettingsStore.KeptOnMoveToStandard);
         _clamping = true;
         try
         {
-            ShowDefaults(AdvancedKeys());
+            ShowDefaults(moved);
         }
         finally
         {
