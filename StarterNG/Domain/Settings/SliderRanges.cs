@@ -16,9 +16,6 @@ public static class SliderRanges
     /// <summary>dynamiclights: 1 to 7.</summary>
     public const int MinDynamicLights = 1;
 
-    /// <summary>The cursor's speed: its fastest was a mousescale of 3.2.</summary>
-    public const int MaxCursorSensitivity = 3;
-
     /// <summary>gfx.reflections.framerate, in updates a second.</summary>
     public static readonly double[] ReflectionUpdates = { 1, 3, 10, 25, 60 };
 

@@ -492,10 +492,8 @@ public class SettingsStoreTests
     [InlineData("mousescale 1.5 0.5", false, true, "mousescale 1.5 -0.5")]
     [InlineData("mousescale 1.5 0.5", true, false, "mousescale -1.5 0.5")]
     [InlineData("mousescale -1.5 -0.5", false, false, "mousescale 1.5 0.5")]
-    [InlineData("mousescale 2.5 0.5", false, true, "mousescale 2.5 -0.5")]
-    // Further than the slider goes.
-    [InlineData("mousescale 12 0.5", true, false, "mousescale -12 0.5")]
-    public void A_mouse_scale_keeps_its_numbers_when_an_axis_is_inverted(
+    [InlineData("mousescale 3.2 0.5", true, true, "mousescale -3.2 -0.5")]
+    public void An_inverted_axis_is_the_sign_of_its_number(
         string line, bool invertX, bool invertY, string written)
     {
         var installation = WithHome(new InMemoryFileSystem().WithFile(UserIni, line + "\n"));
@@ -508,10 +506,69 @@ public class SettingsStoreTests
         Assert.Equal(written, LineFor(installation, "mousescale"));
     }
 
-    [Fact]
-    public void A_mouse_scale_nobody_changed_stays_as_the_file_has_it()
+    [Theory]
+    [InlineData("mousescale 1.0 0.5")]
+    [InlineData("mousescale 1 0.5")]
+    [InlineData("mousescale 1.5 0.5")]
+    [InlineData("mousescale -2.3 0.5")]
+    [InlineData("mousescale 3.2 -0.5")]
+    public void A_mouse_scale_of_the_old_starter_stays_as_the_file_has_it(string line)
     {
-        var installation = WithHome(new InMemoryFileSystem().WithFile(UserIni, "mousescale 1.5 0.5\n"));
+        var installation = WithHome(new InMemoryFileSystem().WithFile(UserIni, line + "\n"));
+        installation.SettingsStore.Load();
+
+        installation.SettingsStore.Save();
+
+        Assert.Equal(line, LineFor(installation, "mousescale"));
+    }
+
+    [Theory]
+    // The old starter's four speeds (src/uSettings.pas): low, standard, high, very high.
+    [InlineData(1, "mousescale 1.0 0.5")]
+    [InlineData(2, "mousescale 1.5 0.5")]
+    [InlineData(3, "mousescale 2.3 0.5")]
+    [InlineData(4, "mousescale 3.2 0.5")]
+    public void The_sensitivity_is_written_as_the_old_starter_wrote_it(int level, string written)
+    {
+        var installation = WithHome(new InMemoryFileSystem().WithFile(UserIni, "mousescale 12 0.5\n"));
+        installation.SettingsStore.Load();
+        installation.SettingsStore.Settings.CursorSensitivity = level;
+
+        installation.SettingsStore.Save();
+
+        Assert.Equal(written, LineFor(installation, "mousescale"));
+    }
+
+    [Theory]
+    // Low below 1.3, high above 1.9, very high above 2.7, standard between - whatever the sign.
+    [InlineData("0", 1)]
+    [InlineData("0.2", 1)]
+    [InlineData("1.29", 1)]
+    [InlineData("1.3", 2)]
+    [InlineData("1.5", 2)]
+    [InlineData("1.9", 2)]
+    [InlineData("2", 3)]
+    [InlineData("-2.3", 3)]
+    [InlineData("2.7", 3)]
+    [InlineData("3", 4)]
+    [InlineData("-3.2", 4)]
+    [InlineData("12", 4)]
+    // Not a number the old starter could read: its list stayed at standard.
+    [InlineData("Infinity", 2)]
+    [InlineData("fast", 2)]
+    public void The_sensitivity_is_read_as_the_old_starter_read_it(string x, int level)
+    {
+        var installation = WithHome(new InMemoryFileSystem().WithFile(UserIni, $"mousescale {x} 0.5\n"));
+
+        installation.SettingsStore.Load();
+
+        Assert.Equal(level, installation.SettingsStore.Settings.CursorSensitivity);
+    }
+
+    [Fact]
+    public void Without_a_mouse_scale_the_old_starters_standard_is_written()
+    {
+        var installation = WithHome();
         installation.SettingsStore.Load();
 
         installation.SettingsStore.Save();
@@ -519,49 +576,28 @@ public class SettingsStoreTests
         Assert.Equal("mousescale 1.5 0.5", LineFor(installation, "mousescale"));
     }
 
-    [Fact]
-    public void Moving_the_sensitivity_replaces_the_scale_it_stood_for()
-    {
-        var installation = WithHome(new InMemoryFileSystem().WithFile(UserIni, "mousescale 1.5 0.5\n"));
-        installation.SettingsStore.Load();
-        Assert.Equal(2, installation.SettingsStore.Settings.CursorSensitivity);
-        installation.SettingsStore.Settings.CursorSensitivity = 3;
-
-        installation.SettingsStore.Save();
-
-        Assert.Equal("mousescale 3 0.5", LineFor(installation, "mousescale"));
-    }
-
-    [Fact]
-    public void The_default_mouse_scale_is_written_as_before()
-    {
-        var installation = WithHome();
-        installation.SettingsStore.Load();
-
-        installation.SettingsStore.Save();
-
-        Assert.Equal("mousescale 2 0.5", LineFor(installation, "mousescale"));
-    }
-
     [Theory]
     // The second number is always 0.5, as the old starter wrote it; its sign is the inversion.
+    [InlineData("mousescale 1.5 0.2", "mousescale 1.5 0.5")]
     [InlineData("mousescale 1.5 0.23", "mousescale 1.5 0.5")]
     [InlineData("mousescale 1.5 -0.23", "mousescale 1.5 -0.5")]
     [InlineData("mousescale 1.5 -2", "mousescale 1.5 -0.5")]
-    // A zero locks that axis in the simulator: the camera turns only left/right.
-    // X goes back to the default.
-    [InlineData("mousescale 0.5 0", "mousescale 0.5 0.5")]
-    [InlineData("mousescale 0.5 -0", "mousescale 0.5 0.5")]
-    [InlineData("mousescale 0 0.5", "mousescale 2 0.5")]
-    [InlineData("mousescale 0 0", "mousescale 2 0.5")]
+    [InlineData("mousescale 1.5 0", "mousescale 1.5 0.5")]
+    [InlineData("mousescale 1.5 -0", "mousescale 1.5 0.5")]
     [InlineData("mousescale 1.5 NaN", "mousescale 1.5 0.5")]
-    [InlineData("mousescale Infinity -0.5", "mousescale 2 -0.5")]
+    // A decimal comma: the simulator reads "0,2" as 0.
+    [InlineData("mousescale 1.5 0,2", "mousescale 1.5 0.5")]
+    // The first is one of that starter's four speeds, the one of the level the file's number has.
+    [InlineData("mousescale 0.5 0.5", "mousescale 1.0 0.5")]
+    [InlineData("mousescale 0 0.5", "mousescale 1.0 0.5")]
+    [InlineData("mousescale 2 0.5", "mousescale 2.3 0.5")]
+    [InlineData("mousescale -3 0.5", "mousescale -3.2 0.5")]
+    [InlineData("mousescale 12 0.2", "mousescale 3.2 0.5")]
+    [InlineData("mousescale Infinity -0.5", "mousescale 1.5 -0.5")]
     // One number: the simulator takes the next word of the file ("mousecontrol") for Y, and reads it as 0.
     [InlineData("mousescale 1.5", "mousescale 1.5 0.5")]
-    [InlineData("mousescale 0.5\t// (3.2 0.5) komentarz", "mousescale 0.5 0.5\t// (3.2 0.5) komentarz")]
-    // A decimal comma: the simulator reads "0,2" as 0.
-    [InlineData("mousescale 0.5 0,2", "mousescale 0.5 0.5")]
-    public void A_mouse_scale_axis_that_would_not_move_gets_the_default(string line, string written)
+    [InlineData("mousescale 0.5\t// (3.2 0.5) komentarz", "mousescale 1.0 0.5\t// (3.2 0.5) komentarz")]
+    public void A_mouse_scale_the_old_starter_would_not_write_goes_on_a_save(string line, string written)
     {
         var installation = WithHome(new InMemoryFileSystem().WithFile(UserIni, line + "\n"));
         installation.SettingsStore.Load();

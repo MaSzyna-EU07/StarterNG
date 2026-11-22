@@ -36,16 +36,14 @@ public sealed class SettingsSerializer
         s.FpsAverage = c.GetDouble("fpsaverage", 0);
         s.PauseOnStart = c.GetBool("pause", false);
 
-        // A zero (or NaN/Infinity) scale locks that axis in the simulator: the
-        // camera then turns only one way. Nothing in the starter writes such a
-        // number on purpose, so X takes the default. Of Y only the sign is read:
-        // it is written 0.5 or -0.5, as the old starter always wrote it.
+        // As the old starter read it (src/uSettings.pas): of X its level and its sign, of Y
+        // only the sign. Both are written as that starter wrote them, one of its four speeds
+        // and 0.5, whatever the file had. A number that cannot be read leaves the standard level.
         var mouse = c.GetTokens("mousescale");
         if (mouse.Length >= 1 && TryParseMouseScale(mouse[0], out double mx))
         {
             s.InvertMouseHorizontal = mx < 0;
-            s.MouseScaleXMagnitude = Math.Abs(mx);
-            s.CursorSensitivity = SensitivityStep(mx);
+            s.CursorSensitivity = SimulatorSettings.MouseLevelOf(mx);
         }
         if (mouse.Length >= 1)
             s.InvertMouseVertical = mouse.Length >= 2 && TryParseMouseScale(mouse[1], out double my) && my < 0;
@@ -243,14 +241,11 @@ public sealed class SettingsSerializer
         c.SetBool("inactivepause", s.PauseWhenInactive);
         c.SetBool("pause", s.PauseOnStart);
 
-        double magnitude = SensitivityStep(s.MouseScaleXMagnitude) == s.CursorSensitivity
-            ? s.MouseScaleXMagnitude
-            : s.CursorSensitivity;
-        double mx = magnitude * (s.InvertMouseHorizontal ? -1 : 1);
+        double mx = SimulatorSettings.MouseScaleOf(s.CursorSensitivity) * (s.InvertMouseHorizontal ? -1 : 1);
         double my = SimulatorSettings.MouseScaleY * (s.InvertMouseVertical ? -1 : 1);
         c.Set("mousescale",
-            $"{mx.ToString("R", CultureInfo.InvariantCulture)} " +
-            $"{my.ToString("R", CultureInfo.InvariantCulture)}");
+            $"{mx.ToString("0.0", CultureInfo.InvariantCulture)} " +
+            $"{my.ToString("0.0", CultureInfo.InvariantCulture)}");
 
         c.SetBool("input.gamepad", !s.IgnoreGamepad);
         c.SetInt("feedbackmode", s.FeedbackMode);
@@ -433,25 +428,23 @@ public sealed class SettingsSerializer
     private static int Clamp(int v, int lo, int hi) => v < lo ? lo : (v > hi ? hi : v);
 
     /// <summary>
-    /// Whether the file's own mousescale can stay as it is: a first number neither
-    /// zero nor NaN/Infinity, and 0.5 or -0.5 after it. Otherwise a save writes the
-    /// one the starter holds.
+    /// Whether the file's own mousescale can stay as it is: one of the old starter's four
+    /// speeds, and 0.5 or -0.5 after it. Otherwise a save writes the one the starter holds,
+    /// as every save of the old starter did.
     /// </summary>
     public static bool MouseScaleStands(string? raw)
     {
         string[] tokens = (raw ?? "").Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries);
         return tokens.Length >= 2 &&
-               TryParseMouseScale(tokens[0], out _) &&
+               TryParseMouseScale(tokens[0], out double x) &&
+               Math.Abs(Math.Abs(x) - SimulatorSettings.MouseScaleOf(SimulatorSettings.MouseLevelOf(x))) < 1e-9 &&
                TryParseMouseScale(tokens[1], out double y) &&
                Math.Abs(Math.Abs(y) - SimulatorSettings.MouseScaleY) < 1e-9;
     }
 
     private static bool TryParseMouseScale(string token, out double scale) =>
         double.TryParse(token, NumberStyles.Float, CultureInfo.InvariantCulture, out scale) &&
-        double.IsFinite(scale) && scale != 0;
-
-    private static int SensitivityStep(double mouseScale) =>
-        (int)Math.Clamp(Math.Round(Math.Abs(mouseScale)), 1, 5);
+        double.IsFinite(scale);
     private static double ParseDouble(string s, double fallback) =>
         double.TryParse(s, NumberStyles.Float, CultureInfo.InvariantCulture, out double d) ? d : fallback;
 

@@ -145,8 +145,8 @@
                                     </ctl:SettingRow>
                                     <ctl:SettingRow ConfigKey="mousescale" x:Name="CursorSensitivityRow"
                                                     Label="{Binding [CursorSensitivity], Source={x:Static starterNg:App.Loc}}">
-                                        <ctl:ReadableSlider x:Name="CursorSensitivitySlider" Minimum="1" Maximum="3" TickFrequency="1"
-                                                IsSnapToTickEnabled="True" Value="3"
+                                        <ctl:ReadableSlider x:Name="CursorSensitivitySlider" Minimum="1" Maximum="4" TickFrequency="1"
+                                                IsSnapToTickEnabled="True" Value="2"
                                                 ValueChanged="QualitySlider_OnValueChanged" />
                                     </ctl:SettingRow>
                                     <ctl:SettingRow ConfigKey="mousescale">

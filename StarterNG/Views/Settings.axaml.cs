@@ -1766,9 +1766,6 @@ public partial class Settings : UserControl, ISettingsCapture
         DynamicLightsSlider.Minimum = widen
             ? Math.Min(SliderRanges.MinDynamicLights, s.DynamicLights)
             : SliderRanges.MinDynamicLights;
-        CursorSensitivitySlider.Maximum = widen
-            ? Math.Max(SliderRanges.MaxCursorSensitivity, s.CursorSensitivity)
-            : SliderRanges.MaxCursorSensitivity;
         foreach (var steps in new[] { _fpsLimit, _reflections, _anisotropy, _drawRangeFactor, _cabShadows })
             steps.Clamps = _clamping;
     }

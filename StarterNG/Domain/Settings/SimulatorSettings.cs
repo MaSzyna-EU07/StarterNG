@@ -230,10 +230,25 @@ public sealed class SimulatorSettings
     }
 
     /// <summary>
-    /// The file's own first mousescale number. The slider takes whole steps: this
-    /// stands for as long as <see cref="CursorSensitivity"/> is the step nearest it.
+    /// The first mousescale number of each level of <see cref="CursorSensitivity"/>, 1 to 4, as
+    /// the old starter wrote them (MaSzyna-EU07/Starter, src/uSettings.pas): low, standard, high
+    /// and very high, negative with <see cref="InvertMouseHorizontal"/>. Whatever else the file
+    /// has there goes on the next save.
     /// </summary>
-    internal double MouseScaleXMagnitude { get; set; } = 2;
+    internal static readonly double[] MouseScales = { 1.0, 1.5, 2.3, 3.2 };
+
+    /// <summary>The first mousescale number <paramref name="level"/> stands for.</summary>
+    internal static double MouseScaleOf(int level) => MouseScales[Math.Clamp(level, 1, MouseScales.Length) - 1];
+
+    /// <summary>
+    /// The level the old starter showed for a first mousescale number: low below 1.3, high
+    /// above 1.9, very high above 2.7 and standard between, whatever its sign.
+    /// </summary>
+    internal static int MouseLevelOf(double scale)
+    {
+        double size = Math.Abs(scale);
+        return size > 2.7 ? 4 : size > 1.9 ? 3 : size < 1.3 ? 1 : 2;
+    }
 
     /// <summary>
     /// The second mousescale number, as the old starter always wrote it: 0.5, or
