@@ -36,6 +36,24 @@ public static class Monitors
         return Array.Empty<DisplayMonitor>();
     }
 
+    /// <summary>
+    /// The size of the monitor a full screen of the simulator goes to (application.cpp): the one
+    /// <paramref name="id"/> names, or the primary one when it names none or one not connected.
+    /// Null where neither is among <paramref name="monitors"/>.
+    /// </summary>
+    public static (int Width, int Height)? SizeOf(IReadOnlyList<DisplayMonitor> monitors, string id)
+    {
+        DisplayMonitor? primary = null;
+        foreach (var m in monitors)
+        {
+            if (id.Length > 0 && m.Id == id)
+                return (m.Width, m.Height);
+            if (m.Primary)
+                primary ??= m;
+        }
+        return primary is null ? null : (primary.Width, primary.Height);
+    }
+
     /// <summary>The id GLFW gives a monitor: its name with spaces as underscores, then where it starts.</summary>
     public static string IdOf(string name, int x, int y) => $"{name.Replace(' ', '_')}:{x},{y}";
 

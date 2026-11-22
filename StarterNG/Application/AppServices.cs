@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using StarterNG.Application.Abstractions;
 using StarterNG.Domain.Settings;
@@ -63,7 +64,10 @@ public sealed class AppServices
         SceneryFiles = new SceneryFileWatch(files, Sceneries, Library, State);
 
         Executables = new ExecutableLocator(files, paths, environment, log);
-        SettingsStore = new SettingsStore(files, clock, log, settingsPaths, new SettingsSerializer(), Executables);
+        // Read when a borderless screen with a smaller buffer is first written, and once.
+        var monitors = new Lazy<IReadOnlyList<DisplayMonitor>>(() => Monitors.List(environment));
+        SettingsStore = new SettingsStore(files, clock, log, settingsPaths,
+                                          new SettingsSerializer(id => Monitors.SizeOf(monitors.Value, id)), Executables);
         MissingVehicleLog = new MissingVehicleLog(SettingsStore.Settings, missingAssets, Library, log);
         Favorites = new FavoriteSceneries(files, log, settingsPaths.FavoritesPath());
         Tapes = new HaslerTapes(files, paths, log, clock, Timetables, () => State.SimulatorRunning);

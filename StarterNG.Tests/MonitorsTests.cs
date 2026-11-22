@@ -59,6 +59,22 @@ public class MonitorsTests
         Assert.Equal("HDMI-1:1920,0", c.GetRaw("fullscreenmonitor"));
     }
 
+    [Fact]
+    public void The_size_is_of_the_monitor_named_or_of_the_primary_one()
+    {
+        var monitors = new[]
+        {
+            new DisplayMonitor("eDP-1:0,360", "eDP-1", 1920, 1080, true),
+            new DisplayMonitor("HDMI-1:1920,0", "HDMI-1", 2560, 1440, false)
+        };
+
+        Assert.Equal((2560, 1440), Monitors.SizeOf(monitors, "HDMI-1:1920,0"));
+        Assert.Equal((1920, 1080), Monitors.SizeOf(monitors, ""));
+        // Not connected: the simulator goes to the primary one.
+        Assert.Equal((1920, 1080), Monitors.SizeOf(monitors, "DP-3:4480,0"));
+        Assert.Null(Monitors.SizeOf(Array.Empty<DisplayMonitor>(), "HDMI-1:1920,0"));
+    }
+
     // ── A name outside ASCII: the simulator compares the file's bytes with GLFW's UTF-8 name ──
 
     private static readonly string UserIni = Path.Combine("/home/kolejarz", ".config", "MaSzyna", "eu07.ini");

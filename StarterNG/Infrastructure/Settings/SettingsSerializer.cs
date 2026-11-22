@@ -11,6 +11,15 @@ namespace StarterNG.Infrastructure.Settings;
 
 public sealed class SettingsSerializer
 {
+    private readonly Func<string, (int Width, int Height)?>? _monitorSize;
+
+    /// <param name="monitorSize">
+    /// The size of the monitor a full screen of the simulator goes to, by what fullscreenmonitor
+    /// says; null where it is not known.
+    /// </param>
+    public SettingsSerializer(Func<string, (int Width, int Height)?>? monitorSize = null) =>
+        _monitorSize = monitorSize;
+
     /// <summary>
     /// An ini of before the tapes of the trains, its recording turned on ("blackbox yes", with the physics log of every
     /// vehicle, hundreds of files on a big scenery): moved to the tapes of the trains, the log of every vehicle off.
@@ -282,8 +291,9 @@ public sealed class SettingsSerializer
         c.SetInt("height", s.Height);
         c.SetInt("starter.bufferscale", s.BufferScalePercent);
         // The simulator draws into a buffer of this size and stretches it to the window.
-        c.SetInt("gfx.framebuffer.width", (int)Math.Round(s.Width * s.BufferScalePercent / 100.0));
-        c.SetInt("gfx.framebuffer.height", (int)Math.Round(s.Height * s.BufferScalePercent / 100.0));
+        var (bufferWidth, bufferHeight) = FramebufferSize(s);
+        c.SetInt("gfx.framebuffer.width", bufferWidth);
+        c.SetInt("gfx.framebuffer.height", bufferHeight);
         c.SetInt("maxtexturesize", s.MaxTextureSize);
         c.SetInt("maxcabtexturesize", s.MaxCabTextureSize);
         c.SetDouble("anisotropicfiltering", s.TextureFiltering);
@@ -384,6 +394,26 @@ public sealed class SettingsSerializer
 
     /// <summary>The keys of the frame buffer's size.</summary>
     public static readonly string[] FramebufferKeys = { "gfx.framebuffer.width", "gfx.framebuffer.height" };
+
+    /// <summary>What the simulator takes for "as large as the window" (opengl33renderer.cpp), its own default.</summary>
+    public const int FramebufferOfWindow = -1;
+
+    /// <summary>
+    /// The frame buffer of <paramref name="s"/>: its part of the window. Borderless, the window
+    /// is the monitor whatever width and height say (application.cpp), so the buffer is the
+    /// window's own, or its part of the monitor's size where that is known.
+    /// </summary>
+    private (int Width, int Height) FramebufferSize(SimulatorSettings s)
+    {
+        if (!s.FullscreenWindowed)
+            return (Part(s.Width, s.BufferScalePercent), Part(s.Height, s.BufferScalePercent));
+        if (s.BufferScalePercent < 100 &&
+            _monitorSize?.Invoke(s.FullscreenMonitor.Trim()) is { Width: > 0, Height: > 0 } monitor)
+            return (Part(monitor.Width, s.BufferScalePercent), Part(monitor.Height, s.BufferScalePercent));
+        return (FramebufferOfWindow, FramebufferOfWindow);
+    }
+
+    private static int Part(int size, int percent) => (int)Math.Round(size * percent / 100.0);
 
     /// <summary>
     /// <paramref name="keys"/> with the keys that say the same setting along with them: the

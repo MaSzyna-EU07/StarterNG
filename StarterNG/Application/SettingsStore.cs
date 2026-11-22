@@ -481,7 +481,8 @@ public sealed class SettingsStore
                 return false;
             if (overCap.Contains(key))
                 return false;
-            // The simulator goes by it to the letter: the file's own, which it does not find, is no choice to keep.
+            // The simulator goes by these to the letter: a buffer of a window's size stretched
+            // over the monitor, a monitor's name it does not find. The file's own is no choice to keep.
             if (AsWritten(key) && _config.GetRaw(key) != value)
                 return false;
             string? synced = _synced.GetValueOrDefault(key);
@@ -491,7 +492,9 @@ public sealed class SettingsStore
         }
 
         bool AsWritten(string key) =>
-            string.Equals(key, "fullscreenmonitor", StringComparison.OrdinalIgnoreCase);
+            string.Equals(key, "fullscreenmonitor", StringComparison.OrdinalIgnoreCase) ||
+            (settings.FullscreenWindowed &&
+             SettingsSerializer.FramebufferKeys.Contains(key, StringComparer.OrdinalIgnoreCase));
 
         void Add(string key, string? value)
         {

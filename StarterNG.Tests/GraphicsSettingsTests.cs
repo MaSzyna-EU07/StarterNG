@@ -172,6 +172,84 @@ public class GraphicsSettingsTests
         Assert.Null(Line(text, "gfx.buffer.percent"));
     }
 
+    // Borderless, the simulator takes the window's size from the monitor (application.cpp) and
+    // leaves width and height unread; -1 is its own word for a buffer of the window's size
+    // (opengl33renderer.cpp).
+    [Fact]
+    public void A_borderless_screen_draws_into_a_buffer_of_the_windows_own_size()
+    {
+        var s = Read("fullscreenwindowed yes\nwidth 1280\nheight 720\n");
+
+        string text = Write(s);
+
+        Assert.Equal("gfx.framebuffer.width -1", Line(text, "gfx.framebuffer.width"));
+        Assert.Equal("gfx.framebuffer.height -1", Line(text, "gfx.framebuffer.height"));
+        Assert.Equal("width 1280", Line(text, "width"));
+        Assert.Equal(100, Read(text).BufferScalePercent);
+    }
+
+    [Fact]
+    public void A_borderless_screen_with_a_smaller_buffer_takes_its_part_of_the_monitor()
+    {
+        var s = Read("fullscreenwindowed yes\nfullscreenmonitor HDMI-1:1920,0\nwidth 1280\nheight 720\nstarter.bufferscale 50\n");
+        var asked = new List<string>();
+        var serializer = new SettingsSerializer(id =>
+        {
+            asked.Add(id);
+            return (2560, 1440);
+        });
+        var c = new ConfigFile();
+
+        serializer.Write(s, c);
+
+        Assert.Equal("1280", c.GetRaw("gfx.framebuffer.width"));
+        Assert.Equal("720", c.GetRaw("gfx.framebuffer.height"));
+        Assert.Equal("50", c.GetRaw("starter.bufferscale"));
+        Assert.Equal(new[] { "HDMI-1:1920,0" }, asked.Distinct());
+        var read = new SimulatorSettings();
+        serializer.Read(read, c);
+        Assert.Equal(50, read.BufferScalePercent);
+    }
+
+    [Fact]
+    public void A_borderless_screen_on_a_monitor_of_unknown_size_keeps_the_windows_own_buffer()
+    {
+        var s = Read("fullscreenwindowed yes\nwidth 1280\nheight 720\nstarter.bufferscale 50\n");
+        var c = new ConfigFile();
+
+        new SettingsSerializer(_ => null).Write(s, c);
+
+        Assert.Equal("-1", c.GetRaw("gfx.framebuffer.width"));
+        Assert.Equal("-1", c.GetRaw("gfx.framebuffer.height"));
+    }
+
+    [Fact]
+    public void A_buffer_of_the_window_left_in_a_borderless_file_goes_on_a_save()
+    {
+        // As this starter wrote it before: the size of the resolution row, which borderless does not use.
+        var installation = WithIni("fullscreenwindowed yes\nwidth 1280\nheight 720\nstarter.bufferscale 100\n" +
+                                   "gfx.framebuffer.width 1280\ngfx.framebuffer.height 720\n");
+
+        installation.SettingsStore.Save();
+
+        string saved = installation.Files.ReadAllText(UserIni);
+        Assert.Equal("gfx.framebuffer.width -1", Line(saved, "gfx.framebuffer.width"));
+        Assert.Equal("gfx.framebuffer.height -1", Line(saved, "gfx.framebuffer.height"));
+    }
+
+    [Fact]
+    public void A_buffer_the_file_has_for_a_window_or_a_full_screen_stays_until_changed()
+    {
+        var installation = WithIni("fullscreenwindowed no\nwidth 1280\nheight 720\nstarter.bufferscale 100\n" +
+                                   "gfx.framebuffer.width 1280\ngfx.framebuffer.height 720\n");
+
+        installation.SettingsStore.Save();
+
+        string saved = installation.Files.ReadAllText(UserIni);
+        Assert.Equal("gfx.framebuffer.width 1280", Line(saved, "gfx.framebuffer.width"));
+        Assert.Equal("gfx.framebuffer.height 720", Line(saved, "gfx.framebuffer.height"));
+    }
+
     [Fact]
     public void A_level_is_recognised_after_it_is_applied_and_survives_a_save()
     {
