@@ -1246,6 +1246,28 @@ public class SettingsStoreTests
         Assert.Equal(60, store.Settings.FieldOfView);
     }
 
+    // The move to the standard mode puts back the keys of the rows it hides: the row of the
+    // render scale has the frame buffer's two, and the percent it is worked out from is the starter's own.
+    [Theory]
+    [InlineData("width 1920\nheight 1080\nstarter.bufferscale 50\ngfx.framebuffer.width 960\ngfx.framebuffer.height 540\n")]
+    [InlineData("width 1920\nheight 1080\ngfx.framebuffer.width 960\ngfx.framebuffer.height 540\n")]
+    public void The_frame_buffer_put_back_takes_the_render_scale_with_it(string ini)
+    {
+        var installation = WithHome(new InMemoryFileSystem().WithFile(UserIni, ini));
+        var store = installation.SettingsStore;
+        store.Load();
+        Assert.Equal(50, store.Settings.BufferScalePercent);
+
+        var reset = store.WithDefaults(store.Settings, new[] { "gfx.framebuffer.width", "gfx.framebuffer.height" });
+
+        Assert.Equal(100, reset.BufferScalePercent);
+        Assert.Equal(1920, reset.Width);
+        var written = store.Render(reset);
+        Assert.Equal("100", written["starter.bufferscale"]);
+        Assert.Equal("1920", written["gfx.framebuffer.width"]);
+        Assert.Equal("1080", written["gfx.framebuffer.height"]);
+    }
+
     // ── What the screen shows otherwise ──────────────────────────────────────
 
     [Fact]

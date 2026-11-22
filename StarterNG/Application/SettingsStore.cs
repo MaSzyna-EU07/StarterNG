@@ -529,6 +529,7 @@ public sealed class SettingsStore
     /// <summary>A copy of <paramref name="settings"/> with <paramref name="keys"/> as <paramref name="source"/> has them.</summary>
     public SimulatorSettings WithKeysOf(SimulatorSettings settings, SimulatorSettings source, IReadOnlyCollection<string> keys)
     {
+        keys = SettingsSerializer.WithCompanions(keys);
         var taken = Render(source);
 
         var config = new ConfigFile();

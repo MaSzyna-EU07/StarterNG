@@ -379,6 +379,23 @@ public sealed class SettingsSerializer
                 c.Set(key.Key, value.Trim());
     }
 
+    /// <summary>The keys of the frame buffer's size.</summary>
+    public static readonly string[] FramebufferKeys = { "gfx.framebuffer.width", "gfx.framebuffer.height" };
+
+    /// <summary>
+    /// <paramref name="keys"/> with the keys that say the same setting along with them: the
+    /// starter's own percent goes wherever the frame buffer's size does, or it would stand
+    /// when the size is put back.
+    /// </summary>
+    public static IReadOnlyCollection<string> WithCompanions(IReadOnlyCollection<string> keys)
+    {
+        if (!keys.Intersect(FramebufferKeys, StringComparer.OrdinalIgnoreCase).Any())
+            return keys;
+        var all = new HashSet<string>(keys, StringComparer.OrdinalIgnoreCase) { "starter.bufferscale" };
+        all.UnionWith(FramebufferKeys);
+        return all;
+    }
+
     private static int ReadBufferScale(ConfigFile c) =>
         Clamp(BufferScaleIn(c), 25, GraphicsRules.MaxBufferScale);
 
