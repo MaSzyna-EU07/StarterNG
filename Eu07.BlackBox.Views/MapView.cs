@@ -342,14 +342,23 @@ public sealed class MapView : Control
     {
         double radius = _scale > 0.5 ? 4.5 : _scale > 0.1 ? 3.5 : 2.5;
         var outline = new Pen(Palette.Background, 1);
+        // From afar a station's signals are one crowd: one dot to a few pixels, those at stop kept first.
+        var marks = new List<(AspectChange? Aspect, Point At, int Rank)>();
         foreach (var signal in recording.Signals)
         {
             var p = ToScreen(signal.Position.X, signal.Position.Z);
             if (!Visible(p))
                 continue;
-            context.DrawEllipse(Palette.Of(recording.AspectAt(signal.Index, _time)), outline, p, radius, radius);
+            var aspect = recording.AspectAt(signal.Index, _time);
+            marks.Add((aspect, p, SignalRank(aspect)));
         }
+        foreach (var (aspect, p) in MarkGrid.Thin(marks, radius * 2 + 1))
+            context.DrawEllipse(Palette.Of(aspect), outline, p, radius, radius);
     }
+
+    /// <summary>How much a signal's dot tells: at stop most, then a speed, then go, then nothing known.</summary>
+    internal static int SignalRank(AspectChange? aspect) =>
+        aspect is not { } a ? 3 : a.Speed1 == 0 ? 0 : a.Speed1 < 0 && a.Speed2 != 0 ? 2 : 1;
 
     /// <summary>
     /// The stop points (W4): a white plate, blue where the user's train stopped, red where it
@@ -392,21 +401,28 @@ public sealed class MapView : Control
         double size = _scale > 0.5 ? 4 : 3;
         var outline = new Pen(Palette.MapBackground, 1);
         var labels = new List<(Point At, string Name, IBrush Fill)>();
+        // A station has a plate for each track and length of train: from afar one to a few pixels,
+        // a missed stop kept first, then one stopped at. The wedges only close enough to tell apart.
+        var marks = new List<((MapStopPoint Point, IBrush Fill) Item, Point At, int Rank)>();
         foreach (var point in recording.StopPoints)
         {
             var p = ToScreen(point.Position.X, point.Position.Z);
             if (!Visible(p))
                 continue;
-            var fill = outcomes.TryGetValue((Math.Round(point.Position.X, 1), Math.Round(point.Position.Z, 1)), out var kind)
-                ? kind == StationKind.Missed ? Palette.Bad : Palette.Station
-                : Palette.StopPoint;
+            bool known = outcomes.TryGetValue((Math.Round(point.Position.X, 1), Math.Round(point.Position.Z, 1)), out var kind);
+            var fill = known ? kind == StationKind.Missed ? Palette.Bad : Palette.Station : Palette.StopPoint;
+            int rank = !known ? 2 : kind == StationKind.Missed ? 0 : 1;
+            marks.Add(((point, fill), p, rank));
+        }
+        foreach (var ((point, fill), p) in MarkGrid.Thin(marks, near ? size * 2 + 1 : size * 3))
+        {
             var plate = new Rect(p.X - size, p.Y - size * 1.3, size * 2, size * 2.6);
             // a W32 hollow, in the colour a W4 would be filled with
             if (point.ForShortTrains)
                 context.DrawRectangle(Palette.MapBackground, new Pen(fill, 1.5), plate, 1.5, 1.5);
             else
                 context.DrawRectangle(fill, outline, plate, 1.5, 1.5);
-            if (point.HasHeading)
+            if (point.HasHeading && near)
                 DrawStopWay(context, p, point.Heading, size, fill, outline);
             labels.Add((p, StationNames.Display(point.Station), fill));
         }
@@ -420,7 +436,8 @@ public sealed class MapView : Control
             taken.Add(new Rect(mark.X - 10, mark.Y - 24, 170, 34));
         }
         var culture = System.Globalization.CultureInfo.CurrentCulture;
-        foreach (var (p, name, fill) in labels)
+        // The plates came the least telling first; the names go the other way, a missed stop's first.
+        foreach (var (p, name, fill) in Enumerable.Reverse(labels))
         {
             if (!near && !named.Add(name))
                 continue;
@@ -448,15 +465,18 @@ public sealed class MapView : Control
         var checks = recording.UserHornChecks().Where(c => c.Request.Time <= _time).ToList();
         double size = _scale > 0.5 ? 5 : 3.5;
         var outline = new Pen(Palette.MapBackground, 1);
+        // One to a few pixels from afar: a horn not sounded kept first, then one sounded.
+        var marks = new List<(IBrush Fill, Point At, int Rank)>();
         foreach (var point in recording.HornPoints)
         {
             var p = ToScreen(point.Position.X, point.Position.Z);
             if (!Visible(p))
                 continue;
             var check = checks.LastOrDefault(c => c.Request.Position.DistanceTo(point.Position) < 1);
-            var fill = check is null ? Palette.HornPoint : check.Sounded ? Palette.Good : Palette.Bad;
-            context.DrawGeometry(fill, outline, Diamond(p, size));
+            marks.Add(check is null ? (Palette.HornPoint, p, 2) : check.Sounded ? (Palette.Good, p, 1) : (Palette.Bad, p, 0));
         }
+        foreach (var (fill, p) in MarkGrid.Thin(marks, size * 2 + 1))
+            context.DrawGeometry(fill, outline, Diamond(p, size));
     }
 
     internal static StreamGeometry Diamond(Point p, double size)
@@ -501,14 +521,19 @@ public sealed class MapView : Control
     {
         var passed = new Pen(Palette.Within, 1.5);
         var danger = new Pen(Palette.Over, 2.5);
+        // One ring to a few pixels, one at danger kept first.
+        var marks = new List<(bool AtDanger, Point At, int Rank)>();
         foreach (var passing in recording.UserPassings())
         {
             if (passing.Time > _time)
                 continue;
             var p = ToScreen(passing.Position.X, passing.Position.Z);
-            if (!Visible(p))
-                continue;
-            if (passing.AtDanger)
+            if (Visible(p))
+                marks.Add((passing.AtDanger, p, passing.AtDanger ? 0 : 1));
+        }
+        foreach (var (atDanger, p) in MarkGrid.Thin(marks, 12))
+        {
+            if (atDanger)
                 context.DrawEllipse(null, danger, p, 10, 10);
             else
                 context.DrawEllipse(null, passed, p, 7, 7);
@@ -518,20 +543,26 @@ public sealed class MapView : Control
     private void DrawVehicles(DrawingContext context, Recording recording, IReadOnlyList<VehicleState> vehicles)
     {
         int user = recording.CabAt(_time) is { } sample && _time - sample.Time < 1.5 ? sample.Vehicle : 0;
+        // From afar a train's cars are each wider on screen than they are long: one to a few
+        // pixels, the user's own kept first, then those driven by the AI.
+        var marks = new List<(VehicleState State, Point At, int Rank)>();
         foreach (var state in vehicles)
+        {
+            var center = ToScreen(state.Position.X, state.Position.Z);
+            if (Visible(center, (recording.Vehicle(state.Id)?.Length ?? 15) * _scale + 10))
+                marks.Add((state, center, state.Id == user ? 0 : state.Driving == Driver.Ai ? 1 : 2));
+        }
+        foreach (var (state, center) in MarkGrid.Thin(marks, 5))
         {
             var info = recording.Vehicle(state.Id);
             var brush = state.Id == user ? Palette.UserTrain : state.Driving == Driver.Ai ? Palette.VehicleAi : Palette.Vehicle;
-            DrawVehicle(context, state.Position.X, state.Position.Z, state.Heading, info?.Length ?? 15, info?.Width ?? 3, brush);
+            DrawVehicle(context, center, state.Heading, info?.Length ?? 15, info?.Width ?? 3, brush);
         }
     }
 
-    private void DrawVehicle(DrawingContext context, double x, double z, double heading, double length, double width,
+    private void DrawVehicle(DrawingContext context, Point center, double heading, double length, double width,
                              IBrush brush)
     {
-        var center = ToScreen(x, z);
-        if (!Visible(center, length * _scale + 10))
-            return;
         // The front from +z towards +x: up the screen and to the left.
         double fx = Math.Sin(heading), fz = Math.Cos(heading);
         double half = Math.Max(length * _scale, 5) / 2, side = Math.Max(width * _scale, 3) / 2;
