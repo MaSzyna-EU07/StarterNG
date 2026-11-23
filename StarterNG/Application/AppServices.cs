@@ -64,6 +64,9 @@ public sealed class AppServices
         SceneryFiles = new SceneryFileWatch(files, Sceneries, Library, State);
 
         Executables = new ExecutableLocator(files, paths, environment, log);
+        // What the simulator describes of itself (weather-schema.txt next to it) joins the keys the settings show,
+        // before they are read from eu07.ini: so a key the file names is read, kept and written like any other.
+        SimulatorKeys.Register(WeatherSchemaFile.Read(files, paths.FromRoot(WeatherSchema.FileName), log));
         SettingsStore = new SettingsStore(files, clock, log, settingsPaths, new SettingsSerializer(dlssPlatform: !environment.IsMacOS), Executables);
         MissingVehicleLog = new MissingVehicleLog(SettingsStore.Settings, missingAssets, Library, log);
         Favorites = new FavoriteSceneries(files, log, settingsPaths.FavoritesPath());

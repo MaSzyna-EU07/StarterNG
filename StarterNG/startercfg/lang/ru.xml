@@ -755,6 +755,11 @@
     <String key="IniSectionAudio">Звуковой движок</String>
     <String key="IniSectionPhysics">Дополнительные параметры симуляции</String>
     <String key="IniSectionConsole">Консоль</String>
+    <String key="IniSectionWeather.main">Погода в физике транспортных средств</String>
+    <String key="IniSectionWeather.adhesion">Погода: сцепление с рельсами</String>
+    <String key="IniSectionWeather.brakes">Погода: тормоза</String>
+    <String key="IniSectionWeather.wind">Погода: ветер</String>
+    <String key="IniSectionWeather.wires">Погода: контактная сеть и токоприёмники</String>
     <String key="ReplaceVehicle">Заменить</String>
     <String key="TipReplaceVehicle">Заменить транспорт в составе на этот (двойной щелчок)</String>
     <String key="ReplaceWithBrowser">Заменить выбранным в каталоге</String>

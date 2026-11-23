@@ -785,6 +785,11 @@
     <String key="IniSectionAudio">Audio engine</String>
     <String key="IniSectionPhysics">More simulation options</String>
     <String key="IniSectionConsole">Console</String>
+    <String key="IniSectionWeather.main">Weather in the physics of vehicles</String>
+    <String key="IniSectionWeather.adhesion">Weather: rail adhesion</String>
+    <String key="IniSectionWeather.brakes">Weather: brakes</String>
+    <String key="IniSectionWeather.wind">Weather: wind</String>
+    <String key="IniSectionWeather.wires">Weather: catenary and pantographs</String>
     <String key="ReplaceVehicle">Replace</String>
     <String key="TipReplaceVehicle">Replace the vehicle in the consist with this one (double-click)</String>
     <String key="ReplaceWithBrowser">Replace with the browser's pick</String>
@@ -1255,4 +1260,50 @@
     <String key="GpuCardShared">{0}, shared memory</String>
     <String key="GfxColNewRenderer">New in OpenGL 4.6 / Vulkan</String>
     <String key="GfxNewRendererNote">These work only with the new exe. An older exe skips them.</String>
+
+    <!-- Weather in the physics of vehicles: the keys of weather-schema.txt, which the simulator writes next to itself.
+         Their labels come from that file in English, so only Polish has them; a key this list lacks still shows. -->
+    <String key="Ini.physics.weather.Desc">Off: the adhesion in rain and snow as it was (0.85 and 0.75), none of the rest of the weather model.</String>
+    <String key="Ini.physics.weather.adhesion.Desc">Wet, dirty and iced rails and leaves change the adhesion of the wheels.</String>
+    <String key="Ini.physics.weather.wet.Desc">Adhesion of a wet rail, as a share of the dry one.</String>
+    <String key="Ini.physics.weather.emulsion.Desc">Multiplies the adhesion for the first water on the dirt of a dry spell (rust, oil, brake dust), on top of the wet rail.</String>
+    <String key="Ini.physics.weather.ice.Desc">Adhesion of a rail with glaze or frost on the head.</String>
+    <String key="Ini.physics.weather.snow.Desc">Adhesion with snow on the head of the rail, 2 cm or more.</String>
+    <String key="Ini.physics.weather.leavesdry.Desc">Adhesion of a rail with dry leaves crushed on it.</String>
+    <String key="Ini.physics.weather.leaveswet.Desc">Adhesion of a rail with wet leaves crushed on it.</String>
+    <String key="Ini.physics.weather.minimum.Desc">The least that is left when all of it works together.</String>
+    <String key="Ini.physics.weather.leaves.Desc">0: no leaves, 1: as usual, 2: twice as many.</String>
+    <String key="Ini.physics.weather.passrecovery.Desc">A rail cleaned by the wheels gets back what the weather lays on it over about this many seconds.</String>
+    <String key="Ini.physics.weather.sand.Desc">The sand gives back at least this share of the dry rail.</String>
+    <String key="Ini.physics.weather.brakes.Desc">Water and ice on the blocks and discs take away some of the friction.</String>
+    <String key="Ini.physics.weather.brakewetcastiron.Desc">Friction of wet cast iron blocks, as a share of the dry ones.</String>
+    <String key="Ini.physics.weather.brakewetcomposite.Desc">Friction of wet composite blocks, as a share of the dry ones.</String>
+    <String key="Ini.physics.weather.brakewetdisc.Desc">Friction of wet brake discs, as a share of the dry ones.</String>
+    <String key="Ini.physics.weather.brakeicecastiron.Desc">Friction of iced cast iron blocks, as a share of the dry ones.</String>
+    <String key="Ini.physics.weather.brakeicecomposite.Desc">Friction of iced composite blocks, as a share of the dry ones.</String>
+    <String key="Ini.physics.weather.brakeicedisc.Desc">Friction of iced brake discs, as a share of the dry ones.</String>
+    <String key="Ini.physics.weather.wind.Desc">The wind changes the drag of a vehicle.</String>
+    <String key="Ini.physics.weather.windfield.Desc">One wind field for everything that moves with it: gusts run over the ground and are weaker towards it. Off: the one uniform wind of before.</String>
+    <String key="Ini.physics.weather.airdensity.Desc">The drag goes by the density of the air at its temperature.</String>
+    <String key="Ini.physics.weather.windyaw.Desc">The drag grows with the angle of the wind across the vehicle: 1 + the value × sin² of it.</String>
+    <String key="Ini.physics.weather.cabsway.Desc">A scale of the shake of the cab by the wind across the vehicle: 0 none, 1 the whole pressure on the side of the body; by default half of it.</String>
+    <String key="Ini.physics.weather.gustiness.Desc">The part of the peak the weather gives above the mean wind that the field takes: 0 a steady wind, 1 as the weather says, 2 twice as gusty.</String>
+    <String key="Ini.physics.weather.pantographs.Desc">The ice on the wires breaks the contact of the pantographs.</String>
+    <String key="Ini.physics.weather.wirewind.Desc">The wind blows the wires aside, drawn so and met so by the pantographs, and can tear them off.</String>
+    <String key="Ini.physics.weather.wireshadows.Desc">Off: the shadows of the wires as before, standing still.</String>
+    <String key="Ini.physics.weather.arcs.Desc">A break of the contact under a current: a flash, a light and a crackle.</String>
+    <String key="Ini.physics.weather.arcbrightness.Desc">1 as measured, 0 arcs with no flash and no light.</String>
+    <String key="Ini.physics.weather.glaze.Desc">Whether the weather lays this kind on the wires; a kind left out melts away.</String>
+    <String key="Ini.physics.weather.rimehard.Desc">Whether the weather lays this kind on the wires; a kind left out melts away.</String>
+    <String key="Ini.physics.weather.rimesoft.Desc">Whether the weather lays this kind on the wires; a kind left out melts away.</String>
+    <String key="Ini.physics.weather.wetsnow.Desc">Whether the weather lays this kind on the wires; a kind left out melts away.</String>
+    <String key="Ini.physics.weather.wireicebreaks.Desc">A scale of how often the ice breaks the contact.</String>
+    <String key="Ini.physics.weather.breaktime.Desc">The length of a break at 1 mm of ice.</String>
+    <String key="Ini.physics.weather.trailingshare.Desc">The share of the breaks a pantograph gets behind another one on the same wire (the first one scrapes the ice off).</String>
+    <String key="Ini.physics.weather.wiretension.Desc">The tension and the diameter decide how far the wind blows the wire aside.</String>
+    <String key="Ini.physics.weather.wirediameter.Desc">The tension and the diameter decide how far the wind blows the wire aside.</String>
+    <String key="Ini.physics.weather.breakglaze.Desc">How much this kind breaks the contact, a share of the glaze. The glaze is hard and smooth and holds the strip off the wire.</String>
+    <String key="Ini.physics.weather.breakrimehard.Desc">How much this kind breaks the contact, a share of the glaze. The hard rime is scraped off.</String>
+    <String key="Ini.physics.weather.breakrimesoft.Desc">How much this kind breaks the contact, a share of the glaze. The soft rime crumbles.</String>
+    <String key="Ini.physics.weather.breakwetsnow.Desc">How much this kind breaks the contact, a share of the glaze. The wet snow slides.</String>
 </Language>

@@ -755,6 +755,11 @@
     <String key="IniSectionAudio">Hangmotor</String>
     <String key="IniSectionPhysics">További szimulációs beállítások</String>
     <String key="IniSectionConsole">Konzol</String>
+    <String key="IniSectionWeather.main">Időjárás a járművek fizikájában</String>
+    <String key="IniSectionWeather.adhesion">Időjárás: a sín tapadása</String>
+    <String key="IniSectionWeather.brakes">Időjárás: fékek</String>
+    <String key="IniSectionWeather.wind">Időjárás: szél</String>
+    <String key="IniSectionWeather.wires">Időjárás: felsővezeték és áramszedők</String>
     <String key="ReplaceVehicle">Csere</String>
     <String key="TipReplaceVehicle">A szerelvény járművének cseréje erre (dupla kattintás)</String>
     <String key="ReplaceWithBrowser">Csere a böngészőben kiválasztottra</String>
