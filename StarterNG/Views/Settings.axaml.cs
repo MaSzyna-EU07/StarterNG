@@ -39,6 +39,7 @@ public partial class Settings : UserControl, ISettingsCapture
     private readonly SliderSteps _anisotropy;
 
     private readonly SliderSteps _drawRangeFactor;
+    private readonly SliderSteps _cabShadows;
 
     // False while the layout loads: the handlers it names fire as it sets their controls'
     // values, before the fields of the controls are there, and do nothing until this is set.
@@ -50,6 +51,9 @@ public partial class Settings : UserControl, ISettingsCapture
     /// </summary>
     public event Action? ThumbnailSizeChanged;
 
+    /// <summary>The standard or the advanced mode was chosen; the scenario screen follows it.</summary>
+    public static event Action? AdvancedModeChanged;
+
     /// <summary>Thumbnail size the other tabs were last drawn at.</summary>
     private bool _drawnThumbs = AppServices.Current.Settings.LargeThumbnails;
 
@@ -57,14 +61,14 @@ public partial class Settings : UserControl, ISettingsCapture
     {
         InitializeComponent();
 
-        _fpsLimit = new SliderSteps(FpsLimitSlider, Steps.FrameRateLimits);
-        _reflections = new SliderSteps(reflectionsFramerate, Steps.ReflectionUpdates);
+        _fpsLimit = new SliderSteps(FpsLimitSlider, SliderRanges.FrameRateLimits);
+        _reflections = new SliderSteps(reflectionsFramerate, SliderRanges.ReflectionUpdates);
         _anisotropy = new SliderSteps(TexFilteringSlider, Steps.Anisotropy);
-        _drawRangeFactor = new SliderSteps(RenderRangeSlider, Steps.DrawRangeFactors);
+        _drawRangeFactor = new SliderSteps(RenderRangeSlider, SliderRanges.DrawRangeFactors);
+        _cabShadows = new SliderSteps(cabShaderSourceRange, SliderRanges.CabShadowRanges);
         _built = true;
 
         SettingsPathText.Text = AppServices.Current.SettingsStore.LoadedFrom;
-        ToolTip.SetTip(SettingsPathText, AppServices.Current.SettingsStore.LoadedFrom);
 
         this.AttachedToVisualTree += (_, _) =>
         {
@@ -104,7 +108,28 @@ public partial class Settings : UserControl, ISettingsCapture
         App.Loc.LanguageChanged += _keyRows.UpdateTexts;
 
         FeedbackCb.SelectionChanged += FeedbackCb_OnSelectionChanged;
-        SelectExeCb.SelectionChanged += (_, _) => UpdateIdleNotes();
+        // What decides whether the simulator starts and draws at all is changed only on purpose.
+        AskBeforeChange(RenderAngleVulkanCb);
+        AskBeforeChange(AdditionalShadersCb);
+        AskBeforeChange(SkipPipelineCb);
+        AskBeforeChange(RenderVBOCb);
+        // Ignoring the gamepad is the recommended default; reading it has been trouble, so turning it on is asked.
+        GamepadIgnoreCb.IsCheckedChanged += async (_, _) =>
+        {
+            if (!AsksFirst || IsChecked(GamepadIgnoreCb) || TopLevel.GetTopLevel(this) is not Window owner)
+                return;
+            if (!await MessageBox.Show(owner, App.Loc["ConfirmGamepadUse"], App.Loc["GamepadSignalIgnore"],
+                                       MessageBoxButtons.YesNo))
+                Revert(() => GamepadIgnoreCb.IsChecked = true);
+        };
+        RenderEngineCb.SelectionChanged += async (_, e) =>
+        {
+            if (!AsksFirst || e.RemovedItems.Count == 0)
+                return;
+            object? previous = e.RemovedItems[0];
+            if (!await ConfirmRenderingChange(App.Loc["RenderEngine"]))
+                Revert(() => RenderEngineCb.SelectedItem = previous);
+        };
         // Coming to the page or to the list is when a new build is looked for.
         SelectExeCb.GotFocus += (_, _) => RefreshExecutables();
         PropertyChanged += (_, e) =>
@@ -112,16 +137,9 @@ public partial class Settings : UserControl, ISettingsCapture
             if (e.Property == IsVisibleProperty && IsVisible)
                 RefreshExecutables();
         };
-        FullscreenWindowedCb.IsCheckedChanged += (_, _) => UpdateIdleNotes();
-        App.Loc.LanguageChanged += UpdateIdleNotes;
         App.Loc.LanguageChanged += UpdateGpuNote;
-        // targetfps decides whether the draw range factor does anything.
-        _keyRows.Moved += key =>
-        {
-            if (string.Equals(key.Key, "targetfps", StringComparison.OrdinalIgnoreCase))
-                UpdateIdleNotes();
-        };
-        InitGraphics();
+        App.Loc.LanguageChanged += UpdateAdvancedModeButton;
+        App.Loc.LanguageChanged += UpdateUnknownValues;
         MotionBlurCb.IsCheckedChanged += (_, _) => UpdateDependentRows();
         ReflectionsCubeMapCb.IsCheckedChanged += (_, _) => UpdateDependentRows();
 
@@ -398,9 +416,9 @@ public partial class Settings : UserControl, ISettingsCapture
 
         // A reloaded file may name another simulator, or start a server.
         RefreshDerivedRows();
+        UpdateUnknownValues();
         UpdateGpuNote();
         NoteShownValues();
-        UpdateGraphicsState();
         UpdatePresetMarks();
     }
 
@@ -410,7 +428,8 @@ public partial class Settings : UserControl, ISettingsCapture
     /// </summary>
     private void ShowValues(SimulatorSettings s)
     {
-        FullscreenCb.IsChecked = s.Fullscreen;
+        // First, or a value outside the standard ranges would be moved into them on the way in.
+        ApplyRanges(s);
         PauseInactiveCb.IsChecked = s.PauseWhenInactive;
         PauseStartCb.IsChecked = s.PauseOnStart;
         CursorSensitivitySlider.Value = s.CursorSensitivity;
@@ -456,7 +475,7 @@ public partial class Settings : UserControl, ISettingsCapture
         _reflections.Value = s.ReflectionsFramerate;
         shaderResolutionSlider.Value = Log2(s.ShadowMapResolution, 12);
         shaderRange.Value = s.ShadowProjectionRange;
-        cabShaderSourceRange.Value = s.CabShadowsRange;
+        _cabShadows.Value = s.CabShadowsRange;
         ShadowDisplayCb.SelectedIndex = Math.Clamp(s.ShadowRankCutoff - 1, 0, 2);
         ReflectionsDetailsCb.SelectedIndex = s.ReflectionsFidelity;
         fovSlider.Value = s.FieldOfView;
@@ -464,7 +483,6 @@ public partial class Settings : UserControl, ISettingsCapture
         RenderScreensThreadCb.IsChecked = s.PythonThreadedUpload;
         _fpsLimit.Value = s.FpsLimitEnabled ? s.FpsLimit : 0;
         ShadowAngleLimitSlider.Value = s.ShadowAngleLimit;
-        FullscreenWindowedCb.IsChecked = s.FullscreenWindowed;
         RenderAngleVulkanCb.IsChecked = s.RenderAngleVulkan;
 
         TrackCurvesSlider.Value = s.SplineFidelity;
@@ -495,6 +513,7 @@ public partial class Settings : UserControl, ISettingsCapture
         AutoCloseStarterCb.IsChecked = s.AutoCloseStarter;
         LargeThumbnailsCb.IsChecked = s.LargeThumbnails;
         AutoExpandTreeCb.IsChecked = s.AutoExpandSceneryTree;
+        UpdateAdvancedModeButton();
         ReadyOverrideCb.SelectedIndex = (int)s.ReadyOverride;
 
         CompressTexCb.IsChecked = s.CompressTextures;
@@ -516,7 +535,15 @@ public partial class Settings : UserControl, ISettingsCapture
     /// </summary>
     private void ShowAsEdits(SimulatorSettings s)
     {
-        ShowValues(s);
+        _showingEdits = true;
+        try
+        {
+            ShowValues(s);
+        }
+        finally
+        {
+            _showingEdits = false;
+        }
         RefreshDerivedRows();
     }
 
@@ -524,9 +551,7 @@ public partial class Settings : UserControl, ISettingsCapture
     private void RefreshDerivedRows()
     {
         UpdateQualityCaptions();
-        UpdateIdleNotes();
         UpdateDependentRows();
-        UpdateGraphicsState();
     }
 
     // ── Levels of detail ─────────────────────────────────────────────────────
@@ -549,8 +574,7 @@ public partial class Settings : UserControl, ISettingsCapture
         foreach (var (section, group) in new[]
                  {
                      (DrawRangeSection, GraphicsGroup.DrawRange), (TexturesSection, GraphicsGroup.Textures),
-                     (ShadowsSection, GraphicsGroup.Shadows), (LightsSection, GraphicsGroup.Lights),
-                     (ReflectionsSection, GraphicsGroup.Reflections), (NatureSection, GraphicsGroup.Nature)
+                     (ShadowsSection, GraphicsGroup.Shadows), (ReflectionsSection, GraphicsGroup.Reflections)
                  })
         {
             var levels = new ComboBox();
@@ -573,7 +597,6 @@ public partial class Settings : UserControl, ISettingsCapture
         foreach (var (preset, button) in _presetButtons)
         {
             button.Content = App.Loc[preset.NameKey];
-            ToolTip.SetTip(button, SettingTexts.PresetSummary(preset));
         }
 
         _markingLevels = true;
@@ -583,7 +606,6 @@ public partial class Settings : UserControl, ISettingsCapture
             foreach (var level in GraphicsPreset.All)
                 levels.Items.Add(new ComboBoxItem { Content = App.Loc[level.NameKey], Tag = level });
             levels.PlaceholderText = App.Loc["PresetCustom"];
-            ToolTip.SetTip(levels, App.Loc["GfxGroupLevelTip"]);
         }
         _markingLevels = false;
 
@@ -607,8 +629,6 @@ public partial class Settings : UserControl, ISettingsCapture
         var trial = Trial();
         var applied = _presetMemory.Apply(preset, trial);
         ShowAsEdits(trial);
-        foreach (string key in applied.RowKeys)
-            _keyRows.Show(key, trial.Extra[key]);
 
         // Chosen as a whole, its values are choices, not ones the screen could not show.
         ForgetShown(applied.ChosenKeys);
@@ -682,8 +702,7 @@ public partial class Settings : UserControl, ISettingsCapture
         if (_cards.Count == 0)
             return;
 
-        CardText.Text = CardLine(_cards[0]);
-        ToolTip.SetTip(CardText, string.Join(Environment.NewLine, _cards.Select(CardLine)));
+        CardText.Text = string.Join(Environment.NewLine, _cards.Select(CardLine));
     }
 
     // ── The screens' refresh rates, for the frame rate limit ─────────────────
@@ -692,38 +711,51 @@ public partial class Settings : UserControl, ISettingsCapture
 
     private void BuildMonitorRates()
     {
-        var displays = AppServices.Current.Displays.List();
-        if (displays.Count == 0)
-            return;
-
-        MonitorRates.IsVisible = true;
-        UpdateMonitorRates(displays);
-        App.Loc.LanguageChanged += () => UpdateMonitorRates(displays);
+        VSyncCb.IsCheckedChanged += (_, _) => UpdateMonitorRates();
+        DisplayModeCb.SelectionChanged += (_, _) =>
+        {
+            UpdateDisplayRows();
+            UpdateMonitorRates();
+        };
+        MonitorCb.SelectionChanged += (_, _) => UpdateMonitorRates();
+        App.Loc.LanguageChanged += UpdateMonitorRates;
+        UpdateMonitorRates();
     }
 
-    private void UpdateMonitorRates(IReadOnlyList<Display> displays)
+    /// <summary>
+    /// The rate of the monitor the simulator will show on, with a button to match the limit
+    /// to it. VSync already holds the frames to that rate, so with it on there is no button:
+    /// fpslimit paces frames by its own clock (framepacer.h), not the refresh, so no limit
+    /// of it lines up with the monitor.
+    /// </summary>
+    private void UpdateMonitorRates()
     {
+        bool vsync = IsChecked(VSyncCb);
+        FpsVSyncNote.IsVisible = vsync;
         MonitorRates.Children.Clear();
-        foreach (var display in displays)
+
+        int hz = SimulatorMonitor()?.RefreshRate ?? 0;
+        MonitorRates.IsVisible = hz > 0;
+        if (hz == 0)
+            return;
+
+        MonitorRates.Children.Add(new TextBlock
         {
-            string screen = string.IsNullOrEmpty(display.Name)
-                ? string.Format(App.Loc["MonitorRate"], display.RefreshRate)
-                : string.Format(App.Loc["MonitorRateNamed"], display.Name, display.RefreshRate);
-            MonitorRates.Children.Add(new TextBlock
-            {
-                Text = screen, FontSize = 11, Foreground = FgDimBrush, VerticalAlignment = VerticalAlignment.Center
-            });
-            var match = new Button
-            {
-                Content = string.Format(App.Loc["MonitorRateUse"], display.RefreshRate),
-                Margin = new Thickness(4, 0, 14, 0)
-            };
-            match.Classes.Add("Outline");
-            match.Classes.Add("SectionReset");
-            int rate = display.RefreshRate;
-            match.Click += (_, _) => _fpsLimit.Value = rate;
-            MonitorRates.Children.Add(match);
-        }
+            Text = string.Format(App.Loc["MonitorRate"], hz),
+            FontSize = 11, Foreground = FgDimBrush, VerticalAlignment = VerticalAlignment.Center
+        });
+        if (vsync)
+            return;
+
+        var match = new Button
+        {
+            Content = string.Format(App.Loc["MonitorRateUse"], hz),
+            Margin = new Thickness(4, 0, 14, 0)
+        };
+        match.Classes.Add("Outline");
+        match.Classes.Add("SectionReset");
+        match.Click += (_, _) => _fpsLimit.Value = hz;
+        MonitorRates.Children.Add(match);
     }
 
     // ── Sections back to the simulator's own values ──────────────────────────
@@ -774,13 +806,7 @@ public partial class Settings : UserControl, ISettingsCapture
     /// <summary>Puts the section's rows at the simulator's own values, as edits waiting for Save.</summary>
     private void ResetSection(SettingsSection section)
     {
-        var keys = ResettableKeys(section);
-        ShowAsEdits(AppServices.Current.SettingsStore.WithDefaults(Trial(), keys));
-        foreach (string key in keys)
-            _keyRows.ShowDefault(key);
-
-        // Put back by hand, a value is a choice like any other.
-        ForgetShown(keys);
+        ShowDefaults(ResettableKeys(section));
         Announcer.Say(this, ScreenReaderNames.PickerText(ScreenReaderNames.TextOf(section.Header), App.Loc["DefaultsRestored"]));
     }
 
@@ -831,7 +857,7 @@ public partial class Settings : UserControl, ISettingsCapture
     private string SelectedRenderer() =>
         SimulatorSettings.RenderEngines.ElementAtOrDefault(RenderEngineCb.SelectedIndex) ?? "full";
 
-    private RendererKind SelectedRendererKind() => SettingReach.KindOf(SelectedRenderer());
+    private RendererKind SelectedRendererKind() => Renderers.KindOf(SelectedRenderer());
 
     /// <summary>
     /// Writes the pending edits on this screen into the settings, so a save from
@@ -849,7 +875,6 @@ public partial class Settings : UserControl, ISettingsCapture
         var language = ChangeLanguageCb.SelectedItem as ComboBoxItem;
         s.Language = language?.Content?.ToString() ?? App.Loc.CurrentLanguage;
         s.LanguageCode = language?.Tag as string ?? App.Loc.CurrentLangCode;
-        s.Fullscreen = IsChecked(FullscreenCb);
         s.PauseWhenInactive = IsChecked(PauseInactiveCb);
         s.PauseOnStart = IsChecked(PauseStartCb);
         s.CursorSensitivity = (int)CursorSensitivitySlider.Value;
@@ -889,7 +914,7 @@ public partial class Settings : UserControl, ISettingsCapture
         s.ReflectionsFramerate = _reflections.Value;
         s.ShadowMapResolution = 1 << (int)shaderResolutionSlider.Value;
         s.ShadowProjectionRange = (int)shaderRange.Value;
-        s.CabShadowsRange = (int)cabShaderSourceRange.Value;
+        s.CabShadowsRange = (int)_cabShadows.Value;
         s.ShadowRankCutoff = Math.Max(0, ShadowDisplayCb.SelectedIndex) + 1;
         s.ReflectionsFidelity = Math.Max(0, ReflectionsDetailsCb.SelectedIndex);
         s.FieldOfView = Math.Clamp((int)fovSlider.Value, 10, 75);
@@ -901,7 +926,6 @@ public partial class Settings : UserControl, ISettingsCapture
         if (fpsLimit > 0)
             s.FpsLimit = fpsLimit;
         s.ShadowAngleLimit = ShadowAngleLimitSlider.Value;
-        s.FullscreenWindowed = IsChecked(FullscreenWindowedCb);
         s.RenderAngleVulkan = IsChecked(RenderAngleVulkanCb);
 
         s.SplineFidelity = (int)TrackCurvesSlider.Value;
@@ -1060,6 +1084,10 @@ public partial class Settings : UserControl, ISettingsCapture
         CaptureInto(AppServices.Current.Settings);
         var store = AppServices.Current.SettingsStore;
         store.Save();
+        // The file had changes from elsewhere, kept with these: show them.
+        if (store.LastSaveMerged)
+            ApplyToUi();
+        UpdateUnknownValues();
         KeyboardConfig.Instance.Save();
         RedrawThumbnailsIfNeeded();
         // Not saved, it is still there to be saved.
@@ -1068,12 +1096,51 @@ public partial class Settings : UserControl, ISettingsCapture
         SaveStatus.Text = App.Loc[store.LastSaveFailed ? "SettingsNotSaved" : "SettingsSaved"];
     }
 
+    // ── Rendering changes, each confirmed ──────────────────────────────────
+
+    /// <summary>Set while a preset, a reset or a profile puts values on the screen: those are not clicks to confirm.</summary>
+    private bool _showingEdits;
+
+    /// <summary>Set while a refused change is put back, which is no change to ask about.</summary>
+    private bool _reverting;
+
+    private bool AsksFirst => _built && !_loading && !_showingEdits && !_reverting;
+
+    private void AskBeforeChange(CheckBox box) =>
+        box.IsCheckedChanged += async (_, _) =>
+        {
+            if (!AsksFirst)
+                return;
+            if (!await ConfirmRenderingChange(ScreenReaderNames.TextOf(box.Content)))
+                Revert(() => box.IsChecked = !box.IsChecked);
+        };
+
+    private async Task<bool> ConfirmRenderingChange(string? setting)
+    {
+        if (TopLevel.GetTopLevel(this) is not Window owner)
+            return true;
+        return await MessageBox.Show(owner, string.Format(App.Loc["ConfirmRenderingChange"], setting),
+                                     App.Loc["GfxColRendering"], MessageBoxButtons.YesNo);
+    }
+
+    private void Revert(Action putBack)
+    {
+        _reverting = true;
+        try
+        {
+            putBack();
+        }
+        finally
+        {
+            _reverting = false;
+        }
+    }
+
     private void RenderEngineCb_OnSelectionChanged(object? sender, SelectionChangedEventArgs e)
     {
         if (!_built)
             return;
 
-        OnBackendChanged();
         RefreshDerivedRows();
     }
 
@@ -1128,43 +1195,6 @@ public partial class Settings : UserControl, ISettingsCapture
         };
         return exes.FullPath(exes.Resolve(pick, out _));
     }
-
-    /// <summary>
-    /// Dims the rows the simulator to be started would ignore and says why. Follows
-    /// the simulator and renderer picked here, before they are saved.
-    /// </summary>
-    private void UpdateIdleNotes()
-    {
-        string exe = TargetExecutable();
-        var settings = AppServices.Current.Settings;
-        var target = new SimulatorTarget(
-            AppServices.Current.Executables.IsWindowsBuild(exe),
-            SelectedRenderer(),
-            settings.NetworkServer,
-            _keyRows.NumberIfSet("targetfps", settings),
-            settings.FpsAverage,
-            IsChecked(FullscreenWindowedCb));
-
-        foreach (var row in SettingsStack.GetLogicalDescendants().OfType<SettingRow>())
-            row.IdleNote = string.IsNullOrEmpty(row.ConfigKey)
-                ? null
-                : IdleText(SettingReach.Why(row.ConfigKey, target));
-
-        RenderEngineWarning.IsVisible = SelectedRendererKind() == RendererKind.Experimental;
-    }
-
-    private static string? IdleText(IdleReason reason) => reason switch
-    {
-        IdleReason.WindowsBuildOnly => App.Loc["IdleWindowsBuildOnly"],
-        IdleReason.LegacyRendererOnly => App.Loc["IdleLegacyRendererOnly"],
-        IdleReason.ModernRendererOnly => App.Loc["IdleModernRendererOnly"],
-        IdleReason.OpenGlRenderersOnly => App.Loc["IdleOpenGlRenderersOnly"],
-        IdleReason.NeedsNetworkServer => App.Loc["IdleNeedsNetworkServer"],
-        IdleReason.NeedsFrameRateTarget => App.Loc["IdleNeedsFrameRateTarget"],
-        IdleReason.MonitorModeInstead => App.Loc["IdleMonitorMode"],
-        IdleReason.VulkanOnly => App.Loc["IdleVulkanOnly"],
-        _ => null
-    };
 
     private void RedrawThumbnailsIfNeeded()
     {
@@ -1285,7 +1315,6 @@ public partial class Settings : UserControl, ISettingsCapture
     private void UpdateShadowResolution()
     {
         int resolution = ShowPixels(ShadowResolutionRow, shaderResolutionSlider);
-        ToolTip.SetTip(shaderResolutionSlider, SettingTexts.ShadowMapWord(resolution));
 
         // Below this the simulator would raise the range anyway.
         shaderRange.Minimum = SimulatorSettings.ShadowRangeFloor(resolution);
@@ -1339,6 +1368,160 @@ public partial class Settings : UserControl, ISettingsCapture
     /// reveal a row the selected mode does not use.
     /// </summary>
     private void UpdateFeedbackDetailVisibility() => ApplyFilter();
+
+    /// <summary>
+    /// The mode is the player's way of using the starter, not a setting of the simulator: it is
+    /// kept straight away, as the language is, and the scenario screen follows it.
+    /// </summary>
+    private async void AdvancedModeBtn_OnClick(object? sender, RoutedEventArgs e)
+    {
+        if (TopLevel.GetTopLevel(this) is not Window owner)
+            return;
+
+        var settings = AppServices.Current.Settings;
+        if (!settings.AdvancedSettings)
+        {
+            if (!await MessageBox.ShowDelayed(owner, App.Loc["AdvancedModeWarning"], App.Loc["AdvancedMode"],
+                                              App.Loc["AdvancedModeOn"], 20))
+                return;
+
+            settings.AdvancedSettings = true;
+            AppServices.Current.SettingsStore.Save();
+        }
+        else
+        {
+            if (!await MessageBox.Show(owner, App.Loc["AdvancedModeOffConfirm"], App.Loc["AdvancedMode"],
+                                       MessageBoxButtons.YesNo))
+                return;
+
+            // Leaving the mode leaves nothing of it behind: what only it shows goes back to the
+            // simulator's own values, and the page is saved with them.
+            ShowDefaults(AdvancedKeys());
+            settings.AdvancedSettings = false;
+            Save();
+        }
+
+        AdvancedModeChanged?.Invoke();
+        UpdateAdvancedModeButton();
+        ApplyFilter();
+    }
+
+    /// <summary>
+    /// Once, on the first start of this starter, for the settings an older one left: the
+    /// standard mode, what only the advanced one shows at the simulator's own values, and
+    /// every slider's value within its range, saved. eu07.ini is copied aside first.
+    /// </summary>
+    public void MoveToStandardOnce()
+    {
+        var settings = AppServices.Current.Settings;
+        var store = AppServices.Current.SettingsStore;
+        if (settings.MovedToStandard || store.LoadFailed)
+            return;
+
+        store.KeepCopy(".before-standard");
+        var moved = AdvancedKeys();
+        moved.ExceptWith(SettingsStore.KeptOnMoveToStandard);
+        _clamping = true;
+        try
+        {
+            ShowDefaults(moved);
+        }
+        finally
+        {
+            _clamping = false;
+        }
+        // A value moved into its slider is saved as moved, not left as the file had it.
+        ForgetShown(SliderKeys());
+
+        bool wasAdvanced = settings.AdvancedSettings;
+        settings.AdvancedSettings = false;
+        settings.MovedToStandard = true;
+        Save();
+
+        if (wasAdvanced)
+            AdvancedModeChanged?.Invoke();
+        UpdateAdvancedModeButton();
+        ApplyFilter();
+    }
+
+    /// <summary>Puts <paramref name="keys"/> at the simulator's own values, as edits waiting for Save.</summary>
+    private void ShowDefaults(IReadOnlyCollection<string> keys)
+    {
+        ShowAsEdits(AppServices.Current.SettingsStore.WithDefaults(Trial(), keys));
+        foreach (string key in keys)
+            _keyRows.ShowDefault(key);
+        // Put back by hand, a value is a choice like any other.
+        ForgetShown(keys);
+    }
+
+    /// <summary>The keys of the rows set with a slider.</summary>
+    private HashSet<string> SliderKeys()
+    {
+        var keys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var row in SettingsStack.GetLogicalDescendants().OfType<SettingRow>())
+            if (row.GetLogicalDescendants().OfType<Slider>().Any())
+                foreach (string key in (row.ConfigKey ?? string.Empty)
+                         .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+                    keys.Add(key);
+        return keys;
+    }
+
+    /// <summary>
+    /// Every setting of the page at the simulator's own values, the ones only the advanced mode
+    /// shows too, as edits waiting for Save; the key bindings have a button of their own.
+    /// </summary>
+    private async void DefaultsButton_OnClick(object? sender, RoutedEventArgs e)
+    {
+        if (TopLevel.GetTopLevel(this) is not Window owner)
+            return;
+        if (!await MessageBox.Show(owner, App.Loc["AllDefaultsConfirm"], App.Loc["RestoreDefaults"],
+                                   MessageBoxButtons.YesNo))
+            return;
+
+        var keys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var section in SettingsStack.GetLogicalDescendants().OfType<SettingsSection>())
+            keys.UnionWith(ResettableKeys(section));
+        ShowDefaults(keys);
+        SaveStatus.Text = App.Loc["DefaultsRestored"];
+    }
+
+    /// <summary>The keys of every row only the advanced mode shows.</summary>
+    private HashSet<string> AdvancedKeys()
+    {
+        var keys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var section in SettingsStack.GetLogicalDescendants().OfType<SettingsSection>())
+        {
+            if (section.Advanced && !string.IsNullOrEmpty(section.ToggleKey))
+                keys.Add(section.ToggleKey);
+            foreach (var row in section.GetLogicalDescendants().OfType<SettingRow>())
+                if (section.Advanced || row.Advanced)
+                    foreach (string key in (row.ConfigKey ?? string.Empty)
+                             .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+                        keys.Add(key);
+        }
+        keys.ExceptWith(KeptOnReset);
+        return keys;
+    }
+
+    private bool Advanced => AppServices.Current.Settings.AdvancedSettings;
+
+    /// <summary>Under each setting, the value of eu07.ini for it the starter cannot read, as the file has it.</summary>
+    private void UpdateUnknownValues()
+    {
+        var unreadable = AppServices.Current.SettingsStore.UnreadableValues();
+        foreach (var row in SettingsStack.GetLogicalDescendants().OfType<SettingRow>())
+        {
+            var keys = (row.ConfigKey ?? string.Empty)
+                .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+            var found = keys.Where(unreadable.ContainsKey)
+                            .Select(key => keys.Length > 1 ? key + " " + unreadable[key] : unreadable[key])
+                            .ToList();
+            row.UnknownValue = found.Count > 0 ? string.Format(App.Loc["UnknownIniValue"], string.Join(", ", found)) : null;
+        }
+    }
+
+    private void UpdateAdvancedModeButton() =>
+        AdvancedModeBtn.Content = App.Loc[Advanced ? "AdvancedModeOff" : "AdvancedModeMenu"];
 
     private bool ConditionAllows(SettingRow row)
     {
@@ -1401,6 +1584,11 @@ public partial class Settings : UserControl, ISettingsCapture
         SettingsScroll.IsVisible = !bindings;
         PresetBar.IsVisible = category is "graphics" or "effects" && !searching;
 
+        // The standard mode keeps to what a player needs; a search still finds everything,
+        // since whoever types a setting's name is looking for it.
+        bool advanced = Advanced;
+        bool everything = advanced || searching;
+
         if (bindings)
         {
             _keyBindings.RebuildList();
@@ -1418,12 +1606,17 @@ public partial class Settings : UserControl, ISettingsCapture
             foreach (var section in panel.GetLogicalDescendants().OfType<SettingsSection>())
             {
                 bool anyInSection = false;
+                if (section.Level is Control level)
+                    level.IsVisible = advanced;
 
                 foreach (var row in section.GetLogicalDescendants().OfType<SettingRow>())
                 {
-                    bool visible = ConditionAllows(row) &&
+                    // A value the starter cannot read is shown in either mode, so it can be put right.
+                    bool standard = (!section.Advanced && !row.Advanced) || !string.IsNullOrEmpty(row.UnknownValue);
+                    bool visible = ConditionAllows(row) && (everything || standard) &&
                                    (!searching || TextMatch.Contains(RowSearchText(row), query));
                     row.IsVisible = visible;
+                    row.Classes.Set("HideKey", !advanced);
                     anyInSection |= visible;
                     if (visible && searching)
                         _shownCount++;
@@ -1441,11 +1634,17 @@ public partial class Settings : UserControl, ISettingsCapture
                 caption.IsVisible = searching;
 
             if (CategoryItem(tag) is { } item)
+            {
                 item.Classes.Set("NoHits", searching && !anyRow);
+                // A category with nothing for the standard mode leaves the list.
+                item.IsVisible = everything || anyRow;
+            }
         }
 
         if (searching)
             SettingsScroll.Offset = new Vector(0, 0);
+        else if (CategoryList.SelectedItem is ListBoxItem { IsVisible: false })
+            CategoryList.SelectedIndex = 0;
     }
 
     private ListBoxItem? CategoryItem(string tag) =>
@@ -1510,9 +1709,6 @@ public partial class Settings : UserControl, ISettingsCapture
                 case NumericUpDown nud:
                     nud.ValueChanged += (_, _) => OnControlChanged();
                     break;
-                case TextBox box when ReferenceEquals(box, VulkanDeviceTb):
-                    OnTextEdited(box, OnControlChanged);
-                    break;
             }
         }
 
@@ -1537,7 +1733,6 @@ public partial class Settings : UserControl, ISettingsCapture
     {
         MarkDirty();
         QueuePresetMarks();
-        UpdateGraphicsState();
     }
 
     private void MarkDirty()
@@ -1566,6 +1761,28 @@ public partial class Settings : UserControl, ISettingsCapture
         if (tag is string s && int.TryParse(s, NumberStyles.Integer, CultureInfo.InvariantCulture, out int n)) return n;
         return 200;
     }
+
+    /// <summary>
+    /// The old starter's ranges (<see cref="SliderRanges"/>), in either mode, with the value
+    /// <paramref name="s"/> has along with them: one from the file or a level outside them is
+    /// shown as it is, so opening and saving the settings never moves it - as SliderSteps does.
+    /// </summary>
+    private void ApplyRanges(SimulatorSettings s)
+    {
+        // Clamping, the ranges stay as they are and a value past them is moved in.
+        bool widen = !_clamping;
+        int minTexture = Log2(SliderRanges.MinTextureSize, 9), minShadow = Log2(SliderRanges.MinShadowMap, 10);
+        textureResolutionSlider.Minimum = widen ? Math.Min(minTexture, Log2(s.MaxTextureSize, 12)) : minTexture;
+        shaderResolutionSlider.Minimum = widen ? Math.Min(minShadow, Log2(s.ShadowMapResolution, 12)) : minShadow;
+        DynamicLightsSlider.Minimum = widen
+            ? Math.Min(SliderRanges.MinDynamicLights, s.DynamicLights)
+            : SliderRanges.MinDynamicLights;
+        foreach (var steps in new[] { _fpsLimit, _reflections, _anisotropy, _drawRangeFactor, _cabShadows })
+            steps.Clamps = _clamping;
+    }
+
+    /// <summary>Set while values are put on the screen moved into the sliders' ranges, not widening them.</summary>
+    private bool _clamping;
 
     private static int Log2(int value, int fallback)
     {
@@ -1606,11 +1823,9 @@ public partial class Settings : UserControl, ISettingsCapture
         int reach = SimulatorSettings.ShadowReach(metres, 1 << (int)shaderResolutionSlider.Value,
             SelectedRendererKind() != RendererKind.Modern);
         ShadowRangeRow.ValueText = reach == metres ? $"{metres} m" : $"{metres} m → {reach} m";
-        ToolTip.SetTip(shaderRange, SettingTexts.ShadowRangeWord(reach));
 
-        int cabMetres = (int)cabShaderSourceRange.Value;
+        int cabMetres = (int)_cabShadows.Value;
         CabShadowRangeRow.ValueText = cabMetres <= 0 ? App.Loc["RangeDisabled"] : $"{cabMetres} m";
-        ToolTip.SetTip(cabShaderSourceRange, SettingTexts.CabShadowRangeWord(cabMetres));
 
         ReflectionsFramerateRow.ValueText = SettingTexts.ReflectionsInterval(_reflections.Value);
 

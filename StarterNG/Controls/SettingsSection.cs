@@ -7,6 +7,16 @@ namespace StarterNG.Controls;
 
 public class SettingsSection : HeaderedContentControl
 {
+    /// <summary>Every row of the section is for the advanced mode only.</summary>
+    public static readonly StyledProperty<bool> AdvancedProperty =
+        AvaloniaProperty.Register<SettingsSection, bool>(nameof(Advanced));
+
+    public bool Advanced
+    {
+        get => GetValue(AdvancedProperty);
+        set => SetValue(AdvancedProperty, value);
+    }
+
     public static readonly StyledProperty<object?> ToggleProperty =
         AvaloniaProperty.Register<SettingsSection, object?>(nameof(Toggle));
 

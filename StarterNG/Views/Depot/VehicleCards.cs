@@ -1,4 +1,5 @@
 using System;
+using StarterNG.Application;
 using System.Collections.Generic;
 using System.Linq;
 using Avalonia;
@@ -116,7 +117,9 @@ public sealed class VehicleCards
             HorizontalAlignment = HorizontalAlignment.Center,
             Margin = new Thickness(0, 1, 0, 2)
         };
-        controls.Children.Add(DriverButton(item));
+        // Who sits in the cab - the player, the simulator, a passenger or nobody - is for the advanced mode.
+        if (AppServices.Current.Settings.AdvancedSettings)
+            controls.Children.Add(DriverButton(item));
         controls.Children.Add(FlipButton(item));
 
         if (item.Grouped && item.Cars.Count > 1)
@@ -692,10 +695,13 @@ public sealed class VehicleCards
             else if (_consist.CanJoin(item, index))
                 menu.AddItem(App.Loc["TipJoin"], () => _consist.Join(item));
 
-            var crew = new MenuItem { Header = App.Loc["CrewLabel"] };
-            foreach (var (type, key) in CrewChoices.All)
-                crew.Items.Add(MenuItems.Choice(App.Loc[key], item.Driver == type, () => _consist.SetCrew(item, type)));
-            menu.Items.Add(crew);
+            if (AppServices.Current.Settings.AdvancedSettings)
+            {
+                var crew = new MenuItem { Header = App.Loc["CrewLabel"] };
+                foreach (var (type, key) in CrewChoices.All)
+                    crew.Items.Add(MenuItems.Choice(App.Loc[key], item.Driver == type, () => _consist.SetCrew(item, type)));
+                menu.Items.Add(crew);
+            }
 
             // The member the panels show, not always the first car of a unit.
             menu.AddItem(App.Loc["WagonNumber"] + "…",

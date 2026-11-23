@@ -4,6 +4,7 @@ using System.Linq;
 using Avalonia;
 using Avalonia.Automation;
 using Avalonia.Controls;
+using Avalonia.Controls.Documents;
 using Avalonia.Controls.Templates;
 using Avalonia.Input;
 using Avalonia.Layout;
@@ -536,8 +537,21 @@ public sealed class VehicleBrowser
     // mostly by who runs them.
     private static Control BrowserLabel(VehicleTexture texture, IReadOnlyList<VehicleTexture>? set)
     {
-        // Clear of the scroll bar, which lies over the right edge of the list.
-        var row = new DockPanel { Margin = new Thickness(0, 0, 10, 0) };
+        // Clear of the scroll bar, which lies over the right edge of the list. The name comes
+        // first: a long operator is cut short to a width of its own, and either ends in "…"
+        // rather than running into the other.
+        var row = new Grid { Margin = new Thickness(0, 0, 10, 0), ColumnDefinitions = new ColumnDefinitions("*,Auto") };
+
+        var name = new TextBlock { TextTrimming = TextTrimming.CharacterEllipsis };
+        name.Inlines!.Add(new Run(BrowserName(texture)));
+        if (set is { Count: > 1 })
+        {
+            var count = new Run($"  ×{set.Count}");
+            if (Avalonia.Application.Current?.TryGetResource("CarbonFgDim", null, out var dim) == true && dim is IBrush brush)
+                count.Foreground = brush;
+            name.Inlines.Add(count);
+        }
+        row.Children.Add(name);
 
         string? op = texture.Meta?.Operator;
         if (!string.IsNullOrWhiteSpace(op) && op != "?")
@@ -546,18 +560,13 @@ public sealed class VehicleBrowser
             {
                 Text = op,
                 Opacity = 0.55,
+                MaxWidth = 110,
                 Margin = new Thickness(8, 0, 0, 0),
                 TextTrimming = TextTrimming.CharacterEllipsis
             };
-            DockPanel.SetDock(operatorText, Dock.Right);
+            Grid.SetColumn(operatorText, 1);
             row.Children.Add(operatorText);
         }
-
-        var name = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 6 };
-        name.Children.Add(new TextBlock { Text = BrowserName(texture) });
-        if (set is { Count: > 1 })
-            name.Children.Add(new TextBlock { Text = $"×{set.Count}", Opacity = 0.55 });
-        row.Children.Add(name);
 
         return row;
     }

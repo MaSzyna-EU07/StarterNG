@@ -58,5 +58,9 @@ public sealed class WarehouseEdit
 
         PresetStore.Save(Name, entry);
         _saved = entry;
+        Saved?.Invoke(Name, entry);
     }
+
+    /// <summary>The consist was written under its name, with this entry - for the list showing it.</summary>
+    public event Action<string, string>? Saved;
 }

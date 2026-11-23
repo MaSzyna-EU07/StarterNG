@@ -33,13 +33,18 @@ public static class ScenerySyntax
     /// Whether the simulator opens an include, named as the include names it; null
     /// leaves includes unchecked.
     /// </param>
-    public static Result Scan(string text, string file, Func<string, bool>? opensInclude = null)
+    /// <param name="loadsVehicle">
+    /// Whether the simulator finds a vehicle's definition, by its folder under dynamic
+    /// and its .mmd's name, as the scenery writes them; null leaves vehicles unchecked.
+    /// </param>
+    public static Result Scan(string text, string file, Func<string, bool>? opensInclude = null,
+                              Func<string, string, bool>? loadsVehicle = null)
     {
         string code = SceneryCode.Mask(text, out int unclosed);
         var tokens = SceneryCode.Tokens(code);
         var lines = new SceneryLines(text, file);
 
-        var simulator = new Reading(tokens, lines, opensInclude, asSimulator: true);
+        var simulator = new Reading(tokens, lines, opensInclude, asSimulator: true, loadsVehicle);
         simulator.Run();
         var author = new Reading(tokens, lines, null, asSimulator: false);
         author.Run();
@@ -110,7 +115,8 @@ public static class ScenerySyntax
     }
 
     private sealed class Reading(
-        List<SceneryCode.Token> tokens, SceneryLines lines, Func<string, bool>? opensInclude, bool asSimulator)
+        List<SceneryCode.Token> tokens, SceneryLines lines, Func<string, bool>? opensInclude, bool asSimulator,
+        Func<string, string, bool>? loadsVehicle = null)
     {
         public readonly List<(int Start, int End, string Name)> Trainsets = new();
         public readonly List<(int, int)> Loose = new();
@@ -253,6 +259,9 @@ public static class ScenerySyntax
                 return tokens.Count - 1;
             }
 
+            if (complete)
+                Definition(at, name);
+
             var (fault, trackless) = CheckFields(at, complete, inTrainset, name);
             if (fault is null && !closed)
                 fault = SceneryFaultKind.VehicleNotClosed;
@@ -265,6 +274,16 @@ public static class ScenerySyntax
             if (_open is { } open)
                 _open = open with { Vehicles = open.Vehicles + 1 };
             return end;
+        }
+
+        // Without its .fiz the simulator makes nothing of the vehicle, and reads on to the next.
+        private void Definition(int at, string name)
+        {
+            string folder = tokens[at + 5].Text;
+            string mmd = tokens[at + 7].Text;
+            if (loadsVehicle is null || !Plain(folder) || !Plain(mmd) || loadsVehicle(folder, mmd))
+                return;
+            Fault(SceneryFaultKind.VehicleMissing, tokens[at].Index, name, $"{folder}/{mmd}.fiz");
         }
 
         // As the author meant it: there to be listed, whatever is wrong with it.
@@ -378,7 +397,8 @@ public static class ScenerySyntax
             while (end < tokens.Count && tokens[end].Text != "end")
                 end++;
             int last = Math.Min(end, tokens.Count - 1);
-            if (Lost(at + 1, last) is not null)
+            // No "end" at all is a mistake too, even where the file runs out before it costs anything.
+            if (end >= tokens.Count || Lost(at + 1, last) is not null)
                 Fault(SceneryFaultKind.IncludeNotClosed, token.Index, token: name, swallowed: (at + 1, last));
             return last;
         }

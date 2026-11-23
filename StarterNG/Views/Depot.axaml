@@ -137,7 +137,8 @@
                                 HorizontalContentAlignment="Center"
                                 Click="AddToWarehouseButton_OnClick"
                                 Content="{Binding [AddToWarehouse], Source={x:Static starterNg:App.Loc}}" />
-                        <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal" Spacing="16"
+                        <!-- The advanced mode's own: the standard mode lists every consist with vehicles. -->
+                        <StackPanel Name="consistFilters" DockPanel.Dock="Bottom" Orientation="Horizontal" Spacing="16"
                                     Margin="2,6,0,0">
                             <CheckBox Name="depotDrivableOnlyCheck" FontSize="12"
                                       IsCheckedChanged="ConsistFilter_OnChanged"

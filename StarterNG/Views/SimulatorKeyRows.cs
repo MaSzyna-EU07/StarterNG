@@ -83,7 +83,7 @@ internal sealed class SimulatorKeyRows
         // Marks the input as one of these rows, which tell about their own changes.
         input.Tag = key;
 
-        var setting = new SettingRow { ConfigKey = key.Key, Content = input };
+        var setting = new SettingRow { ConfigKey = key.Key, Content = input, Advanced = !SimulatorKeys.Standard.Contains(key.Key) };
         var row = new Row(key, setting, input);
         _rows.Add(row);
 

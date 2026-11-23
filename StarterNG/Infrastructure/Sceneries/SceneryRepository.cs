@@ -103,7 +103,7 @@ public sealed class SceneryRepository : ISceneryRepository
 
             string own = LegacyText.Decode(_files.ReadAllBytes(path), out var ownEncoding);
             string text = SceneryIncludes.Inline(own, ReadInclude);
-            var scenery = _parser.Parse(path, text, OpensInclude);
+            var scenery = _parser.Parse(path, text, OpensInclude, LoadsVehicle);
             scenery.HasCompanionTimetable = binaryTerrain;
             scenery.Sources = sources;
             scenery.TextEncoding = ownEncoding;
@@ -123,6 +123,15 @@ public sealed class SceneryRepository : ISceneryRepository
     /// folds only the letters A to Z and of two folders named alike takes the first.
     /// </summary>
     private bool Opens(string name) => ResolveInclude(name) is not null;
+
+    /// <summary>
+    /// Whether the simulator finds a vehicle's definition - its .fiz, named after its
+    /// .mmd, in its folder under dynamic - whatever the case of the letters. Without
+    /// it the simulator leaves the vehicle out; a folder there all the same, empty,
+    /// makes no difference.
+    /// </summary>
+    private bool LoadsVehicle(string folder, string mmd) =>
+        _names.Resolve(_paths.Dynamic, $"{folder}/{mmd}.fiz") is not null;
 
     /// <summary>
     /// An include's file as it is named on disk, from the scenery folder, whatever

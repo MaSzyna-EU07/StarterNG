@@ -158,14 +158,12 @@ public class ScreenReaderNamesTests
         var slider = new Slider();
         var row = new SettingRow { Label = "Ekran", Content = Row(check, slider) };
         row.Description = "Gra zajmie cały ekran.";
-        row.IdleNote = "Ten symulator nie zna tego ustawienia.";
 
-        Assert.Equal("Gra zajmie cały ekran., Ten symulator nie zna tego ustawienia.", AutomationProperties.GetHelpText(check));
+        Assert.Equal("Gra zajmie cały ekran.", AutomationProperties.GetHelpText(check));
         Assert.Equal(AutomationProperties.GetHelpText(check), AutomationProperties.GetHelpText(slider));
         Assert.Null(AutomationProperties.GetName(check));
 
         row.Description = null;
-        row.IdleNote = null;
         Assert.Null(AutomationProperties.GetHelpText(check));
     }
 

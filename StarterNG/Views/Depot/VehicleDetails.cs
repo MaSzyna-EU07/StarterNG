@@ -280,6 +280,8 @@ public sealed class VehicleDetails
         };
         driver.MinWidth = 0;
         driver.HorizontalAlignment = HorizontalAlignment.Stretch;
+        // Shown but not changed in the standard mode: who drives is for the advanced one.
+        driver.IsEnabled = AppServices.Current.Settings.AdvancedSettings;
 
         var rows = new StackPanel();
         rows.Children.Add(Row(App.Loc["CrewLabel"], driver));
