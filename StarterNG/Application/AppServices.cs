@@ -43,6 +43,7 @@ public sealed class AppServices
             paths.FromRoot("starter"),
             paths.FromRoot("lang")));
         Sceneries = new SceneryRepository(files, paths, log, new SceneryParser(clock, random));
+        BinaryTerrain = new BinaryTerrainFiles(files, paths, log, settingsPaths.SbtCleanupPath());
         SceneryImages = new SceneryImageLocator(files);
         MiniTextures = new MiniTextureIndex(files, paths);
 
@@ -110,6 +111,8 @@ public sealed class AppServices
     public ISceneryRepository Sceneries { get; }
 
     public SceneryFileWatch SceneryFiles { get; }
+
+    public BinaryTerrainFiles BinaryTerrain { get; }
 
     public SceneryImageLocator SceneryImages { get; }
 

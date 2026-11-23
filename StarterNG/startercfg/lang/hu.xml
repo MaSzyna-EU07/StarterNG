@@ -69,6 +69,10 @@
     <String key="FavoriteAdd">Hozzáadás a kedvencekhez</String>
     <String key="FavoriteRemove">Eltávolítás a kedvencek közül</String>
     <String key="OpenSceneryFolder">Mappa megnyitása</String>
+    <String key="DeleteSbt">SBT törlése</String>
+    <String key="DeleteSbtConfirm">Törlöd: {0} ({1} MB)? A szimulátor a színtér fájljaiból a következő betöltéskor újra elkészíti, ami tovább tart.</String>
+    <String key="DeleteSbtNoOriginal">{0} megmarad: nincs miből újra elkészíteni, hiányzik: {1}. Nélküle a színtér elveszítené a terepet.</String>
+    <String key="DeleteSbtFailed">Nem sikerült törölni: {0}. Lehet, hogy a szimulátor használja, vagy a mappa csak olvasható.</String>
     <String key="OptionalIncludes">Opcionális elemek</String>
     <String key="OpenTextureFolder">Textúramappa megnyitása</String>
     <String key="CopyTextureName">Név másolása</String>

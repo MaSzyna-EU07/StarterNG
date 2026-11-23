@@ -53,6 +53,26 @@ public class SceneryFileWatchTests
         Assert.Equal("Katowice Główne", change.Fresh!.Name);
     }
 
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void An_sbt_made_or_removed_makes_the_scenery_read_anew(bool there)
+    {
+        string sbt = TestInstallation.At("scenery", "kato.sbt");
+        var files = Folder();
+        if (there)
+            files.WithFile(sbt, "EU07SBT2");
+        var (installation, watch, _) = Rig(files);
+
+        if (there)
+            files.DeleteFile(sbt);
+        else
+            files.WithFile(sbt, "EU07SBT2");
+
+        var change = Assert.Single(watch.Look(installation.Library.Sceneries));
+        Assert.Equal(!there, change.Fresh!.HasCompanionTimetable);
+    }
+
     [Fact]
     public void An_include_that_changed_or_came_makes_the_scenery_read_anew()
     {

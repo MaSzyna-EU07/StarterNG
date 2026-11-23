@@ -69,6 +69,10 @@
     <String key="FavoriteAdd">Přidat do oblíbených</String>
     <String key="FavoriteRemove">Odebrat z oblíbených</String>
     <String key="OpenSceneryFolder">Otevřít složku</String>
+    <String key="DeleteSbt">Smazat SBT</String>
+    <String key="DeleteSbtConfirm">Smazat {0} ({1} MB)? Simulátor jej znovu sestaví ze souborů scenérie při jejím dalším načtení, které potrvá déle.</String>
+    <String key="DeleteSbtNoOriginal">Soubor {0} zůstává: není z čeho jej znovu sestavit, chybí {1}. Bez něj by scenérie přišla o terén.</String>
+    <String key="DeleteSbtFailed">Soubor {0} nelze smazat. Možná jej používá simulátor, nebo je složka jen pro čtení.</String>
     <String key="OptionalIncludes">Volitelné prvky</String>
     <String key="OpenTextureFolder">Otevřít složku s texturami</String>
     <String key="CopyTextureName">Kopírovat název</String>

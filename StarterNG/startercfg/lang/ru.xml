@@ -69,6 +69,10 @@
     <String key="FavoriteAdd">Добавить в избранное</String>
     <String key="FavoriteRemove">Удалить из избранного</String>
     <String key="OpenSceneryFolder">Открыть папку</String>
+    <String key="DeleteSbt">Удалить SBT</String>
+    <String key="DeleteSbtConfirm">Удалить {0} ({1} МБ)? Симулятор заново соберёт его из файлов сценария при следующей загрузке, которая займёт больше времени.</String>
+    <String key="DeleteSbtNoOriginal">Файл {0} остаётся: его не из чего собрать заново, нет {1}. Без него сценарий лишится рельефа.</String>
+    <String key="DeleteSbtFailed">Не удалось удалить {0}. Возможно, его использует симулятор или папка только для чтения.</String>
     <String key="OptionalIncludes">Дополнительные элементы</String>
     <String key="OpenTextureFolder">Открыть папку с текстурами</String>
     <String key="CopyTextureName">Копировать название</String>
