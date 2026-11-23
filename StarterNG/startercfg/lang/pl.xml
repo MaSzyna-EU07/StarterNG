@@ -71,6 +71,10 @@
     <String key="FavoriteAdd">Dodaj do ulubionych</String>
     <String key="FavoriteRemove">Usuń z ulubionych</String>
     <String key="OpenSceneryFolder">Otwórz folder</String>
+    <String key="DeleteSbt">Usuń SBT</String>
+    <String key="DeleteSbtConfirm">Usunąć {0} ({1} MB)? Symulator zbuduje go od nowa z plików scenerii przy jej następnym wczytaniu, które potrwa dłużej.</String>
+    <String key="DeleteSbtNoOriginal">Plik {0} zostaje: sceneria nie ma z czego go odbudować, brakuje {1}. Bez niego straciłaby teren.</String>
+    <String key="DeleteSbtFailed">Nie udało się usunąć {0}. Może używa go symulator albo folder jest tylko do odczytu.</String>
     <String key="OptionalIncludes">Elementy opcjonalne</String>
     <String key="OpenTextureFolder">Otwórz folder tekstury</String>
     <String key="CopyTextureName">Kopiuj nazwę</String>

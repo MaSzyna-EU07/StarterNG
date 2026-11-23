@@ -160,6 +160,11 @@ public partial class App : Avalonia.Application
                     });
                 });
 
+                // Ahead of the sceneries, so the list knows which still have their .sbt.
+                try { AppServices.Current.BinaryTerrain.CleanUpOnce(); }
+                catch (Exception ex) { Diagnostics.Log("sbt cleanup", ex); }
+                // Before any window lists the warehouse; it catches what it meets itself.
+                PresetStore.TakeFromOldStarter();
                 AppServices.Current.Library.Load(progress);
             }).ContinueWith(load =>
             {

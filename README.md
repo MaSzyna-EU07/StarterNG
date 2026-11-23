@@ -10,7 +10,7 @@ needed on the target machine. The commands below are the same ones CI runs, see
 
 Requirements:
 
-- .NET SDK 9
+- .NET SDK 10
 - Linux: a native toolchain and zlib headers — `sudo apt install clang zlib1g-dev`
   (Debian/Ubuntu) or `sudo dnf install clang zlib-devel` (Fedora)
 - Windows: the Visual Studio C++ build tools (Desktop development with C++)

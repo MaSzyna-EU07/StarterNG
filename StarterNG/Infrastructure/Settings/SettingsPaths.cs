@@ -53,6 +53,9 @@ public sealed class SettingsPaths
     /// <summary>The sceneries starred in the list.</summary>
     public string FavoritesPath() => Path.Combine(UserConfigDirectory(), "favorites.txt");
 
+    /// <summary>Which cleanup of the .sbt files each installation had.</summary>
+    public string SbtCleanupPath() => Path.Combine(UserConfigDirectory(), "sbt-cleanup.txt");
+
     public string UserConfigDirectory() =>
         Path.GetDirectoryName(UserConfigPath()) ?? _environment.BaseDirectory;
 }
