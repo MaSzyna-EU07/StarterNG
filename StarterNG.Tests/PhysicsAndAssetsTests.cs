@@ -66,6 +66,36 @@ public class PhysicsAndAssetsTests
     }
 
     [Fact]
+    public void Comments_between_include_parameters_are_not_parameters()
+    {
+        // As in the game: db/zans_v1/astra_rail_14_96m_86m3_ke_1.fiz feeds zans.fiz.inc this way.
+        const string fiz = """
+            include
+            zans.fiz.inc
+            21000 //masa
+            68 //MaxLoad
+            aviation_fuel,crude_oil,petrol
+            14.96 //L
+            end
+            """;
+        var installation = new TestInstallation(new InMemoryFileSystem()
+            .WithFile(Fiz("db", "zans_v1", "astra"), fiz)
+            .WithFile(TestInstallation.At("dynamic", "db", "zans_v1", "zans.fiz.inc"),
+                      """
+                      Param. Category=train M=(p1) Vmax=100 # masa [kg]
+                      Load: MaxLoad=(p2) LoadQ=tonns LoadAccepted=(p3) LoadSpeed=0.1
+                      Dimensions: L=(p4) H=4.285
+                      """));
+
+        var physics = installation.Physics.For("db/zans_v1/", "astra")!;
+
+        Assert.Equal(21000, physics.Mass);
+        Assert.Equal(68, physics.MaxLoad);
+        Assert.Equal("aviation_fuel,crude_oil,petrol", physics.LoadAccepted);
+        Assert.Equal(14.96, physics.Length);
+    }
+
+    [Fact]
     public void An_include_named_in_other_case_is_followed()
     {
         var installation = new TestInstallation(new InMemoryFileSystem(caseSensitive: true)
