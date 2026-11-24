@@ -6,6 +6,8 @@ namespace StarterNG.Tests;
 
 // PresetStore keeps the disk of the first test that reaches it, a fake one as every
 // composition root in the tests is built on fakes. So each test has a name to itself.
+// Puts in services of its own: not while the controls read theirs.
+[Collection(AvaloniaControls.Name)]
 public class WarehouseEditTests
 {
     private const string Text =
@@ -94,6 +96,23 @@ public class WarehouseEditTests
         _edit.Save();
 
         Assert.Null(Stored("edit-changed"));
+    }
+
+    [Fact]
+    public void A_write_tells_the_list_the_name_and_the_entry_and_no_write_tells_nothing()
+    {
+        var told = new List<(string Name, string Entry)>();
+        _edit.Saved += (name, entry) => told.Add((name, entry));
+        var trainset = _edit.Open(Preset("edit-told"));
+
+        _edit.Save();
+        Assert.Empty(told);
+
+        trainset.Vehicles.Add(trainset.Vehicles[0].Clone());
+        _edit.Save();
+
+        Assert.Equal([("edit-told", ConsistText.Serialize(trainset))], told);
+        PresetStore.Delete("edit-told");
     }
 
     [Fact]

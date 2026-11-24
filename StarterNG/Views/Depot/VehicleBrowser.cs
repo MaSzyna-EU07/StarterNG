@@ -2,7 +2,9 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Avalonia;
+using Avalonia.Automation;
 using Avalonia.Controls;
+using Avalonia.Controls.Documents;
 using Avalonia.Controls.Templates;
 using Avalonia.Input;
 using Avalonia.Layout;
@@ -59,6 +61,8 @@ public sealed class VehicleBrowser
 
     private DispatcherTimer? _searchTimer;
 
+    private readonly SearchResultsTeller _searchResults;
+
     private Func<string?, bool>? _categoryFilter;
     private string? _classFilter;
 
@@ -81,6 +85,7 @@ public sealed class VehicleBrowser
 
         vehicleListBox.ContextRequested += List_OnContextRequested;
 
+        _searchResults = new SearchResultsTeller(searchBox, () => vehicleListBox.ItemCount);
         _searchTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(220) };
         _searchTimer.Tick += (_, _) =>
         {
@@ -338,6 +343,7 @@ public sealed class VehicleBrowser
 
         Selected = null;
         miniPreview.Source = null;
+        miniPreview.ClearValue(AutomationProperties.NameProperty);
         addVehicleButton.IsEnabled = false;
 
         vehicleListBox.Items.Clear();
@@ -381,10 +387,12 @@ public sealed class VehicleBrowser
 
     public void VehicleListBox_OnSelectionChanged(object? sender, SelectionChangedEventArgs e)
     {
-        if (vehicleListBox.SelectedItem is ListBoxItem { Tag: VehicleTexture texture })
+        if (vehicleListBox.SelectedItem is ListBoxItem { Tag: VehicleTexture texture } row)
         {
             Selected = texture;
             miniPreview.Source = _minis.Get(_db.ResolveMiniName(texture), MiniPreviewHeight);
+            // Under the mouse a reader hears which vehicle the picture shows.
+            AutomationProperties.SetName(miniPreview, ScreenReaderNames.TextOf(row.Content));
             addVehicleButton.IsEnabled = true;
             SyncCombosTo(texture);
 
@@ -397,6 +405,7 @@ public sealed class VehicleBrowser
         {
             Selected = null;
             miniPreview.Source = null;
+            miniPreview.ClearValue(AutomationProperties.NameProperty);
             addVehicleButton.IsEnabled = false;
         }
     }
@@ -528,8 +537,21 @@ public sealed class VehicleBrowser
     // mostly by who runs them.
     private static Control BrowserLabel(VehicleTexture texture, IReadOnlyList<VehicleTexture>? set)
     {
-        // Clear of the scroll bar, which lies over the right edge of the list.
-        var row = new DockPanel { Margin = new Thickness(0, 0, 10, 0) };
+        // Clear of the scroll bar, which lies over the right edge of the list. The name comes
+        // first: a long operator is cut short to a width of its own, and either ends in "…"
+        // rather than running into the other.
+        var row = new Grid { Margin = new Thickness(0, 0, 10, 0), ColumnDefinitions = new ColumnDefinitions("*,Auto") };
+
+        var name = new TextBlock { TextTrimming = TextTrimming.CharacterEllipsis };
+        name.Inlines!.Add(new Run(BrowserName(texture)));
+        if (set is { Count: > 1 })
+        {
+            var count = new Run($"  ×{set.Count}");
+            if (Avalonia.Application.Current?.TryGetResource("CarbonFgDim", null, out var dim) == true && dim is IBrush brush)
+                count.Foreground = brush;
+            name.Inlines.Add(count);
+        }
+        row.Children.Add(name);
 
         string? op = texture.Meta?.Operator;
         if (!string.IsNullOrWhiteSpace(op) && op != "?")
@@ -538,18 +560,13 @@ public sealed class VehicleBrowser
             {
                 Text = op,
                 Opacity = 0.55,
+                MaxWidth = 110,
                 Margin = new Thickness(8, 0, 0, 0),
                 TextTrimming = TextTrimming.CharacterEllipsis
             };
-            DockPanel.SetDock(operatorText, Dock.Right);
+            Grid.SetColumn(operatorText, 1);
             row.Children.Add(operatorText);
         }
-
-        var name = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 6 };
-        name.Children.Add(new TextBlock { Text = BrowserName(texture) });
-        if (set is { Count: > 1 })
-            name.Children.Add(new TextBlock { Text = $"×{set.Count}", Opacity = 0.55 });
-        row.Children.Add(name);
 
         return row;
     }
@@ -559,6 +576,7 @@ public sealed class VehicleBrowser
         if (_suppress || _searchTimer is null) return;
         _searchTimer.Stop();
         _searchTimer.Start();
+        _searchResults.Changed();
     }
 
     public void HideArchivalCheck_OnChanged(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
@@ -578,12 +596,29 @@ public sealed class VehicleBrowser
         var set = _db.ResolveSet(texture);
         var browserTex = set is { Count: > 0 } ? set[0] : texture;
 
-        WhileSyncing(() =>
+        KeepingKeyboardFocus(() => WhileSyncing(() =>
         {
             ApplyFilters(VehicleInfo.CategoryOf(browserTex), VehicleInfo.ClassOf(browserTex));
             Rebuild();
             SelectListEntry(browserTex);
-        });
+        }));
+    }
+
+    /// <summary>
+    /// The list is rebuilt under the keyboard: the add button is switched off for a
+    /// moment and the rows are replaced, and focus fell out of the window with them -
+    /// Tab then went nowhere until something was clicked. It is handed back.
+    /// </summary>
+    private void KeepingKeyboardFocus(Action rebuild)
+    {
+        bool onAdd = addVehicleButton.IsFocused;
+        bool inList = vehicleListBox.IsKeyboardFocusWithin;
+        rebuild();
+
+        if (onAdd && addVehicleButton.IsEnabled)
+            addVehicleButton.Focus(NavigationMethod.Tab);
+        else if (onAdd || inList)
+            (vehicleListBox.SelectedItem as Control ?? vehicleListBox).Focus(NavigationMethod.Tab);
     }
 
     private void SyncCombosTo(VehicleTexture texture)
@@ -591,7 +626,7 @@ public sealed class VehicleBrowser
         if (_syncingCombos || !ApplyFilters(VehicleInfo.CategoryOf(texture), VehicleInfo.ClassOf(texture)))
             return;
 
-        PostSyncing(() => { Rebuild(); SelectListEntry(texture); });
+        PostSyncing(() => KeepingKeyboardFocus(() => { Rebuild(); SelectListEntry(texture); }));
     }
 
     private void WhileSyncing(Action work)

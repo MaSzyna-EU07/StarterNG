@@ -7,6 +7,7 @@ using Avalonia.Markup.Xaml;
 using Avalonia.Threading;
 using StarterNG.Application;
 using StarterNG.Classes;
+using StarterNG.Controls;
 using StarterNG.Infrastructure;
 using StarterNG.Services;
 
@@ -24,6 +25,10 @@ public partial class App : Avalonia.Application
 
     public override void Initialize()
     {
+        // Before any control exists: the names are given as controls are filled in.
+        ScreenReaderNames.Install();
+        DialogKeyboard.Install();
+
         AvaloniaXamlLoader.Load(this);
 
         AppServices.Current.SettingsStore.Load();
@@ -155,6 +160,11 @@ public partial class App : Avalonia.Application
                     });
                 });
 
+                // Ahead of the sceneries, so the list knows which still have their .sbt.
+                try { AppServices.Current.BinaryTerrain.CleanUpOnce(); }
+                catch (Exception ex) { Diagnostics.Log("sbt cleanup", ex); }
+                // Before any window lists the warehouse; it catches what it meets itself.
+                PresetStore.TakeFromOldStarter();
                 AppServices.Current.Library.Load(progress);
             }).ContinueWith(load =>
             {
@@ -202,8 +212,12 @@ public partial class App : Avalonia.Application
                     if (check.ExecutableMissing())
                         await main.OfferExecutablePickAsync();
 
-                    if (CpuFeatures.LacksAvx2 && AppServices.Current.Settings.CpuNotice)
-                        await main.ShowCpuNoticeAsync();
+                    // A build without AVX2 in the folder is started instead, and needs no notice.
+                    var services = AppServices.Current;
+                    if (services.Settings.CpuNotice
+                        && services.Executables.Resolve(services.Settings, out _) is var executable
+                        && services.Executables.WillNotRunHere(executable))
+                        await main.ShowCpuNoticeAsync(executable);
                 });
             });
         }

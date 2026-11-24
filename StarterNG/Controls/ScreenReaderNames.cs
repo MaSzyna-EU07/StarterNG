@@ -1,0 +1,433 @@
+using System;
+using System.Collections.Generic;
+using System.Globalization;
+using System.Linq;
+using System.Runtime.CompilerServices;
+using Avalonia;
+using Avalonia.Automation;
+using Avalonia.Automation.Peers;
+using Avalonia.Controls;
+using Avalonia.Controls.Documents;
+using Avalonia.Controls.Primitives;
+using Avalonia.Input;
+
+namespace StarterNG.Controls;
+
+/// <summary>
+/// The names a screen reader says for controls that show no plain text of their own.
+/// Without one it said the type of whatever was inside: an icon button was read as
+/// "Material.Icons.Avalonia.MaterialIcon", a scenery in the tree as nothing at all.
+/// An icon button is named by its tooltip, a list or tree entry by the text it shows,
+/// a field by the hint written in it. A name given on purpose is left alone.
+/// </summary>
+public static class ScreenReaderNames
+{
+    // What was given here last, so a later change replaces it but nothing else.
+    private static readonly ConditionalWeakTable<StyledElement, string> Given = new();
+
+    public static void Install()
+    {
+        ContentControl.ContentProperty.Changed.AddClassHandler<Button>((b, _) => NameButton(b));
+        ToolTip.TipProperty.Changed.AddClassHandler<Button>((b, _) => NameButton(b));
+
+        ContentControl.ContentProperty.Changed.AddClassHandler<ListBoxItem>((i, _) => Give(i, TextOf(i.Content)));
+        HeaderedItemsControl.HeaderProperty.Changed.AddClassHandler<TreeViewItem>((i, _) => Give(i, TextOf(i.Header)));
+
+        HeaderedContentControl.HeaderProperty.Changed.AddClassHandler<HeaderedContentControl>((c, _) => NameGroup(c));
+
+        ComboBox.PlaceholderTextProperty.Changed.AddClassHandler<ComboBox>((c, _) => Give(c, c.PlaceholderText));
+        TextBox.PlaceholderTextProperty.Changed.AddClassHandler<TextBox>((t, _) => Give(t, t.PlaceholderText));
+        SelectingItemsControl.SelectionChangedEvent.AddClassHandler<ComboBox>((c, _) => TellChoice(c));
+
+        Control.LoadedEvent.AddClassHandler<ComboBox>((c, _) => NameByLabel(c));
+        Control.LoadedEvent.AddClassHandler<TextBox>((c, _) => NameByLabel(c));
+        Control.LoadedEvent.AddClassHandler<Slider>((c, _) => NameByLabel(c));
+        Control.LoadedEvent.AddClassHandler<NumericUpDown>((c, _) => NameByLabel(c));
+        Control.LoadedEvent.AddClassHandler<DatePicker>((c, _) => NameByLabel(c));
+        Control.LoadedEvent.AddClassHandler<TimePicker>((c, _) => NameByLabel(c));
+        Control.LoadedEvent.AddClassHandler<Image>((i, _) => NamePicture(i));
+        Control.LoadedEvent.AddClassHandler<PathIcon>((i, _) => NamePicture(i));
+
+        TemplatedControl.TemplateAppliedEvent.AddClassHandler<DatePicker>((p, e) => KeepPickerButton(p, e));
+        TemplatedControl.TemplateAppliedEvent.AddClassHandler<TimePicker>((p, e) => KeepPickerButton(p, e));
+        DatePicker.SelectedDateProperty.Changed.AddClassHandler<DatePicker>((p, _) => NamePicker(p));
+        TimePicker.SelectedTimeProperty.Changed.AddClassHandler<TimePicker>((p, _) => NamePicker(p));
+        AutomationProperties.NameProperty.Changed.AddClassHandler<DatePicker>((p, _) => NamePicker(p));
+        AutomationProperties.NameProperty.Changed.AddClassHandler<TimePicker>((p, _) => NamePicker(p));
+
+        TemplatedControl.TemplateAppliedEvent.AddClassHandler<NumericUpDown>((n, e) => ForwardToTextBox(n, e));
+        TemplatedControl.TemplateAppliedEvent.AddClassHandler<ButtonSpinner>((s, e) => NameSpinButtons(s, e));
+
+        AutomationProperties.NameProperty.Changed.AddClassHandler<Control>((c, e) => TranslateTemplateName(c, e));
+        AppLanguage.Changed += RetranslateTemplateNames;
+    }
+
+    /// <summary>
+    /// A number box is reached through the text box inside it, which had no name: the
+    /// reader heard "edit, 0,1" and not what the number is. It takes the box's name and
+    /// explanation, and keeps them when they change.
+    /// </summary>
+    private static void ForwardToTextBox(NumericUpDown box, TemplateAppliedEventArgs e)
+    {
+        if (e.NameScope.Find<TextBox>("PART_TextBox") is not { } text)
+            return;
+
+        text.Bind(AutomationProperties.NameProperty, box.GetObservable(AutomationProperties.NameProperty));
+        text.Bind(AutomationProperties.HelpTextProperty, box.GetObservable(AutomationProperties.HelpTextProperty));
+    }
+
+    /// <summary>
+    /// The arrows of a number box were read as "Avalonia.Controls.Shapes.Path" and were two
+    /// more stops for Tab. They say what they do, and Tab passes them: the arrow keys in the
+    /// box do the same, as in any spin box of Windows.
+    /// </summary>
+    private static void NameSpinButtons(ButtonSpinner spinner, TemplateAppliedEventArgs e)
+    {
+        foreach (var (part, key) in new[] { ("PART_IncreaseButton", "SpinUp"), ("PART_DecreaseButton", "SpinDown") })
+        {
+            if (e.NameScope.Find<Control>(part) is not { } button)
+                continue;
+
+            KeyboardNavigation.SetIsTabStop(button, false);
+            TemplateNames.AddOrUpdate(button, key);
+            AutomationProperties.SetName(button, AppLanguage.Text(key));
+        }
+    }
+
+    /// <summary>
+    /// The English names Avalonia's own templates give their parts - the window's buttons,
+    /// the arrows of a scroll bar - and the texts they are read as instead.
+    /// </summary>
+    private static readonly Dictionary<string, string> EnglishTemplateNames = new(StringComparer.Ordinal)
+    {
+        ["Minimize"] = "ChromeMinimize",
+        ["Maximize"] = "ChromeMaximize",
+        ["Restore"] = "ChromeRestore",
+        ["Close"] = "ChromeClose",
+        ["Line up"] = "ScrollLineUp",
+        ["Line down"] = "ScrollLineDown",
+        ["Page up"] = "ScrollPageUp",
+        ["Page down"] = "ScrollPageDown",
+        ["Column left"] = "ScrollColumnLeft",
+        ["Column right"] = "ScrollColumnRight",
+        ["Page left"] = "ScrollPageLeft",
+        ["Page right"] = "ScrollPageRight",
+        ["Position"] = "ScrollPosition",
+    };
+
+    // The parts given a translated name, with the text they were given it from.
+    private static readonly ConditionalWeakTable<Control, string> TemplateNames = new();
+
+    /// <summary>An English name set by a template is replaced by the same thing in the starter's language.</summary>
+    private static void TranslateTemplateName(Control control, AvaloniaPropertyChangedEventArgs e)
+    {
+        if (e.Priority == Avalonia.Data.BindingPriority.LocalValue || e.NewValue is not string english
+            || !EnglishTemplateNames.TryGetValue(english, out string? key)
+            || AppLanguage.Text(key) is not { Length: > 0 } text || text == english)
+            return;
+
+        TemplateNames.AddOrUpdate(control, key);
+        AutomationProperties.SetName(control, text);
+    }
+
+    private static void RetranslateTemplateNames()
+    {
+        foreach (var (control, key) in TemplateNames)
+            AutomationProperties.SetName(control, AppLanguage.Text(key));
+    }
+
+    // A date or time picker is reached through the button inside it, which was read as
+    // "Avalonia.Controls.Grid": its texts are filled in only after the name is looked for.
+    private static readonly ConditionalWeakTable<TemplatedControl, Button> PickerButtons = new();
+
+    private static void KeepPickerButton(TemplatedControl picker, TemplateAppliedEventArgs e)
+    {
+        if (e.NameScope.Find<Button>("PART_FlyoutButton") is not { } button)
+            return;
+
+        PickerButtons.AddOrUpdate(picker, button);
+        NamePicker(picker);
+    }
+
+    private static void NamePicker(TemplatedControl picker)
+    {
+        if (!PickerButtons.TryGetValue(picker, out var button))
+            return;
+
+        string? value = picker switch
+        {
+            DatePicker date => DateText(date.SelectedDate, date.YearVisible),
+            TimePicker time => TimeText(time.SelectedTime),
+            _ => null
+        };
+        AutomationProperties.SetName(button, PickerText(AutomationProperties.GetName(picker), value));
+    }
+
+    /// <summary>The picker's label and what it holds, as the button inside it is read.</summary>
+    public static string? PickerText(string? label, string? value)
+    {
+        if (string.IsNullOrEmpty(label))
+            return value;
+        return string.IsNullOrEmpty(value) ? label : $"{label}: {value}";
+    }
+
+    /// <summary>Day and month in words, the year too when the picker shows one.</summary>
+    public static string? DateText(DateTimeOffset? date, bool withYear) =>
+        date?.ToString(withYear ? "D" : "M", CultureInfo.CurrentCulture);
+
+    public static string? TimeText(TimeSpan? time) =>
+        time?.ToString(@"hh\:mm", CultureInfo.InvariantCulture);
+
+    // The labels already followed, so a label read again is not followed twice.
+    private static readonly ConditionalWeakTable<TextBlock, Control> Followed = new();
+
+    /// <summary>Longer than this, a text beside a field is a description, not its label.</summary>
+    private const int LabelLength = 60;
+
+    /// <summary>
+    /// A field named by the label a sighted reader sees beside it, and named again when
+    /// the label changes with the language. A name given otherwise is left alone.
+    /// </summary>
+    public static void NameByLabel(Control input)
+    {
+        if (LabelOf(input) is not { } label)
+            return;
+
+        Give(input, TextOf(label));
+        if (Followed.TryAdd(label, input))
+            label.PropertyChanged += (_, e) =>
+            {
+                if (e.Property == TextBlock.TextProperty)
+                    Give(input, TextOf(label));
+            };
+    }
+
+    /// <summary>
+    /// The text that labels a field: to its left in the same grid row, above it in the
+    /// same grid column, or just before it in any other panel. Null when there is none.
+    /// </summary>
+    public static TextBlock? LabelOf(Control input)
+    {
+        if (input.Parent is not Panel panel)
+            return null;
+
+        var labels = panel.Children.OfType<TextBlock>().Where(IsLabel).ToList();
+        // A panel that only holds inputs - a number box and the list shown in its place -
+        // is labelled where it stands itself.
+        if (labels.Count == 0)
+            return panel.Parent is Panel ? LabelOf(panel) : null;
+        if (panel is Grid)
+        {
+            int row = Grid.GetRow(input), column = Grid.GetColumn(input);
+            return labels.Where(t => Grid.GetRow(t) == row && Grid.GetColumn(t) < column)
+                       .OrderByDescending(Grid.GetColumn).FirstOrDefault()
+                   ?? labels.FirstOrDefault(t => Grid.GetColumn(t) == column && Grid.GetRow(t) == row - 1);
+        }
+
+        int at = panel.Children.IndexOf(input);
+        return at > 0 && panel.Children[at - 1] is TextBlock before && labels.Contains(before) ? before : null;
+    }
+
+    private static bool IsLabel(TextBlock block) =>
+        block.IsVisible && TextOf(block) is { Length: <= LabelLength };
+
+    /// <summary>
+    /// A panel with a title, such as Scenerie or Skład, made a named group: the reader
+    /// says where focus went in, where before the panel was not there for it at all.
+    /// Tabs and expanders, which are panels with a title too, speak for themselves.
+    /// </summary>
+    private static void NameGroup(HeaderedContentControl panel)
+    {
+        if (panel.GetType() != typeof(HeaderedContentControl) && panel is not SettingsSection)
+            return;
+
+        string? name = TextOf(panel.Header);
+        Give(panel, name);
+        AutomationProperties.SetControlTypeOverride(panel, name is null ? null : AutomationControlType.Group);
+        // Content as well as control: NVDA passes over a group that is not both.
+        AutomationProperties.SetAccessibilityView(panel, name is null ? AccessibilityView.Default : AccessibilityView.Content);
+    }
+
+    // How far up a picture looks for what it shows: the button or card it sits in,
+    // not the panel around them.
+    private const int PictureReach = 3;
+
+    /// <summary>
+    /// Names a picture after the caption beside it or the button or card it lies in. Under the mouse a reader
+    /// hears what lies there, and a bare picture said nothing: a vehicle in the consist,
+    /// the logo, an icon on a button.
+    /// </summary>
+    public static void NamePicture(Control picture)
+    {
+        if ((!string.IsNullOrEmpty(AutomationProperties.GetName(picture)) && !Given.TryGetValue(picture, out _))
+            || AutomationProperties.GetLabeledBy(picture) is not null)
+            return;
+
+        // A caption beside it says what it shows, such as a vehicle class by its picture.
+        if (picture.Parent is Panel row
+            && row.Children.OfType<TextBlock>().FirstOrDefault(t => t.IsVisible && !string.IsNullOrWhiteSpace(t.Text)) is { } caption)
+        {
+            AutomationProperties.SetLabeledBy(picture, caption);
+            return;
+        }
+
+        var holder = picture.Parent as Control;
+        for (int i = 0; i < PictureReach && holder is not null; i++, holder = holder.Parent as Control)
+        {
+            if (!string.IsNullOrEmpty(AutomationProperties.GetName(holder)) || holder is Button)
+            {
+                AutomationProperties.SetLabeledBy(picture, holder);
+                return;
+            }
+            if (TextOf(ToolTip.GetTip(holder)) is { } tip)
+            {
+                Give(picture, tip);
+                return;
+            }
+        }
+    }
+
+    /// <summary>
+    /// Says what a closed list now holds when the arrow keys change it. Avalonia tells
+    /// Windows of a new value only for a list one types into, so NVDA said nothing.
+    /// </summary>
+    public static void TellChoice(ComboBox combo)
+    {
+        if (combo.IsKeyboardFocusWithin && !combo.IsDropDownOpen && !combo.IsEditable)
+            Announcer.Say(combo, SpokenItem(combo.SelectedItem));
+    }
+
+    /// <summary>What a reader is told a list entry is, as Avalonia tells it.</summary>
+    public static string? SpokenItem(object? item) => item switch
+    {
+        null => null,
+        Control c when AutomationProperties.GetName(c) is { Length: > 0 } name => name,
+        ContentControl c => TextOf(c.Content) ?? c.Content?.ToString(),
+        _ => TextOf(item) ?? item.ToString(),
+    };
+
+    // A sign such as "?" says nothing read aloud; its tooltip says what it does.
+    private static void NameButton(Button button) =>
+        Give(button, button.Content is string text && text.Any(char.IsLetterOrDigit)
+            ? null
+            : TextOf(ToolTip.GetTip(button)) ?? TextOf(button.Content));
+
+    // The descriptions given here, so a later one replaces it but nothing else.
+    private static readonly ConditionalWeakTable<StyledElement, string> Described = new();
+
+    /// <summary>
+    /// The inputs of a setting row, described by the row's explanation and the note on
+    /// why the simulator would pass it over: a reader hears them after the name, where
+    /// a sighted one sees them under it.
+    /// </summary>
+    public static void DescribeInputs(object? content, params string?[] notes)
+    {
+        string? text = Join(notes) is { Length: > 0 } joined ? joined : null;
+        foreach (var input in DescribedInputs(content))
+            Describe(input, text);
+    }
+
+    private static void Describe(StyledElement target, string? text)
+    {
+        string? current = AutomationProperties.GetHelpText(target);
+        bool ours = Described.TryGetValue(target, out string? given) && current == given;
+        if (!string.IsNullOrEmpty(current) && !ours)
+            return;
+
+        if (string.IsNullOrEmpty(text))
+        {
+            if (ours)
+                target.ClearValue(AutomationProperties.HelpTextProperty);
+            Described.Remove(target);
+            return;
+        }
+
+        AutomationProperties.SetHelpText(target, text);
+        Described.AddOrUpdate(target, text);
+    }
+
+    /// <summary>
+    /// The inputs of a setting row, named by the row's label: a list, a slider or a box
+    /// beside the label otherwise had no name at all.
+    /// </summary>
+    public static void NameInputs(object? content, string? label)
+    {
+        foreach (var input in Inputs(content))
+            Give(input, label);
+    }
+
+    /// <summary>
+    /// The value a setting row shows, given to the slider in it, so the reader hears
+    /// "100%" or "Wyłączone" and not where the knob stands.
+    /// </summary>
+    public static void TellValue(object? content, string? valueText)
+    {
+        foreach (var slider in Inputs(content).OfType<ReadableSlider>())
+            slider.ValueText = valueText;
+    }
+
+    private static IEnumerable<Control> Inputs(object? content) => content switch
+    {
+        ComboBox or Slider or TextBox or NumericUpDown => new[] { (Control)content },
+        Panel panel => panel.Children.SelectMany(Inputs),
+        Decorator decorator => Inputs(decorator.Child),
+        _ => Array.Empty<Control>()
+    };
+
+    // A check box says its own text, so it is described but never named by the row.
+    private static IEnumerable<Control> DescribedInputs(object? content) => content switch
+    {
+        CheckBox box => new[] { (Control)box },
+        Panel panel => panel.Children.SelectMany(DescribedInputs),
+        Decorator decorator => DescribedInputs(decorator.Child),
+        _ => Inputs(content)
+    };
+
+    /// <summary>The text a reader would see on it, or null when it shows none.</summary>
+    public static string? TextOf(object? content)
+    {
+        string? text = content switch
+        {
+            string s => s,
+            // A sign such as a dot is given the words it stands for.
+            TextBlock block when AutomationProperties.GetName(block) is { Length: > 0 } name => name,
+            TextBlock block => block.Inlines is { Count: > 0 } inlines ? TextOf(inlines) : block.Text,
+            ContentControl inner => TextOf(inner.Content),
+            Decorator decorator => TextOf(decorator.Child),
+            Panel panel => Join(panel.Children.Where(c => c.IsVisible).Select(TextOf)),
+            _ => null
+        };
+        return string.IsNullOrWhiteSpace(text) ? null : text.Trim();
+    }
+
+    private static string TextOf(InlineCollection inlines) =>
+        string.Concat(inlines.Select(i => i switch
+        {
+            Run run => run.Text,
+            LineBreak => " ",
+            Span span => TextOf(span.Inlines),
+            _ => null
+        }));
+
+    private static string Join(IEnumerable<string?> parts) =>
+        string.Join(", ", parts.Where(p => !string.IsNullOrWhiteSpace(p)));
+
+    private static void Give(StyledElement target, string? name)
+    {
+        string? current = AutomationProperties.GetName(target);
+        bool ours = Given.TryGetValue(target, out string? given) && current == given;
+        if (!string.IsNullOrEmpty(current) && !ours)
+            return;
+
+        if (string.IsNullOrEmpty(name))
+        {
+            if (ours)
+                target.ClearValue(AutomationProperties.NameProperty);
+            Given.Remove(target);
+            return;
+        }
+
+        AutomationProperties.SetName(target, name);
+        Given.AddOrUpdate(target, name);
+    }
+}

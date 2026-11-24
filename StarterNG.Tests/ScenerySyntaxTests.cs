@@ -270,10 +270,10 @@ public class ScenerySyntaxTests
             trainset td/rozklad tdo_n1734 0.0 0.1
             //$o Skład gotowy na żeberku.
             endtrainset
-            include koniec.scm
+            include koniec.scm end
             """;
 
-        var scenery = TestScenery.Parser().Parse("scenery/x.scn", scn, _ => new IncludeLookup(true));
+        var scenery = TestScenery.Parser().Parse("scenery/x.scn", scn, _ => true);
 
         Assert.Empty(scenery.Faults);
         Assert.Equal("td/rozklad", Assert.Single(scenery.Trainsets).Name);
@@ -326,9 +326,56 @@ public class ScenerySyntaxTests
             endoptional
             """;
 
-        var faults = TestScenery.Parser().Parse("scenery/x.scn", scn, name => new IncludeLookup(name is "tory.scm" or "budynek.inc")).Faults;
+        var faults = TestScenery.Parser().Parse("scenery/x.scn", scn, name => name is "tory.scm" or "budynek.inc").Faults;
 
         Assert.Equal((SceneryFaultKind.MissingInclude, "x.scn", 2, null, "brak.scm"), Seen(Assert.Single(faults)));
+    }
+
+    [Fact]
+    public void A_vehicle_without_its_fiz_is_reported_as_one_the_simulator_leaves_out()
+    {
+        // As on Bałtyk Cargo: the wagons of a folder gone empty drop out of the consist.
+        const string scn = """
+            trainset none tor1 0 0.1
+            node -1 0 sm42 dynamic PKP\SM42_V1 6D-468 6D -1 headdriver 3 0 enddynamic
+            node -1 0 eaos-33 dynamic PKP\412W_V1 5340976-0 412wc 0 nobody 3 60 wegiel3 enddynamic
+            node -1 0 eaos-34 dynamic PKP\412W_V1 5351442-9 412W 0 nobody 0 60 mial1 enddynamic
+            endtrainset
+            node -1 0 auto dynamic car car car tor1 0 headdriver 0 0 enddynamic
+            """;
+        var asked = new List<(string, string)>();
+
+        var scenery = TestScenery.Parser().Parse("scenery/x.scn", scn, loadsVehicle: (folder, mmd) =>
+        {
+            asked.Add((folder, mmd));
+            return !folder.Equals(@"PKP\412W_V1", StringComparison.Ordinal);
+        });
+
+        Assert.Equal(new[]
+        {
+            (SceneryFaultKind.VehicleMissing, "x.scn", 3, (string?)"eaos-33", (string?)@"PKP\412W_V1/412wc.fiz"),
+            (SceneryFaultKind.VehicleMissing, "x.scn", 4, "eaos-34", @"PKP\412W_V1/412W.fiz")
+        }, scenery.Faults.Select(Seen));
+        Assert.Contains(("car", "car"), asked);
+        // Still listed whole: the starter writes them as they are, for when they are back.
+        Assert.Equal(3, Assert.Single(scenery.Trainsets).Vehicles.Count);
+    }
+
+    [Fact]
+    public void A_vehicle_folder_there_but_empty_is_no_vehicle()
+    {
+        var files = new InMemoryFileSystem(caseSensitive: true)
+            .WithLegacyFile("game/scenery/x.scn",
+                            "trainset none tor1 0 0\n" +
+                            "node -1 0 a1 dynamic PKP\\430W_V2 skin 430W 0 nobody 3 0 enddynamic\n" +
+                            "node -1 0 a2 dynamic PKP\\412W_V1 skin 412W 0 nobody 0 0 enddynamic\n" +
+                            "endtrainset\n")
+            .WithLegacyFile("game/dynamic/pkp/430w_v2/430w.fiz", "")
+            .WithLegacyFile("game/dynamic/pkp/412w_v1/412w.mmd", "");
+
+        var faults = TestScenery.Repository(files).Load("game/scenery/x.scn")!.Faults;
+
+        Assert.Equal((SceneryFaultKind.VehicleMissing, "x.scn", 3, "a2", @"PKP\412W_V1/412W.fiz"), Seen(Assert.Single(faults)));
     }
 
     [Fact]
@@ -337,7 +384,8 @@ public class ScenerySyntaxTests
         var files = new InMemoryFileSystem(caseSensitive: true)
             .WithLegacyFile("game/scenery/x.scn", "FirstInit\ninclude Tomaszewo/Auta.SCM end\n")
             .WithLegacyFile("game/scenery/tomaszewo/auta.scm",
-                            "trainset auto road1 0 50\nnode -1 0 a1 dynamic car car car 0 headdriver 3 0 enddynamic\nendtrainset\n");
+                            "trainset auto road1 0 50\nnode -1 0 a1 dynamic car car car 0 headdriver 3 0 enddynamic\nendtrainset\n")
+            .WithLegacyFile("game/dynamic/car/car.fiz", "");
         var repository = TestScenery.Repository(files);
 
         var scenery = repository.Load("game/scenery/x.scn")!;
@@ -347,9 +395,9 @@ public class ScenerySyntaxTests
     }
 
     [Fact]
-    public void An_include_on_disk_only_in_other_letter_case_is_what_linux_misses()
+    public void An_include_on_disk_in_other_letter_case_is_no_fault()
     {
-        // The simulator folds the name to lower case and opens it so.
+        // The simulator finds the file whatever the case of its letters, on Linux too.
         var files = new InMemoryFileSystem(caseSensitive: true)
             .WithLegacyFile("game/scenery/braniewo_szeroki.scn",
                             "include braniewo/base.ctr end\ninclude Braniewo/Tory.SCM end\n")
@@ -357,26 +405,56 @@ public class ScenerySyntaxTests
             .WithFile("game/scenery/braniewo/tory.scm", "");
         var repository = TestScenery.Repository(files);
 
-        var faults = repository.Load("game/scenery/braniewo_szeroki.scn")!.Faults;
-
-        Assert.Equal((SceneryFaultKind.IncludeLetterCase, "braniewo_szeroki.scn", 1, "Braniewo/Base.ctr", "braniewo/base.ctr"),
-                     Seen(Assert.Single(faults)));
+        Assert.Empty(repository.Load("game/scenery/braniewo_szeroki.scn")!.Faults);
     }
 
     [Theory]
-    [InlineData(true)]
-    [InlineData(false)]
-    public void A_missing_terrain_file_is_no_fault_while_the_scenery_has_its_own_sbt(bool sbt)
+    [InlineData(null)]
+    [InlineData("lk2_sandbox.sbt")]
+    [InlineData("Lk2_Sandbox.SBT")]
+    public void A_missing_terrain_file_is_no_fault_while_the_scenery_has_its_own_sbt(string? sbtOnDisk)
     {
+        bool sbt = sbtOnDisk is not null;
         var files = new InMemoryFileSystem(caseSensitive: true)
             .WithLegacyFile("game/scenery/Lk2_Sandbox.scn", "include nmt/nmt100_mazowieckie_ter.scm end\nFirstInit\n");
         if (sbt)
-            files.WithFile("game/scenery/lk2_sandbox.sbt", "EU07");
+            files.WithFile("game/scenery/" + sbtOnDisk, "EU07");
         var repository = TestScenery.Repository(files);
 
         var scenery = repository.Load("game/scenery/Lk2_Sandbox.scn")!;
 
         Assert.Equal(sbt, scenery.HasCompanionTimetable);
         Assert.Equal(sbt ? 0 : 1, scenery.Faults.Count);
+    }
+
+    [Fact]
+    public void An_include_with_no_end_is_a_fault_even_as_the_last_line()
+    {
+        const string scn = "FirstInit\ntrainset a t 0 0\nendtrainset\ninclude dekoracje.scm //Sklady dekoracyjne\n";
+
+        var faults = TestScenery.Parser().Parse("scenery/x.scn", scn).Faults.Select(f => (f.Kind, f.Line)).ToList();
+
+        Assert.Equal(new[] { (SceneryFaultKind.IncludeNotClosed, 4) }, faults);
+    }
+
+    [Fact]
+    public void The_consists_of_a_last_include_with_no_end_are_listed_as_the_simulator_loads_them()
+    {
+        const string decorations = "trainset d1 t1 0 0\nnode -1 0 a dynamic d s m 0 nobody 3 0 enddynamic\nendtrainset\n";
+
+        string text = SceneryIncludes.Inline("FirstInit\ninclude dekoracje.scm //Sklady dekoracyjne\n",
+                                             name => (name, decorations));
+
+        Assert.Contains(SceneryIncludes.BeginMarker + "dekoracje.scm", text);
+        Assert.Contains("trainset d1 t1 0 0", text);
+    }
+
+    [Fact]
+    public void An_include_with_no_end_before_more_of_the_file_is_left_alone()
+    {
+        string text = SceneryIncludes.Inline("FirstInit\ninclude dekoracje.scm\ntrainset a t 0 0\nendtrainset\n",
+                                             name => (name, "trainset d1 t1 0 0\nendtrainset\n"));
+
+        Assert.DoesNotContain(SceneryIncludes.BeginMarker, text);
     }
 }

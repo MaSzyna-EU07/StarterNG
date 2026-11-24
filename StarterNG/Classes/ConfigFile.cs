@@ -19,6 +19,9 @@ public sealed class ConfigFile
     // Its first line, or -1 when the file runs to its end.
     private int _end = -1;
 
+    // While lines are indexed: the one at hand starts inside a block comment.
+    private bool _inBlock;
+
     public static ConfigFile Parse(string text)
     {
         var cfg = new ConfigFile();
@@ -37,7 +40,10 @@ public sealed class ConfigFile
 
     private void IndexLine(int line)
     {
-        if (!TryParseKey(_lines[line], out string key))
+        // The simulator skips what /* */ encloses, over as many lines as it runs.
+        bool startsInBlock = _inBlock;
+        _inBlock = EndsInBlock(_lines[line], startsInBlock);
+        if (startsInBlock || !TryParseKey(_lines[line], out string key))
             return;
 
         if (_end < 0 && key.Equals(EndKey, StringComparison.OrdinalIgnoreCase))
@@ -52,6 +58,7 @@ public sealed class ConfigFile
     {
         _index.Clear();
         _end = -1;
+        _inBlock = false;
         for (int line = 0; line < _lines.Count; line++)
             IndexLine(line);
     }
@@ -252,15 +259,51 @@ public sealed class ConfigFile
         }
     }
 
+    // Where a comment starts as the simulator's parser sees one: // or /* anywhere, even glued
+    // to a value, but not within quotes, which it keeps whole.
     private static int FindCommentStart(string body)
     {
-        for (int i = 0; i + 1 < body.Length; i++)
+        bool quoted = false;
+        for (int i = 0; i < body.Length; i++)
         {
-            if (body[i] == '/' && body[i + 1] == '/' &&
-                (i == 0 || char.IsWhiteSpace(body[i - 1])))
+            if (body[i] == '"')
+                quoted = !quoted;
+            else if (!quoted && i + 1 < body.Length && body[i] == '/' && body[i + 1] is '/' or '*')
                 return i;
         }
         return -1;
+    }
+
+    // Whether a block comment is still open at the end of the line.
+    private static bool EndsInBlock(string raw, bool inBlock)
+    {
+        bool quoted = false;
+        for (int i = 0; i < raw.Length; i++)
+        {
+            if (inBlock)
+            {
+                if (raw[i] == '*' && i + 1 < raw.Length && raw[i + 1] == '/')
+                {
+                    inBlock = false;
+                    i++;
+                }
+                continue;
+            }
+
+            if (raw[i] == '"')
+                quoted = !quoted;
+            else if (!quoted && raw[i] == '/' && i + 1 < raw.Length)
+            {
+                if (raw[i + 1] == '/')
+                    return false;
+                if (raw[i + 1] == '*')
+                {
+                    inBlock = true;
+                    i++;
+                }
+            }
+        }
+        return inBlock;
     }
 
     private static int IndexOfWhitespace(string s)

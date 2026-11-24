@@ -61,15 +61,15 @@ public enum SceneryFaultKind
     /// <summary>An include whose file is not there; <see cref="SceneryFault.Token"/> names it.</summary>
     MissingInclude,
 
-    /// <summary>
-    /// An include whose file is there only under a name in other letter case: the
-    /// simulator looks for it in lower case, which on Linux misses it. The
-    /// <see cref="SceneryFault.Subject"/> holds the name on disk.
-    /// </summary>
-    IncludeLetterCase,
-
     /// <summary>An include with no <c>end</c>, which swallows what follows it.</summary>
     IncludeNotClosed,
+
+    /// <summary>
+    /// A vehicle whose <c>.fiz</c> is not in its folder under dynamic: the simulator
+    /// leaves it out, and its trainset runs short. <see cref="SceneryFault.Token"/>
+    /// names the file.
+    /// </summary>
+    VehicleMissing,
 
     /// <summary>A trainset the starter could not read, for a reason none of the above names.</summary>
     TrainsetUnreadable,

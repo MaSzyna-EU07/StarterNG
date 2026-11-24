@@ -14,7 +14,7 @@ public sealed class TestInstallation
 {
     public const string Root = "game";
 
-    public TestInstallation(InMemoryFileSystem? files = null, DateTime? now = null)
+    public TestInstallation(InMemoryFileSystem? files = null, DateTime? now = null, bool lacksAvx2 = false)
     {
         Files = files ?? new InMemoryFileSystem();
         Paths = new GamePaths(Root);
@@ -35,7 +35,8 @@ public sealed class TestInstallation
                                                   SettingsPaths.VehicleCacheDirectory());
         Library = new GameLibrary(VehicleCache, Sceneries, MiniTextures, Physics, Log);
 
-        Executables = new ExecutableLocator(Files, Paths, Environment, Log);
+        // The processor of the machine running the tests is not the one tested.
+        Executables = new ExecutableLocator(Files, Paths, Environment, Log, lacksAvx2);
         SettingsStore = new SettingsStore(Files, Clock, Log, SettingsPaths, new SettingsSerializer(), Executables);
         Tapes = new HaslerTapes(Files, Paths, Log, Clock, new TimetableLocator(Files), () => SimulatorRunning);
     }

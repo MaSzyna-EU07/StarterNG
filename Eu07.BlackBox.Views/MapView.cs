@@ -25,8 +25,12 @@ public sealed class MapView : Control
     private Recording? _recording;
     private int _builtRevision = -1;
     private int _builtTracks = -1;
-    private StreamGeometry? _tracks;
-    private readonly List<(int Index, int Branch, StreamGeometry Way)> _switchWays = new();
+    private TrackLayer? _tracks;
+    private readonly List<(int Index, int Branch, IReadOnlyList<System.Numerics.Vector3> Points)> _switchWays = new();
+    // The switches as they lay when last drawn, and their ways in two geometries: not taken, taken.
+    private int[] _switchStates = Array.Empty<int>();
+    private StreamGeometry? _waysOff, _waysOn;
+    private string? _hoverShown;
     private readonly StreamGeometry?[] _trail = new StreamGeometry?[5];
     private Rect _world;
 
@@ -135,33 +139,24 @@ public sealed class MapView : Control
         {
             _builtTracks = recording.Tracks.Count;
             _switchWays.Clear();
-            var tracks = new StreamGeometry();
             double left = double.MaxValue, top = double.MaxValue, right = double.MinValue, bottom = double.MinValue;
-            using (var g = tracks.Open())
+            foreach (var track in recording.Tracks)
             {
-                foreach (var track in recording.Tracks)
+                if (track.Points.Count < 2)
+                    continue;
+                foreach (var p in track.Points)
                 {
-                    if (track.Points.Count < 2)
-                        continue;
-                    foreach (var p in track.Points)
-                    {
-                        left = Math.Min(left, -p.X);
-                        right = Math.Max(right, -p.X);
-                        top = Math.Min(top, -p.Z);
-                        bottom = Math.Max(bottom, -p.Z);
-                    }
-                    if (track.Kind == TrackKind.SwitchBranch)
-                    {
-                        var way = new StreamGeometry();
-                        using (var w = way.Open())
-                            Polyline(w, track.Points);
-                        _switchWays.Add((track.Index, track.Branch, way));
-                    }
-                    else
-                        Polyline(g, track.Points);
+                    left = Math.Min(left, -p.X);
+                    right = Math.Max(right, -p.X);
+                    top = Math.Min(top, -p.Z);
+                    bottom = Math.Max(bottom, -p.Z);
                 }
+                if (track.Kind == TrackKind.SwitchBranch)
+                    _switchWays.Add((track.Index, track.Branch, track.Points));
             }
-            _tracks = tracks;
+            _tracks = new TrackLayer(recording.Tracks);
+            _switchStates = Array.Empty<int>();
+            _waysOff = _waysOn = null;
             _world = left <= right ? new Rect(new Point(left, top), new Point(right, bottom)) : default;
         }
         BuildTrail(recording);
@@ -247,29 +242,26 @@ public sealed class MapView : Control
         double pixel = 1 / _scale;
         using (context.PushTransform(toScreen))
         {
-            // The tracks on a dark casing, so they stand out where they cross and run close.
+            // The tracks on a dark casing, so they stand out where they cross and run close. Only the
+            // cells in view, at the detail a pixel can show.
             var casing = new Pen(Palette.TrackCasing, 5 * pixel, lineCap: PenLineCap.Round);
-            if (_tracks is not null)
-                context.DrawGeometry(null, casing, _tracks);
-            foreach (var (_, _, way) in _switchWays)
-                context.DrawGeometry(null, casing, way);
-            if (_tracks is not null)
-                context.DrawGeometry(null, new Pen(Palette.Track, 1.7 * pixel, lineCap: PenLineCap.Round), _tracks);
-            var off = new Pen(Palette.SwitchOff, 1.7 * pixel, lineCap: PenLineCap.Round);
-            var on = new Pen(Palette.Track, 1.7 * pixel, lineCap: PenLineCap.Round);
-            // The ways not taken under those taken.
-            foreach (var (index, branch, way) in _switchWays)
+            var fill = new Pen(Palette.Track, 1.7 * pixel, lineCap: PenLineCap.Round);
+            if (_tracks is { } layer)
             {
-                int state = recording.SwitchAt(index, _time);
-                if (state >= 0 && state != branch)
-                    context.DrawGeometry(null, off, way);
+                var view = PlaneInView(size, 6 * pixel);
+                int level = TrackLayer.LevelFor(_scale);
+                foreach (var cell in layer.CellsIn(view, level))
+                    context.DrawGeometry(null, casing, cell.Casing);
+                foreach (var cell in layer.CellsIn(view, level))
+                    if (cell.Fill is { } tracks)
+                        context.DrawGeometry(null, fill, tracks);
             }
-            foreach (var (index, branch, way) in _switchWays)
-            {
-                int state = recording.SwitchAt(index, _time);
-                if (state < 0 || state == branch)
-                    context.DrawGeometry(null, on, way);
-            }
+            // The ways not taken under those taken, each set one geometry, made again only when a switch moves.
+            UpdateSwitchWays(recording);
+            if (_waysOff is not null)
+                context.DrawGeometry(null, new Pen(Palette.SwitchOff, 1.7 * pixel, lineCap: PenLineCap.Round), _waysOff);
+            if (_waysOn is not null)
+                context.DrawGeometry(null, fill, _waysOn);
             // The way the train went, in the colour of the judgement.
             for (int kind = 0; kind < _trail.Length; kind++)
                 if (_trail[kind] is { } trail)
@@ -280,12 +272,67 @@ public sealed class MapView : Control
         DrawHornPoints(context, recording);
         DrawSignals(context, recording);
         DrawPassings(context, recording);
-        DrawVehicles(context, recording);
+        // Once a frame: the vehicles and the hover both go by them.
+        var vehicles = recording.VehiclesAt(_time);
+        DrawVehicles(context, recording, vehicles);
         DrawUserTrain(context, recording);
         DrawCamera(context, recording);
         DrawScale(context, size);
         DrawLegend(context, size);
-        DrawHover(context, recording);
+        DrawHover(context, recording, vehicles);
+    }
+
+    /// <summary>The part of the map's plane on screen, with a margin in plane units.</summary>
+    private Rect PlaneInView(Size size, double margin)
+    {
+        double halfWidth = size.Width / 2 / _scale, halfHeight = size.Height / 2 / _scale;
+        return new Rect(-_centerX - halfWidth - margin, -_centerZ - halfHeight - margin,
+                        2 * (halfWidth + margin), 2 * (halfHeight + margin));
+    }
+
+    private void UpdateSwitchWays(Recording recording)
+    {
+        bool changed = _switchStates.Length != _switchWays.Count;
+        if (changed)
+            _switchStates = new int[_switchWays.Count];
+        for (int i = 0; i < _switchWays.Count; i++)
+        {
+            int state = recording.SwitchAt(_switchWays[i].Index, _time);
+            if (state != _switchStates[i] || changed)
+            {
+                _switchStates[i] = state;
+                changed = true;
+            }
+        }
+        if (!changed && (_waysOff is not null || _waysOn is not null || _switchWays.Count == 0))
+            return;
+
+        var off = new StreamGeometry();
+        var on = new StreamGeometry();
+        bool anyOff = false, anyOn = false;
+        using (var gOff = off.Open())
+        using (var gOn = on.Open())
+        {
+            for (int i = 0; i < _switchWays.Count; i++)
+            {
+                var (_, branch, points) = _switchWays[i];
+                if (points.Count < 2)
+                    continue;
+                int state = _switchStates[i];
+                if (state >= 0 && state != branch)
+                {
+                    Polyline(gOff, points);
+                    anyOff = true;
+                }
+                else
+                {
+                    Polyline(gOn, points);
+                    anyOn = true;
+                }
+            }
+        }
+        _waysOff = anyOff ? off : null;
+        _waysOn = anyOn ? on : null;
     }
 
     private bool Visible(Point p, double margin = 20) =>
@@ -295,14 +342,23 @@ public sealed class MapView : Control
     {
         double radius = _scale > 0.5 ? 4.5 : _scale > 0.1 ? 3.5 : 2.5;
         var outline = new Pen(Palette.Background, 1);
+        // From afar a station's signals are one crowd: one dot to a few pixels, those at stop kept first.
+        var marks = new List<(AspectChange? Aspect, Point At, int Rank)>();
         foreach (var signal in recording.Signals)
         {
             var p = ToScreen(signal.Position.X, signal.Position.Z);
             if (!Visible(p))
                 continue;
-            context.DrawEllipse(Palette.Of(recording.AspectAt(signal.Index, _time)), outline, p, radius, radius);
+            var aspect = recording.AspectAt(signal.Index, _time);
+            marks.Add((aspect, p, SignalRank(aspect)));
         }
+        foreach (var (aspect, p) in MarkGrid.Thin(marks, radius * 2 + 1))
+            context.DrawEllipse(Palette.Of(aspect), outline, p, radius, radius);
     }
+
+    /// <summary>How much a signal's dot tells: at stop most, then a speed, then go, then nothing known.</summary>
+    internal static int SignalRank(AspectChange? aspect) =>
+        aspect is not { } a ? 3 : a.Speed1 == 0 ? 0 : a.Speed1 < 0 && a.Speed2 != 0 ? 2 : 1;
 
     /// <summary>
     /// The stop points (W4): a white plate, blue where the user's train stopped, red where it
@@ -345,21 +401,28 @@ public sealed class MapView : Control
         double size = _scale > 0.5 ? 4 : 3;
         var outline = new Pen(Palette.MapBackground, 1);
         var labels = new List<(Point At, string Name, IBrush Fill)>();
+        // A station has a plate for each track and length of train: from afar one to a few pixels,
+        // a missed stop kept first, then one stopped at. The wedges only close enough to tell apart.
+        var marks = new List<((MapStopPoint Point, IBrush Fill) Item, Point At, int Rank)>();
         foreach (var point in recording.StopPoints)
         {
             var p = ToScreen(point.Position.X, point.Position.Z);
             if (!Visible(p))
                 continue;
-            var fill = outcomes.TryGetValue((Math.Round(point.Position.X, 1), Math.Round(point.Position.Z, 1)), out var kind)
-                ? kind == StationKind.Missed ? Palette.Bad : Palette.Station
-                : Palette.StopPoint;
+            bool known = outcomes.TryGetValue((Math.Round(point.Position.X, 1), Math.Round(point.Position.Z, 1)), out var kind);
+            var fill = known ? kind == StationKind.Missed ? Palette.Bad : Palette.Station : Palette.StopPoint;
+            int rank = !known ? 2 : kind == StationKind.Missed ? 0 : 1;
+            marks.Add(((point, fill), p, rank));
+        }
+        foreach (var ((point, fill), p) in MarkGrid.Thin(marks, near ? size * 2 + 1 : size * 3))
+        {
             var plate = new Rect(p.X - size, p.Y - size * 1.3, size * 2, size * 2.6);
             // a W32 hollow, in the colour a W4 would be filled with
             if (point.ForShortTrains)
                 context.DrawRectangle(Palette.MapBackground, new Pen(fill, 1.5), plate, 1.5, 1.5);
             else
                 context.DrawRectangle(fill, outline, plate, 1.5, 1.5);
-            if (point.HasHeading)
+            if (point.HasHeading && near)
                 DrawStopWay(context, p, point.Heading, size, fill, outline);
             labels.Add((p, StationNames.Display(point.Station), fill));
         }
@@ -373,7 +436,8 @@ public sealed class MapView : Control
             taken.Add(new Rect(mark.X - 10, mark.Y - 24, 170, 34));
         }
         var culture = System.Globalization.CultureInfo.CurrentCulture;
-        foreach (var (p, name, fill) in labels)
+        // The plates came the least telling first; the names go the other way, a missed stop's first.
+        foreach (var (p, name, fill) in Enumerable.Reverse(labels))
         {
             if (!near && !named.Add(name))
                 continue;
@@ -401,15 +465,18 @@ public sealed class MapView : Control
         var checks = recording.UserHornChecks().Where(c => c.Request.Time <= _time).ToList();
         double size = _scale > 0.5 ? 5 : 3.5;
         var outline = new Pen(Palette.MapBackground, 1);
+        // One to a few pixels from afar: a horn not sounded kept first, then one sounded.
+        var marks = new List<(IBrush Fill, Point At, int Rank)>();
         foreach (var point in recording.HornPoints)
         {
             var p = ToScreen(point.Position.X, point.Position.Z);
             if (!Visible(p))
                 continue;
             var check = checks.LastOrDefault(c => c.Request.Position.DistanceTo(point.Position) < 1);
-            var fill = check is null ? Palette.HornPoint : check.Sounded ? Palette.Good : Palette.Bad;
-            context.DrawGeometry(fill, outline, Diamond(p, size));
+            marks.Add(check is null ? (Palette.HornPoint, p, 2) : check.Sounded ? (Palette.Good, p, 1) : (Palette.Bad, p, 0));
         }
+        foreach (var (fill, p) in MarkGrid.Thin(marks, size * 2 + 1))
+            context.DrawGeometry(fill, outline, Diamond(p, size));
     }
 
     internal static StreamGeometry Diamond(Point p, double size)
@@ -454,37 +521,48 @@ public sealed class MapView : Control
     {
         var passed = new Pen(Palette.Within, 1.5);
         var danger = new Pen(Palette.Over, 2.5);
+        // One ring to a few pixels, one at danger kept first.
+        var marks = new List<(bool AtDanger, Point At, int Rank)>();
         foreach (var passing in recording.UserPassings())
         {
             if (passing.Time > _time)
                 continue;
             var p = ToScreen(passing.Position.X, passing.Position.Z);
-            if (!Visible(p))
-                continue;
-            if (passing.AtDanger)
+            if (Visible(p))
+                marks.Add((passing.AtDanger, p, passing.AtDanger ? 0 : 1));
+        }
+        foreach (var (atDanger, p) in MarkGrid.Thin(marks, 12))
+        {
+            if (atDanger)
                 context.DrawEllipse(null, danger, p, 10, 10);
             else
                 context.DrawEllipse(null, passed, p, 7, 7);
         }
     }
 
-    private void DrawVehicles(DrawingContext context, Recording recording)
+    private void DrawVehicles(DrawingContext context, Recording recording, IReadOnlyList<VehicleState> vehicles)
     {
         int user = recording.CabAt(_time) is { } sample && _time - sample.Time < 1.5 ? sample.Vehicle : 0;
-        foreach (var state in recording.VehiclesAt(_time))
+        // From afar a train's cars are each wider on screen than they are long: one to a few
+        // pixels, the user's own kept first, then those driven by the AI.
+        var marks = new List<(VehicleState State, Point At, int Rank)>();
+        foreach (var state in vehicles)
+        {
+            var center = ToScreen(state.Position.X, state.Position.Z);
+            if (Visible(center, (recording.Vehicle(state.Id)?.Length ?? 15) * _scale + 10))
+                marks.Add((state, center, state.Id == user ? 0 : state.Driving == Driver.Ai ? 1 : 2));
+        }
+        foreach (var (state, center) in MarkGrid.Thin(marks, 5))
         {
             var info = recording.Vehicle(state.Id);
             var brush = state.Id == user ? Palette.UserTrain : state.Driving == Driver.Ai ? Palette.VehicleAi : Palette.Vehicle;
-            DrawVehicle(context, state.Position.X, state.Position.Z, state.Heading, info?.Length ?? 15, info?.Width ?? 3, brush);
+            DrawVehicle(context, center, state.Heading, info?.Length ?? 15, info?.Width ?? 3, brush);
         }
     }
 
-    private void DrawVehicle(DrawingContext context, double x, double z, double heading, double length, double width,
+    private void DrawVehicle(DrawingContext context, Point center, double heading, double length, double width,
                              IBrush brush)
     {
-        var center = ToScreen(x, z);
-        if (!Visible(center, length * _scale + 10))
-            return;
         // The front from +z towards +x: up the screen and to the left.
         double fx = Math.Sin(heading), fz = Math.Cos(heading);
         double half = Math.Max(length * _scale, 5) / 2, side = Math.Max(width * _scale, 3) / 2;
@@ -602,10 +680,19 @@ public sealed class MapView : Control
     }
 
     /// <summary>The name of the signal or the vehicle under the pointer.</summary>
-    private void DrawHover(DrawingContext context, Recording recording)
+    private void DrawHover(DrawingContext context, Recording recording, IReadOnlyList<VehicleState> vehicles)
     {
-        if (_pointer is not { } pointer || _dragFrom is not null)
+        _hoverShown = _pointer is { } at && _dragFrom is null ? HoverLabel(recording, at, vehicles) : null;
+        if (_hoverShown is not { } label || _pointer is not { } pointer)
             return;
+        var text = Text(label, Palette.Text, 12);
+        var box = new Rect(pointer.X + 14, pointer.Y - 12 - text.Height, text.Width + 16, text.Height + 8);
+        context.DrawRectangle(Palette.Faded(Palette.Card, 0.95), new Pen(Palette.CardBorder, 1), box, 6, 6);
+        context.DrawText(text, new Point(box.Left + 8, box.Top + 4));
+    }
+
+    private string? HoverLabel(Recording recording, Point pointer, IReadOnlyList<VehicleState> vehicles)
+    {
         string? label = null;
         double best = 10;
         foreach (var signal in recording.Signals)
@@ -646,7 +733,7 @@ public sealed class MapView : Control
                 label = string.Format(culture, Strings["HornHover"], point.Name, point.Duration);
             }
         }
-        foreach (var state in recording.VehiclesAt(_time))
+        foreach (var state in vehicles)
         {
             double d = Distance(ToScreen(state.Position.X, state.Position.Z), pointer);
             if (d < best && recording.Vehicle(state.Id) is { } info)
@@ -657,12 +744,7 @@ public sealed class MapView : Control
                     : $"{info.Name} ({info.Train}) · {Math.Abs(state.SpeedKmh):0} km/h";
             }
         }
-        if (label is null)
-            return;
-        var text = Text(label, Palette.Text, 12);
-        var box = new Rect(pointer.X + 14, pointer.Y - 12 - text.Height, text.Width + 16, text.Height + 8);
-        context.DrawRectangle(Palette.Faded(Palette.Card, 0.95), new Pen(Palette.CardBorder, 1), box, 6, 6);
-        context.DrawText(text, new Point(box.Left + 8, box.Top + 4));
+        return label;
     }
 
     /// <summary>An aspect as the speeds it gives: stop, a speed, or go.</summary>
@@ -724,8 +806,13 @@ public sealed class MapView : Control
                 _centerX = _dragCenter.X + moved.X / _scale;
                 _centerZ = _dragCenter.Z + moved.Y / _scale;
             }
+            InvalidateVisual();
+            return;
         }
-        InvalidateVisual();
+        // Not dragged, the map is the same: drawn again only for a label to show, follow the pointer or go.
+        if (_hoverShown is not null ||
+            (_recording is { } recording && HoverLabel(recording, position, recording.VehiclesAt(_time)) is not null))
+            InvalidateVisual();
     }
 
     protected override void OnPointerReleased(PointerReleasedEventArgs e)

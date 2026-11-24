@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Avalonia.Controls;
 using StarterNG.Domain.Settings;
 
@@ -28,11 +29,16 @@ internal sealed class SliderSteps
         slider.Maximum = steps.Count - 1;
     }
 
+    /// <summary>A value past either end of the list is put at that end, not added to it.</summary>
+    public bool Clamps { get; set; }
+
     public double Value
     {
         get => _shown[Math.Clamp((int)Math.Round(_slider.Value), 0, _shown.Count - 1)];
         set
         {
+            if (Clamps)
+                value = Math.Clamp(value, _steps.Min(), _steps.Max());
             _shown = Steps.With(_steps, value);
             _slider.Maximum = _shown.Count - 1;
             int at = Steps.IndexOf(_shown, value);

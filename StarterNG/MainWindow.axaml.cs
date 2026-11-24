@@ -13,10 +13,12 @@ using Avalonia.Layout;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
 using StarterNG.Classes;
+using StarterNG.Controls;
 using StarterNG.Infrastructure;
 using StarterNG.Views;
 using StarterNG.Application;
 using StarterNG.Application.Abstractions;
+using StarterNG.Domain;
 using StarterNG.Domain.Settings;
 
 namespace StarterNG;
@@ -39,8 +41,9 @@ public partial class MainWindow : Window
     private DateTime _openedUtc = DateTime.UtcNow;
     private DateTime _startedUtc = DateTime.MinValue;
     private bool _starting;
-    private bool _lookingAtSceneryFiles;
-    private readonly DispatcherTimer _sceneryFilesTimer = new() { Interval = TimeSpan.FromSeconds(2) };
+    // Scenery files: looked at when they change, on coming back to the window or from the
+    // simulator, and now and then anyway.
+    private readonly FolderLooks _sceneryLooks;
 
     public MainWindow()
     {
@@ -98,31 +101,40 @@ public partial class MainWindow : Window
         // Tunnelling: the shortcuts are checked before any view sees the key, which is
         // why OnShortcutKey has to be careful about text entry and key capture.
         AddHandler(KeyDownEvent, OnShortcutKey, RoutingStrategies.Tunnel);
+        AddHandler(KeyDownEvent, OnTabWithNothingFocused, RoutingStrategies.Tunnel);
 
         AppServices.Current.State.Changed += UpdateStartButton;
+        Views.Settings.AdvancedModeChanged += UpdateStartButton;
+        // Settings an older starter left are brought into the standard mode, once.
+        SettingsView.MoveToStandardOnce();
         Opened += (_, _) =>
         {
 
             _openedUtc = DateTime.UtcNow;
             UpdateStartButton();
-            _sceneryFilesTimer.Start();
             FollowLastRun();
         };
-        Activated += (_, _) => CheckExternalSettings();
-        _sceneryFilesTimer.Tick += async (_, _) => await LookAtSceneryFilesAsync();
-        Closed += (_, _) => _sceneryFilesTimer.Stop();
+        Activated += (_, _) =>
+        {
+            CheckExternalSettings();
+            // Back from a build or a download: a new simulator is on the list already.
+            if (SettingsView.IsVisible)
+                SettingsView.RefreshExecutables();
+        };
+        // After the handlers above: back at the window, the settings are checked first.
+        _sceneryLooks = new FolderLooks(this, () => AppServices.Current.Paths.Scenery, LookAtSceneryFilesAsync);
     }
 
     /// <summary>
     /// Scenery files changed outside the starter are picked up without a reload. Not
     /// with the simulator running: it is left in peace, and what it changes comes in after it.
+    /// Run through <see cref="_sceneryLooks"/>, one look at a time.
     /// </summary>
     private async Task LookAtSceneryFilesAsync()
     {
-        if (_lookingAtSceneryFiles || AppServices.Current.State.SimulatorRunning || !IsVisible || WindowState == WindowState.Minimized)
+        if (AppServices.Current.State.SimulatorRunning || !IsVisible || WindowState == WindowState.Minimized)
             return;
 
-        _lookingAtSceneryFiles = true;
         try
         {
             var services = AppServices.Current;
@@ -137,10 +149,6 @@ public partial class MainWindow : Window
         catch (Exception ex)
         {
             Diagnostics.Log("Following the scenery files", ex);
-        }
-        finally
-        {
-            _lookingAtSceneryFiles = false;
         }
     }
 
@@ -235,6 +243,17 @@ public partial class MainWindow : Window
             ScenariosView.RefreshConsistView();
         };
         win.ShowDialog(this);
+    }
+
+    private void OnTabWithNothingFocused(object? sender, KeyEventArgs e)
+    {
+        if (FocusManager is not { } focus)
+            return;
+
+        var next = KeyboardFocus.TabFromNowhere(e.Key, e.KeyModifiers, focus.GetFocusedElement(), this,
+                                                focus.FindFirstFocusableElement, focus.FindLastFocusableElement);
+        if (next is not null && next.Focus(NavigationMethod.Tab))
+            e.Handled = true;
     }
 
     private void OnShortcutKey(object? sender, KeyEventArgs e)
@@ -492,6 +511,15 @@ public partial class MainWindow : Window
             return;
         }
 
+        // The standard mode edits every consist but starts only in one the player drives.
+        if (!TrainsetDisplay.StartableIn(trainset, AppServices.Current.Settings))
+        {
+            startButton.Content = App.Loc[trainset.Decor ? "StartDecor" : "StartAi"];
+            ToolTip.SetTip(startButton, null);
+            startButton.IsEnabled = false;
+            return;
+        }
+
         bool staffed = HasStartableVehicle(trainset);
         startButton.Content = staffed ? App.Loc["Start"] : App.Loc["StartNoStaff"];
         ToolTip.SetTip(startButton, staffed ? null : App.Loc["StartNoStaffConfirm"]);
@@ -508,11 +536,34 @@ public partial class MainWindow : Window
     private const string SimulatorBuildGuide = "https://github.com/MaSzyna-EU07/maszyna#getting-started";
 
     /// <summary>
-    /// Tells a user whose processor lacks AVX2 that the published simulator will
-    /// not run, and where the instructions for a build of their own are.
+    /// Tells a user whose processor lacks AVX2 that the simulator that would start will
+    /// not run. With a build without AVX2 in the folder, chosen away from by hand, the
+    /// notice offers to go back to the automatic choice, which takes it; with none, it
+    /// says what such a build is called and where the instructions for one's own are.
     /// </summary>
-    public async Task ShowCpuNoticeAsync()
+    public async Task ShowCpuNoticeAsync(string executable)
     {
+        var services = AppServices.Current;
+        if (services.Executables.NewestNoAvx2() is { } noAvx2)
+        {
+            var (useIt, quiet) = await MessageBox.ShowNotice(
+                this, string.Format(App.Loc["CpuNoAvx2Chosen"], Path.GetFileName(executable), noAvx2),
+                App.Loc["CpuNoAvx2Title"], App.Loc["CpuNoAvx2UseIt"], App.Loc["DontShowAgain"]);
+            if (useIt)
+            {
+                services.Settings.SelectExeAutomatically = true;
+                services.SettingsStore.Save();
+                SettingsView.ReloadFromSettings();
+                UpdateStartButton();
+            }
+            if (quiet)
+            {
+                services.Settings.CpuNotice = false;
+                services.SettingsStore.Save();
+            }
+            return;
+        }
+
         var (open, silence) = await MessageBox.ShowNotice(
             this, string.Format(App.Loc["CpuNoAvx2"], SimulatorBuildGuide), App.Loc["CpuNoAvx2Title"],
             App.Loc["CpuNoAvx2Open"], App.Loc["DontShowAgain"]);
@@ -595,6 +646,9 @@ public partial class MainWindow : Window
         // would start a second simulator.
         if (_starting || DateTime.UtcNow - _startedUtc < StartCooldown)
             return;
+        // A shortcut starts the same way the button does, and only where the button may.
+        if (!freeFly && !startButton.IsEnabled)
+            return;
 
         _starting = true;
         try
@@ -609,6 +663,29 @@ public partial class MainWindow : Window
                 !await MessageBox.Show(this, App.Loc["StartNoStaffConfirm"],
                                        App.Loc["StartNoStaffTitle"], MessageBoxButtons.YesNo))
                 return;
+
+            // edits on the settings page not saved: saved, or let go - kept, the starter would write them when it
+            // closes, perhaps while the simulator reads the file
+            if (saveSettings && SettingsView.HasUnsavedChanges)
+            {
+                var save = await MessageBox.Choose(this, App.Loc["StartUnsavedMessage"], App.Loc["UnsavedChanges"],
+                                                   App.Loc["StartUnsavedSave"], App.Loc["StartUnsavedWithout"]);
+                if (save is null)
+                    return;
+                if (save == false)
+                    SettingsView.DiscardEdits();
+                else
+                {
+                    SettingsView.Save();
+                    // eu07.ini or the keys' file not written: still there to be saved
+                    if (SettingsView.HasUnsavedChanges)
+                    {
+                        await MessageBox.Show(this, App.Loc["SettingsNotSaved"], App.Loc["UnsavedChanges"],
+                                              MessageBoxButtons.Ok);
+                        return;
+                    }
+                }
+            }
 
             LoadingScreen.Prepare(trainset?.Logo, Path.GetFileNameWithoutExtension(scenery.Path));
 
@@ -700,6 +777,8 @@ public partial class MainWindow : Window
             FollowLastRun();
             RestoreFromSimulator();
             ReportIfCrashed(simulator, executable, started);
+            // What the simulator or its editor wrote while it ran comes in now.
+            _ = _sceneryLooks.LookAsync();
         }), TaskScheduler.Default);
     }
 
@@ -709,7 +788,8 @@ public partial class MainWindow : Window
     /// </summary>
     private static void FollowLastRun()
     {
-        if (AppServices.Current.Settings.PhysicsLog)
+        var settings = AppServices.Current.Settings;
+        if (settings.PhysicsLog || settings.BlackBox || settings.PhysicsLogTrains)
             _ = Task.Run(AppServices.Current.Tapes.FollowLastRun);
     }
 

@@ -6,6 +6,8 @@ using StarterNG.Tests.Fakes;
 
 namespace StarterNG.Tests;
 
+// Puts in services of its own: not while the controls read theirs.
+[Collection(AvaloniaControls.Name)]
 public class ConsistOrientationTests
 {
     private readonly VehicleCatalog _catalog;

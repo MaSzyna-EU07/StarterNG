@@ -126,6 +126,20 @@ public class HeadCodeTests
     }
 
     [Fact]
+    public void The_speed_of_the_wheels_is_read_when_written()
+    {
+        var f = new BlackBoxFile().Info();
+        // the wheels slipping at 40 km/h
+        f.Cab(0, 1, 1000, 40, movement: 1, equippedHead: 0x15, equippedTail: 0x22, engine: 1, wheelSpeed: 55.5f);
+        f.Cab(0.5, 1, 1000, 40, movement: 1, equippedHead: 0x15, equippedTail: 0x22, engine: 1);
+        var cab = BlackBoxReader.Read(f.End(1).Stream()).Cab;
+        Assert.Equal(55.5f, cab[0].WheelSpeedKmh);
+        Assert.Equal(40f, cab[0].SpeedKmh);
+        // an older sample has none
+        Assert.Null(cab[1].WheelSpeedKmh);
+    }
+
+    [Fact]
     public void A_vehicle_with_no_lamps_is_not_judged()
     {
         var recording = DriveWith(0, 0, 0, 0);

@@ -62,11 +62,7 @@ public sealed class Warehouse
             var entry = new ListBoxItem
             {
                 Tag = preset.Name,
-                Content = new TextBlock
-                {
-                    Text = preset.Name,
-                    TextTrimming = TextTrimming.CharacterEllipsis
-                }
+                Content = EntryContent(preset.Name, preset.Entry)
             };
             _list.Items.Add(entry);
             if (current is not null && string.Equals(current, preset.Name, StringComparison.Ordinal))
@@ -79,6 +75,48 @@ public sealed class Warehouse
 
         if (!string.Equals(before, SelectedName(), StringComparison.Ordinal))
             SelectionChanged?.Invoke();
+    }
+
+    /// <summary>
+    /// The consist's name, and under it its vehicles as minis - as the scenery's consists
+    /// are listed - so one is told from another without opening it.
+    /// </summary>
+    private static Control EntryContent(string presetName, string entry)
+    {
+        var name = new TextBlock
+        {
+            Text = presetName,
+            TextTrimming = TextTrimming.CharacterEllipsis
+        };
+        if (ConsistText.VehiclesFrom(entry) is not { } vehicles)
+            return name;
+
+        var content = new StackPanel
+        {
+            Spacing = 2,
+            Margin = new Thickness(0, 3),
+            Children = { name, TrainsetRow.ScrollingStrip(vehicles) }
+        };
+        // Read by its name, not by every caption under it.
+        Avalonia.Automation.AutomationProperties.SetName(content, presetName);
+        return content;
+    }
+
+    /// <summary>
+    /// Redraws one consist's entry after it was edited and saved, so its minis follow the
+    /// edit at once - the rest of the list, its selection and where it is scrolled stay.
+    /// </summary>
+    public void RefreshEntry(string name, string entry)
+    {
+        foreach (var obj in _list.Items)
+        {
+            if (obj is ListBoxItem { Tag: string tag } item &&
+                string.Equals(tag, name, StringComparison.OrdinalIgnoreCase))
+            {
+                item.Content = EntryContent(tag, entry);
+                return;
+            }
+        }
     }
 
     private string? SelectedName() => (_list.SelectedItem as ListBoxItem)?.Tag as string;
@@ -116,8 +154,8 @@ public sealed class Warehouse
     }
 
     private MenuItem SortItem(PresetSort mode, string locKey) =>
-        MenuItems.Item((PresetStore.SortMode == mode ? "● " : "○ ") + App.Loc[locKey],
-                       () => { PresetStore.SortMode = mode; Refresh(); });
+        MenuItems.Choice(App.Loc[locKey], PresetStore.SortMode == mode,
+                         () => { PresetStore.SortMode = mode; Refresh(); });
 
     /// <summary>Asks for a name at the button pressed, and says where the consist went.</summary>
     public void SaveCurrent(Control anchor) =>

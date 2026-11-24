@@ -520,7 +520,13 @@ public sealed class Recording
     }
 
     /// <summary>When the train protection braked the user's train: the alerter or the cab signalling not acknowledged.</summary>
-    public IReadOnlyList<TimeSpanRange> SecurityBrakings() => CabSpans(s => s.Has(SecurityFlags.Braking));
+    public IReadOnlyList<TimeSpanRange> SecurityBrakings() => CabSpans(s => s.ProtectionBraking);
+
+    /// <summary>
+    /// When the train protection's buzzer sounded in the user's cab: a lamp not acknowledged in time, the braking to
+    /// follow unless acknowledged on. Until it ends, braking included.
+    /// </summary>
+    public IReadOnlyList<TimeSpanRange> SecurityAlarms() => CabSpans(s => s.VigilanceBuzzer || s.CabSignalBuzzer);
 
     /// <summary>The commands the user gave in a vehicle, presses only.</summary>
     public IEnumerable<CommandEntry> UserCommands() => _commands.Where(c => c.Pressed && c.Vehicle != 0);

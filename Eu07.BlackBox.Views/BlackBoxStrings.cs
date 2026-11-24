@@ -24,9 +24,13 @@ public sealed class DefaultBlackBoxStrings : IBlackBoxStrings
         ["LiveTip"] = "Reads what the simulator adds to the file every 2 seconds",
         ["Play"] = "Play",
         ["Pause"] = "Pause",
+        ["PlaySpeed"] = "Playback speed",
+        ["TimelineHelp"] = "The arrows go 10 seconds back or on, with Ctrl a minute, Page Up and Page Down ten minutes, Home and End to the start and the end.",
+        ["TimetableHelp"] = "The up and down arrows go through the stations, Enter goes to the moment the train was there.",
+        ["MapHelp"] = "The map of the run. What it shows is also in the events and the timetable, and on the run below it.",
         ["Follow"] = "Follow the train",
         ["Fit"] = "Whole map",
-        ["NoFile"] = "Open a black box: physicslog/*.blackbox, written with the physics logs on.",
+        ["NoFile"] = "Open a black box: physicslog/*.blackbox, written with the black box or the physics logs on.",
         ["Unreadable"] = "Can't read {0}: {1}",
         ["Reading"] = "Reading {0}…",
         ["Summary"] = "{0} · {1:0.0} km · max {2:0} km/h · driven {3} · autopilot {4} · over the AI {5} ({6} by more than {7:0} km/h, at most +{8:0} km/h) · signals {9} · at danger {10} · commands {11}",
@@ -181,8 +185,12 @@ public sealed class DefaultBlackBoxStrings : IBlackBoxStrings
         ["EventHornMissed"] = "W6: NO HORN",
         ["EventCab"] = "Cab {0} of {1}",
         ["EventSecurityBraking"] = "BRAKING BY {0}",
+        ["EventSecurityAlarm"] = "{0} buzzer",
+        ["EventSecurityAlarmAcknowledged"] = "{0} buzzer, acknowledged after {1:0.0} s",
+        ["EventSecurityAlarmMissed"] = "{0} buzzer, not acknowledged",
         ["EventTimetable"] = "Timetable {0}, {1}",
         ["CabSpeed"] = "Speed",
+        ["CabWheels"] = "wheels {0:0}",
         ["CabAiTarget"] = "AI {0:0} km/h",
         ["CabAcceleration"] = "Along",
         ["CabLateral"] = "Lateral",
@@ -295,9 +303,13 @@ public sealed class DefaultBlackBoxStrings : IBlackBoxStrings
         ["LiveTip"] = "Co 2 sekundy doczytuje to, co symulator dopisał do pliku",
         ["Play"] = "Odtwarzaj",
         ["Pause"] = "Pauza",
+        ["PlaySpeed"] = "Prędkość odtwarzania",
+        ["TimelineHelp"] = "Strzałki przesuwają o 10 sekund, z Ctrl o minutę, Page Up i Page Down o dziesięć minut, Home i End na początek i koniec.",
+        ["TimetableHelp"] = "Strzałki w górę i w dół przechodzą po stacjach, Enter przenosi do chwili, gdy pociąg tam był.",
+        ["MapHelp"] = "Mapa przejazdu. To, co pokazuje, jest też w zdarzeniach, w rozkładzie i na przebiegu jazdy pod nią.",
         ["Follow"] = "Śledź pociąg",
         ["Fit"] = "Cała mapa",
-        ["NoFile"] = "Otwórz czarną skrzynkę: physicslog/*.blackbox, zapisywaną razem z logami fizyki.",
+        ["NoFile"] = "Otwórz czarną skrzynkę: physicslog/*.blackbox, zapisywaną przy włączonej czarnej skrzynce albo logach fizyki.",
         ["Unreadable"] = "Nie można odczytać {0}: {1}",
         ["Reading"] = "Czytanie {0}…",
         ["Summary"] = "{0} · {1:0.0} km · maks. {2:0} km/h · jazda {3} · autopilot {4} · ponad AI {5} (w tym {6} o więcej niż {7:0} km/h, najwyżej +{8:0} km/h) · sygnalizatory {9} · minięte na „Stój” {10} · komendy {11}",
@@ -452,8 +464,12 @@ public sealed class DefaultBlackBoxStrings : IBlackBoxStrings
         ["EventHornMissed"] = "W6: BEZ TRĄBIENIA",
         ["EventCab"] = "Kabina {0} w {1}",
         ["EventSecurityBraking"] = "HAMOWANIE PRZEZ {0}",
+        ["EventSecurityAlarm"] = "Brzęczyk {0}",
+        ["EventSecurityAlarmAcknowledged"] = "Brzęczyk {0}, potwierdzony po {1:0.0} s",
+        ["EventSecurityAlarmMissed"] = "Brzęczyk {0}, bez potwierdzenia",
         ["EventTimetable"] = "Rozkład {0}, {1}",
         ["CabSpeed"] = "Prędkość",
+        ["CabWheels"] = "koła {0:0}",
         ["CabAiTarget"] = "AI {0:0} km/h",
         ["CabAcceleration"] = "Wzdłużne",
         ["CabLateral"] = "Boczne",
@@ -556,7 +572,11 @@ public sealed class DefaultBlackBoxStrings : IBlackBoxStrings
         ["FileFilter"] = "Czarna skrzynka"
     };
 
+    /// <summary>The key of the text of a simulator's command: <see cref="CommandPrefix"/> and its name.</summary>
+    public const string CommandPrefix = "Cmd.";
+
     private readonly Dictionary<string, string> _texts;
+    private readonly string _languageCode;
 
     public DefaultBlackBoxStrings() : this(CultureInfo.CurrentUICulture)
     {
@@ -569,11 +589,15 @@ public sealed class DefaultBlackBoxStrings : IBlackBoxStrings
     /// <summary>Polish for "pl", English for any other language.</summary>
     public DefaultBlackBoxStrings(string languageCode)
     {
+        _languageCode = languageCode;
         _texts = languageCode == "pl" ? Polish : English;
     }
 
     /// <summary>The keys there are texts for, for a translation to give them all.</summary>
     public static IEnumerable<string> Keys => English.Keys;
 
-    public string this[string key] => _texts.TryGetValue(key, out var text) ? text : English.GetValueOrDefault(key, key);
+    /// <summary>A key of <see cref="CommandPrefix"/> gives what the command does (<see cref="CommandTexts"/>).</summary>
+    public string this[string key] =>
+        key.StartsWith(CommandPrefix, System.StringComparison.Ordinal) ? CommandTexts.Of(key[CommandPrefix.Length..], _languageCode)
+        : _texts.TryGetValue(key, out var text) ? text : English.GetValueOrDefault(key, key);
 }

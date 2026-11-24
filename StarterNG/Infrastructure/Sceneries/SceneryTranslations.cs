@@ -14,12 +14,14 @@ public sealed class SceneryTranslations : ISceneryTranslations
     private const string BaseLanguage = "en";
 
     private readonly IFileSystem _files;
+    private readonly CaseInsensitivePaths _names;
     private readonly IDiagnosticsLog _log;
     private readonly Dictionary<string, string> _map = new(StringComparer.OrdinalIgnoreCase);
 
     public SceneryTranslations(IFileSystem files, IDiagnosticsLog log)
     {
         _files = files;
+        _names = new CaseInsensitivePaths(files);
         _log = log;
     }
 
@@ -29,12 +31,11 @@ public sealed class SceneryTranslations : ISceneryTranslations
 
         string sceneryDir = Path.GetDirectoryName(Path.GetFullPath(scenery.Path)) ?? "scenery";
         string id = Path.GetFileNameWithoutExtension(scenery.Path);
-        string i18nDir = Path.Combine(sceneryDir, "i18n");
         string language = NormalizeLanguage(langCode);
 
-        TryLoad(Path.Combine(i18nDir, $"{id}_{BaseLanguage}.json"));
+        TryLoad(_names.Find(sceneryDir, $"i18n/{id}_{BaseLanguage}.json"));
         if (!string.Equals(language, BaseLanguage, StringComparison.OrdinalIgnoreCase))
-            TryLoad(Path.Combine(i18nDir, $"{id}_{language}.json"));
+            TryLoad(_names.Find(sceneryDir, $"i18n/{id}_{language}.json"));
     }
 
     public string Translate(string? text)
@@ -50,9 +51,9 @@ public sealed class SceneryTranslations : ISceneryTranslations
         return _map.TryGetValue(key, out string? translated) ? translated : text;
     }
 
-    private void TryLoad(string path)
+    private void TryLoad(string? path)
     {
-        if (!_files.FileExists(path))
+        if (path is null)
             return;
 
         try

@@ -8,6 +8,7 @@ using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Avalonia;
+using Avalonia.Automation;
 using Avalonia.Animation;
 using Avalonia.Controls;
 using Avalonia.Input;
@@ -17,6 +18,7 @@ using Avalonia.Media.Imaging;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
 using StarterNG.Classes;
+using StarterNG.Controls;
 using StarterNG.Domain;
 using StarterNG.Application;
 using StarterNG.Domain.Sceneries;
@@ -43,6 +45,7 @@ public partial class Scenarios : UserControl
     {
         InitializeComponent();
         SyncConsistRowHeight();
+        Settings.AdvancedModeChanged += OnAdvancedModeChanged;
 
         Sceneries = AppServices.Current.Library.Sceneries;
 
@@ -84,6 +87,43 @@ public partial class Scenarios : UserControl
             state.StartingVehicleName = vehicle;
     }
 
+    private void OnAdvancedModeChanged()
+    {
+        RefreshVehicleList();
+        RefreshFaultMarks(sceneryList.Items);
+        if (SelectedScenery is { } scenery)
+            PopulateFaults(scenery);
+    }
+
+    /// <summary>
+    /// The scenery files' mistakes - written wrong, or vehicles the simulator will not
+    /// find - are for those who mend sceneries: shown in the advanced mode only.
+    /// </summary>
+    private static bool ShowsFaults => AppServices.Current.Settings.AdvancedSettings;
+
+    // The tree's marks put on or taken off where they stand, the selection and what is
+    // unfolded kept.
+    private void RefreshFaultMarks(ItemCollection items)
+    {
+        foreach (var obj in items)
+        {
+            if (obj is not TreeViewItem node)
+                continue;
+            if (node.Tag is int index && index < Sceneries.Count)
+            {
+                string? label = node.Header switch
+                {
+                    string text => text,
+                    StackPanel { Children: [TextBlock name, ..] } => name.Text,
+                    _ => null
+                };
+                if (label is not null)
+                    node.Header = SceneryHeader(label, Sceneries[index]);
+            }
+            RefreshFaultMarks(node.Items);
+        }
+    }
+
     private void BuildSceneryTree()
     {
         sceneryList.Items.Clear();
@@ -99,9 +139,9 @@ public partial class Scenarios : UserControl
             sceneryList.Items.Add(ToTreeItem(node, expandGroups));
     }
 
-    private TreeViewItem ToTreeItem(SceneryTreeNode node, bool expandGroups)
+    private ExpandableTreeViewItem ToTreeItem(SceneryTreeNode node, bool expandGroups)
     {
-        var item = new TreeViewItem
+        var item = new ExpandableTreeViewItem
         {
             Header = node.IsGroup ? node.Label : SceneryHeader(node.Label, Sceneries[node.SceneryIndex]),
             Tag = node.IsGroup ? null : node.SceneryIndex,
@@ -117,7 +157,7 @@ public partial class Scenarios : UserControl
     /// <summary>The scenery's name, marked when its files hold mistakes.</summary>
     private object SceneryHeader(string label, Scenery scenery)
     {
-        if (scenery.Faults.Count == 0)
+        if (!ShowsFaults || scenery.Faults.Count == 0)
             return label;
 
         var mark = new Material.Icons.Avalonia.MaterialIcon
@@ -163,6 +203,39 @@ public partial class Scenarios : UserControl
         favoriteMenuItem.Header = App.Loc[scenery is not null && AppServices.Current.Favorites.Contains(scenery)
             ? "FavoriteRemove"
             : "FavoriteAdd"];
+        deleteSbtMenuItem.IsEnabled = scenery is not null
+                                      && !AppServices.Current.State.SimulatorRunning
+                                      && AppServices.Current.BinaryTerrain.Of(scenery.Path) is not null;
+    }
+
+    // Only a file the simulator can make again from the scenery's text goes: one
+    // standing in for terrain files the installation lacks takes the terrain with it.
+    private async void DeleteSbt_OnClick(object? sender, RoutedEventArgs e)
+    {
+        if (SelectedScenery is not { } scenery || TopLevel.GetTopLevel(this) is not Window owner)
+            return;
+
+        var sbt = AppServices.Current.BinaryTerrain;
+        if (sbt.Of(scenery.Path) is not { } file)
+            return;
+
+        string name = Path.GetFileName(file);
+        string title = App.Loc["DeleteSbt"];
+        if (await Task.Run(() => sbt.MissingOriginal(scenery.Path)) is { } missing)
+        {
+            await MessageBox.Show(owner, string.Format(App.Loc["DeleteSbtNoOriginal"], name, missing), title,
+                                  MessageBoxButtons.Ok);
+            return;
+        }
+
+        long megabytes = AppServices.Current.Files.GetFileSize(file) / (1024 * 1024);
+        if (!await MessageBox.Show(owner, string.Format(App.Loc["DeleteSbtConfirm"], name, megabytes), title,
+                                   MessageBoxButtons.YesNo))
+            return;
+
+        // Gone, the scenery follows by the watch on its files, as it would after any other change.
+        if (!await Task.Run(() => sbt.Delete(scenery.Path)))
+            await MessageBox.Show(owner, string.Format(App.Loc["DeleteSbtFailed"], name), title, MessageBoxButtons.Ok);
     }
 
     private void ToggleFavorite_OnClick(object? sender, RoutedEventArgs e)
@@ -255,20 +328,13 @@ public partial class Scenarios : UserControl
     }
 
     /// <summary>A consist's label in a list of them, here and on the depot page.</summary>
-    internal static TextBlock TrainsetListContent(Trainset trainset) =>
-        new Avalonia.Controls.TextBlock
-        {
-            Text = TrainsetDisplay.ListLabel(trainset),
-            TextTrimming = Avalonia.Media.TextTrimming.CharacterEllipsis,
-            TextWrapping = Avalonia.Media.TextWrapping.NoWrap
-        };
+    internal static Control TrainsetListContent(Trainset trainset) => TrainsetRow.Build(trainset);
 
     private void PopulateVehicleList(Scenery scn)
     {
         vehicleList.Items.Clear();
 
-        bool showAi = AppServices.Current.Settings.ShowAiVehicles;
-        bool drivableOnly = AppServices.Current.Settings.DrivableOnly;
+        var settings = AppServices.Current.Settings;
         var current = AppServices.Current.State.CurrentTrainset;
         ListBoxItem? currentRow = null;
 
@@ -276,7 +342,7 @@ public partial class Scenarios : UserControl
         {
             var trainset = scn.Trainsets[i];
 
-            if (!TrainsetDisplay.ListedIn(trainset, showAi, drivableOnly, current)) continue;
+            if (!TrainsetDisplay.ListedIn(trainset, settings, current)) continue;
 
             var listItem = new ListBoxItem
             {
@@ -409,6 +475,8 @@ public partial class Scenarios : UserControl
         sceneryDescription.Text = scenery.LocalizedDescription(AppServices.Current.SceneryTexts);
 
         string? imagePath = AppServices.Current.SceneryImages.Resolve(scenery);
+        // Under the mouse a reader hears what the picture is of.
+        AutomationProperties.SetName(sceneryImage, $"{App.Loc["SceneryImage"]}: {scenery.Name}");
         if (imagePath is not null)
         {
             try
@@ -437,8 +505,9 @@ public partial class Scenarios : UserControl
     private void PopulateFaults(Scenery scenery)
     {
         var faults = scenery.Faults;
-        faultsTab.IsVisible = faults.Count > 0;
-        if (faults.Count == 0)
+        bool shown = ShowsFaults && faults.Count > 0;
+        faultsTab.IsVisible = shown;
+        if (!shown)
         {
             if (infoTabs.SelectedItem == faultsTab)
                 infoTabs.SelectedIndex = 0;
@@ -492,20 +561,18 @@ public partial class Scenarios : UserControl
             btn.Classes.Add("Flat");
             ToolTip.SetTip(btn, att.FilePath);
             // A button that does nothing is no way to say the file is not there.
-            btn.IsEnabled = File.Exists(Path.GetFullPath(att.FilePath));
+            btn.IsEnabled = AppServices.Current.Attachments.Resolve(att) is not null;
             ToolTip.SetShowOnDisabled(btn, true);
-            btn.Click += (_, _) => OpenAttachment(att.FilePath);
+            btn.Click += (_, _) => OpenAttachment(att);
             attachmentsPanel.Children.Add(btn);
         }
     }
 
-    private static void OpenAttachment(string relativePath)
+    private static void OpenAttachment(SceneryAttachment attachment)
     {
-        string full = Path.GetFullPath(relativePath);
-        if (!File.Exists(full))
-            full = Path.GetFullPath(Path.Combine(Directory.GetCurrentDirectory(), relativePath));
-        if (!File.Exists(full))
+        if (AppServices.Current.Attachments.Resolve(attachment) is not { } found)
             return;
+        string full = Path.GetFullPath(found);
         try
         {
             Process.Start(new ProcessStartInfo(full) { UseShellExecute = true });
@@ -761,6 +828,8 @@ public partial class Scenarios : UserControl
     {
         weatherTempLabel.Text = $"{(int)weatherTemp.Value} °C";
         weatherFogLabel.Text = FogScale2(FogScale.ToMetres(weatherFog.Value));
+        weatherTemp.ValueText = weatherTempLabel.Text;
+        weatherFog.ValueText = weatherFogLabel.Text;
         weatherDayDate.Text = string.Format(LanguageCulture, App.Loc["DayOfYear"], SelectedDayOfYear());
 
         weatherRestore.IsEnabled = _currentScenery?.Weather.Changed ?? false;
@@ -833,6 +902,7 @@ public partial class Scenarios : UserControl
     {
         var now = DateTime.Now;
         weatherTime.SelectedTime = new TimeSpan(now.Hour, now.Minute, 0);
+        Announcer.Say(this, ScreenReaderNames.PickerText(App.Loc["Time"], ScreenReaderNames.TimeText(weatherTime.SelectedTime)));
     }
 
     private void WeatherRestore_OnClick(object? sender, RoutedEventArgs e)
@@ -840,7 +910,17 @@ public partial class Scenarios : UserControl
         if (_currentScenery is null) return;
         _currentScenery.Weather.Restore();
         ShowWeather(_currentScenery);
+        Announcer.Say(this, WeatherSummary());
     }
+
+    /// <summary>The weather as a reader hears it once put back: every field and its value.</summary>
+    private string WeatherSummary() => string.Join(", ",
+        ScreenReaderNames.PickerText(App.Loc["Date"], ScreenReaderNames.DateText(weatherDate.SelectedDate, weatherDate.YearVisible)),
+        ScreenReaderNames.PickerText(App.Loc["Season"], ScreenReaderNames.TextOf(weatherSeason.SelectedItem)),
+        ScreenReaderNames.PickerText(App.Loc["Time"], ScreenReaderNames.TimeText(weatherTime.SelectedTime)),
+        ScreenReaderNames.PickerText(App.Loc["Temperature"], weatherTempLabel.Text),
+        ScreenReaderNames.PickerText(App.Loc["Visibility"], weatherFogLabel.Text),
+        ScreenReaderNames.PickerText(App.Loc["Overcast"], ScreenReaderNames.TextOf(weatherOvercast.SelectedItem)));
 
     private static TimeSpan? ParseTime(string? text)
     {
@@ -1000,6 +1080,11 @@ public partial class Scenarios : UserControl
             });
 
         var db = AppServices.Current.Library.Vehicles;
+        // The start goes by the vehicle's name, so of several named alike only the first is the one marked.
+        string? picked = AppServices.Current.State.StartingVehicleName;
+        var pickedVehicle = string.IsNullOrEmpty(picked)
+            ? null
+            : trainset.Vehicles.FirstOrDefault(v => string.Equals(v.Name, picked, StringComparison.OrdinalIgnoreCase));
         foreach (var train in trainset.Vehicles)
         {
 
@@ -1021,9 +1106,7 @@ public partial class Scenarios : UserControl
                 })
                 : MiniTextures.MissingVisual(train.SkinFile, thumbH);
 
-            bool selected = !string.IsNullOrEmpty(train.Name) &&
-                string.Equals(train.Name, AppServices.Current.State.StartingVehicleName,
-                              StringComparison.OrdinalIgnoreCase);
+            bool selected = ReferenceEquals(train, pickedVehicle);
             // The vehicle started in gets a frame over its picture as well as the lines above and below:
             // two thin lines alone were hard to see. Drawn over the picture, it moves no vehicle aside.
             if (selected)

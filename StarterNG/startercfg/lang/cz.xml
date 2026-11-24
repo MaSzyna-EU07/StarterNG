@@ -61,6 +61,8 @@
     <String key="StartNoScenery">Vyberte scenérii</String>
     <String key="StartNoTrain">Vyberte soupravu</String>
     <String key="StartNoStaff">Bez osádky / cestujícího</String>
+    <String key="StartDecor">Dekorační souprava</String>
+    <String key="StartAi">Souprava AI</String>
     <String key="StartNoStaffTitle">Souprava bez osádky</String>
     <String key="StartNoStaffConfirm">Tato souprava nemá osádku ani cestujícího — nebude co řídit. Přesto spustit?</String>
     <String key="RestoreWeather">Obnovit počasí</String>
@@ -69,6 +71,10 @@
     <String key="FavoriteAdd">Přidat do oblíbených</String>
     <String key="FavoriteRemove">Odebrat z oblíbených</String>
     <String key="OpenSceneryFolder">Otevřít složku</String>
+    <String key="DeleteSbt">Smazat SBT</String>
+    <String key="DeleteSbtConfirm">Smazat {0} ({1} MB)? Simulátor jej znovu sestaví ze souborů scenérie při jejím dalším načtení, které potrvá déle.</String>
+    <String key="DeleteSbtNoOriginal">Soubor {0} zůstává: není z čeho jej znovu sestavit, chybí {1}. Bez něj by scenérie přišla o terén.</String>
+    <String key="DeleteSbtFailed">Soubor {0} nelze smazat. Možná jej používá simulátor, nebo je složka jen pro čtení.</String>
     <String key="OptionalIncludes">Volitelné prvky</String>
     <String key="OpenTextureFolder">Otevřít složku s texturami</String>
     <String key="CopyTextureName">Kopírovat název</String>
@@ -98,6 +104,7 @@
     <String key="HaslerClockUnknown">hodina neznámá, čas se počítá od startu simulace</String>
     <String key="HaslerUnreadable">Pásku {0} se nepodařilo přečíst.</String>
     <String key="HaslerSummary">{0} · zaznamenáno {1} (jízda {2}, stání {3}) · dráha {4:0.00} km · Vmax {5:0} km/h · průměr za jízdy {6:0} km/h · průměr se zastávkami {7:0} km/h</String>
+    <String key="HaslerGap">nezaznamenáno {0}</String>
     <String key="HaslerCursor">{0} · {1:0.0} km · {2:0} km/h · válce {3:0.0} bar · proud {4}</String>
     <String key="HaslerTrackCylinders">Válce</String>
     <String key="HaslerTrackPipe">HP</String>
@@ -354,8 +361,8 @@
     <String key="General">Obecné</String>
 
     <String key="Language">Jazyk</String>
+    <String key="UnknownIniValue">Neznámá hodnota v eu07.ini: „{0}“. Zůstane v souboru, dokud ji nezměníte.</String>
     <String key="LanguageSimMissing">Simulátor nemá překlad do tohoto jazyka a poběží v angličtině.</String>
-    <String key="Fullscreen">Celá obrazovka</String>
     <String key="PauseSimInactive">Pozastavit simulaci při neaktivním okně</String>
     <String key="PauseSimStart">Pozastavit po spuštění</String>
     <String key="CursorSensitivity">Citlivost kurzoru</String>
@@ -365,6 +372,7 @@
     <String key="Communication">Komunikace</String>
 
     <String key="GamepadSignalIgnore">Ignorovat vstup z gamepadu</String>
+    <String key="ConfirmGamepadUse">Doporučené a výchozí je gamepad ignorovat. Zapnutí jeho podpory bývá zdrojem potíží s ovládáním. Měňte jen tehdy, když opravdu ovládáte gamepadem. Změnit?</String>
 
     <String key="Feedback">Zpětná vazba</String>
     <String key="FeedbackOff">Vypnuto</String>
@@ -406,8 +414,8 @@
 
     <String key="Graphic">Grafika</String>
     <String key="RenderEngine">Vykreslovací engine</String>
-    <String key="RenderEngineDesc">Plný funguje s každým exe. Starý, Zjednodušený a Experimentální jen se staršími, nový místo nich spustí Plný.</String>
-    <String key="REExperimentalWarning">Upozornění: experimentální renderer může být nestabilní, nezobrazovat části scény nebo se na některých grafických kartách nespustit. Pokud se simulátor nespustí nebo vypadá špatně, vraťte se k rendereru „Plný“.</String>
+    <String key="ConfirmRenderingChange">Změna „{0}“ může způsobit, že se simulátor nespustí nebo bude obraz vypadat špatně. Změnit?</String>
+    <String key="RenderEngineDesc">Plný je doporučený renderer simulátoru. Starý a Zjednodušený kreslí klasickým rendererem a nejsou doporučeny, pokud Plný funguje – jsou pro grafické karty, se kterými má Plný potíže.</String>
     <String key="GpuChoice">Grafická karta (Linux)</String>
     <String key="GpuDiscrete">Výkonnější (dedikovaná)</String>
     <String key="GpuSystem">Podle systému</String>
@@ -417,16 +425,9 @@
     <String key="GpuNotePlayer">Nalezeno: {0}. Kartu vybírají proměnné prostředí ({1}); starter je nemění.</String>
     <String key="GpuNoteOne">Jedna karta: {0} – není mezi čím vybírat.</String>
     <String key="GpuNoteUnread">Grafické karty se nepodařilo načíst z /sys/class/drm.</String>
-    <String key="IdleWindowsBuildOnly">Funguje jen ve verzi simulátoru pro Windows.</String>
-    <String key="IdleLegacyRendererOnly">Čte to jen renderer legacy, ale zvolen je jiný.</String>
-    <String key="IdleNeedsFrameRateTarget">Funguje jen s cílovým počtem snímků (targetfps).</String>
-    <String key="IdleOpenGlRenderersOnly">Experimentální renderer to nečte.</String>
-    <String key="IdleModernRendererOnly">Čte to jen plný renderer, ale zvolen je jiný.</String>
-    <String key="IdleNeedsNetworkServer">Pauza na pozadí vyžaduje síťový server (network.server).</String>
 
     <String key="Resolution">Rozlišení</String>
     <String key="ResolutionOnMonitor">{0} (monitor)</String>
-    <String key="IdleMonitorMode">Při automatickém rozlišení nefunguje.</String>
     <String key="BufforResolution">Rozlišení bufferu</String>
     <String key="MaxTexResolution">Maximální rozlišení textur</String>
     <String key="MaxTexCabResolution">Maximální rozlišení textur kabiny</String>
@@ -455,7 +456,14 @@
     <String key="FpsLimitDesc">Méně snímků: chladnější a tišší počítač. S V-Sync limit nad obnovovací frekvencí nic nedělá.</String>
     <String key="ShadowAngleLimit">Omezení délky stínů</String>
     <String key="ShadowLimitShort">Zkrácené</String>
-    <String key="FullscreenWindowed">Automatické rozlišení (celá obrazovka bez okrajů)</String>
+    <String key="DisplayMode">Režim zobrazení</String>
+    <String key="DisplayModeFullscreen">Celá obrazovka</String>
+    <String key="DisplayModeBorderless">Celá obrazovka bez okrajů</String>
+    <String key="DisplayModeWindow">Okno</String>
+    <String key="DisplayModeDesc">Celá obrazovka bez okrajů bere rozlišení monitoru a rychleji přepíná do jiných programů.</String>
+    <String key="FullscreenMonitor">Monitor</String>
+    <String key="FullscreenMonitorDesc">Na kterém monitoru se simulátor otevře v režimu celé obrazovky.</String>
+    <String key="MonitorPrimary">Hlavní</String>
     <String key="VSync">VSync</String>
     <String key="SmokeDisplay">Zobrazení kouře</String>
     <String key="SmokeParticlesMultiplier">Násobitel částic kouře</String>
@@ -497,7 +505,11 @@
     <String key="PhysicsAccuracyIncreased">Zvýšená přesnost fyziky</String>
     <String key="BreakingPantographPossibility">Možnost zlomení pantografu</String>
     <String key="PowerOverheadLineOnly">Napájení jen pod trolejí</String>
-    <String key="SaveSpeedometerTapes">Ukládat pásky rychloměru</String>
+    <String key="SaveBlackBox">Nahrávat černou skříňku a pásky rychloměru</String>
+    <String key="SaveBlackBoxDesc">Nahrává jízdu do jednoho souboru ve složce physicslog/ a průběžně, každé 2 s, zapisuje pásky (.dat) vozidel, ve kterých jste.</String>
+    <String key="SaveTrainTapes">Nahrávat pásky rychloměru všech vlaků</String>
+    <String key="SaveTrainTapesDesc">Průběžně, každé 2 s, zapisuje pásky (.dat) každého vlaku scenérie do složky physicslog/: jednu na strojvedoucího kolejových vozidel, bez silničních vozidel a cestujících. Mnohem méně souborů než fyzikální log každého vozidla.</String>
+    <String key="SaveSpeedometerTapes">Ukládat fyzikální log všech vozidel</String>
     <String key="SaveSimLogs">Ukládat log simulace</String>
     <String key="KeepPrevLogs">Zachovat předchozí logy</String>
     <String key="DisplaySimulation">Zobrazit simulaci</String>
@@ -515,6 +527,12 @@
     <String key="AmbientVolume">Hlasitost okolí</String>
 
     <String key="Advanced">Pokročilé</String>
+    <String key="AdvancedMode">Pokročilý režim</String>
+    <String key="AdvancedModeMenu">Pokročilý režim…</String>
+    <String key="AdvancedModeOff">Vypnout pokročilý režim</String>
+    <String key="AdvancedModeOffConfirm">Vypnutí pokročilého režimu vrátí výchozí hodnoty všech nastavení, která jsou dostupná jen v něm, a uloží nastavení z této stránky. Vypnout?</String>
+    <String key="AdvancedModeOn">Zapnout</String>
+    <String key="AdvancedModeWarning">Pokročilý režim zobrazí všechna nastavení simulátoru a starteru, i ta, po jejichž změně se simulátor nemusí spustit, může být nestabilní nebo vypadat špatně. Umožní také měnit obsazení souprav, soupravy AI a dekorace, takže scénář nemusí fungovat tak, jak ho autor zamýšlel.&#10;&#10;Tato nastavení měňte, jen když víte, co dělají. Potíže, které způsobí, nejsou chybami simulátoru: než chybu nahlásíte, vypněte pokročilý režim a obnovte výchozí nastavení.&#10;&#10;Přečtěte si to pozorně. Tlačítko pro zapnutí bude funkční za 20 sekund.</String>
     <String key="CompressTextures">Komprimovat textury TGA</String>
     <String key="ScaleSpeculars">Škálovat odlesky (kompatibilita starých modelů)</String>
     <String key="ScaleSpecularsDesc">Zeslabuje lesk modelů dělaných pro starší renderery.</String>
@@ -563,6 +581,48 @@
     <String key="Save">Uložit</String>
     <String key="Reset">Obnovit</String>
     <String key="SettingsSaved">Nastavení uloženo</String>
+    <String key="DefaultsRestored">Výchozí hodnoty obnoveny</String>
+    <String key="AllDefaultsConfirm">Všechna nastavení se vrátí na výchozí. Zůstane: jazyk, vybraný simulátor, port UART a klávesy ovládání.&#10;&#10;Změny je ještě třeba uložit.</String>
+    <String key="SettingsRestored">Uložené nastavení obnoveno</String>
+    <String key="TreeExpanded">rozbaleno</String>
+    <String key="TreeCollapsed">sbaleno</String>
+    <String key="DepotConsistSources">Zdroje soupravy</String>
+    <String key="DepotVehicleInfo">Informace o vozidle</String>
+    <String key="DepotVehicleEdit">Nastavení vozidla</String>
+    <String key="ScenarioDetails">Podrobnosti scénáře</String>
+    <String key="SectionLevel">Úroveň sekce</String>
+    <String key="SearchFound">Nalezeno: {0}</String>
+    <String key="SpinUp">Zvýšit</String>
+    <String key="SpinDown">Snížit</String>
+    <String key="ChromeMinimize">Minimalizovat</String>
+    <String key="ChromeMaximize">Maximalizovat</String>
+    <String key="ChromeRestore">Obnovit</String>
+    <String key="ChromeClose">Zavřít</String>
+    <String key="ScrollLineUp">Řádek nahoru</String>
+    <String key="ScrollLineDown">Řádek dolů</String>
+    <String key="ScrollPageUp">Stránka nahoru</String>
+    <String key="ScrollPageDown">Stránka dolů</String>
+    <String key="ScrollColumnLeft">Sloupec vlevo</String>
+    <String key="ScrollColumnRight">Sloupec vpravo</String>
+    <String key="ScrollPageLeft">Stránka vlevo</String>
+    <String key="ScrollPageRight">Stránka vpravo</String>
+    <String key="ScrollPosition">Poloha</String>
+    <String key="TapeKeysHelp">Šipky vlevo a vpravo posouvají po pásce, s Ctrl desetkrát dál, Home a End jdou na její konce, Enter přenese černou skříňku do tohoto okamžiku.</String>
+    <String key="ConsistSaidEmpty">Souprava prázdná</String>
+    <String key="ConsistSaidAdded">Přidáno {0} na pozici {1} z {2}</String>
+    <String key="ConsistSaidRemoved">Odebráno {0}, zbývá vozidel: {1}</String>
+    <String key="ConsistSaidTurned">{0} otočeno</String>
+    <String key="ConsistSaidUnturned">{0} otočeno zpět</String>
+    <String key="ConsistSaidTurnedMany">Otočeno vozidel: {0}</String>
+    <String key="ConsistSaidMoved">{0} přesunuto na pozici {1} z {2}</String>
+    <String key="ConsistSaidReordered">Pořadí změněno</String>
+    <String key="ConsistSaidReplaced">{0} nahrazeno za {1}</String>
+    <String key="ConsistSaidChangedMany">Změněno vozidel: {0}, v soupravě: {1}</String>
+    <String key="ConsistSaidUndone">Vráceno zpět. {0}</String>
+    <String key="ConsistSaidRedone">Znovu provedeno. {0}</String>
+    <String key="SceneryImage">Obrázek scenérie</String>
+    <String key="PanelSplitter">Oddělovač panelů</String>
+    <String key="SettingsCategories">Kategorie nastavení</String>
     <String key="SettingsNotSaved">Nastavení se nepodařilo uložit</String>
     <String key="UnsavedChanges">Neuložené změny</String>
 
@@ -592,8 +652,10 @@
     <String key="About">O programu</String>
     <String key="Close">Zavřít</String>
     <String key="CpuNoAvx2Title">Procesor bez AVX2</String>
-    <String key="CpuNoAvx2">Tento procesor nemá AVX2 a oficiální simulátor ho vyžaduje: nespustí se.&#10;&#10;Simulátor lze sestavit bez AVX2 (CMake -DENABLE_AVX2=OFF). Návod:&#10;{0}</String>
+    <String key="CpuNoAvx2">Tento procesor nemá AVX2 a oficiální simulátor ho vyžaduje: nespustí se.&#10;&#10;Existuje verze simulátoru bez AVX2 - název jejího souboru končí na _noavx2. Vložte ji do složky hry a starter ji sám použije. Simulátor lze také sestavit sám (CMake -DENABLE_AVX2=OFF). Návod:&#10;{0}</String>
     <String key="CpuNoAvx2Open">Otevřít návod</String>
+    <String key="CpuNoAvx2Chosen">Tento procesor nemá AVX2 a zvolený simulátor {0} ho vyžaduje: nespustí se.&#10;&#10;Ve složce hry je verze bez AVX2: {1}. Automatická volba vezme právě ji.</String>
+    <String key="CpuNoAvx2UseIt">Volit automaticky</String>
     <String key="DontShowAgain">Znovu nezobrazovat</String>
     <String key="SettingsPath">Nastavení načteno z:</String>
 
@@ -627,6 +689,9 @@
     <String key="WarehouseAppend">Připojit soupravu ze skladu</String>
     <String key="WarehouseImportFile">Přidat soupravy ze souboru...</String>
     <String key="StartWithoutSaving">Spustit bez uložení nastavení</String>
+    <String key="StartUnsavedMessage">Nastavení obsahuje neuložené změny. Uložit je před spuštěním simulátoru?</String>
+    <String key="StartUnsavedSave">Uložit a spustit</String>
+    <String key="StartUnsavedWithout">Zahodit změny a spustit</String>
     <String key="StartMore">Další způsoby spuštění</String>
     <String key="StartFreeFly">Spustit bez vozidla</String>
     <String key="StartEditorShort">Editor scenérie</String>
@@ -742,10 +807,10 @@
     <String key="SyntaxVehicleOutsideTrainset">Vozidlo {0} stojí mimo soupravu: chybí záhlaví trainset?</String>
     <String key="SyntaxNotANumber">{0}: „{1}“ místo čísla</String>
     <String key="SyntaxMissingInclude">Soubor {1} nenalezen (include)</String>
-    <String key="SyntaxIncludeLetterCase">Soubor {1} je na disku jako {0}: linuxový eu07 ho nenačte</String>
     <String key="SyntaxIncludeNotClosed">include {1} bez end</String>
     <String key="SyntaxTrainsetUnreadable">Soupravu {0} se nepodařilo načíst</String>
     <String key="SyntaxVehicleUnreadable">Vozidlo {0} se nepodařilo načíst</String>
+    <String key="SyntaxVehicleMissing">Vozidlo {0} chybí: soubor dynamic/{1} nenalezen - simulátor ho vynechá, souprava bude kratší</String>
     <String key="WarehouseUseInScenery">Vložit do vybrané soupravy scenérie</String>
     <String key="WarehouseAppendToScenery">Připojit k vybrané soupravě scenérie</String>
     <String key="ShortcutUndo">Vrátit změnu soupravy</String>
@@ -760,7 +825,6 @@
     <String key="Ini.loadinglog">Zobrazit protokol při načítání</String>
     <String key="Ini.captureonstart">Po startu myš otáčí kamerou</String>
     <String key="Ini.mousecontrol">Ovládání prvků v kabině myší</String>
-    <String key="Ini.fullscreenmonitor">Monitor pro celou obrazovku</String>
     <String key="Ini.screenshotsdir">Složka snímků obrazovky</String>
     <String key="Ini.basedrawrange">Základní dohled vykreslování</String>
     <String key="Ini.targetfps">Cílová snímková frekvence</String>
@@ -799,8 +863,8 @@
     <String key="PresetHigh">Vysoká</String>
     <String key="PresetCustom">Vlastní</String>
     <String key="MonitorRate">Monitor: {0} Hz</String>
-    <String key="MonitorRateNamed">Obrazovka {0}: až {1} Hz</String>
     <String key="MonitorRateUse">Nastavit {0} FPS</String>
+    <String key="FpsVSyncNote">S VSync nebude víc snímků, než má monitor Hz, takže stejný nebo vyšší limit nic nemění.</String>
     <String key="GfxPresetDesc">Najetím na úroveň zobrazíte hodnoty.</String>
     <String key="TextureBaseDateHint">RRRR-MM-DD</String>
     <String key="LanguageStarterMissing">Starter nemá překlad: zůstane anglicky. Simulátor dostane tento jazyk.</String>
@@ -858,73 +922,12 @@
     <String key="WarehouseSaved">Ve skladu: {0}</String>
     <String key="WarehouseNothingToAdd">Vyberte soupravu s vozidly</String>
     <String key="GfxGroupLevelTip">Úroveň jen pro tuto část grafiky</String>
-    <String key="REVulkan">Vulkan 1.4</String>
-    <String key="IdleVulkanOnly">Funguje jen s Vulkanem.</String>
-    <String key="DlssPreset">Předvolba DLSS</String>
-    <String key="FrameGeneration">Generování snímků</String>
-    <String key="Reflex">NVIDIA Reflex</String>
-    <String key="RayTracing">Odrazy ray tracing</String>
-    <String key="RayTracingRange">Dosah ray tracingu</String>
-    <String key="VulkanDevice">Grafická karta (Vulkan)</String>
-    <String key="Ssr">Odrazy v prostoru obrazovky (SSR)</String>
-    <String key="AmbientOcclusion">Okolní zastínění</String>
-    <String key="AmbientOcclusionQuality">Kvalita zastínění</String>
-    <String key="AoLighting">Zastínění v okolním světle</String>
-    <String key="LightsClustered">Klastrové osvětlení</String>
-    <String key="LightShadows">Stíny lamp a reflektorů</String>
-    <String key="ContactShadows">Kontaktní stíny</String>
-    <String key="ShadowSdsm">Kaskády stínů podle scény (SDSM)</String>
-    <String key="CabProbe">Sonda kabiny</String>
-    <String key="CabProbeInterval">Obnovení sondy každých N snímků</String>
-    <String key="CabProbeReflections">Kabina odráží sebe</String>
-    <String key="CabProbeBounce">Odražené světlo lampy v kabině</String>
-    <String key="FogQuality">Kvalita mlhy</String>
-    <String key="Clouds">Objemová oblaka</String>
-    <String key="CloudShadows">Stíny oblaků na zemi</String>
-    <String key="Grass">Tráva</String>
-    <String key="GrassDistance">Dosah trávy</String>
-    <String key="GrassDensity">Hustota trávy</String>
-    <String key="Precipitation">Srážky (částice)</String>
-    <String key="Bloom">Záře světlých míst (bloom)</String>
-    <String key="AutoExposure">Automatická expozice</String>
-    <String key="LevelOff">Vypnuto</String>
-    <String key="LevelLow">Nízká</String>
-    <String key="LevelMedium">Střední</String>
-    <String key="LevelHigh">Vysoká</String>
-    <String key="LevelUltra">Ultra</String>
-    <String key="ReflexOn">Zapnuto</String>
-    <String key="ReflexBoost">Zapnuto + boost</String>
-    <String key="AaTaa">TAA</String>
-    <String key="AaDlss">DLSS (škálování)</String>
-    <String key="AaDlaa">DLAA (nativní rozlišení)</String>
-    <String key="DlssPresetDefault">Automaticky</String>
-    <String key="DlssPresetK">K: nejlepší kvalita</String>
-    <String key="DlssPresetJ">J: méně rozmazání</String>
-    <String key="DlssPresetM">M: pro režim Výkon</String>
-    <String key="DlssPresetL">L: pro Ultra výkon</String>
     <String key="Effects">Efekty</String>
     <String key="GfxColImage">Rozlišení a vyhlazování</String>
     <String key="GfxColLights">Osvětlení</String>
     <String key="GfxColPostFx">Postprocessing</String>
     <String key="GfxColNature">Kouř</String>
     <String key="AntiAliasing">Vyhlazování hran</String>
-    <String key="VolumetricFog">Objemová mlha</String>
-    <String key="REOpenGLNote">DLSS, generování snímků, Reflex a ray tracing jen s Vulkanem.</String>
-    <String key="REVulkanNote">Vyžaduje exe s Vulkanem a kartu, která ho podporuje. Jinak simulátor spustí Plný nebo Starý.</String>
-    <String key="VulkanDeviceAuto">automaticky</String>
-    <String key="DlssPresetInfoDefault">K pro DLAA, Kvalitu a Vyvážený, M pro Výkon, L pro Ultra výkon. Ovladač to může při aktualizaci změnit.</String>
-    <String key="DlssPresetInfoK">Model transformer s nejlepší kvalitou obrazu, ale nejnáročnější. Výchozí pro DLAA, Kvalitu a Vyvážený.</String>
-    <String key="DlssPresetInfoJ">Podobný K: o něco méně šmouh za pohyblivými objekty za cenu většího blikání. NVIDIA doporučuje spíše K.</String>
-    <String key="DlssPresetInfoM">Model pro režim Výkon (měřítko asi 50 %), tam výchozí. Expozici obrazu počítá sám.</String>
-    <String key="DlssPresetInfoL">Model pro režim Ultra výkon (měřítko asi 33 %), tam výchozí. Expozici obrazu počítá sám.</String>
-    <String key="DlssMissingLibraryNote">Vedle simulátoru chybí {0}: bez této knihovny simulátor tuto funkci DLSS nepoužije.</String>
-    <String key="DlssNoPlatformNote">Na macOS není DLSS k dispozici.</String>
-    <String key="FrameGenerationNeedsDlssNote">Generování snímků funguje jen s DLSS nebo DLAA.</String>
-    <String key="ReflexForcedNote">Generování snímků zapíná Reflex samo, ať je zde vybráno cokoli.</String>
-    <String key="AoLightingPrepassNote">Potřebuje hloubku celé scény před barvou; bez SSR a kontaktních stínů je to průchod navíc (zátěž CPU v OpenGL).</String>
-    <String key="AoNeedsPipelineNote">Při přeskočeném postprocessingu AO nefunguje.</String>
-    <String key="CabProbeReflectionsOnlyNote">Bez klastrového osvětlení a lampy kabiny jako světla (gfx.lights.cab) dává sonda jen odrazy.</String>
-    <String key="TemporalNeedsPipelineNote">TAA a DLSS běží v postprocessingu: při jeho přeskočení se hrany nevyhladí.</String>
     <String key="SettingsFile">Soubor eu07.ini</String>
     <String key="ImportIni">Importovat…</String>
     <String key="ImportIniTitle">Importovat nastavení z eu07.ini</String>
@@ -937,9 +940,8 @@
 {0}</String>
     <String key="ExportIniDone">Exportováno do {0}</String>
     <String key="REFull">Plný</String>
-    <String key="REOld">Starý</String>
-    <String key="RESimp">Zjednodušený</String>
-    <String key="REExperimental">Experimentální</String>
+    <String key="REOld">Starý (nedoporučeno, pokud Plný funguje)</String>
+    <String key="RESimp">Zjednodušený (nedoporučeno, pokud Plný funguje)</String>
     <String key="RenderAngleVulkan">Použít renderer ANGLE Vulkan</String>
     <String key="RenderVBO">Vykreslování VBO</String>
     <String key="CabShadowsRange">Dosah zdrojů stínů v kabině</String>
@@ -947,6 +949,4 @@
     <String key="UseGLESDesc">OpenGL ES místo OpenGL. Nefunguje s rendererem legacy.</String>
     <String key="GpuCard">{0}, {1} GB</String>
     <String key="GpuCardShared">{0}, sdílená paměť</String>
-    <String key="GfxColNewRenderer">Novinky OpenGL 4.6 / Vulkan</String>
-    <String key="GfxNewRendererNote">Funguje jen s novým exe. Starší exe tato nastavení přeskočí.</String>
 </Language>

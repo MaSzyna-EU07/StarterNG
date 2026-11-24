@@ -17,6 +17,8 @@
 
         <SolidColorBrush x:Key="CarbonInputBg" Color="#262C31" />
         <SolidColorBrush x:Key="CarbonBorderLight" Color="#3A424A" />
+        <!-- Frames of things you type in or tick: 3:1 against the panels they sit on, so the field can be found without hovering. -->
+        <SolidColorBrush x:Key="CarbonInputBorder" Color="#737C86" />
         <SolidColorBrush x:Key="CarbonBorderDark" Color="#0E0F12" />
         <SolidColorBrush x:Key="CarbonFg" Color="#E6E8EA" />
         <SolidColorBrush x:Key="CarbonFgDim" Color="#9098A0" />
@@ -77,7 +79,7 @@
                                 Height="{StaticResource CarbonCheckSize}"
                                 VerticalAlignment="Center"
                                 Background="{StaticResource CarbonInputBg}"
-                                BorderBrush="{StaticResource CarbonBorderLight}"
+                                BorderBrush="{StaticResource CarbonInputBorder}"
                                 BorderThickness="1" CornerRadius="2">
                             <Path Name="glyph" Margin="3" Stretch="Uniform"
                                   Data="M 0,4 L 3,7 L 9,0"
@@ -139,7 +141,7 @@
              the same shape and height as a combo box. -->
         <ControlTheme x:Key="{x:Type ButtonSpinner}" TargetType="ButtonSpinner">
             <Setter Property="Background" Value="{StaticResource CarbonInputBg}" />
-            <Setter Property="BorderBrush" Value="{StaticResource CarbonBorderLight}" />
+            <Setter Property="BorderBrush" Value="{StaticResource CarbonInputBorder}" />
             <Setter Property="BorderThickness" Value="1" />
             <Setter Property="CornerRadius" Value="2" />
             <Setter Property="MinHeight" Value="{StaticResource CarbonControlHeight}" />
@@ -187,7 +189,7 @@
                                        MinHeight="{StaticResource CarbonControlHeight}"
                                        Padding="0"
                                        BorderThickness="1"
-                                       BorderBrush="{StaticResource CarbonBorderLight}"
+                                       BorderBrush="{StaticResource CarbonInputBorder}"
                                        Background="{StaticResource CarbonInputBg}"
                                        CornerRadius="2"
                                        HorizontalAlignment="Stretch"
@@ -304,12 +306,14 @@
         <Setter Property="FontSize" Value="12" />
         <Setter Property="Padding" Value="8,1" />
         <Setter Property="CornerRadius" Value="2" />
+        <Setter Property="BorderBrush" Value="{StaticResource CarbonInputBorder}" />
     </Style>
     <Style Selector="TextBox">
         <Setter Property="MinHeight" Value="{StaticResource CarbonControlHeight}" />
         <Setter Property="FontSize" Value="12" />
         <Setter Property="Padding" Value="6,1" />
         <Setter Property="CornerRadius" Value="2" />
+        <Setter Property="BorderBrush" Value="{StaticResource CarbonInputBorder}" />
     </Style>
     <!-- Fluent gives the spinner and the check controls a 32 px floor of their own,
          inside the template, so setting MinHeight on the control alone does nothing. -->

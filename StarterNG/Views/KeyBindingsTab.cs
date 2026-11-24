@@ -1,12 +1,15 @@
 using System;
 using System.Collections.Generic;
 using Avalonia;
+using Avalonia.Automation;
+using Avalonia.Automation.Peers;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
 using Avalonia.Input;
 using Avalonia.Layout;
 using Avalonia.Media;
 using StarterNG.Classes;
+using StarterNG.Controls;
 using StarterNG.Infrastructure;
 
 using KeyBinding = StarterNG.Classes.KeyBinding;
@@ -34,6 +37,14 @@ internal sealed class KeyBindingsTab(Grid host, TextBox search)
     private KeyBinding? _capturing;
     private Button? _capturingButton;
 
+    // The row buttons of each binding on the list, so focus goes back to the row it
+    // left when the list is drawn anew after an edit.
+    private readonly Dictionary<KeyBinding, (Button Combo, Button Clear)> _rowButtons = new();
+
+    // The keys of the drawn keyboard that can be bound, in reading order, with the block
+    // and the row each lies in: the arrow keys walk them as they lie.
+    private readonly List<(Border Cap, int Block, int Row)> _caps = new();
+
     private readonly Dictionary<string, Grid> _keyCells = new(StringComparer.OrdinalIgnoreCase);
 
     private bool _flyoutLoading;
@@ -48,6 +59,7 @@ internal sealed class KeyBindingsTab(Grid host, TextBox search)
     private static readonly IBrush FgBrush = new SolidColorBrush(Color.Parse("#E6E8EA"));
     private static readonly IBrush FgDimBrush = new SolidColorBrush(Color.Parse("#9098A0"));
     private static readonly IBrush ConflictBrush = new SolidColorBrush(Color.Parse("#E06C5A"));
+    private static readonly IBrush KeyFocusBrush = new SolidColorBrush(Color.Parse("#41C400"));
 
     // The four combinations a key can be on. After the brushes: static fields start in text order.
     private static readonly (bool Shift, bool Ctrl, string SlotTextKey, IBrush Colour)[] ModifierSlots =
@@ -151,11 +163,27 @@ internal sealed class KeyBindingsTab(Grid host, TextBox search)
         RedrawBindings();
     }
 
-    private void BindingsEdited()
+    private void BindingsEdited(KeyBinding? focusRow = null)
     {
         KeyboardConfig.Instance.Dirty = true;
         Changed?.Invoke();
         RedrawBindings();
+        if (focusRow is not null)
+            FocusRow(focusRow);
+    }
+
+    /// <summary>
+    /// Puts focus back on a binding's row once the list is drawn anew: it went with the
+    /// old row, and a keyboard user was left nowhere.
+    /// </summary>
+    private void FocusRow(KeyBinding binding)
+    {
+        if (!_rowButtons.TryGetValue(binding, out var row))
+            return;
+
+        // The key button, which says what the binding is now.
+        row.Combo.Focus(NavigationMethod.Tab);
+        row.Combo.BringIntoView();
     }
 
     private void RedrawBindings()
@@ -164,12 +192,16 @@ internal sealed class KeyBindingsTab(Grid host, TextBox search)
         RebuildKeyboard();
     }
 
+    /// <summary>How many bindings the list shows, after the search.</summary>
+    public int ShownCount => _rowButtons.Count;
+
     public void RebuildList()
     {
         if (_bindingListPanel is null)
             return;
 
         _bindingListPanel.Children.Clear();
+        _rowButtons.Clear();
         // The sidebar search box serves this list too - see Settings.ApplyFilter.
         string filter = search.Text?.Trim() ?? string.Empty;
         var conflicts = KeyboardConfig.Instance.ConflictingCombos();
@@ -253,6 +285,7 @@ internal sealed class KeyBindingsTab(Grid host, TextBox search)
             ToolTip.SetTip(comboButton, SimulatorUseText(b.Key, b.Shift, b.Ctrl, use));
         else if (conflict)
             ToolTip.SetTip(comboButton, App.Loc["ConflictTooltip"]);
+        NameCombo(comboButton, b, comboButton.Content as string);
         comboButton.Click += (_, _) => StartCapture(b, comboButton);
         Grid.SetColumn(comboButton, 1);
         grid.Children.Add(comboButton);
@@ -265,12 +298,15 @@ internal sealed class KeyBindingsTab(Grid host, TextBox search)
         };
         clearButton.Classes.Add("Basic");
         ToolTip.SetTip(clearButton, App.Loc["ClearBinding"]);
+        // Every row has one: the reader is told whose it is.
+        AutomationProperties.SetName(clearButton, ScreenReaderNames.PickerText(App.Loc["ClearBinding"], CommandLabel(b)));
         clearButton.Click += (_, _) =>
         {
             CancelCapture();
             b.Clear();
-            BindingsEdited();
+            BindingsEdited(b);
         };
+        _rowButtons[b] = (comboButton, clearButton);
         Grid.SetColumn(clearButton, 2);
         grid.Children.Add(clearButton);
 
@@ -289,21 +325,38 @@ internal sealed class KeyBindingsTab(Grid host, TextBox search)
     {
 
         if (_capturing is not null && _capturingButton is not null)
-            _capturingButton.Content = ComboText(_capturing);
+            Show(_capturingButton, _capturing, ComboText(_capturing));
 
         _capturing = b;
         _capturingButton = button;
-        button.Content = App.Loc["PressKey"];
         button.Focus();
+        Show(button, b, App.Loc["PressKey"], say: true);
     }
 
     private void CancelCapture()
     {
         if (_capturing is not null && _capturingButton is not null)
-            _capturingButton.Content = ComboText(_capturing);
+            Show(_capturingButton, _capturing, ComboText(_capturing), say: _capturingButton.IsKeyboardFocusWithin);
         _capturing = null;
         _capturingButton = null;
     }
+
+    /// <summary>
+    /// Writes on a binding's button what it shows and names it after its command too, so
+    /// a reader hears "Odluźniacz: Num 4" and not a key alone. Said aloud when the change
+    /// happens under the focus, where nothing else would tell of it.
+    /// </summary>
+    private static void Show(Button button, KeyBinding b, string text, bool say = false)
+    {
+        button.Content = text;
+        NameCombo(button, b, text);
+        if (say)
+            Announcer.Say(button, text);
+    }
+
+    private static void NameCombo(Button button, KeyBinding b, string? shown) =>
+        AutomationProperties.SetName(button, ScreenReaderNames.PickerText(
+            CommandLabel(b), b.IsAssigned || shown != ComboText(b) ? shown : App.Loc["KbUnassigned"]));
 
     public void OnKeyDown(object? sender, KeyEventArgs e)
     {
@@ -333,18 +386,19 @@ internal sealed class KeyBindingsTab(Grid host, TextBox search)
         {
             // Bound here it would never fire: the wait for a key goes on.
             if (_capturingButton is not null)
-                _capturingButton.Content = string.Format(App.Loc["KbTaken"], App.Loc[taken.TextKey]);
+                Show(_capturingButton, _capturing, string.Format(App.Loc["KbTaken"], App.Loc[taken.TextKey]), say: true);
             e.Handled = true;
             return;
         }
 
         // As the key flyout does: the combination moves here, not doubled up.
-        KeyboardConfig.Instance.Put(_capturing, token, shift, ctrl);
+        var bound = _capturing;
+        KeyboardConfig.Instance.Put(bound, token, shift, ctrl);
         e.Handled = true;
 
         _capturing = null;
         _capturingButton = null;
-        BindingsEdited();
+        BindingsEdited(bound);
     }
 
     private void RebuildKeyboard()
@@ -353,13 +407,16 @@ internal sealed class KeyBindingsTab(Grid host, TextBox search)
             return;
 
         _keyCells.Clear();
+        _caps.Clear();
         _keyboardPanel.Children.Clear();
+        // Tab reaches the keyboard once; the arrow keys walk it from there.
+        KeyboardNavigation.SetTabNavigation(_keyboardPanel, KeyboardNavigationMode.Once);
         var states = ComputeKeyStates();
 
         var row = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 14 };
-        row.Children.Add(BuildKeyBlock(KeyMap.MainBlock, states));
-        row.Children.Add(BuildKeyBlock(KeyMap.NavBlock, states));
-        row.Children.Add(BuildKeyBlock(KeyMap.NumpadBlock, states));
+        row.Children.Add(BuildKeyBlock(KeyMap.MainBlock, states, 0));
+        row.Children.Add(BuildKeyBlock(KeyMap.NavBlock, states, 1));
+        row.Children.Add(BuildKeyBlock(KeyMap.NumpadBlock, states, 2));
         _keyboardPanel.Children.Add(row);
     }
 
@@ -372,24 +429,27 @@ internal sealed class KeyBindingsTab(Grid host, TextBox search)
                 content.Children.RemoveAt(0);
             content.Children.Insert(0, BuildKeyBackground(token, states));
             states.TryGetValue(token, out var state);
-            ToolTip.SetTip(content, BuildKeyTooltip(token, state));
+            string tip = BuildKeyTooltip(token, state);
+            ToolTip.SetTip(content, tip);
+            if (content.Parent is Border cap)
+                NameCap(cap, tip);
         }
     }
 
-    private Control BuildKeyBlock(KeyCap[][] rows, Dictionary<string, KeyState> states)
+    private StackPanel BuildKeyBlock(KeyCap[][] rows, Dictionary<string, KeyState> states, int blockIndex)
     {
         var block = new StackPanel { Spacing = KeyGap, VerticalAlignment = VerticalAlignment.Top };
-        foreach (var rowCaps in rows)
+        for (int r = 0; r < rows.Length; r++)
         {
             var rowPanel = new StackPanel { Orientation = Orientation.Horizontal, Spacing = KeyGap };
-            foreach (var cap in rowCaps)
-                rowPanel.Children.Add(BuildKeyCap(cap, states));
+            foreach (var cap in rows[r])
+                rowPanel.Children.Add(BuildKeyCap(cap, states, blockIndex, r));
             block.Children.Add(rowPanel);
         }
         return block;
     }
 
-    private Control BuildKeyCap(KeyCap cap, Dictionary<string, KeyState> states)
+    private Border BuildKeyCap(KeyCap cap, Dictionary<string, KeyState> states, int blockIndex, int rowIndex)
     {
         double width = cap.Width * KeyUnit + (cap.Width - 1) * KeyGap;
         var content = new Grid { Width = width, Height = KeyHeight };
@@ -438,12 +498,82 @@ internal sealed class KeyBindingsTab(Grid host, TextBox search)
             HorizontalAlignment = HorizontalAlignment.Center,
             VerticalAlignment = VerticalAlignment.Center
         });
-        ToolTip.SetTip(content, BuildKeyTooltip(token, st));
+        string tip = BuildKeyTooltip(token, st);
+        ToolTip.SetTip(content, tip);
 
         keyBorder.Cursor = new Cursor(StandardCursorType.Hand);
         keyBorder.PointerPressed += (_, _) => ShowKeyFlyout(token, keyBorder);
+        // Reached and opened from the keyboard as well, and read as the button it is.
+        keyBorder.Focusable = true;
+        keyBorder.Classes.Add("KeyCap");
+        AutomationProperties.SetControlTypeOverride(keyBorder, AutomationControlType.Button);
+        AutomationProperties.SetIsControlElementOverride(keyBorder, true);
+        NameCap(keyBorder, tip);
+        keyBorder.KeyDown += (_, e) => OnCapKey(keyBorder, token, e);
+        // The ring the theme gives focus, drawn here: the key clips anything outside it.
+        keyBorder.GotFocus += (_, _) => keyBorder.BorderBrush = KeyFocusBrush;
+        keyBorder.LostFocus += (_, _) => keyBorder.BorderBrush = KeyBorderBrush;
+        _caps.Add((keyBorder, blockIndex, rowIndex));
         _keyCells[token] = content;
         return keyBorder;
+    }
+
+    // The tooltip says the key and what is on it, one thing a line; read as one sentence.
+    private static void NameCap(Border cap, string tip) =>
+        AutomationProperties.SetName(cap, tip.Replace("\n", ", "));
+
+    private void OnCapKey(Border cap, string token, KeyEventArgs e)
+    {
+        int at = _caps.FindIndex(c => ReferenceEquals(c.Cap, cap));
+        if (at < 0)
+            return;
+
+        if (e.Key is Key.Enter or Key.Space)
+        {
+            ShowKeyFlyout(token, cap);
+            e.Handled = true;
+            return;
+        }
+
+        Border? next;
+        switch (e.Key)
+        {
+            case Key.Left: next = at > 0 ? _caps[at - 1].Cap : null; break;
+            case Key.Right: next = at < _caps.Count - 1 ? _caps[at + 1].Cap : null; break;
+            case Key.Home: next = _caps[0].Cap; break;
+            case Key.End: next = _caps[^1].Cap; break;
+            case Key.Up: next = CapNextRow(at, -1); break;
+            case Key.Down: next = CapNextRow(at, 1); break;
+            default: return;
+        }
+
+        next?.Focus(NavigationMethod.Directional);
+        e.Handled = true;
+    }
+
+    /// <summary>The key in the next row up or down of the same block that lies nearest over or under this one.</summary>
+    private Border? CapNextRow(int at, int step)
+    {
+        var (cap, block, row) = _caps[at];
+        if (_keyboardPanel is null || cap.TranslatePoint(new Point(cap.Bounds.Width / 2, 0), _keyboardPanel) is not { } from)
+            return null;
+
+        Border? best = null;
+        double nearest = double.MaxValue;
+        foreach (var (other, otherBlock, otherRow) in _caps)
+        {
+            if (otherBlock != block || otherRow != row + step
+                || other.TranslatePoint(new Point(other.Bounds.Width / 2, 0), _keyboardPanel) is not { } to)
+                continue;
+
+            double distance = Math.Abs(to.X - from.X);
+            if (distance < nearest)
+            {
+                nearest = distance;
+                best = other;
+            }
+        }
+        return best;
     }
 
     private Control BuildKeyBackground(string token, Dictionary<string, KeyState> states)
@@ -545,6 +675,8 @@ internal sealed class KeyBindingsTab(Grid host, TextBox search)
                 Margin = new Thickness(0, 4),
                 HorizontalAlignment = HorizontalAlignment.Stretch
             };
+            // Its label is a swatch and a text in a panel, which a reader does not take for one.
+            AutomationProperties.SetName(cb, KeyMap.ComboText(token, shift, ctrl));
             if (KeyMap.SimulatorUse(token, shift, ctrl) is { } use)
             {
                 ToolTip.SetTip(cb, SimulatorUseText(token, shift, ctrl, use));

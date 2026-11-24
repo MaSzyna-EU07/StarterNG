@@ -14,6 +14,7 @@ using Avalonia.Platform.Storage;
 using Avalonia.Threading;
 using Eu07.BlackBox.Views;
 using StarterNG.Application;
+using StarterNG.Controls;
 using StarterNG.Domain.Settings;
 using StarterNG.Domain.Tapes;
 
@@ -73,6 +74,10 @@ public sealed class HaslerTapeWindow : Window
     private bool _running;
     private bool _loading;
     private bool _looking;
+    // closed: a read already under way when it closed is let go, not kept followed
+    private bool _closed;
+    // the file read last, kept by the tapes to be followed even once another is picked or none is shown
+    private string? _read;
 
     /// <summary>A setting went on from here; the settings page's boxes have to follow it.</summary>
     public event Action? LogEnabled;
@@ -85,6 +90,8 @@ public sealed class HaslerTapeWindow : Window
         MinWidth = 700;
         MinHeight = 420;
         WindowStartupLocation = WindowStartupLocation.CenterOwner;
+        // A window to keep open beside the starter, not a question to answer.
+        DialogKeyboard.SetEscapeCloses(this, false);
 
         _feed.ItemsSource = new[] { App.Loc["HaslerByDistance"], App.Loc["HaslerByTime"] };
         _feed.SelectedIndex = 0;
@@ -163,7 +170,12 @@ public sealed class HaslerTapeWindow : Window
             Content = _view
         };
 
-        _recordingOff = Strip("HaslerRecordingOff", "HaslerRecordingEnable", settings => settings.PhysicsLog = true);
+        // the black box, with the tapes of the player's vehicles, and the tapes of every train
+        _recordingOff = Strip("HaslerRecordingOff", "HaslerRecordingEnable", settings =>
+        {
+            settings.BlackBox = true;
+            settings.PhysicsLogTrains = true;
+        });
         _logOff = Strip("HaslerLogOff", "HaslerLogEnable", settings => settings.DebugLog = true);
 
         var folder = ToolButton(App.Loc["HaslerOpenFolder"]);
@@ -219,7 +231,13 @@ public sealed class HaslerTapeWindow : Window
             await RefreshListAsync();
         };
         Activated += (_, _) => ShowWhatIsKnown();
-        Closed += (_, _) => _timer.Stop();
+        Closed += (_, _) =>
+        {
+            _closed = true;
+            _timer.Stop();
+            if (_read is { } read)
+                _tapes.Forget(read);
+        };
     }
 
     /// <summary>
@@ -229,10 +247,12 @@ public sealed class HaslerTapeWindow : Window
     private void ShowWhatIsKnown()
     {
         var settings = AppServices.Current.Settings;
-        _recordingOff.IsVisible = !settings.PhysicsLog;
-        _logOff.IsVisible = settings.PhysicsLog && !settings.DebugLog;
+        bool recording = settings.PhysicsLog || settings.BlackBox || settings.PhysicsLogTrains;
+        _recordingOff.IsVisible = !recording;
+        _logOff.IsVisible = recording && !settings.DebugLog;
 
-        bool canFollow = _running && _tapes.DrivenVehicle is not null;
+        // the physics logs and the black box's tapes both grow while the simulator runs, every two seconds
+        bool canFollow = _running && recording && _tapes.DrivenVehicle is not null;
         _live.IsEnabled = canFollow;
         if (!canFollow)
             _live.IsChecked = false;
@@ -285,9 +305,16 @@ public sealed class HaslerTapeWindow : Window
 
     private RecorderKind Recorder => _recorder.SelectedIndex == 1 ? RecorderKind.Electronic : RecorderKind.Hasler;
 
-    private static TapeView NewView(RecorderKind kind) => kind == RecorderKind.Electronic
-        ? new ElectronicTapeView { HorizontalAlignment = HorizontalAlignment.Left, VerticalAlignment = VerticalAlignment.Top }
-        : new HaslerTapeView { HorizontalAlignment = HorizontalAlignment.Left, VerticalAlignment = VerticalAlignment.Top };
+    private static TapeView NewView(RecorderKind kind)
+    {
+        TapeView view = kind == RecorderKind.Electronic
+            ? new ElectronicTapeView { HorizontalAlignment = HorizontalAlignment.Left, VerticalAlignment = VerticalAlignment.Top }
+            : new HaslerTapeView { HorizontalAlignment = HorizontalAlignment.Left, VerticalAlignment = VerticalAlignment.Top };
+        // A picture to the eye; to a screen reader a slider along the trip, read sample by sample.
+        Avalonia.Automation.AutomationProperties.SetName(view, App.Loc["HaslerTapes"]);
+        Avalonia.Automation.AutomationProperties.SetHelpText(view, App.Loc["TapeKeysHelp"]);
+        return view;
+    }
 
     /// <summary>
     /// The same trip drawn the other way. Hasler paper is fed by distance and
@@ -389,7 +416,7 @@ public sealed class HaslerTapeWindow : Window
         _list.SelectedItem = chosen.Tape;
     }
 
-    private TreeViewItem SessionItem(TapeSession session, bool open)
+    private ExpandableTreeViewItem SessionItem(TapeSession session, bool open)
     {
         string title = session.Launch is { } launch
             ? string.Join(" · ", new[] { string.IsNullOrWhiteSpace(launch.SceneryName) ? launch.Scenery : launch.SceneryName, launch.Train }
@@ -418,7 +445,7 @@ public sealed class HaslerTapeWindow : Window
         var name = new TextBlock { Text = title, FontWeight = FontWeight.SemiBold, TextTrimming = TextTrimming.CharacterEllipsis };
         ToolTip.SetTip(name, title);
 
-        var item = new TreeViewItem
+        var item = new ExpandableTreeViewItem
         {
             Header = new StackPanel { Spacing = 1, Children = { name, details } },
             Tag = session,
@@ -431,7 +458,7 @@ public sealed class HaslerTapeWindow : Window
         return item;
     }
 
-    private TreeViewItem BlackBoxItem(BlackBoxRecording box)
+    private ExpandableTreeViewItem BlackBoxItem(BlackBoxRecording box)
     {
         var text = new StackPanel { Spacing = 1 };
         text.Children.Add(new TextBlock { Text = App.Loc["HaslerBlackBox"], FontWeight = FontWeight.SemiBold });
@@ -442,7 +469,7 @@ public sealed class HaslerTapeWindow : Window
             Opacity = 0.7
         });
         ToolTip.SetTip(text, App.Loc["HaslerBlackBoxTip"]);
-        var item = new TreeViewItem { Header = text, Tag = box };
+        var item = new ExpandableTreeViewItem { Header = text, Tag = box };
         // Also when it is the one picked already, and its window was closed since.
         item.Tapped += async (_, _) => await OpenBlackBoxAsync(box);
         return item;
@@ -466,6 +493,8 @@ public sealed class HaslerTapeWindow : Window
             CanOpenFiles = false,
             Live = _liveBlackBoxes.Contains(box.Path)
         };
+        // It stays open beside the tapes, as they stay beside the starter.
+        DialogKeyboard.SetEscapeCloses(window, false);
         _blackBoxes[box.Path] = window;
         if (at is { } first)
             _wantedAt[box.Path] = first;
@@ -573,7 +602,7 @@ public sealed class HaslerTapeWindow : Window
         }
     }
 
-    private static TreeViewItem TapeItem(TapeFile file)
+    private static ExpandableTreeViewItem TapeItem(TapeFile file)
     {
         var text = new StackPanel { Spacing = 1 };
         text.Children.Add(new TextBlock
@@ -592,7 +621,7 @@ public sealed class HaslerTapeWindow : Window
         };
         if (role is not null)
             text.Children.Add(new TextBlock { Text = role, FontSize = 11, Opacity = 0.7 });
-        return new TreeViewItem { Header = text, Tag = file };
+        return new ExpandableTreeViewItem { Header = text, Tag = file };
     }
 
     /// <summary>
@@ -629,7 +658,15 @@ public sealed class HaslerTapeWindow : Window
         _loading = true;
         try
         {
-            var tape = await Task.Run(() => _tapes.Load(file));
+            // the same tape grown, as the simulator writes it: only what was added is read
+            bool follow = file.Path == _shown?.Path && file.Size >= _shown.Size;
+            _read = file.Path;
+            var tape = await Task.Run(() => _tapes.Load(file, follow));
+            if (_closed)
+            {
+                _tapes.Forget(file.Path);
+                return;
+            }
             bool another = file.Path != _shown?.Path;
             _shown = file;
             _tapeless = null;
@@ -644,10 +681,13 @@ public sealed class HaslerTapeWindow : Window
 
             _view.Tape = tape;
             ShowMark(scrollTo: another && !scrollToEnd);
-            _summary.Text = string.Format(App.Loc["HaslerSummary"], file.Vehicle, TapeFigures.Clock(tape.Duration),
+            // what was recorded is running and standing; a gap, the player in another vehicle, is neither
+            _summary.Text = string.Format(App.Loc["HaslerSummary"], file.Vehicle, TapeFigures.Clock(tape.Duration - tape.GapTime),
                                           TapeFigures.Clock(tape.RunningTime), TapeFigures.Clock(tape.StandingTime),
                                           tape.DistanceM / 1000.0, tape.MaxSpeedKmh, tape.AverageSpeedKmh,
                                           tape.AverageWithStopsKmh);
+            if (tape.GapTime > 0)
+                _summary.Text += " · " + string.Format(App.Loc["HaslerGap"], TapeFigures.Clock(tape.GapTime));
             if (_context?.Scenery is { } scenery)
                 _summary.Text += " · " + string.Format(App.Loc["HaslerScenario"], scenery);
             if (_context?.Train is { } train)
@@ -681,6 +721,8 @@ public sealed class HaslerTapeWindow : Window
         try
         {
             var sessions = await Task.Run(_tapes.Sessions);
+            if (_closed)
+                return;
             bool live = _live.IsChecked == true;
             bool newDriven = live && DrivenTape(sessions) is { } driven && driven.Path != _followed;
             if (newDriven || Fingerprint(sessions) != _listed)
@@ -769,6 +811,18 @@ public sealed class HaslerTapeWindow : Window
             _cursor.Text = "";
             return;
         }
+        try
+        {
+            ShowCursorText(s);
+        }
+        finally
+        {
+            _view.Spoken = _cursor.Text;
+        }
+    }
+
+    private void ShowCursorText(TapeSample s)
+    {
         // Only what the record in view shows: a Hasler tape has no brake pipe and
         // marks current as on or off, and the electronic screen draws the current
         // and the vigilance alarm as channels, not values.

@@ -40,6 +40,24 @@ public class SceneryTranslationsTests
     }
 
     [Fact]
+    public void The_tables_are_found_whatever_the_case_of_their_names()
+    {
+        var files = new InMemoryFileSystem(caseSensitive: true)
+            .WithFile(TestInstallation.At("scenery", "Braniewo.scn"), "//$d @brief")
+            .WithFile(Path.Combine(Path.GetFullPath(TestInstallation.At("scenery")), "I18N", "braniewo_en.json"),
+                      """{ "brief": "English" }""")
+            .WithFile(Path.Combine(Path.GetFullPath(TestInstallation.At("scenery")), "I18N", "BRANIEWO_PL.json"),
+                      """{ "brief": "Polski" }""");
+        var installation = new TestInstallation(files);
+        var scenery = Assert.Single(installation.Sceneries.LoadAll());
+        var translations = new SceneryTranslations(files, installation.Log);
+
+        translations.LoadFor(scenery, "Polski");
+
+        Assert.Equal("Polski", scenery.LocalizedDescription(translations));
+    }
+
+    [Fact]
     public void Literal_text_and_unknown_keys_are_left_alone()
     {
         var installation = new TestInstallation();

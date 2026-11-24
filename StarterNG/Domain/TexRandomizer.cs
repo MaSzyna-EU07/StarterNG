@@ -199,23 +199,8 @@ public sealed class TexRandomizer
         VehicleTexture? current)
     {
         var result = new List<VehicleTexture>();
-        foreach (var t in _db.Textures)
+        foreach (var t in ByMini(minis))
         {
-            if (t.Wreck) continue;
-            if (WithoutArchival && t.ResolvedArchived) continue;
-            if (_db.IsSetFollower(t)) continue;
-
-            string candidateMini = t.ResolvedClass;
-            if (string.IsNullOrEmpty(candidateMini))
-                candidateMini = _db.ResolveMiniName(t) ?? "";
-            if (string.IsNullOrEmpty(candidateMini)) continue;
-
-            bool miniOk = minis.Any(m =>
-                string.Equals(m, candidateMini, StringComparison.OrdinalIgnoreCase) ||
-                string.Equals(m, t.TextureMini, StringComparison.OrdinalIgnoreCase) ||
-                string.Equals(m, t.MiniRef, StringComparison.OrdinalIgnoreCase));
-            if (!miniOk) continue;
-
             if (!string.IsNullOrEmpty(owner) &&
                 !string.Equals(owner, t.Meta?.Operator, StringComparison.OrdinalIgnoreCase))
                 continue;
@@ -234,6 +219,49 @@ public sealed class TexRandomizer
             result.Add(current);
 
         return result;
+    }
+
+    // The textures that can be drawn, by every mini name they answer to, in the catalogue's
+    // order. Made once: a scenery's worth of consists looks them up hundreds of times.
+    private Dictionary<string, List<(int Order, VehicleTexture Texture)>>? _byMini;
+
+    /// <summary>The textures that can be drawn under any of <paramref name="minis"/>, each once, in the catalogue's order.</summary>
+    private IEnumerable<VehicleTexture> ByMini(IReadOnlyList<string> minis)
+    {
+        _byMini ??= IndexByMini();
+        var found = new List<(int Order, VehicleTexture Texture)>();
+        foreach (string mini in minis)
+            if (!string.IsNullOrEmpty(mini) && _byMini.TryGetValue(mini, out var textures))
+                found.AddRange(textures);
+        return found.Distinct().OrderBy(entry => entry.Order).Select(entry => entry.Texture);
+    }
+
+    private Dictionary<string, List<(int Order, VehicleTexture Texture)>> IndexByMini()
+    {
+        var index = new Dictionary<string, List<(int, VehicleTexture)>>(StringComparer.OrdinalIgnoreCase);
+        int order = 0;
+        foreach (var t in _db.Textures)
+        {
+            order++;
+            if (t.Wreck) continue;
+            if (WithoutArchival && t.ResolvedArchived) continue;
+            if (_db.IsSetFollower(t)) continue;
+
+            string candidateMini = t.ResolvedClass;
+            if (string.IsNullOrEmpty(candidateMini))
+                candidateMini = _db.ResolveMiniName(t) ?? "";
+            if (string.IsNullOrEmpty(candidateMini)) continue;
+
+            foreach (string? name in new[] { candidateMini, t.TextureMini, t.MiniRef }
+                         .Distinct(StringComparer.OrdinalIgnoreCase))
+            {
+                if (string.IsNullOrEmpty(name)) continue;
+                if (!index.TryGetValue(name, out var list))
+                    index[name] = list = new List<(int, VehicleTexture)>();
+                list.Add((order, t));
+            }
+        }
+        return index;
     }
 
     public static int? ParseRevisionYear(string? revision)

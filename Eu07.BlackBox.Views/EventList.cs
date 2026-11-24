@@ -155,7 +155,9 @@ public sealed class EventList : ListBox
         var culture = CultureInfo.CurrentCulture;
         var events = new List<BlackBoxEvent>();
         foreach (var c in recording.UserCommands())
-            events.Add(new BlackBoxEvent(c.Time, string.Format(culture, strings["EventCommand"], c.Name), Palette.Command, false));
+            events.Add(new BlackBoxEvent(c.Time, string.Format(culture, strings["EventCommand"],
+                                                               strings[DefaultBlackBoxStrings.CommandPrefix + c.Name]),
+                                         Palette.Command, false));
         foreach (var d in recording.DriverChanges)
         {
             if (recording.CabAt(d.Time + 0.5) is not { } s || s.Vehicle != d.Vehicle)
@@ -176,14 +178,7 @@ public sealed class EventList : ListBox
         foreach (var horn in recording.UserHornChecks())
             events.Add(new BlackBoxEvent(horn.Request.Time, strings[horn.Sounded ? "EventHornSounded" : "EventHornMissed"],
                                          horn.Sounded ? Palette.HornPoint : Palette.Bad, !horn.Sounded));
-        foreach (var span in recording.SecurityBrakings())
-        {
-            // Which of them was not acknowledged: the lamps blinking when it braked.
-            string who = recording.CabAt(span.Start) is { } s
-                ? s.Has(SecurityFlags.CabSignal) && s.Has(SecurityFlags.Vigilance) ? "CA/SHP" : s.Has(SecurityFlags.CabSignal) ? "SHP" : "CA"
-                : "CA";
-            events.Add(new BlackBoxEvent(span.Start, string.Format(culture, strings["EventSecurityBraking"], who), Palette.Bad, true));
-        }
+        AddSecurity(recording, strings, events, culture);
         AddCameras(recording, strings, events, culture);
         AddCouplings(recording, strings, events, culture);
         AddCabChanges(recording, strings, events, culture);
@@ -195,6 +190,45 @@ public sealed class EventList : ListBox
         // Stable: what happened at the same moment stays in the order of its kind.
         return events.OrderBy(e => e.Time).ToList();
     }
+
+    /// <summary>
+    /// The train protection: its buzzer, acknowledged or not, and the braking apart. A lamp acknowledged before the
+    /// buzzer is the driving as usual, not told.
+    /// </summary>
+    private static void AddSecurity(Recording recording, IBlackBoxStrings strings, List<BlackBoxEvent> events, CultureInfo culture)
+    {
+        var brakings = recording.SecurityBrakings();
+        foreach (var span in recording.SecurityAlarms())
+        {
+            // The lamps of all its buzzing samples: one buzzer for both, the other may join it before it's acknowledged.
+            var lamps = recording.Cab.Where(c => c.Time >= span.Start && c.Time <= span.End && (c.VigilanceBuzzer || c.CabSignalBuzzer))
+                                 .Aggregate(SecurityFlags.None, (all, c) => all | c.Security);
+            string who = ProtectionName(lamps);
+            var before = recording.CabAt(span.Start);
+            string text = brakings.Any(b => b.Start >= span.Start && b.Start <= span.End)
+                ? string.Format(culture, strings["EventSecurityAlarmMissed"], who)
+                // Acknowledged when the sample it ended at buzzes no more and doesn't brake, in the same vehicle: not
+                // the end of the recording or a gap in it, nor the power cut or the protection switched off.
+                : recording.CabAt(span.End) is { } after && !after.VigilanceBuzzer && !after.CabSignalBuzzer
+                  && !after.Has(SecurityFlags.Braking) && after.Vehicle == before?.Vehicle
+                    ? string.Format(culture, strings["EventSecurityAlarmAcknowledged"], who, span.End - span.Start)
+                    : string.Format(culture, strings["EventSecurityAlarm"], who);
+            events.Add(new BlackBoxEvent(span.Start, text, Palette.Buzzer, false));
+        }
+        foreach (var span in brakings)
+            events.Add(new BlackBoxEvent(span.Start, string.Format(culture, strings["EventSecurityBraking"],
+                                                                   ProtectionName(recording.CabAt(span.Start)?.Security ?? SecurityFlags.None)),
+                                         Palette.Bad, true));
+    }
+
+    /// <summary>Which of them it was: the lamps blinking.</summary>
+    private static string ProtectionName(SecurityFlags lamps) =>
+        (lamps & (SecurityFlags.CabSignal | SecurityFlags.Vigilance)) switch
+        {
+            SecurityFlags.CabSignal | SecurityFlags.Vigilance => "CA/SHP",
+            SecurityFlags.CabSignal => "SHP",
+            _ => "CA"
+        };
 
     private static void AddUserVehicles(Recording recording, IBlackBoxStrings strings, List<BlackBoxEvent> events, CultureInfo culture)
     {
@@ -282,6 +316,8 @@ public sealed class EventList : ListBox
         (CabDevices.DoorStep, "DevDoorStep"), (CabDevices.DoorLock, "DevDoorLock"), (CabDevices.SpeedControl, "DevSpeedControl")
     ];
 
+    private const CabDevices DoorSides = CabDevices.DoorsLeft | CabDevices.DoorsRight | CabDevices.DoorPermitLeft | CabDevices.DoorPermitRight;
+
     /// <summary>
     /// What the driver did in the cab, from one look to the next in the same vehicle: the switches on and off, the
     /// doors opened and closed, the departure signal, the hand brake, the brakes' setting, the radio's channel, the
@@ -291,7 +327,8 @@ public sealed class EventList : ListBox
     {
         CabSample? last = null;
         bool movingOpen = false;
-        foreach (var s in recording.Cab)
+        // the doors' sides as the driver has them, from the cab the driver is in (CabSample.AsTheCabSees)
+        foreach (var s in recording.Cab.Select(sample => sample.AsTheCabSees))
         {
             if (last is not { } b || b.Vehicle != s.Vehicle)
             {
@@ -299,8 +336,10 @@ public sealed class EventList : ListBox
                 movingOpen = false;
                 continue;
             }
-            bool Came(CabDevices device) => !b.Has(device) && s.Has(device);
-            bool Went(CabDevices device) => b.Has(device) && !s.Has(device);
+            // the other end swaps the sides, and tells nothing of the doors; no cab (0) sees them as the front one does
+            bool sameCab = (b.CabEnd < 0) == (s.CabEnd < 0);
+            bool Came(CabDevices device) => !b.Has(device) && s.Has(device) && (sameCab || (device & DoorSides) == 0);
+            bool Went(CabDevices device) => b.Has(device) && !s.Has(device) && (sameCab || (device & DoorSides) == 0);
             foreach (var (device, key) in Switched)
             {
                 if (Came(device))

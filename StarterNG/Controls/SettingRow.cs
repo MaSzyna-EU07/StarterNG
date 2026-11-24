@@ -1,5 +1,6 @@
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Interactivity;
 
 namespace StarterNG.Controls;
 
@@ -18,11 +19,27 @@ public class SettingRow : ContentControl
         AvaloniaProperty.Register<SettingRow, string?>(nameof(ValueText));
 
     /// <summary>
-    /// Why the simulator to be started would pass this setting over; the row dims
-    /// and says so. The input stays usable - the file may serve another build.
+    /// A setting for those who know what it does: the standard mode leaves it out, as
+    /// one a player can break the game with or has no need of.
     /// </summary>
-    public static readonly StyledProperty<string?> IdleNoteProperty =
-        AvaloniaProperty.Register<SettingRow, string?>(nameof(IdleNote));
+    public static readonly StyledProperty<bool> AdvancedProperty =
+        AvaloniaProperty.Register<SettingRow, bool>(nameof(Advanced));
+
+    public bool Advanced
+    {
+        get => GetValue(AdvancedProperty);
+        set => SetValue(AdvancedProperty, value);
+    }
+
+    /// <summary>The value eu07.ini gives the setting that the starter cannot read, said under it; null when there is none.</summary>
+    public static readonly StyledProperty<string?> UnknownValueProperty =
+        AvaloniaProperty.Register<SettingRow, string?>(nameof(UnknownValue));
+
+    public string? UnknownValue
+    {
+        get => GetValue(UnknownValueProperty);
+        set => SetValue(UnknownValueProperty, value);
+    }
 
     public string? Label
     {
@@ -48,12 +65,6 @@ public class SettingRow : ContentControl
         set => SetValue(ValueTextProperty, value);
     }
 
-    public string? IdleNote
-    {
-        get => GetValue(IdleNoteProperty);
-        set => SetValue(IdleNoteProperty, value);
-    }
-
     public SettingRow()
     {
         UpdatePseudoClasses();
@@ -67,12 +78,28 @@ public class SettingRow : ContentControl
             change.Property == DescriptionProperty ||
             change.Property == ConfigKeyProperty ||
             change.Property == ValueTextProperty ||
-            change.Property == IdleNoteProperty ||
+            change.Property == UnknownValueProperty ||
             change.Property == ContentProperty)
             UpdatePseudoClasses();
 
-        if (change.Property == IdleNoteProperty)
-            ToolTip.SetTip(this, string.IsNullOrEmpty(IdleNote) ? null : IdleNote);
+        if (change.Property == LabelProperty || change.Property == ContentProperty)
+            ScreenReaderNames.NameInputs(Content, Label);
+
+        if (change.Property == ValueTextProperty || change.Property == ContentProperty)
+            ScreenReaderNames.TellValue(Content, ValueText);
+
+        if (change.Property == DescriptionProperty || change.Property == UnknownValueProperty ||
+            change.Property == ContentProperty)
+            ScreenReaderNames.DescribeInputs(Content, Description, UnknownValue);
+    }
+
+    // Again once in the window: a panel given as content may be filled after it was set.
+    protected override void OnLoaded(RoutedEventArgs e)
+    {
+        base.OnLoaded(e);
+        ScreenReaderNames.NameInputs(Content, Label);
+        ScreenReaderNames.TellValue(Content, ValueText);
+        ScreenReaderNames.DescribeInputs(Content, Description, UnknownValue);
     }
 
     private void UpdatePseudoClasses()
@@ -82,6 +109,6 @@ public class SettingRow : ContentControl
         PseudoClasses.Set(":no-key", string.IsNullOrEmpty(ConfigKey));
         PseudoClasses.Set(":no-value", string.IsNullOrEmpty(ValueText));
         PseudoClasses.Set(":no-content", Content is null);
-        PseudoClasses.Set(":idle", !string.IsNullOrEmpty(IdleNote));
+        PseudoClasses.Set(":unknown", !string.IsNullOrEmpty(UnknownValue));
     }
 }

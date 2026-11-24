@@ -366,10 +366,49 @@ public readonly record struct CabSample(double Time, int Vehicle, Position Posit
                                         Lights LightsHead, Lights LightsTail, sbyte CabEnd = 0,
                                         SecurityFlags Security = SecurityFlags.None, float LateralAcceleration = 0,
                                         Movement Movement = Movement.Unknown, short LightHintHead = -1, short LightHintTail = -1,
-                                        Lights? EquippedHead = null, Lights? EquippedTail = null, CabExtra? Extra = null)
+                                        Lights? EquippedHead = null, Lights? EquippedTail = null, CabExtra? Extra = null,
+                                        float? WheelSpeedKmh = null)
 {
+    // WheelSpeedKmh: the speed of the wheels as they turn, which the speedometer shows, signed as SpeedKmh; apart
+    // from it while they slip, 0 while they are locked in a skid. None in a recording made before it.
+
     public bool Has(CabDevices device) => (Devices & device) == device;
     public bool Has(SecurityFlags flag) => (Security & flag) == flag;
+
+    /// <summary>
+    /// The alerter's buzzer: its lamp not acknowledged in time. A protection with one acknowledgement for both tells
+    /// the cab signalling's buzzer as the alerter's too, so the alerter's lamp has to blink with it.
+    /// </summary>
+    public bool VigilanceBuzzer => Has(SecurityFlags.VigilanceBeeping) && Has(SecurityFlags.Vigilance);
+
+    /// <summary>The cab signalling's buzzer: its lamp not acknowledged in time.</summary>
+    public bool CabSignalBuzzer => Has(SecurityFlags.CabSignalBeeping);
+
+    /// <summary>
+    /// The train protection braking for an alarm not acknowledged, its lamp blinking. Braking with no lamp is the
+    /// protection with no power (TSecuritySystem::is_braking), a cab not started or a power cut: no driver's fault.
+    /// </summary>
+    public bool ProtectionBraking => Has(SecurityFlags.Braking) && (Has(SecurityFlags.Vigilance) || Has(SecurityFlags.CabSignal));
+
+    private const CabDevices LeftDoors = CabDevices.DoorsLeft | CabDevices.DoorPermitLeft;
+    private const CabDevices RightDoors = CabDevices.DoorsRight | CabDevices.DoorPermitRight;
+
+    /// <summary>
+    /// The doors as the driver has them: the recording holds the left and right of the vehicle, and from its rear
+    /// cab the driver's left is the vehicle's right, as the simulator works the doors from it. Out of a cab, the
+    /// vehicle's.
+    /// </summary>
+    public CabSample AsTheCabSees =>
+        CabEnd >= 0
+            ? this
+            : this with
+            {
+                Devices = (Devices & ~(LeftDoors | RightDoors))
+                          | ((Devices & CabDevices.DoorsLeft) != 0 ? CabDevices.DoorsRight : 0)
+                          | ((Devices & CabDevices.DoorsRight) != 0 ? CabDevices.DoorsLeft : 0)
+                          | ((Devices & CabDevices.DoorPermitLeft) != 0 ? CabDevices.DoorPermitRight : 0)
+                          | ((Devices & CabDevices.DoorPermitRight) != 0 ? CabDevices.DoorPermitLeft : 0)
+            };
 
     public bool AiValid => (Flags & CabFlags.AiValid) != 0;
     public bool InCab => (Flags & CabFlags.InCab) != 0;

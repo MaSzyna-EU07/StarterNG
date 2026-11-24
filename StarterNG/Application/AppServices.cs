@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using StarterNG.Application.Abstractions;
 using StarterNG.Domain.Settings;
@@ -43,6 +44,7 @@ public sealed class AppServices
             paths.FromRoot("starter"),
             paths.FromRoot("lang")));
         Sceneries = new SceneryRepository(files, paths, log, new SceneryParser(clock, random));
+        BinaryTerrain = new BinaryTerrainFiles(files, paths, log, settingsPaths.SbtCleanupPath());
         SceneryImages = new SceneryImageLocator(files);
         MiniTextures = new MiniTextureIndex(files, paths);
 
@@ -56,19 +58,22 @@ public sealed class AppServices
         var missingAssets = new MissingAssetScanner(files, paths);
         SceneryTexts = new SceneryTranslations(files, log);
         Timetables = new TimetableLocator(files);
+        Attachments = new AttachmentLocator(files, paths);
         LoadWeights = new LoadWeightsRepository(files, paths, log);
         Library = new GameLibrary(Vehicles, Sceneries, MiniTextures, Physics, log);
         State = new AppState();
         SceneryFiles = new SceneryFileWatch(files, Sceneries, Library, State);
 
         Executables = new ExecutableLocator(files, paths, environment, log);
-        SettingsStore = new SettingsStore(files, clock, log, settingsPaths, new SettingsSerializer(dlssPlatform: !environment.IsMacOS), Executables);
+        // Read when a borderless screen with a smaller buffer is first written, and once.
+        var monitors = new Lazy<IReadOnlyList<DisplayMonitor>>(() => Monitors.List(environment));
+        SettingsStore = new SettingsStore(files, clock, log, settingsPaths,
+                                          new SettingsSerializer(id => Monitors.SizeOf(monitors.Value, id)), Executables);
         MissingVehicleLog = new MissingVehicleLog(SettingsStore.Settings, missingAssets, Library, log);
         Favorites = new FavoriteSceneries(files, log, settingsPaths.FavoritesPath());
         Tapes = new HaslerTapes(files, paths, log, clock, Timetables, () => State.SimulatorRunning);
         Gpus = new LinuxGpus(files, environment);
         GraphicsCards = new GraphicsCards(files, environment, Gpus);
-        Displays = new Displays(files, environment);
         StartSimulation = new StartSimulation(State, SettingsStore, Library.Vehicles, Executables,
                                               files, paths, Processes, random, log, Gpus, environment,
                                               new WineConfigLink(files, environment, settingsPaths, log), Tapes);
@@ -79,6 +84,9 @@ public sealed class AppServices
     public static AppServices Current =>
         _current ?? throw new InvalidOperationException(
             "AppServices.Current read before Initialize(); the composition root must be built first.");
+
+    /// <summary>The services once built, or null before: for what may run either way, such as a control in a test.</summary>
+    public static AppServices? CurrentOrNull => _current;
 
     public static AppServices Initialize(IGamePaths? paths = null, IFileSystem? files = null, IClock? clock = null,
                                          IEnvironment? environment = null)
@@ -107,6 +115,8 @@ public sealed class AppServices
 
     public SceneryFileWatch SceneryFiles { get; }
 
+    public BinaryTerrainFiles BinaryTerrain { get; }
+
     public SceneryImageLocator SceneryImages { get; }
 
     public IMiniTextureIndex MiniTextures { get; }
@@ -118,6 +128,8 @@ public sealed class AppServices
     public ISceneryTranslations SceneryTexts { get; }
 
     public TimetableLocator Timetables { get; }
+
+    public AttachmentLocator Attachments { get; }
 
     public LoadWeightsRepository LoadWeights { get; }
 
@@ -134,8 +146,6 @@ public sealed class AppServices
     public LinuxGpus Gpus { get; }
 
     public GraphicsCards GraphicsCards { get; }
-
-    public Displays Displays { get; }
 
     public SettingsPaths SettingsPaths { get; }
 

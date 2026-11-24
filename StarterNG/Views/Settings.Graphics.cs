@@ -2,18 +2,17 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
-using System.Linq;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
 using Avalonia.Platform.Storage;
 using StarterNG.Application;
 using StarterNG.Domain.Settings;
+using StarterNG.Infrastructure;
 
 namespace StarterNG.Views;
 
-// What the graphics and effects categories add to the screen: the controls of the settings the
-// new renderers read, the dependencies between them (what the simulator only does on Vulkan,
-// with DLSS, ...), and the import and export of eu07.ini.
+// What the graphics and effects categories add to the screen: the renderer and the
+// anti-aliasing, and the import and export of eu07.ini.
 public partial class Settings
 {
     private static readonly CultureInfo Invariant = CultureInfo.InvariantCulture;
@@ -24,263 +23,112 @@ public partial class Settings
         new("*") { Patterns = new[] { "*" } }
     };
 
-    /// <summary>Set while the dependencies are brought in line, so the changes they make do not recurse.</summary>
-    private bool _updatingGraphics;
-
-    /// <summary>
-    /// What only Vulkan has, as it was when OpenGL got chosen, so that going back to
-    /// Vulkan brings it back instead of leaving it switched off.
-    /// </summary>
-    private (AntiAliasingMode AntiAliasing, int FrameGeneration, int Reflex, bool RayTracing)? _vulkanChoices;
-
-    private string? _dlssProbedFor;
-    private (bool Dlss, bool FrameGeneration) _dlssProbe;
-
-    private static bool DlssPlatform => AppServices.Current.SettingsStore.DlssPlatform;
-
-    private void InitGraphics()
-    {
-        // The notes are worked out here, not bound, so they follow a change of language by hand.
-        App.Loc.LanguageChanged += UpdateGraphicsState;
-        SelectExeCb.SelectionChanged += (_, _) => UpdateGraphicsState();
-    }
-
     private void ShowGraphics(SimulatorSettings s)
     {
         RenderEngineCb.SelectedIndex = s.RenderEngine;
-        VulkanDeviceTb.Text = s.VulkanDevice;
         SelectTag(AntiAliasingCb, AntiAliasingTag(s.AntiAliasing));
-        SelectTag(DlssPresetCb, s.DlssPreset);
-        SelectTag(FrameGenerationCb, s.FrameGeneration.ToString(Invariant));
-        SelectTag(ReflexCb, s.Reflex.ToString(Invariant));
-
-        ShadowSdsmCb.IsChecked = s.ShadowSdsm;
-        LightsClusteredCb.IsChecked = s.LightsClustered;
-        SelectTag(LightShadowsCb, s.LightShadows.ToString(Invariant));
-        SelectTag(ContactShadowsCb, s.ContactShadows.ToString(Invariant));
-        SelectTag(AmbientOcclusionCb, s.AmbientOcclusion.ToString(Invariant));
-        SelectOrAddTag(AoQualityCb, $"{s.AoSlices} {s.AoSteps}", $"{s.AoSlices} / {s.AoSteps}");
-        AoLightingCb.IsChecked = s.AoLighting;
-        SelectTag(CabProbeCb, s.CabProbe.ToString(Invariant));
-        CabProbeIntervalNud.Value = s.CabProbeInterval;
-        CabProbeBounceSlider.Value = s.CabProbeBounce;
-        CabProbeReflectionsCb.IsChecked = s.CabProbeReflections;
-
-        SelectTag(SsrCb, s.Ssr.ToString(Invariant));
-        RayTracingCb.IsChecked = s.RayTracing;
-        RayTracingRangeSlider.Value = s.RayTracingRange;
-
-        VolumetricFogCb.IsChecked = s.VolumetricFog;
-        SelectTag(FogQualityCb, s.FogQuality.ToString(Invariant));
-        SelectTag(CloudsCb, s.Clouds.ToString(Invariant));
-        CloudShadowsCb.IsChecked = s.CloudShadows;
-
-        BloomCb.IsChecked = s.Bloom;
-        AutoExposureCb.IsChecked = s.AutoExposure;
-
-        GrassCb.IsChecked = s.Grass;
-        GrassDistanceSlider.Value = s.GrassDistance;
-        GrassDensitySlider.Value = s.GrassDensity;
-        string particles = s.PrecipitationParticles.ToString(Invariant);
-        SelectOrAddTag(PrecipitationCb, particles, particles);
+        _fullscreenAsRead = s.Fullscreen;
+        SelectTag(DisplayModeCb, DisplayModeOf(s.Fullscreen, s.FullscreenWindowed));
+        ShowMonitor(s.FullscreenMonitor);
+        UpdateDisplayRows();
     }
 
     private void CaptureGraphics(SimulatorSettings s)
     {
         s.RenderEngine = Math.Max(0, RenderEngineCb.SelectedIndex);
-        s.VulkanDevice = VulkanDeviceTb.Text?.Trim() ?? "";
         s.AntiAliasing = AntiAliasingFromTag(SelectedTag(AntiAliasingCb));
-        s.DlssPreset = SelectedTag(DlssPresetCb) ?? "default";
-        s.FrameGeneration = TagInt(FrameGenerationCb, 1);
-        s.Reflex = TagInt(ReflexCb, 0);
+        s.FullscreenMonitor = SelectedTag(MonitorCb) ?? string.Empty;
 
-        s.ShadowSdsm = IsChecked(ShadowSdsmCb);
-        s.LightsClustered = IsChecked(LightsClusteredCb);
-        s.LightShadows = TagInt(LightShadowsCb, 2);
-        s.ContactShadows = TagInt(ContactShadowsCb, 0);
-        s.AmbientOcclusion = TagInt(AmbientOcclusionCb, 2);
-        var ao = (SelectedTag(AoQualityCb) ?? "3 4").Split(' ');
-        s.AoSlices = ao.Length > 0 && int.TryParse(ao[0], NumberStyles.Integer, Invariant, out int slices) ? slices : 3;
-        s.AoSteps = ao.Length > 1 && int.TryParse(ao[1], NumberStyles.Integer, Invariant, out int steps) ? steps : 4;
-        s.AoLighting = IsChecked(AoLightingCb);
-        s.CabProbe = TagInt(CabProbeCb, 2);
-        s.CabProbeInterval = (int)(CabProbeIntervalNud.Value ?? 4);
-        s.CabProbeBounce = CabProbeBounceSlider.Value;
-        s.CabProbeReflections = IsChecked(CabProbeReflectionsCb);
-
-        s.Ssr = TagInt(SsrCb, 2);
-        s.RayTracing = IsChecked(RayTracingCb);
-        s.RayTracingRange = (int)RayTracingRangeSlider.Value;
-
-        s.VolumetricFog = IsChecked(VolumetricFogCb);
-        s.FogQuality = TagInt(FogQualityCb, 2);
-        s.Clouds = TagInt(CloudsCb, 2);
-        s.CloudShadows = IsChecked(CloudShadowsCb);
-
-        s.Bloom = IsChecked(BloomCb);
-        s.AutoExposure = IsChecked(AutoExposureCb);
-
-        s.Grass = IsChecked(GrassCb);
-        s.GrassDistance = (int)GrassDistanceSlider.Value;
-        s.GrassDensity = GrassDensitySlider.Value;
-        s.PrecipitationParticles = TagInt(PrecipitationCb, 65536);
+        string mode = SelectedTag(DisplayModeCb) ?? FullscreenMode;
+        s.FullscreenWindowed = mode == BorderlessMode;
+        // Borderless overrides fullscreen in the simulator, so the file's own word for it stays.
+        s.Fullscreen = mode == BorderlessMode ? _fullscreenAsRead : mode == FullscreenMode;
     }
 
-    private void OnBackendChanged()
+    // ── How the simulator shows: full screen, borderless or in a window ──────
+
+    private const string FullscreenMode = "fullscreen";
+    private const string BorderlessMode = "borderless";
+    private const string WindowMode = "window";
+
+    /// <summary>fullscreen as the file has it, kept where borderless makes it of no account.</summary>
+    private bool _fullscreenAsRead;
+
+    /// <summary>
+    /// The mode the two keys make (application.cpp): fullscreenwindowed takes the monitor's
+    /// own size and turns full screen on whatever fullscreen says.
+    /// </summary>
+    private static string DisplayModeOf(bool fullscreen, bool windowed) =>
+        windowed ? BorderlessMode : fullscreen ? FullscreenMode : WindowMode;
+
+    /// <summary>A borderless screen takes the monitor's size; a window can't be put on a monitor.</summary>
+    private void UpdateDisplayRows()
     {
-        if (_loading || _updatingGraphics)
-            return;
+        string mode = SelectedTag(DisplayModeCb) ?? FullscreenMode;
+        Dim(ResolutionRow, mode == BorderlessMode);
+        Dim(MonitorRow, mode == WindowMode);
+    }
 
-        _updatingGraphics = true;
-        try
-        {
-            if (!SettingReach.IsVulkan(SelectedRenderer()))
-            {
-                var s = Trial();
-                _vulkanChoices ??= (s.AntiAliasing, s.FrameGeneration, s.Reflex, s.RayTracing);
-                if (GraphicsRules.IsDlss(s.AntiAliasing))
-                    SelectTag(AntiAliasingCb, "taa");
-                FrameGenerationCb.SelectedIndex = 0;
-                ReflexCb.SelectedIndex = 0;
-                RayTracingCb.IsChecked = false;
-            }
-            else if (_vulkanChoices is { } kept)
-            {
-                if (GraphicsRules.IsDlss(kept.AntiAliasing) && DlssPlatform && SelectedTag(AntiAliasingCb) == "taa")
-                    SelectTag(AntiAliasingCb, AntiAliasingTag(kept.AntiAliasing));
-                SelectTag(FrameGenerationCb, kept.FrameGeneration.ToString(Invariant));
-                SelectTag(ReflexCb, kept.Reflex.ToString(Invariant));
-                RayTracingCb.IsChecked = kept.RayTracing;
-                _vulkanChoices = null;
-            }
-        }
-        finally
-        {
-            _updatingGraphics = false;
-        }
+    /// <summary>The whole row greyed out, its label and description too, as a disabled check box is.</summary>
+    private static void Dim(Control row, bool off)
+    {
+        row.IsEnabled = !off;
+        row.Opacity = off ? 0.45 : 1;
+    }
 
-        UpdateGraphicsState();
+    private ComboBoxItem? _primaryMonitorItem;
+
+    private IReadOnlyList<DisplayMonitor>? _monitors;
+
+    /// <summary>The monitors attached, read once.</summary>
+    private IReadOnlyList<DisplayMonitor> MonitorList => _monitors ??= Monitors.List(AppServices.Current.Environment);
+
+    /// <summary>
+    /// The monitor the simulator will show on (application.cpp): a full screen, borderless or
+    /// not, goes to the one chosen, or the primary one when that is not connected; a window
+    /// opens where the system puts it, as a rule the primary one. Null where no monitor could be read.
+    /// </summary>
+    private DisplayMonitor? SimulatorMonitor()
+    {
+        string? chosen = SelectedTag(DisplayModeCb) == WindowMode ? null : SelectedTag(MonitorCb);
+        DisplayMonitor? primary = null;
+        foreach (var m in MonitorList)
+        {
+            if (!string.IsNullOrEmpty(chosen) && m.Id == chosen)
+                return m;
+            if (m.Primary)
+                primary ??= m;
+        }
+        return primary;
     }
 
     /// <summary>
-    /// Brings the graphics controls in line with one another the way the simulator
-    /// treats them, and says why something is off.
+    /// The monitors found, listed once, with the primary one first; a monitor the file names
+    /// that is not connected now stays on the list under its own name.
     /// </summary>
-    private void UpdateGraphicsState()
+    private void ShowMonitor(string id)
     {
-        if (!_built || _loading || _updatingGraphics)
-            return;
-
-        _updatingGraphics = true;
-        try
+        if (_primaryMonitorItem is null)
         {
-            var s = Trial();
-            bool vulkan = GraphicsRules.IsVulkan(s);
-            bool dlssAllowed = GraphicsRules.DlssAllowed(s, DlssPlatform);
-
-            foreach (var item in AntiAliasingCb.Items.OfType<ComboBoxItem>())
-                if (item.Tag is "dlss" or "dlaa")
-                    item.IsEnabled = dlssAllowed;
-            if (GraphicsRules.IsDlss(s.AntiAliasing) && !dlssAllowed)
-                SelectTag(AntiAliasingCb, "taa");
-
-            s = Trial();
-            bool dlss = GraphicsRules.DlssActive(s, DlssPlatform);
-            DlssPresetRow.IsEnabled = dlss;
-            FrameGenerationRow.IsEnabled = dlss;
-            if (!dlss && FrameGenerationCb.SelectedIndex > 0)
-                FrameGenerationCb.SelectedIndex = 0;
-            ReflexRow.IsEnabled = vulkan;
-            if (!vulkan && ReflexCb.SelectedIndex > 0)
-                ReflexCb.SelectedIndex = 0;
-            VulkanDeviceRow.IsEnabled = vulkan;
-            RayTracingRow.IsEnabled = vulkan;
-            if (!vulkan)
-                RayTracingCb.IsChecked = false;
-
-            s = Trial();
-            BufferScaleRow.IsEnabled = GraphicsRules.BufferScaleUsed(s, DlssPlatform);
-            RayTracingRangeRow.IsEnabled = vulkan && s.RayTracing;
-            DynamicLightsRow.IsEnabled = GraphicsRules.DynamicLightsUsed(s);
-            AoQualityRow.IsEnabled = s.AmbientOcclusion > 0;
-            AoLightingRow.IsEnabled = GraphicsRules.AoLightingUsed(s);
-            bool probe = GraphicsRules.CabProbeUsed(s);
-            CabProbeIntervalRow.IsEnabled = probe;
-            CabProbeReflectionsRow.IsEnabled = probe;
-            CabProbeBounceRow.IsEnabled = GraphicsRules.CabProbeLights(s);
-            FogQualityRow.IsEnabled = s.VolumetricFog;
-            CloudShadowsRow.IsEnabled = s.Clouds > 0;
-            GrassDistanceRow.IsEnabled = s.Grass;
-            GrassDensityRow.IsEnabled = s.Grass;
-
-            DlssPresetInfo.Text = App.Loc[(SelectedTag(DlssPresetCb) ?? "default") switch
+            _primaryMonitorItem = new ComboBoxItem { Tag = string.Empty, Content = App.Loc["MonitorPrimary"] };
+            App.Loc.LanguageChanged += () => _primaryMonitorItem.Content = App.Loc["MonitorPrimary"];
+            MonitorCb.Items.Add(_primaryMonitorItem);
+            var monitors = MonitorList;
+            for (int i = 0; i < monitors.Count; i++)
             {
-                "k" => "DlssPresetInfoK",
-                "j" => "DlssPresetInfoJ",
-                "m" => "DlssPresetInfoM",
-                "l" => "DlssPresetInfoL",
-                _ => "DlssPresetInfoDefault"
-            }];
-            SetNote(RenderEngineNote, App.Loc[vulkan ? "REVulkanNote" : "REOpenGLNote"]);
-            SetNote(AntiAliasingNote, AntiAliasingRemark(s, dlss));
-            SetNote(FrameGenerationNote, FrameGenerationRemark(s, dlss));
-            SetNote(ReflexNote, GraphicsRules.ReflexForced(s, DlssPlatform) ? App.Loc["ReflexForcedNote"] : "");
-            SetNote(AoLightingNote, AoLightingRemark(s));
-            SetNote(CabProbeNote, GraphicsRules.CabProbeUsed(s) && !GraphicsRules.CabProbeLights(s) ? App.Loc["CabProbeReflectionsOnlyNote"] : "");
-            SetNote(SkipPipelineNote, GraphicsRules.TemporalWithoutPipeline(s) ? App.Loc["TemporalNeedsPipelineNote"] : "");
+                var m = monitors[i];
+                MonitorCb.Items.Add(new ComboBoxItem
+                {
+                    Tag = m.Id,
+                    Content = $"{i + 1}. {m.Name} – {m.Width}×{m.Height}"
+                });
+            }
         }
-        finally
-        {
-            _updatingGraphics = false;
-        }
-    }
 
-    private string AntiAliasingRemark(SimulatorSettings s, bool dlss)
-    {
-        if (!DlssPlatform && GraphicsRules.IsVulkan(s))
-            return App.Loc["DlssNoPlatformNote"];
-        if (GraphicsRules.TemporalWithoutPipeline(s))
-            return App.Loc["TemporalNeedsPipelineNote"];
-        if (dlss && !DlssLibraries(s).Dlss)
-            return string.Format(App.Loc["DlssMissingLibraryNote"], DlssLibraryName(frameGeneration: false));
-        return "";
+        if (IndexOfTag(MonitorCb, id) < 0)
+            MonitorCb.Items.Add(new ComboBoxItem { Tag = id, Content = id });
+        SelectTag(MonitorCb, id);
     }
-
-    private static string AoLightingRemark(SimulatorSettings s)
-    {
-        if (!GraphicsRules.AoLightingUsed(s) || !s.AoLighting)
-            return "";
-        if (s.SkipPipeline)
-            return App.Loc["AoNeedsPipelineNote"];
-        return GraphicsRules.AoLightingAddsDepthPrepass(s) ? App.Loc["AoLightingPrepassNote"] : "";
-    }
-
-    private string FrameGenerationRemark(SimulatorSettings s, bool dlss)
-    {
-        if (!dlss)
-            return GraphicsRules.IsVulkan(s) ? App.Loc["FrameGenerationNeedsDlssNote"] : "";
-        if (s.FrameGeneration > 1 && !DlssLibraries(s).FrameGeneration)
-            return string.Format(App.Loc["DlssMissingLibraryNote"], DlssLibraryName(frameGeneration: true));
-        return "";
-    }
-
-    /// <summary>Looked up once per simulator picked: the search for it reads the installation's directory.</summary>
-    private (bool Dlss, bool FrameGeneration) DlssLibraries(SimulatorSettings s)
-    {
-        string key = s.SelectExeAutomatically ? "\u0001auto" : s.ExecutablePath;
-        if (_dlssProbedFor != key)
-        {
-            var executables = AppServices.Current.Executables;
-            _dlssProbe = executables.DlssLibraries(executables.Resolve(s, out _));
-            _dlssProbedFor = key;
-        }
-        return _dlssProbe;
-    }
-
-    private static string DlssLibraryName(bool frameGeneration) =>
-        AppServices.Current.Environment.IsWindows
-            ? (frameGeneration ? "nvngx_dlssg.dll" : "nvngx_dlss.dll")
-            : (frameGeneration ? "libnvidia-ngx-dlssg.so" : "libnvidia-ngx-dlss.so");
 
     private async void ImportIniButton_OnClick(object? sender, RoutedEventArgs e)
     {
@@ -303,7 +151,6 @@ public partial class Settings
             return;
         }
 
-        _vulkanChoices = null;
         ApplyToUi();
         // What came from the other file is a choice to save, not a value the screen could not show.
         _shownUnlikeSettings = new Dictionary<string, ShownValue>();
@@ -328,9 +175,8 @@ public partial class Settings
             return;
 
         // The edits on screen go into the export as they would into a save, but the
-        // user's own eu07.ini is not written.
-        CaptureInto(AppServices.Current.Settings);
-        if (!AppServices.Current.SettingsStore.ExportTo(path))
+        // user's own eu07.ini is not written, nor the settings held: the edits stay the page's, not saved.
+        if (!AppServices.Current.SettingsStore.ExportTo(path, Trial()))
         {
             await MessageBox.Show(owner, string.Format(App.Loc["ExportIniFailed"], path), App.Loc["ExportIni"],
                                   MessageBoxButtons.Ok);
@@ -338,7 +184,6 @@ public partial class Settings
         }
 
         SaveStatus.Text = string.Format(App.Loc["ExportIniDone"], Path.GetFileName(path));
-        ToolTip.SetTip(SaveStatus, path);
     }
 
     private static void SetNote(TextBlock note, string text)
@@ -376,9 +221,6 @@ public partial class Settings
         AntiAliasingMode.Msaa2 => "msaax2",
         AntiAliasingMode.Msaa4 => "msaax4",
         AntiAliasingMode.Msaa8 => "msaax8",
-        AntiAliasingMode.Taa => "taa",
-        AntiAliasingMode.Dlss => "dlss",
-        AntiAliasingMode.Dlaa => "dlaa",
         _ => "off"
     };
 
@@ -387,9 +229,6 @@ public partial class Settings
         "msaax2" => AntiAliasingMode.Msaa2,
         "msaax4" => AntiAliasingMode.Msaa4,
         "msaax8" => AntiAliasingMode.Msaa8,
-        "taa" => AntiAliasingMode.Taa,
-        "dlss" => AntiAliasingMode.Dlss,
-        "dlaa" => AntiAliasingMode.Dlaa,
         _ => AntiAliasingMode.Off
     };
 }
