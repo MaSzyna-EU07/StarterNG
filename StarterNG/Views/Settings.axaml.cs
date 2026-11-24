@@ -416,9 +416,19 @@ public partial class Settings : UserControl, ISettingsCapture
 
         // A reloaded file may name another simulator, or start a server.
         RefreshDerivedRows();
-        UpdateUnknownValues();
         UpdateGpuNote();
         NoteShownValues();
+        // The language is the starter's to keep (App.Initialize), and a value written another way is no unknown one.
+        var store = AppServices.Current.SettingsStore;
+        _unlikeOnScreen = new HashSet<string>(
+            _shownUnlikeSettings.Where(pair => !string.Equals(pair.Key, "lang", StringComparison.OrdinalIgnoreCase) &&
+                                               !store.FileMeans(pair.Key, pair.Value.Shown))
+                                .Select(pair => pair.Key),
+            StringComparer.OrdinalIgnoreCase);
+        ShowFileValueItems(FileValues());
+        // A list at the file's value now hands over what the settings hold.
+        NoteShownValues();
+        UpdateUnknownValues();
         UpdatePresetMarks();
     }
 
@@ -533,12 +543,24 @@ public partial class Settings : UserControl, ISettingsCapture
     /// Puts <paramref name="s"/> on the screen as edits waiting for Save: what it
     /// changes marks the screen dirty, as a change by hand would.
     /// </summary>
-    private void ShowAsEdits(SimulatorSettings s)
+    /// <param name="chosen">The keys these edits choose; a list at the file's value keeps it for any other.</param>
+    private void ShowAsEdits(SimulatorSettings s, IReadOnlyCollection<string> chosen)
     {
+        var store = AppServices.Current.SettingsStore;
+        var held = store.Render(AppServices.Current.Settings);
+        var shown = store.Render(s);
+        var atFileValue = FileValueLists()
+            .Where(pair => ShowsFileValue(pair.List) && !chosen.Contains(pair.Key, StringComparer.OrdinalIgnoreCase) &&
+                           held.GetValueOrDefault(pair.Key) == shown.GetValueOrDefault(pair.Key))
+            .Select(pair => (pair.List, Item: pair.List.SelectedItem))
+            .ToList();
+
         _showingEdits = true;
         try
         {
             ShowValues(s);
+            foreach (var (list, item) in atFileValue)
+                list.SelectedItem = item;
         }
         finally
         {
@@ -628,7 +650,7 @@ public partial class Settings : UserControl, ISettingsCapture
     {
         var trial = Trial();
         var applied = _presetMemory.Apply(preset, trial);
-        ShowAsEdits(trial);
+        ShowAsEdits(trial, applied.ChosenKeys.ToList());
 
         // Chosen as a whole, its values are choices, not ones the screen could not show.
         ForgetShown(applied.ChosenKeys);
@@ -640,7 +662,7 @@ public partial class Settings : UserControl, ISettingsCapture
     private void ApplyGroupLevel(GraphicsGroup group, GraphicsPreset level)
     {
         var trial = Groups.Apply(group, level, Trial());
-        ShowAsEdits(trial);
+        ShowAsEdits(trial, group.Keys.ToList());
         foreach (string key in group.Keys.Where(key => SimulatorKeys.All.Any(known => known.Key == key)))
             _keyRows.Show(key, SimulatorKeys.Named(key).RawIn(trial));
 
@@ -825,9 +847,11 @@ public partial class Settings : UserControl, ISettingsCapture
     private void NoteShownValues() =>
         _shownUnlikeSettings = AppServices.Current.SettingsStore.ShownUnlike(Trial());
 
+    /// <summary><paramref name="keys"/> are the player's choice now: a value of the file the screen could not show goes on a save.</summary>
     private void ForgetShown(IEnumerable<string> keys)
     {
         var forgotten = new HashSet<string>(keys, StringComparer.OrdinalIgnoreCase);
+        AppServices.Current.SettingsStore.Choose(forgotten);
         _shownUnlikeSettings = _shownUnlikeSettings
             .Where(pair => !forgotten.Contains(pair.Key))
             .ToDictionary(pair => pair.Key, pair => pair.Value, StringComparer.OrdinalIgnoreCase);
@@ -855,7 +879,7 @@ public partial class Settings : UserControl, ISettingsCapture
     }
 
     private string SelectedRenderer() =>
-        SimulatorSettings.RenderEngines.ElementAtOrDefault(RenderEngineCb.SelectedIndex) ?? "full";
+        SelectedTag(RenderEngineCb) ?? SimulatorSettings.RenderEngines.ElementAtOrDefault(RenderEngineCb.SelectedIndex) ?? "full";
 
     private RendererKind SelectedRendererKind() => Renderers.KindOf(SelectedRenderer());
 
@@ -882,7 +906,8 @@ public partial class Settings : UserControl, ISettingsCapture
         s.InvertMouseVertical = IsChecked(MouseVertInvertCb);
 
         s.IgnoreGamepad = IsChecked(GamepadIgnoreCb);
-        s.FeedbackMode = Math.Max(0, FeedbackCb.SelectedIndex);
+        // A list at the file's own value leaves the setting as it was read.
+        if (!ShowsFileValue(FeedbackCb)) s.FeedbackMode = Math.Max(0, FeedbackCb.SelectedIndex);
         s.FeedbackPort = (int)(FeedbackPortNud.Value ?? 888);
         CaptureUart(s);
 
@@ -894,7 +919,7 @@ public partial class Settings : UserControl, ISettingsCapture
         s.LogMissingVehicleFiles = IsChecked(LogMissingVehicleFilesCb);
 
         CaptureGraphics(s);
-        s.Gpu = SelectedGpu();
+        if (!ShowsFileValue(GpuCb)) s.Gpu = SelectedGpu();
         ReadResolution(s);
         s.BufferScalePercent = (int)bufferScale.Value;
         s.MaxTextureSize = 1 << (int)textureResolutionSlider.Value;
@@ -915,8 +940,8 @@ public partial class Settings : UserControl, ISettingsCapture
         s.ShadowMapResolution = 1 << (int)shaderResolutionSlider.Value;
         s.ShadowProjectionRange = (int)shaderRange.Value;
         s.CabShadowsRange = (int)_cabShadows.Value;
-        s.ShadowRankCutoff = Math.Max(0, ShadowDisplayCb.SelectedIndex) + 1;
-        s.ReflectionsFidelity = Math.Max(0, ReflectionsDetailsCb.SelectedIndex);
+        if (!ShowsFileValue(ShadowDisplayCb)) s.ShadowRankCutoff = Math.Max(0, ShadowDisplayCb.SelectedIndex) + 1;
+        if (!ShowsFileValue(ReflectionsDetailsCb)) s.ReflectionsFidelity = Math.Max(0, ReflectionsDetailsCb.SelectedIndex);
         s.FieldOfView = Math.Clamp((int)fovSlider.Value, 10, 75);
         s.PythonScreens = IsChecked(RenderScreensCb);
         s.PythonThreadedUpload = IsChecked(RenderScreensThreadCb);
@@ -951,12 +976,14 @@ public partial class Settings : UserControl, ISettingsCapture
         s.AmbientVolume = (int)AmbientVolumeSlider.Value;
         s.SkipPipeline = IsChecked(SkipPipelineCb);
         s.DebugLogVisible = IsChecked(DebugLogVisibleCb);
-        s.PythonScreenUpdateRate = ParsePriorityTag((PyScreenPriorityCb.SelectedItem as ComboBoxItem)?.Tag);
+        if (!ShowsFileValue(PyScreenPriorityCb))
+            s.PythonScreenUpdateRate = ParsePriorityTag((PyScreenPriorityCb.SelectedItem as ComboBoxItem)?.Tag);
 
         s.AutoCloseStarter = IsChecked(AutoCloseStarterCb);
         s.LargeThumbnails = IsChecked(LargeThumbnailsCb);
         s.AutoExpandSceneryTree = IsChecked(AutoExpandTreeCb);
-        s.ReadyOverride = (ConsistReadyOverride)Math.Clamp(ReadyOverrideCb.SelectedIndex, 0, 2);
+        if (!ShowsFileValue(ReadyOverrideCb))
+            s.ReadyOverride = (ConsistReadyOverride)Math.Clamp(ReadyOverrideCb.SelectedIndex, 0, 2);
 
         s.CompressTextures = IsChecked(CompressTexCb);
         s.ScaleSpeculars = IsChecked(ScaleSpecularsCb);
@@ -1420,6 +1447,8 @@ public partial class Settings : UserControl, ISettingsCapture
 
         store.KeepCopy(".before-standard");
         var moved = AdvancedKeys();
+        // A value the starter does not know, or a control cannot show, is put right too.
+        moved.UnionWith(FileValues().Keys);
         moved.ExceptWith(SettingsStore.KeptOnMoveToStandard);
         _clamping = true;
         try
@@ -1447,7 +1476,7 @@ public partial class Settings : UserControl, ISettingsCapture
     /// <summary>Puts <paramref name="keys"/> at the simulator's own values, as edits waiting for Save.</summary>
     private void ShowDefaults(IReadOnlyCollection<string> keys)
     {
-        ShowAsEdits(AppServices.Current.SettingsStore.WithDefaults(Trial(), keys));
+        ShowAsEdits(AppServices.Current.SettingsStore.WithDefaults(Trial(), keys), keys);
         foreach (string key in keys)
             _keyRows.ShowDefault(key);
         // Put back by hand, a value is a choice like any other.
@@ -1505,10 +1534,86 @@ public partial class Settings : UserControl, ISettingsCapture
 
     private bool Advanced => AppServices.Current.Settings.AdvancedSettings;
 
-    /// <summary>Under each setting, the value of eu07.ini for it the starter cannot read, as the file has it.</summary>
+    /// <summary>A value of eu07.ini a list does not offer, listed under the file's own words.</summary>
+    private sealed record FileValue(string Raw);
+
+    /// <summary>The lists that take a value of the file they do not offer, with their keys.</summary>
+    private IEnumerable<(ComboBox List, string Key)> FileValueLists() => new[]
+    {
+        (FeedbackCb, "feedbackmode"), (GpuCb, "starter.gpu"), (ShadowDisplayCb, "gfx.shadow.rank.cutoff"),
+        (ReflectionsDetailsCb, "gfx.reflections.fidelity"), (PyScreenPriorityCb, "python.updatetime"),
+        (ReadyOverrideCb, "starter.batterydefault"), (AntiAliasingCb, "multisampling")
+    };
+
+    private static bool ShowsFileValue(ComboBox list) => list.SelectedItem is ComboBoxItem { Tag: FileValue };
+
+    // Keys the controls showed otherwise than the file has them when it was read.
+    private HashSet<string> _unlikeOnScreen = new(StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>
+    /// The values of eu07.ini the starter does not know, or that a control cannot show, as the
+    /// file writes them, but for those the player has set since.
+    /// </summary>
+    private Dictionary<string, string> FileValues()
+    {
+        var store = AppServices.Current.SettingsStore;
+        var values = new Dictionary<string, string>(store.UnreadableValues(), StringComparer.OrdinalIgnoreCase);
+        foreach (string key in _unlikeOnScreen)
+            if (!values.ContainsKey(key) && store.FileValueOf(key) is { } raw)
+                values[key] = raw;
+        foreach (string key in values.Keys.Where(store.IsChosen).ToList())
+            values.Remove(key);
+        return values;
+    }
+
+    /// <summary>
+    /// The lists put at the file's value where they do not offer it, chosen as it is until the player picks another.
+    /// </summary>
+    private void ShowFileValueItems(IReadOnlyDictionary<string, string> values)
+    {
+        WhileLoading(() =>
+        {
+            foreach (var (list, key) in FileValueLists())
+            {
+                foreach (var item in list.Items.OfType<ComboBoxItem>().Where(item => item.Tag is FileValue).ToList())
+                    list.Items.Remove(item);
+                if (!values.TryGetValue(key, out string? raw))
+                    continue;
+                var shown = new ComboBoxItem { Tag = new FileValue(raw), Content = raw };
+                list.Items.Add(shown);
+                list.SelectedItem = shown;
+            }
+        });
+    }
+
+    /// <summary>The keys of the row <paramref name="control"/> sits in.</summary>
+    private static string[] RowKeys(Control control) =>
+        (control.FindLogicalAncestorOfType<SettingRow>()?.ConfigKey ?? string.Empty)
+        .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+
+    /// <summary>
+    /// A control moved: its keys are the player's choice now, written as the screen has them -
+    /// but for a list put back at the file's own value, which stays as the file has it.
+    /// </summary>
+    private void ChosenByHand(Control control)
+    {
+        if (_loading || _showingEdits)
+            return;
+        var keys = RowKeys(control);
+        if (keys.Length == 0)
+            return;
+        if (control is ComboBox list &&
+            (ShowsFileValue(list) || (_fileRendererItem is not null && ReferenceEquals(list.SelectedItem, _fileRendererItem))))
+            AppServices.Current.SettingsStore.Unchoose(keys);
+        else
+            ForgetShown(keys);
+        UpdateUnknownValues();
+    }
+
+    /// <summary>Under each setting, the value of eu07.ini for it the starter does not know or cannot show, as the file has it.</summary>
     private void UpdateUnknownValues()
     {
-        var unreadable = AppServices.Current.SettingsStore.UnreadableValues();
+        var unreadable = FileValues();
         foreach (var row in SettingsStack.GetLogicalDescendants().OfType<SettingRow>())
         {
             var keys = (row.ConfigKey ?? string.Empty)
@@ -1698,16 +1803,16 @@ public partial class Settings : UserControl, ISettingsCapture
                 case { Tag: SimulatorKey }:
                     break;
                 case CheckBox cb:
-                    cb.IsCheckedChanged += (_, _) => OnControlChanged();
+                    cb.IsCheckedChanged += (_, _) => OnControlChanged(cb);
                     break;
                 case Slider slider:
-                    slider.ValueChanged += (_, _) => OnControlChanged();
+                    slider.ValueChanged += (_, _) => OnControlChanged(slider);
                     break;
                 case ComboBox combo:
-                    combo.SelectionChanged += (_, _) => OnControlChanged();
+                    combo.SelectionChanged += (_, _) => OnControlChanged(combo);
                     break;
                 case NumericUpDown nud:
-                    nud.ValueChanged += (_, _) => OnControlChanged();
+                    nud.ValueChanged += (_, _) => OnControlChanged(nud);
                     break;
             }
         }
@@ -1729,8 +1834,10 @@ public partial class Settings : UserControl, ISettingsCapture
                 edited();
         };
 
-    private void OnControlChanged()
+    private void OnControlChanged(Control? control = null)
     {
+        if (control is not null)
+            ChosenByHand(control);
         MarkDirty();
         QueuePresetMarks();
     }

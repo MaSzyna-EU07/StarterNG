@@ -37,18 +37,18 @@ public class GraphicsSettingsTests
     private static string? Line(string text, string key) =>
         Lines(text).FirstOrDefault(l => l == key || l.StartsWith(key + " ", StringComparison.Ordinal));
 
-    // As application.cpp on master has them: a word it does not know gets the full renderer.
+    // As application.cpp on master has them; a word the starter does not know is the file's own, written back as it is.
     [Theory]
     [InlineData("default", "default")]
-    [InlineData("full", "default")]
-    [InlineData("gl46", "default")]
-    [InlineData("vulkan", "default")]
-    [InlineData("vulkan14", "default")]
+    [InlineData("full", "full")]
+    [InlineData("gl46", "gl46")]
+    [InlineData("vulkan", "vulkan")]
+    [InlineData("vulkan14", "vulkan14")]
     [InlineData("legacy", "legacy")]
     [InlineData("simpleshader", "legacy")]
     [InlineData("off", "legacy")]
     [InlineData("simple", "simple")]
-    [InlineData("experimental", "default")]
+    [InlineData("experimental", "experimental")]
     public void A_renderer_is_written_by_the_name_master_knows(string read, string written)
     {
         Assert.Equal($"gfxrenderer {written}", Line(Write(Read($"gfxrenderer {read}\n")), "gfxrenderer"));
@@ -93,7 +93,7 @@ public class GraphicsSettingsTests
     }
 
     [Fact]
-    public void Keys_of_the_vulkan_renderer_master_does_not_have_go_on_a_save()
+    public void Keys_of_the_vulkan_renderer_master_does_not_have_stay_on_a_save()
     {
         string[] vulkan =
         {
@@ -107,7 +107,8 @@ public class GraphicsSettingsTests
 
         string saved = installation.Files.ReadAllText(UserIni);
         Assert.Contains("calibratein 0 0 0 0", saved);
-        Assert.All(vulkan, line => Assert.Null(Line(saved, line.Split(' ')[0])));
+        // Written in by hand for a build that has that renderer: the starter does not know them, and leaves them.
+        Assert.All(vulkan, line => Assert.Equal(line, Line(saved, line.Split(' ')[0])));
     }
 
     [Fact]

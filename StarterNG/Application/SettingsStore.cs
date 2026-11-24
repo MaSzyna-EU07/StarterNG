@@ -49,6 +49,41 @@ public sealed class SettingsStore
     // it has it: a value outside what the starter offers, its spacing, its comment.
     private IReadOnlyDictionary<string, string> _synced = new Dictionary<string, string>();
 
+    // Keys set by the player's hand since the file was read: written as the screen has them,
+    // even where that is what the starter shows for a value of the file it does not know.
+    private readonly HashSet<string> _chosen = new(StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>
+    /// <paramref name="keys"/> were set by hand - a control moved, a level or the defaults
+    /// put on them, the move to the standard mode: a save writes them, and a value of the
+    /// file the starter does not know goes. Until then it stays as it is.
+    /// </summary>
+    public void Choose(IEnumerable<string> keys) => _chosen.UnionWith(keys);
+
+    /// <summary>The value of the file is chosen again, as it is: it stays in the file.</summary>
+    public void Unchoose(IEnumerable<string> keys) => _chosen.ExceptWith(keys);
+
+    public bool IsChosen(string key) => _chosen.Contains(key);
+
+    /// <summary>
+    /// Whether the file's value of <paramref name="key"/> means what <paramref name="shown"/> does,
+    /// written its own way: yes and tak, 45 and 45.0, the UART features in another order.
+    /// </summary>
+    public bool FileMeans(string key, string? shown)
+    {
+        string? raw = FileValueOf(key);
+        return raw is null || shown is null ? raw == shown : Means(key, raw, shown);
+    }
+
+    private static bool Means(string key, string raw, string shown) =>
+        string.Equals(key, "uartfeature", StringComparison.OrdinalIgnoreCase)
+            ? Uart.FeaturesStand(raw, shown)
+            : SameValue(raw, shown);
+
+    /// <summary>The key as the file writes it, where the simulator gets to it; null where it does not.</summary>
+    public string? FileValueOf(string key) =>
+        _config.IsPastEnd(key) || _config.GetRaw(key) is not { Length: > 0 } raw ? null : raw;
+
     public SettingsStore(IFileSystem files, IClock clock, IDiagnosticsLog log, SettingsPaths paths,
                          SettingsSerializer serializer, ExecutableLocator executables)
     {
@@ -138,6 +173,7 @@ public sealed class SettingsStore
 
         _serializer.Read(Settings, _config);
         _synced = Render(Settings);
+        _chosen.Clear();
         // after the snapshot, so the next save writes it; a profile of before goes the same way as the ini would
         if (!LoadFailed)
             SettingsSerializer.MoveToTrainTapes(Settings);
@@ -367,7 +403,7 @@ public sealed class SettingsStore
                 continue;
             if (_config.IsPastEnd(key) || _config.GetRaw(key) is not { Length: > 0 } raw)
                 continue;
-            if (read.TryGetValue(key, out string? shown) && shown == fallback && !SameValue(raw, shown))
+            if (read.TryGetValue(key, out string? shown) && shown == fallback && !Means(key, raw, shown))
                 unreadable[key] = raw;
         }
 
@@ -385,6 +421,10 @@ public sealed class SettingsStore
             if (!readable)
                 unreadable[key.Key] = raw;
         }
+
+        // Kept as written, and offered on the list under its own word.
+        if (!_config.IsPastEnd("gfxrenderer") && WithFile(_config).RendererWord is { } renderer)
+            unreadable["gfxrenderer"] = renderer;
         return unreadable;
     }
 
@@ -473,8 +513,7 @@ public sealed class SettingsStore
                 return Uart.FeaturesStand(_config.GetRaw(key), value);
             if (SettingsSerializer.FixedLengthKeys.Contains(key, StringComparer.OrdinalIgnoreCase))
                 return _config.GetRaw(key) == value;
-            if (string.Equals(key, "gfxrenderer", StringComparison.OrdinalIgnoreCase) &&
-                !SimulatorSettings.KeptRendererWord(_config.GetRaw(key)))
+            if (_chosen.Contains(key))
                 return false;
             if (string.Equals(key, "mousescale", StringComparison.OrdinalIgnoreCase) &&
                 !SettingsSerializer.MouseScaleStands(_config.GetRaw(key)))
@@ -564,6 +603,35 @@ public sealed class SettingsStore
         catch (Exception)
         {
             _configAgeUtc = _clock.UtcNow;
+        }
+    }
+
+    // When the file stood as it was last asked about; a save still goes onto what it holds.
+    private DateTime _askedAboutUtc = DateTime.MinValue;
+
+    /// <summary>
+    /// Whether the file changed elsewhere since it was read here, written here or last asked
+    /// about. Declined (<see cref="LeaveChangeOnDisk"/>), a change is not asked about again.
+    /// </summary>
+    public bool HasChangeOnDiskToAskAbout() =>
+        IsConfigNewerOnDisk() && DiskWriteTimeUtc() is { } written && written > _askedAboutUtc;
+
+    /// <summary>
+    /// The player chose not to read the file again. The screen stays as it is, but what was
+    /// written in elsewhere is no more lost for that: the next save goes onto it.
+    /// </summary>
+    public void LeaveChangeOnDisk() => _askedAboutUtc = DiskWriteTimeUtc() ?? _clock.UtcNow;
+
+    private DateTime? DiskWriteTimeUtc()
+    {
+        string path = string.IsNullOrEmpty(_savePath) ? _paths.UserConfigPath() : _savePath;
+        try
+        {
+            return _files.FileExists(path) ? _files.GetLastWriteTimeUtc(path) : null;
+        }
+        catch (Exception)
+        {
+            return null;
         }
     }
 

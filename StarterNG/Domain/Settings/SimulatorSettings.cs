@@ -53,6 +53,13 @@ public sealed class SimulatorSettings
     public bool LogMissingVehicleFiles;
 
     public int RenderEngine;
+
+    /// <summary>
+    /// The file's gfxrenderer word where it is none the starter knows - vulkan, written in by
+    /// hand for a build that has it: written back as it is until another renderer is chosen.
+    /// </summary>
+    public string? RendererWord;
+
     public int Width = 1280;
     public int Height = 720;
     public int BufferScalePercent = 100;
@@ -197,11 +204,10 @@ public sealed class SimulatorSettings
     public static readonly string[] RenderEngines = { "default", "legacy", "simple" };
 
     /// <summary>
-    /// The words of the file that stay as they are while the choice stands: those application.cpp
-    /// on master knows, but "experimental". Any other word starts the full renderer with a line in
-    /// the log, so a save puts "default" in its place.
+    /// The words the starter places among <see cref="RenderEngines"/>: those application.cpp on
+    /// master knows, but "experimental". Any other word is kept as <see cref="RendererWord"/>.
     /// </summary>
-    public static bool KeptRendererWord(string? word) =>
+    public static bool KnownRendererWord(string? word) =>
         word?.Trim().ToLowerInvariant() is "default" or "legacy" or "simple" or "simpleshader" or "off";
 
     /// <summary>Where <paramref name="word"/> stands among <see cref="RenderEngines"/>, as the simulator reads it.</summary>
