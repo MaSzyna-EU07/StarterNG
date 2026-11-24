@@ -265,10 +265,14 @@ public sealed class FizPhysicsRepository : IPhysicsRepository
         var sb = new StringBuilder();
         foreach (string line in text.Split('\n'))
         {
+            // Both kinds the game skips: "68 //MaxLoad" passes one include parameter, not two.
             string stripped = line;
             int comment = stripped.IndexOf('#');
             if (comment >= 0)
                 stripped = stripped[..comment];
+            int slashes = stripped.IndexOf("//", StringComparison.Ordinal);
+            if (slashes >= 0)
+                stripped = stripped[..slashes];
             sb.Append(stripped).Append(' ');
         }
 
