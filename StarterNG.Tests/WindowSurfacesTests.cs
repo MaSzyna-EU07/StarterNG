@@ -21,11 +21,13 @@ public class WindowSurfacesTests
         Assert.Contains(Win32RenderingMode.AngleEgl, WindowSurfaces.Win32Options.RenderingMode);
     }
 
-    [Fact]
-    public void The_options_go_to_the_same_builder()
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void The_options_go_to_the_same_builder_with_or_without_the_processor(bool softwareRender)
     {
         var builder = AppBuilder.Configure<Avalonia.Application>();
 
-        Assert.Same(builder, WindowSurfaces.ApplyTo(builder));
+        Assert.Same(builder, WindowSurfaces.ApplyTo(builder, softwareRender));
     }
 }

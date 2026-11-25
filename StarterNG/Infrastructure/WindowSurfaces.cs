@@ -8,7 +8,6 @@ namespace StarterNG.Infrastructure;
 /// visual was left empty on many starts: the main window, or a dialog opened later,
 /// stayed black while the others drew, and came back only now and then. Composition is
 /// there for see-through windows and backdrops, and the starter has none.
-/// <see cref="SoftwareRender"/> goes after this and brings its own options.
 /// </summary>
 public static class WindowSurfaces
 {
@@ -17,5 +16,10 @@ public static class WindowSurfaces
         CompositionMode = new[] { Win32CompositionMode.RedirectionSurface }
     };
 
-    public static AppBuilder ApplyTo(AppBuilder builder) => builder.With(Win32Options);
+    /// <summary>
+    /// The options a platform reads are the last given, so the processor, when asked
+    /// for, draws with <see cref="SoftwareRender"/>'s own and these are left out.
+    /// </summary>
+    public static AppBuilder ApplyTo(AppBuilder builder, bool softwareRender) =>
+        softwareRender ? SoftwareRender.ApplyTo(builder) : builder.With(Win32Options);
 }
