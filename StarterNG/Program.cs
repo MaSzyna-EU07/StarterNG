@@ -73,12 +73,17 @@ static class Program
         };
     }
 
+    private static AppBuilder WithWindowSurfaces(this AppBuilder builder) =>
+        WindowSurfaces.ApplyTo(builder);
+
     private static AppBuilder WithSoftwareRenderIfAsked(this AppBuilder builder) =>
         _softwareRender ? SoftwareRender.ApplyTo(builder) : builder;
 
     public static AppBuilder BuildAvaloniaApp()
         => AppBuilder.Configure<App>()
             .UsePlatformDetect()
+            .WithWindowSurfaces()
+            // After the surfaces: the later options of a platform are the ones it reads.
             .WithSoftwareRenderIfAsked()
             .WithInterFont()
             .WithDiagnosticsLogging()
