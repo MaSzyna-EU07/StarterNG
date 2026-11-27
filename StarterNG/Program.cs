@@ -73,8 +73,9 @@ static class Program
         };
     }
 
+    // Without the switch the graphics card draws, into the window surfaces.
     private static AppBuilder WithSoftwareRenderIfAsked(this AppBuilder builder) =>
-        _softwareRender ? SoftwareRender.ApplyTo(builder) : builder;
+        WindowSurfaces.ApplyTo(builder, _softwareRender);
 
     public static AppBuilder BuildAvaloniaApp()
         => AppBuilder.Configure<App>()
