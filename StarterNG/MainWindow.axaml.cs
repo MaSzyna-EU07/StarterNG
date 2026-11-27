@@ -845,7 +845,7 @@ public partial class MainWindow : Window
     {
         if (_askingAboutSettings || (DateTime.UtcNow - _openedUtc).TotalSeconds < 3)
             return;
-        if (!AppServices.Current.SettingsStore.IsConfigNewerOnDisk())
+        if (!AppServices.Current.SettingsStore.HasChangeOnDiskToAskAbout())
             return;
 
         _askingAboutSettings = true;
@@ -862,7 +862,7 @@ public partial class MainWindow : Window
                 SettingsView?.ReloadFromSettings();
             }
             else
-                AppServices.Current.SettingsStore.TouchConfigAge();
+                AppServices.Current.SettingsStore.LeaveChangeOnDisk();
         }
         finally
         {

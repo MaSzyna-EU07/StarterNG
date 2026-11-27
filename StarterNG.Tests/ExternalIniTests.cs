@@ -69,6 +69,71 @@ public class ExternalIniTests
     }
 
     [Fact]
+    public void A_renderer_written_in_by_hand_while_the_starter_runs_survives_its_save()
+    {
+        // Notepad: "gfxrenderer vulkan", a word the starter does not offer.
+        var installation = WithIni("gfxrenderer default\nfieldofview 45\n");
+        Edited(installation, "gfxrenderer vulkan\nfieldofview 45\n");
+
+        installation.SettingsStore.Settings.FieldOfView = 60;
+        installation.SettingsStore.Save();
+
+        string saved = installation.Files.ReadAllText(UserIni);
+        Assert.Contains("gfxrenderer vulkan", saved);
+        Assert.Contains("fieldofview 60", saved);
+        Assert.Equal("vulkan", installation.SettingsStore.Settings.RendererWord);
+    }
+
+    [Fact]
+    public void A_renderer_written_in_by_hand_and_read_again_survives_the_next_save()
+    {
+        var installation = WithIni("gfxrenderer default\n");
+        Edited(installation, "gfxrenderer vulkan\n");
+
+        // "Wczytać ponownie?" - yes.
+        installation.SettingsStore.Load();
+        installation.SettingsStore.Save();
+
+        Assert.Contains("gfxrenderer vulkan", installation.Files.ReadAllText(UserIni));
+    }
+
+    [Fact]
+    public void A_change_on_disk_not_read_again_is_not_lost_on_the_next_save()
+    {
+        var installation = WithIni("gfxrenderer default\nfieldofview 45\nvsync no\n");
+        var store = installation.SettingsStore;
+        Edited(installation, "gfxrenderer vulkan\nfieldofview 45\nvsync yes\n");
+        Assert.True(store.HasChangeOnDiskToAskAbout());
+
+        // "Wczytać ponownie?" - no: not asked again about the same change.
+        store.LeaveChangeOnDisk();
+        Assert.False(store.HasChangeOnDiskToAskAbout());
+
+        store.Settings.FieldOfView = 60;
+        store.Save();
+
+        string saved = installation.Files.ReadAllText(UserIni);
+        Assert.Contains("gfxrenderer vulkan", saved);
+        Assert.Contains("vsync yes", saved);
+        Assert.Contains("fieldofview 60", saved);
+        Assert.True(store.LastSaveMerged);
+    }
+
+    [Fact]
+    public void A_later_change_on_disk_is_asked_about_again()
+    {
+        var installation = WithIni("fieldofview 45\n");
+        var store = installation.SettingsStore;
+        Edited(installation, "fieldofview 50\n");
+        store.LeaveChangeOnDisk();
+
+        installation.Files.WithFile(UserIni, "fieldofview 55\n")
+                    .WrittenAt(UserIni, installation.Files.GetLastWriteTimeUtc(UserIni).AddMinutes(1));
+
+        Assert.True(store.HasChangeOnDiskToAskAbout());
+    }
+
+    [Fact]
     public void A_file_nobody_else_touched_saves_as_before()
     {
         var installation = WithIni("fieldofview 45\n");
@@ -97,6 +162,8 @@ public class ExternalIniTests
         Assert.False(unreadable.ContainsKey("gfxrenderer"));
         Assert.False(unreadable.ContainsKey("gfx.framebuffer.width"));
         Assert.False(unreadable.ContainsKey("calibratein"));
+        // The default features in another order: the same line.
+        Assert.False(WithIni("uartfeature local|main|scnd|train\n").SettingsStore.UnreadableValues().ContainsKey("uartfeature"));
         // The file keeps what it says until the setting is changed.
         installation.SettingsStore.Save();
         Assert.Contains("fieldofview abc", installation.Files.ReadAllText(UserIni));

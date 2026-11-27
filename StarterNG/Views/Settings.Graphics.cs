@@ -25,7 +25,7 @@ public partial class Settings
 
     private void ShowGraphics(SimulatorSettings s)
     {
-        RenderEngineCb.SelectedIndex = s.RenderEngine;
+        ShowRenderer(s);
         SelectTag(AntiAliasingCb, AntiAliasingTag(s.AntiAliasing));
         _fullscreenAsRead = s.Fullscreen;
         SelectTag(DisplayModeCb, DisplayModeOf(s.Fullscreen, s.FullscreenWindowed));
@@ -35,14 +35,50 @@ public partial class Settings
 
     private void CaptureGraphics(SimulatorSettings s)
     {
-        s.RenderEngine = Math.Max(0, RenderEngineCb.SelectedIndex);
-        s.AntiAliasing = AntiAliasingFromTag(SelectedTag(AntiAliasingCb));
+        if (_fileRendererItem is not null && ReferenceEquals(RenderEngineCb.SelectedItem, _fileRendererItem))
+        {
+            s.RenderEngine = 0;
+            s.RendererWord = _fileRendererItem.Tag as string;
+        }
+        else
+        {
+            s.RenderEngine = Math.Max(0, RenderEngineCb.SelectedIndex);
+            s.RendererWord = null;
+        }
+        if (!ShowsFileValue(AntiAliasingCb))
+            s.AntiAliasing = AntiAliasingFromTag(SelectedTag(AntiAliasingCb));
         s.FullscreenMonitor = SelectedTag(MonitorCb) ?? string.Empty;
 
         string mode = SelectedTag(DisplayModeCb) ?? FullscreenMode;
         s.FullscreenWindowed = mode == BorderlessMode;
         // Borderless overrides fullscreen in the simulator, so the file's own word for it stays.
         s.Fullscreen = mode == BorderlessMode ? _fullscreenAsRead : mode == FullscreenMode;
+    }
+
+    /// <summary>The renderer the file names in a word the list does not offer, listed under that word.</summary>
+    private ComboBoxItem? _fileRendererItem;
+
+    private void ShowRenderer(SimulatorSettings s)
+    {
+        if (_fileRendererItem is not null)
+        {
+            if (s.RendererWord is not null && Equals(_fileRendererItem.Tag, s.RendererWord))
+            {
+                RenderEngineCb.SelectedItem = _fileRendererItem;
+                return;
+            }
+            RenderEngineCb.Items.Remove(_fileRendererItem);
+            _fileRendererItem = null;
+        }
+
+        if (s.RendererWord is { } word)
+        {
+            _fileRendererItem = new ComboBoxItem { Tag = word, Content = word };
+            RenderEngineCb.Items.Add(_fileRendererItem);
+            RenderEngineCb.SelectedItem = _fileRendererItem;
+        }
+        else
+            RenderEngineCb.SelectedIndex = s.RenderEngine;
     }
 
     // ── How the simulator shows: full screen, borderless or in a window ──────

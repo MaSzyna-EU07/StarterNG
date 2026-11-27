@@ -961,23 +961,34 @@ public class SettingsStoreTests
         Assert.Contains($"gfxrenderer {word}\n", SavedLines(installation));
     }
 
-    // Words master does not know start the full renderer with a line in its log, and the
-    // experimental renderer is not in a player's build: a save puts "default" in their place.
+    // A word the starter does not know is written in by hand for a build that has it, such as one with Vulkan:
+    // shown, and left as it is until another renderer is chosen.
     [Theory]
     [InlineData("full")]
     [InlineData("opengl")]
     [InlineData("gl46")]
+    [InlineData("vulkan")]
     [InlineData("vulkan14")]
     [InlineData("experimental")]
     [InlineData("null")]
-    public void A_renderer_word_master_does_not_run_is_saved_as_default(string word)
+    public void A_renderer_word_the_starter_does_not_know_stays_until_another_is_chosen(string word)
     {
-        var installation = WithHome(new InMemoryFileSystem().WithFile(UserIni, $"gfxrenderer {word}\n"));
-        installation.SettingsStore.Load();
+        var installation = WithHome(new InMemoryFileSystem().WithFile(UserIni, $"gfxrenderer {word}\nfieldofview 45\n"));
+        var store = installation.SettingsStore;
+        store.Load();
 
-        installation.SettingsStore.Save();
+        Assert.Equal(word, store.Settings.RendererWord);
+        Assert.Equal(word, store.UnreadableValues()["gfxrenderer"]);
+        store.Settings.FieldOfView = 60;
+        store.Save();
+        Assert.Contains($"gfxrenderer {word}\n", SavedLines(installation));
 
+        // Picking one from the list, even the full renderer it runs as, is a choice.
+        store.Settings.RendererWord = null;
+        store.Settings.RenderEngine = 0;
+        store.Save();
         Assert.Contains("gfxrenderer default\n", SavedLines(installation));
+        Assert.False(store.UnreadableValues().ContainsKey("gfxrenderer"));
     }
 
     [Theory]

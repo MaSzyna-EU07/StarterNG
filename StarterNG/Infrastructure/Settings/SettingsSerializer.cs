@@ -91,7 +91,9 @@ public sealed class SettingsSerializer
         s.VirtualShunting = c.GetBool("ai.trainman", true);
         s.LogMissingVehicleFiles = c.GetBool("starter.logmissingvehicles", false);
 
-        s.RenderEngine = SimulatorSettings.RenderEngineOf(c.GetString("gfxrenderer", "default"));
+        string renderer = c.GetString("gfxrenderer", "default").Trim();
+        s.RenderEngine = SimulatorSettings.RenderEngineOf(renderer);
+        s.RendererWord = renderer.Length > 0 && !SimulatorSettings.KnownRendererWord(renderer) ? renderer : null;
         s.Width = c.GetInt("width", 1280);
         s.Height = c.GetInt("height", 720);
         s.BufferScalePercent = ReadBufferScale(c);
@@ -226,13 +228,8 @@ public sealed class SettingsSerializer
     {
         "gfx.postfx.tonemapping",
         "starter.developertools",
-        // The OpenGL 4.6 and Vulkan renderers', which the simulator's master does not have.
-        "gfx.antialiasing", "gfx.buffer.percent", "gfx.vulkan.device", "gfx.dlss.preset", "gfx.framegeneration",
-        "gfx.reflex", "gfx.raytracing", "gfx.raytracing.range", "gfx.ssr", "gfx.lights.clustered", "gfx.lights.shadows",
-        "gfx.contactshadows", "gfx.shadow.sdsm", "gfx.postfx.ao", "gfx.postfx.ao.lighting", "gfx.postfx.ao.quality",
-        "gfx.cabprobe", "gfx.cabprobe.interval", "gfx.cabprobe.bounce", "gfx.cabprobe.reflections", "gfx.fog",
-        "gfx.fog.quality", "gfx.clouds", "gfx.clouds.shadows", "gfx.postfx.bloom", "gfx.postfx.autoexposure",
-        "gfx.grass", "gfx.grass.distance", "gfx.grass.fadedistance", "gfx.grass.density", "gfx.precipitation.particles",
+        // The keys of the OpenGL 4.6 and Vulkan renderers (gfx.vulkan.device, gfx.raytracing...) are not here:
+        // written in by hand for a build that has them, they stay as the file has them.
     };
 
     /// <summary>
@@ -286,7 +283,7 @@ public sealed class SettingsSerializer
         c.SetBool("ai.trainman", s.VirtualShunting);
         c.SetBool("starter.logmissingvehicles", s.LogMissingVehicleFiles);
 
-        c.Set("gfxrenderer", SimulatorSettings.RenderEngines[Clamp(s.RenderEngine, 0, SimulatorSettings.RenderEngines.Length - 1)]);
+        c.Set("gfxrenderer", s.RendererWord ?? SimulatorSettings.RenderEngines[Clamp(s.RenderEngine, 0, SimulatorSettings.RenderEngines.Length - 1)]);
         c.SetInt("width", s.Width);
         c.SetInt("height", s.Height);
         c.SetInt("starter.bufferscale", s.BufferScalePercent);
